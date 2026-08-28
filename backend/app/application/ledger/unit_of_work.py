@@ -1,3 +1,5 @@
+"""Transactional wrapper exposing repositories for one ledger operation."""
+
 from app.application.unit_of_work import UnitOfWork
 from app.domain.ledger.repository.account import AccountRepository
 from app.domain.ledger.repository.budget import BudgetRepository

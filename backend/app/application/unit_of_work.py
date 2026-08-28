@@ -1,3 +1,9 @@
+"""Abstract transactional wrapper contract.
+
+Changes require an explicit commit. Leaving the scope rolls back pending changes
+and closes the resources owned by the unit of work.
+"""
+
 from abc import ABC, abstractmethod
 from typing import Self
 

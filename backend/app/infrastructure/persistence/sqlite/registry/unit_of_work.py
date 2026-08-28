@@ -1,3 +1,5 @@
+"""SQLite transactional wrapper whose registry repositories share one connection."""
+
 import sqlite3
 from typing import Self
 
