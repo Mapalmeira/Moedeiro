@@ -1,0 +1,1 @@
+"""Ledger domain package."""
