@@ -5,8 +5,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from pydantic import ValidationError
-
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.repository.ledger import SqliteLedgerRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger_token import SqliteLedgerTokenRepository
@@ -102,19 +100,24 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
 
         self.assertIsNone(self.repository.get_by_path("ledger.sqlite"))
 
-    def test_create_rejects_path_longer_than_model_limit(self) -> None:
-        """The domain model's 4096-character path limit is enforced on create."""
-        with self.assertRaises(ValidationError):
-            self.repository.create("x" * 4097)
+    def test_create_accepts_path_without_maximum_length(self) -> None:
+        path = "x" * 10000
 
-    def test_update_rejects_path_longer_than_model_limit(self) -> None:
-        """The domain model's path limit is also enforced on update."""
+        self.repository.create(path)
+
+        self.assertIsNotNone(self.repository.get_by_path(path))
+
+    def test_update_accepts_path_without_maximum_length(self) -> None:
         self.repository.create("ledger.sqlite")
         ledger = self.repository.get_by_path("ledger.sqlite")
         assert ledger is not None
+        path = "x" * 10000
 
-        with self.assertRaises(ValidationError):
-            self.repository.update_path(ledger.uuid, "x" * 4097)
+        self.repository.update_path(ledger.uuid, path)
+
+        updated_ledger = self.repository.get(ledger.uuid)
+        assert updated_ledger is not None
+        self.assertEqual(updated_ledger.path, path)
 
     def test_database_rejects_duplicate_paths(self) -> None:
         """The schema's unique path constraint is visible through the repository."""
