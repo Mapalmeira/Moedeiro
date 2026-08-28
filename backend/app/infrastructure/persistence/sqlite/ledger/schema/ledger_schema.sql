@@ -124,3 +124,21 @@ CREATE TABLE budget_accounts (
         REFERENCES account(uuid, currency_uuid)
         ON DELETE RESTRICT
 ) STRICT;
+
+CREATE INDEX category_name_idx
+ON category(category_name);
+
+CREATE INDEX transaction_event_occurred_at_idx
+ON transaction_event(occurred_at);
+
+CREATE INDEX transaction_tag_tag_event_idx
+ON transaction_tag(tag_uuid, transaction_event_uuid);
+
+CREATE INDEX financial_movement_transaction_event_idx
+ON financial_movement(transaction_event_uuid);
+
+CREATE INDEX financial_movement_account_event_idx
+ON financial_movement(account_uuid, transaction_event_uuid);
+
+CREATE INDEX financial_movement_category_event_idx
+ON financial_movement(category_uuid, transaction_event_uuid);
