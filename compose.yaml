@@ -1,0 +1,16 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/app/Containerfile
+    image: moedeiro-backend:latest
+    volumes:
+      - registry_data:/data/registry
+      - ledger_data:/data/ledgers
+
+volumes:
+  # Registry database sqlite file
+  registry_data:
+
+  # Directory containing the individual ledger sqlite databases.
+  ledger_data:

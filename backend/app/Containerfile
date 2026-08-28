@@ -1,0 +1,22 @@
+FROM python:3.14-slim-trixie
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV REGISTRY_SCHEMA_PATH=/app/backend/app/infrastructure/persistence/sqlite/registry/schema/registry_schema.sql
+ENV LEDGER_SCHEMA_PATH=/app/backend/app/infrastructure/persistence/sqlite/ledger/schema/ledger_schema.sql
+ENV REGISTRY_DB_PATH=/data/registry/registry.sqlite
+ENV LEDGER_DBS_DIR=/data/ledgers
+
+WORKDIR /app
+
+COPY backend/app/requirements.txt /app/requirements.txt
+
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+COPY backend /app/backend
+
+ENV PYTHONPATH=/app/backend
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
