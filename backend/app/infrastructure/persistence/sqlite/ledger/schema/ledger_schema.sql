@@ -18,7 +18,7 @@ CREATE TABLE currency (
 CREATE TABLE account (
     uuid TEXT PRIMARY KEY,
     account_name TEXT NOT NULL UNIQUE,
-    note TEXT NOT NULL,
+    note TEXT,
     currency_uuid TEXT NOT NULL,
 
     -- needed for FK in budget_accounts.
