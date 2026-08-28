@@ -5,6 +5,14 @@ from typing import Self
 
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
+from app.infrastructure.persistence.sqlite.ledger.repository.account import SqliteAccountRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.budget import SqliteBudgetRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.category import SqliteCategoryRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.currency import SqliteCurrencyRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.financial_movement import SqliteFinancialMovementRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.ledger_metadata import SqliteLedgerMetadataRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.tag import SqliteTagRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.transaction_event import SqliteTransactionEventRepository
 
 
 class SqliteLedgerUnitOfWork(LedgerUnitOfWork):
