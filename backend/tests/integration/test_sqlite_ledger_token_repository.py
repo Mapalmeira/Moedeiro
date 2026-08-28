@@ -6,6 +6,7 @@ import unittest
 
 from pydantic import ValidationError
 
+from app.domain.registry.model.ledger import Ledger
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.repository.ledger import SqliteLedgerRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger_token import SqliteLedgerTokenRepository
@@ -18,6 +19,8 @@ SCHEMA_PATH = (
 
 
 class SqliteLedgerTokenRepositoryTest(unittest.TestCase):
+    ledger: Ledger
+
     def setUp(self) -> None:
         self.temporary_directory = TemporaryDirectory()
         database_path = Path(self.temporary_directory.name) / "registry.sqlite"
@@ -27,8 +30,9 @@ class SqliteLedgerTokenRepositoryTest(unittest.TestCase):
         self.repository = SqliteLedgerTokenRepository(self.connection)
 
         self.ledger_repository.create("ledger.sqlite")
-        self.ledger = self.ledger_repository.get_by_path("ledger.sqlite")
-        assert self.ledger is not None
+        ledger = self.ledger_repository.get_by_path("ledger.sqlite")
+        assert ledger is not None
+        self.ledger = ledger
         self.connection.commit()
 
     def tearDown(self) -> None:
