@@ -3,11 +3,13 @@ from typing import Self
 
 
 class UnitOfWork(ABC):
+    @abstractmethod
     def __enter__(self) -> Self:
-        return self
+        pass
 
+    @abstractmethod
     def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.rollback()
+        pass
 
     @abstractmethod
     def commit(self) -> None:
