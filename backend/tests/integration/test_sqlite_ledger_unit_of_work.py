@@ -12,7 +12,10 @@ from uuid import uuid4
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.repository.account import SqliteAccountRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.account_balance_query import SqliteAccountBalanceQueryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.budget import SqliteBudgetRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.budget_status_query import SqliteBudgetStatusQueryRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.cash_flow_query import SqliteCashFlowQueryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.category import SqliteCategoryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.currency import SqliteCurrencyRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.financial_movement import SqliteFinancialMovementRepository
@@ -43,7 +46,10 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
         """Every ledger repository participates in the same transaction."""
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             account_repository = unit_of_work.account_repository
+            account_balance_query_repository = unit_of_work.account_balance_query_repository
             budget_repository = unit_of_work.budget_repository
+            budget_status_query_repository = unit_of_work.budget_status_query_repository
+            cash_flow_query_repository = unit_of_work.cash_flow_query_repository
             category_repository = unit_of_work.category_repository
             currency_repository = unit_of_work.currency_repository
             financial_movement_repository = unit_of_work.financial_movement_repository
@@ -51,7 +57,10 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
             tag_repository = unit_of_work.tag_repository
             transaction_event_repository = unit_of_work.transaction_event_repository
             assert isinstance(account_repository, SqliteAccountRepository)
+            assert isinstance(account_balance_query_repository, SqliteAccountBalanceQueryRepository)
             assert isinstance(budget_repository, SqliteBudgetRepository)
+            assert isinstance(budget_status_query_repository, SqliteBudgetStatusQueryRepository)
+            assert isinstance(cash_flow_query_repository, SqliteCashFlowQueryRepository)
             assert isinstance(category_repository, SqliteCategoryRepository)
             assert isinstance(currency_repository, SqliteCurrencyRepository)
             assert isinstance(financial_movement_repository, SqliteFinancialMovementRepository)
@@ -60,7 +69,10 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
             assert isinstance(transaction_event_repository, SqliteTransactionEventRepository)
             repositories = [
                 account_repository,
+                account_balance_query_repository,
                 budget_repository,
+                budget_status_query_repository,
+                cash_flow_query_repository,
                 category_repository,
                 currency_repository,
                 financial_movement_repository,
