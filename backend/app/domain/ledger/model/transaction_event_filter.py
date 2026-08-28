@@ -6,6 +6,15 @@ from app.domain.ledger.model.transaction_event import TransactionEventType
 
 
 class TransactionEventFilter(BaseModel):
+    """Filtering criteria shared by transaction-event queries.
+
+    Different criteria are combined with AND. Within category_uuids, tag_uuids
+    and event_types, matching any value is sufficient.
+    
+    The time interval is half-open: from_timestamp is inclusive and to_timestamp
+    is exclusive. Either boundary may be omitted.
+    """
+
     from_timestamp: int | None = None
     to_timestamp: int | None = None
     account_uuid: UUID | None = None
