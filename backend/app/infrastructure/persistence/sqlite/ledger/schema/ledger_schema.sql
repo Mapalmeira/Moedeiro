@@ -58,7 +58,7 @@ CREATE TABLE transaction_tag (
     FOREIGN KEY (tag_uuid) REFERENCES tag(uuid) ON DELETE CASCADE
 ) STRICT;
 
-CREATE TABLE movement (
+CREATE TABLE financial_movement (
     uuid TEXT PRIMARY KEY,
     event_uuid TEXT NOT NULL,
     value INTEGER NOT NULL,
