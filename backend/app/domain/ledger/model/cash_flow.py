@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -6,11 +8,13 @@ class CashFlow(BaseModel):
 
     * income and expense contain incoming and outgoing amounts respectively.
     * event_count counts the matching events represented by the result
-    * income_movement_count and expense_movement_count count the movements included in each amount. 
-    
-    ACCOUNT_TRANSFER events and their movements are excluded from every value.
+    * income_movement_count and expense_movement_count count the movements included in each amount.
+
+    Every amount belongs to currency_uuid. ACCOUNT_TRANSFER events and their
+    movements are excluded from every value.
     """
 
+    currency_uuid: UUID
     from_timestamp: int
     to_timestamp: int
     income: int = Field(ge=0)
