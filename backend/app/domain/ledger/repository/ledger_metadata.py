@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from uuid import UUID
 
 from app.domain.ledger.model.ledger_metadata import LedgerMetadata
 
@@ -17,5 +18,5 @@ class LedgerMetadataRepository(ABC):
         pass
 
     @abstractmethod
-    def create(self, name: str, version: int) -> None:
+    def create(self, ledger_uuid: UUID, name: str, version: int) -> None:
         pass
