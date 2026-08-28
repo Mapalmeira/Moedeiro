@@ -1,6 +1,7 @@
 import sqlite3
 from uuid import UUID, uuid4
 
+from app.domain.ledger.model.financial_movement import FinancialMovement
 from app.domain.ledger.model.tag import Tag
 from app.domain.ledger.model.transaction_event import TransactionEvent, TransactionEventType
 from app.domain.ledger.model.transaction_event_filter import TransactionEventFilter
@@ -13,7 +14,7 @@ class SqliteTransactionEventRepository(TransactionEventRepository):
         self.connection = connection
 
     def create(self, occurred_at: int, description: str, type: TransactionEventType) -> None:
-        event = TransactionEvent(uuid=uuid4(), occurred_at=occurred_at, description=description, type=type)
+        event = TransactionEvent(uuid=uuid4(), occurred_at=occurred_at, description=description, type=type, movements=[])
         self.connection.execute(
             "INSERT INTO transaction_event(uuid, occurred_at, description, type) VALUES (?, ?, ?, ?)",
             (str(event.uuid), event.occurred_at, event.description, event.type),
@@ -26,17 +27,17 @@ class SqliteTransactionEventRepository(TransactionEventRepository):
         ).fetchone()
         if row is None:
             return None
-        return self._to_model(row)
+        return self._to_models([row])[0]
 
     def update_occurred_at(self, uuid: UUID, value: int) -> None:
-        event = TransactionEvent(uuid=uuid, occurred_at=value, description="event", type="TRANSACTION")
+        event = TransactionEvent(uuid=uuid, occurred_at=value, description="event", type="TRANSACTION", movements=[])
         self.connection.execute(
             "UPDATE transaction_event SET occurred_at = ? WHERE uuid = ?",
             (event.occurred_at, str(event.uuid)),
         )
 
     def update_description(self, uuid: UUID, value: str) -> None:
-        event = TransactionEvent(uuid=uuid, occurred_at=0, description=value, type="TRANSACTION")
+        event = TransactionEvent(uuid=uuid, occurred_at=0, description=value, type="TRANSACTION", movements=[])
         self.connection.execute(
             "UPDATE transaction_event SET description = ? WHERE uuid = ?",
             (event.description, str(event.uuid)),
@@ -70,7 +71,7 @@ class SqliteTransactionEventRepository(TransactionEventRepository):
         rows = self.connection.execute(
             "SELECT uuid, occurred_at, description, type FROM transaction_event"
         ).fetchall()
-        return [self._to_model(row) for row in rows]
+        return self._to_models(rows)
 
     def list_filtered(self, filters: TransactionEventFilter) -> list[TransactionEvent]:
         where_clause, parameters = build_transaction_event_filter(filters)
@@ -82,7 +83,7 @@ class SqliteTransactionEventRepository(TransactionEventRepository):
             """,
             parameters,
         ).fetchall()
-        return [self._to_model(row) for row in rows]
+        return self._to_models(rows)
 
     def list_page(self, page_number: int, page_size: int, ascending: bool, filters: TransactionEventFilter) -> list[TransactionEvent]:
         self._validate_page(page_number, page_size)
@@ -99,11 +100,25 @@ class SqliteTransactionEventRepository(TransactionEventRepository):
             """,
             [*parameters, page_size, offset],
         ).fetchall()
-        return [self._to_model(row) for row in rows]
+        return self._to_models(rows)
 
-    @staticmethod
-    def _to_model(row: sqlite3.Row) -> TransactionEvent:
-        return TransactionEvent.model_validate(dict(row))
+    def _to_models(self, rows: list[sqlite3.Row]) -> list[TransactionEvent]:
+        if not rows:
+            return []
+        events = {row["uuid"]: {**dict(row), "movements": []} for row in rows}
+        placeholders = ", ".join("?" for _ in rows)
+        movement_rows = self.connection.execute(
+            f"""
+            SELECT uuid, transaction_event_uuid, account_uuid, category_uuid, value, item_name
+            FROM financial_movement
+            WHERE transaction_event_uuid IN ({placeholders})
+            """,
+            [row["uuid"] for row in rows],
+        ).fetchall()
+        for movement_row in movement_rows:
+            movement = FinancialMovement.model_validate(dict(movement_row))
+            events[str(movement.transaction_event_uuid)]["movements"].append(movement)
+        return [TransactionEvent.model_validate(events[row["uuid"]]) for row in rows]
 
     @staticmethod
     def _validate_page(page_number: int, page_size: int) -> None:

@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
+from app.domain.ledger.model.financial_movement import FinancialMovement
 from app.domain.ledger.model.transaction_event import TransactionEvent
 
 
@@ -17,6 +18,7 @@ class TransactionEventTest(unittest.TestCase):
                     occurred_at=10,
                     description="Event",
                     type=event_type,
+                    movements=[],
                 )
                 self.assertEqual(event.type, event_type)
 
@@ -28,6 +30,7 @@ class TransactionEventTest(unittest.TestCase):
                     "occurred_at": 10,
                     "description": "Event",
                     "type": "UNKNOWN",
+                    "movements": [],
                 }
             )
 
@@ -40,7 +43,59 @@ class TransactionEventTest(unittest.TestCase):
                         occurred_at=10,
                         description=description,
                         type="TRANSACTION",
+                        movements=[],
                     )
+
+    def test_contains_financial_movements(self) -> None:
+        event_uuid = uuid4()
+        movement = FinancialMovement(
+            uuid=uuid4(),
+            transaction_event_uuid=event_uuid,
+            account_uuid=uuid4(),
+            category_uuid=uuid4(),
+            value=-100,
+            item_name=None,
+        )
+
+        event = TransactionEvent(
+            uuid=event_uuid,
+            occurred_at=10,
+            description="Event",
+            type="TRANSACTION",
+            movements=[movement],
+        )
+
+        self.assertEqual(event.movements, [movement])
+
+    def test_requires_movements_to_be_explicitly_loaded(self) -> None:
+        with self.assertRaises(ValidationError):
+            TransactionEvent.model_validate(
+                {
+                    "uuid": uuid4(),
+                    "occurred_at": 10,
+                    "description": "Event",
+                    "type": "TRANSACTION",
+                }
+            )
+
+    def test_rejects_movement_from_another_event(self) -> None:
+        with self.assertRaises(ValidationError):
+            TransactionEvent(
+                uuid=uuid4(),
+                occurred_at=10,
+                description="Event",
+                type="TRANSACTION",
+                movements=[
+                    FinancialMovement(
+                        uuid=uuid4(),
+                        transaction_event_uuid=uuid4(),
+                        account_uuid=uuid4(),
+                        category_uuid=uuid4(),
+                        value=-100,
+                        item_name=None,
+                    )
+                ],
+            )
 
 
 if __name__ == "__main__":

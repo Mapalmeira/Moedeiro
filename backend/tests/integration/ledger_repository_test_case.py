@@ -53,9 +53,9 @@ class LedgerRepositoryTestCase(unittest.TestCase):
         repository.create(name)
         return next(tag for tag in repository.list_all() if tag.name == name)
 
-    def create_event(self, description: str = "Purchase", type: TransactionEventType = "TRANSACTION") -> TransactionEvent:
+    def create_event(self, description: str = "Purchase", type: TransactionEventType = "TRANSACTION", occurred_at: int = 10) -> TransactionEvent:
         repository = SqliteTransactionEventRepository(self.connection)
-        repository.create(10, description, type)
+        repository.create(occurred_at, description, type)
         return next(event for event in repository.list_all() if event.description == description)
 
     def create_budget(self, name: str = "Monthly", currency: Currency | None = None, category: Category | None = None) -> Budget:
