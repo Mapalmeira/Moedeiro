@@ -8,12 +8,8 @@ import unittest
 from pydantic import ValidationError
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
-from app.infrastructure.persistence.sqlite.registry.repository.ledger import (
-    SqliteLedgerRepository,
-)
-from app.infrastructure.persistence.sqlite.registry.repository.ledger_token import (
-    SqliteLedgerTokenRepository,
-)
+from app.infrastructure.persistence.sqlite.registry.repository.ledger import SqliteLedgerRepository
+from app.infrastructure.persistence.sqlite.registry.repository.ledger_token import SqliteLedgerTokenRepository
 
 
 SCHEMA_PATH = (

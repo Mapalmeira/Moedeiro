@@ -13,9 +13,7 @@ import unittest
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.repository.ledger import SqliteLedgerRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger_token import SqliteLedgerTokenRepository
-from app.infrastructure.persistence.sqlite.registry.unit_of_work import (
-    SqliteRegistryUnitOfWork,
-)
+from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
 
 
 SCHEMA_PATH = (
