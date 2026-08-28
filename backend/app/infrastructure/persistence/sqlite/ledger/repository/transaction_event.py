@@ -5,6 +5,7 @@ from app.domain.ledger.model.tag import Tag
 from app.domain.ledger.model.transaction_event import TransactionEvent, TransactionEventType
 from app.domain.ledger.model.transaction_event_filter import TransactionEventFilter
 from app.domain.ledger.repository.transaction_event import TransactionEventRepository
+from app.infrastructure.persistence.sqlite.ledger.repository._transaction_event_filter import build_transaction_event_filter
 
 
 class SqliteTransactionEventRepository(TransactionEventRepository):
@@ -72,11 +73,41 @@ class SqliteTransactionEventRepository(TransactionEventRepository):
         return [self._to_model(row) for row in rows]
 
     def list_filtered(self, filters: TransactionEventFilter) -> list[TransactionEvent]:
-        raise NotImplementedError("Filtered transaction-event queries are not implemented")
+        where_clause, parameters = build_transaction_event_filter(filters)
+        rows = self.connection.execute(
+            f"""
+            SELECT event.uuid, event.occurred_at, event.description, event.type
+            FROM transaction_event AS event
+            {where_clause}
+            """,
+            parameters,
+        ).fetchall()
+        return [self._to_model(row) for row in rows]
 
-    def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool, filters: TransactionEventFilter) -> list[TransactionEvent]:
-        raise NotImplementedError("Filtered transaction-event pagination is not implemented")
+    def list_page(self, page_number: int, page_size: int, ascending: bool, filters: TransactionEventFilter) -> list[TransactionEvent]:
+        self._validate_page(page_number, page_size)
+        direction = "ASC" if ascending else "DESC"
+        offset = (page_number - 1) * page_size
+        where_clause, parameters = build_transaction_event_filter(filters)
+        rows = self.connection.execute(
+            f"""
+            SELECT event.uuid, event.occurred_at, event.description, event.type
+            FROM transaction_event AS event
+            {where_clause}
+            ORDER BY event.occurred_at {direction}, event.uuid ASC
+            LIMIT ? OFFSET ?
+            """,
+            [*parameters, page_size, offset],
+        ).fetchall()
+        return [self._to_model(row) for row in rows]
 
     @staticmethod
     def _to_model(row: sqlite3.Row) -> TransactionEvent:
         return TransactionEvent.model_validate(dict(row))
+
+    @staticmethod
+    def _validate_page(page_number: int, page_size: int) -> None:
+        if page_number < 1:
+            raise ValueError("page_number must be greater than or equal to 1")
+        if page_size < 1:
+            raise ValueError("page_size must be greater than or equal to 1")

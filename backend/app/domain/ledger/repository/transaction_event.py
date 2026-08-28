@@ -53,7 +53,6 @@ class TransactionEventRepository(ABC):
         self,
         page_number: int,
         page_size: int,
-        sort_key: str,
         ascending: bool,
         filters: TransactionEventFilter,
     ) -> list[TransactionEvent]:
