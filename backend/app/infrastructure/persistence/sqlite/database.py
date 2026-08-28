@@ -1,12 +1,21 @@
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 import sqlite3
 
-class SqliteDatabase:
+from app.infrastructure.persistence.database import Database
+
+class SqliteDatabase(Database[sqlite3.Connection]):
     def __init__(self, path: Path):
         self.path = path
 
-    def get_connection(self):
+    @contextmanager
+    def connection(self) -> Generator[sqlite3.Connection]:
         conn = sqlite3.connect(self.path)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
-        return conn
+
+        try:
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA foreign_keys = ON")
+            yield conn
+        finally:
+            conn.close()
