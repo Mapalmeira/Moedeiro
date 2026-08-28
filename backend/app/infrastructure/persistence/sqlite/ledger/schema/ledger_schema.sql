@@ -49,24 +49,24 @@ CREATE TABLE tag (
 ) STRICT;
 
 CREATE TABLE transaction_tag (
-    transaction_uuid TEXT NOT NULL,
+    transaction_event_uuid TEXT NOT NULL,
     tag_uuid TEXT NOT NULL,
 
-    PRIMARY KEY (transaction_uuid, tag_uuid),
+    PRIMARY KEY (transaction_event_uuid, tag_uuid),
 
-    FOREIGN KEY (transaction_uuid) REFERENCES transaction_event(uuid) ON DELETE CASCADE,
+    FOREIGN KEY (transaction_event_uuid) REFERENCES transaction_event(uuid) ON DELETE CASCADE,
     FOREIGN KEY (tag_uuid) REFERENCES tag(uuid) ON DELETE CASCADE
 ) STRICT;
 
 CREATE TABLE financial_movement (
     uuid TEXT PRIMARY KEY,
-    event_uuid TEXT NOT NULL,
+    transaction_event_uuid TEXT NOT NULL,
     value INTEGER NOT NULL,
     item_name TEXT,
     account_uuid TEXT NOT NULL,
     category_uuid TEXT NOT NULL,
 
-    FOREIGN KEY (event_uuid)
+    FOREIGN KEY (transaction_event_uuid)
         REFERENCES transaction_event(uuid)
         ON DELETE CASCADE,
 
