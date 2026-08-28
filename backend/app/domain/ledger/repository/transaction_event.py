@@ -2,10 +2,8 @@ from abc import ABC, abstractmethod
 from uuid import UUID
 
 from app.domain.ledger.model.tag import Tag
-from app.domain.ledger.model.transaction_event import (
-    TransactionEvent,
-    TransactionEventType,
-)
+from app.domain.ledger.model.transaction_event import TransactionEvent, TransactionEventType
+from app.domain.ledger.model.transaction_event_filter import TransactionEventFilter
 
 
 class TransactionEventRepository(ABC):
@@ -47,11 +45,16 @@ class TransactionEventRepository(ABC):
         pass
 
     @abstractmethod
+    def list_filtered(self, filters: TransactionEventFilter) -> list[TransactionEvent]:
+        pass
+
+    @abstractmethod
     def list_page(
         self,
         page_number: int,
         page_size: int,
         sort_key: str,
         ascending: bool,
+        filters: TransactionEventFilter,
     ) -> list[TransactionEvent]:
         pass
