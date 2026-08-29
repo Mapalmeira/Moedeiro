@@ -128,6 +128,9 @@ CREATE TABLE budget_accounts (
 CREATE INDEX category_name_idx
 ON category(category_name);
 
+CREATE INDEX category_parent_idx
+ON category(parent_uuid);
+
 CREATE INDEX transaction_event_occurred_at_idx
 ON transaction_event(occurred_at);
 
