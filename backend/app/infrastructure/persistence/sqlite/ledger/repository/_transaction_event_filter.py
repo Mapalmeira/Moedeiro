@@ -25,7 +25,20 @@ def build_transaction_event_filter(filters: TransactionEventFilter) -> tuple[str
                 SELECT 1
                 FROM financial_movement AS category_movement
                 WHERE category_movement.transaction_event_uuid = event.uuid
-                  AND category_movement.category_uuid IN ({placeholders})
+                  AND category_movement.category_uuid IN (
+                      WITH RECURSIVE category_descendants(uuid) AS (
+                          SELECT uuid
+                          FROM category
+                          WHERE uuid IN ({placeholders})
+
+                          UNION
+
+                          SELECT child.uuid
+                          FROM category AS child
+                          JOIN category_descendants AS parent ON child.parent_uuid = parent.uuid
+                      )
+                      SELECT uuid FROM category_descendants
+                  )
             )
             """
         )

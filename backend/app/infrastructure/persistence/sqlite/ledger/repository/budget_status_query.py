@@ -7,6 +7,16 @@ from app.domain.ledger.repository.budget_status_query import BudgetStatusQueryRe
 
 class SqliteBudgetStatusQueryRepository(BudgetStatusQueryRepository):
     _SELECT = """
+        WITH RECURSIVE category_descendants(root_uuid, uuid) AS (
+            SELECT uuid, uuid
+            FROM category
+
+            UNION
+
+            SELECT parent.root_uuid, child.uuid
+            FROM category_descendants AS parent
+            JOIN category AS child ON child.parent_uuid = parent.uuid
+        )
         SELECT
             budget.uuid AS budget_uuid,
             budget.amount AS budgeted_amount,
@@ -16,7 +26,11 @@ class SqliteBudgetStatusQueryRepository(BudgetStatusQueryRepository):
                 JOIN financial_movement AS movement ON movement.account_uuid = budget_accounts.account_uuid
                 JOIN transaction_event AS event ON event.uuid = movement.transaction_event_uuid
                 WHERE budget_accounts.budget_uuid = budget.uuid
-                  AND movement.category_uuid = budget.category_uuid
+                  AND movement.category_uuid IN (
+                      SELECT uuid
+                      FROM category_descendants
+                      WHERE root_uuid = budget.category_uuid
+                  )
                   AND movement.value < 0
                   AND event.type <> 'ACCOUNT_TRANSFER'
                   AND event.occurred_at >= budget.from_timestamp

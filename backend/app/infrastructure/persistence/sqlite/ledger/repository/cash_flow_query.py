@@ -91,7 +91,24 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
             parameters.append(str(filters.account_uuid))
         if filters.category_uuids:
             placeholders = ", ".join("?" for _ in filters.category_uuids)
-            clauses.append(f"movement.category_uuid IN ({placeholders})")
+            clauses.append(
+                f"""
+                movement.category_uuid IN (
+                    WITH RECURSIVE category_descendants(uuid) AS (
+                        SELECT uuid
+                        FROM category
+                        WHERE uuid IN ({placeholders})
+
+                        UNION
+
+                        SELECT child.uuid
+                        FROM category AS child
+                        JOIN category_descendants AS parent ON child.parent_uuid = parent.uuid
+                    )
+                    SELECT uuid FROM category_descendants
+                )
+                """
+            )
             parameters.extend(sorted(str(uuid) for uuid in filters.category_uuids))
         if not clauses:
             return "", parameters
