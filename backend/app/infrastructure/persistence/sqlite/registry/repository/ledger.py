@@ -1,25 +1,32 @@
 import sqlite3
 from uuid import UUID, uuid4
 
-from app.domain.registry.model.ledger import Ledger
+from pydantic import TypeAdapter
+
+from app.domain.appearance import Icon, RgbColorCode
+from app.domain.registry.model.ledger import Ledger, LedgerPath
 from app.domain.registry.repository.ledger import LedgerRepository
 
 
 class SqliteLedgerRepository(LedgerRepository):
+    _path_adapter = TypeAdapter(LedgerPath)
+    _icon_adapter = TypeAdapter(Icon)
+    _color_code_adapter = TypeAdapter(RgbColorCode)
+
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, path: str) -> Ledger:
-        ledger = Ledger(uuid=uuid4(), path=path)
+    def create(self, path: str, icon: str, color_code: bytes) -> Ledger:
+        ledger = Ledger(uuid=uuid4(), path=path, icon=icon, color_code=color_code)
         self.connection.execute(
-            "INSERT INTO ledger(uuid, path) VALUES (?, ?)",
-            (ledger.uuid.bytes, ledger.path),
+            "INSERT INTO ledger(uuid, path, icon, color_code) VALUES (?, ?, ?, ?)",
+            (ledger.uuid.bytes, ledger.path, ledger.icon, ledger.color_code),
         )
         return ledger
 
     def get(self, uuid: UUID) -> Ledger | None:
         row = self.connection.execute(
-            "SELECT uuid, path FROM ledger WHERE uuid = ?",
+            "SELECT uuid, path, icon, color_code FROM ledger WHERE uuid = ?",
             (uuid.bytes,),
         ).fetchone()
         if row is None:
@@ -28,7 +35,7 @@ class SqliteLedgerRepository(LedgerRepository):
 
     def get_by_path(self, path: str) -> Ledger | None:
         row = self.connection.execute(
-            "SELECT uuid, path FROM ledger WHERE path = ?",
+            "SELECT uuid, path, icon, color_code FROM ledger WHERE path = ?",
             (path,),
         ).fetchone()
         if row is None:
@@ -36,10 +43,24 @@ class SqliteLedgerRepository(LedgerRepository):
         return self._to_model(row)
 
     def update_path(self, uuid: UUID, value: str) -> None:
-        ledger = Ledger(uuid=uuid, path=value)
+        path = self._path_adapter.validate_python(value)
         self.connection.execute(
             "UPDATE ledger SET path = ? WHERE uuid = ?",
-            (ledger.path, ledger.uuid.bytes),
+            (path, uuid.bytes),
+        )
+
+    def update_icon(self, uuid: UUID, value: str) -> None:
+        icon = self._icon_adapter.validate_python(value)
+        self.connection.execute(
+            "UPDATE ledger SET icon = ? WHERE uuid = ?",
+            (icon, uuid.bytes),
+        )
+
+    def update_color_code(self, uuid: UUID, value: bytes) -> None:
+        color_code = self._color_code_adapter.validate_python(value)
+        self.connection.execute(
+            "UPDATE ledger SET color_code = ? WHERE uuid = ?",
+            (color_code, uuid.bytes),
         )
 
     def delete(self, uuid: UUID) -> None:
@@ -50,7 +71,7 @@ class SqliteLedgerRepository(LedgerRepository):
 
     def list_all(self) -> list[Ledger]:
         rows = self.connection.execute(
-            "SELECT uuid, path FROM ledger"
+            "SELECT uuid, path, icon, color_code FROM ledger"
         ).fetchall()
         return [self._to_model(row) for row in rows]
 

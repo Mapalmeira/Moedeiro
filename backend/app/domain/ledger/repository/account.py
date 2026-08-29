@@ -11,6 +11,8 @@ class AccountRepository(ABC):
         name: str,
         note: str | None,
         currency_uuid: UUID,
+        icon: str,
+        color_code: bytes,
     ) -> Account:
         pass
 
@@ -24,6 +26,14 @@ class AccountRepository(ABC):
 
     @abstractmethod
     def update_note(self, uuid: UUID, value: str | None) -> None:
+        pass
+
+    @abstractmethod
+    def update_icon(self, uuid: UUID, value: str) -> None:
+        pass
+
+    @abstractmethod
+    def update_color_code(self, uuid: UUID, value: bytes) -> None:
         pass
 
     @abstractmethod

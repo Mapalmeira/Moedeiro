@@ -21,7 +21,7 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         self.invitation_uuid = uuid4().bytes
         self.grant_uuid = uuid4().bytes
         self.session_uuid = uuid4().bytes
-        self.connection.execute("INSERT INTO ledger VALUES (?, 'ledger.sqlite')", (self.ledger_uuid,))
+        self.connection.execute("INSERT INTO ledger VALUES (?, 'ledger.sqlite', 'BookOpen', ?)", (self.ledger_uuid, b"\x80\x80\x80"))
         self.connection.execute("INSERT INTO access_invitation VALUES (?, ?, ?, ?, 10, 90, NULL, NULL)", (self.invitation_uuid, self.ledger_uuid, self.grant_uuid, b"i" * 32))
         self.connection.execute("INSERT INTO access_grant VALUES (?, ?, 'WEBCRYPTO', 'browser', ?, 'ES256', NULL, NULL, 20, NULL)", (self.grant_uuid, self.ledger_uuid, b"public-key"))
         self.connection.execute("INSERT INTO auth_session VALUES (?, ?, ?, 40, 1800, 43200, NULL, NULL)", (self.session_uuid, self.grant_uuid, b"s" * 32))
@@ -53,7 +53,14 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
     def test_rejects_uuid_with_invalid_size(self) -> None:
         """The schema rejects a BLOB that is not a complete UUID."""
         with self.assertRaises(sqlite3.IntegrityError):
-            self.connection.execute("INSERT INTO ledger VALUES (?, 'other.sqlite')", (b"invalid",))
+            self.connection.execute("INSERT INTO ledger VALUES (?, 'other.sqlite', 'BookOpen', ?)", (b"invalid", b"\x80\x80\x80"))
+
+    def test_enforces_ledger_icon_and_color_limits(self) -> None:
+        invalid_updates = (("icon", ""), ("icon", "x" * 51), ("color_code", b"\x00\x00"), ("color_code", b"\x00" * 4))
+        for column, value in invalid_updates:
+            with self.subTest(column=column, size=len(value)):
+                with self.assertRaises(sqlite3.IntegrityError):
+                    self.connection.execute(f"UPDATE ledger SET {column} = ?", (value,))
 
     def test_enforces_invitation_and_session_hash_sizes(self) -> None:
         """Persisted digests must match the selected 256-bit hash output."""

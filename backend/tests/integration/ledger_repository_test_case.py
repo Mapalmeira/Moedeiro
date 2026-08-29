@@ -34,16 +34,16 @@ class LedgerRepositoryTestCase(unittest.TestCase):
 
     def create_currency(self, name: str = "Real") -> Currency:
         repository = SqliteCurrencyRepository(self.connection)
-        return repository.create(name, "R$", None, 2)
+        return repository.create(name, "R$", None, 2, "R$", b"\x80\x80\x80")
 
     def create_category(self, name: str = "Food", parent: Category | None = None) -> Category:
         repository = SqliteCategoryRepository(self.connection)
-        return repository.create(name, None if parent is None else parent.uuid)
+        return repository.create(name, "Circle", b"\x80\x80\x80", None if parent is None else parent.uuid)
 
     def create_account(self, name: str = "Checking", currency: Currency | None = None) -> Account:
         selected_currency = currency or self.create_currency()
         repository = SqliteAccountRepository(self.connection)
-        return repository.create(name, None, selected_currency.uuid)
+        return repository.create(name, None, selected_currency.uuid, "WalletCards", b"\x80\x80\x80")
 
     def create_tag(self, name: str = "Important") -> Tag:
         repository = SqliteTagRepository(self.connection)
@@ -57,4 +57,4 @@ class LedgerRepositoryTestCase(unittest.TestCase):
         selected_currency = currency or self.create_currency()
         selected_category = category or self.create_category()
         repository = SqliteBudgetRepository(self.connection)
-        return repository.create(selected_category.uuid, selected_currency.uuid, 10, 20, name, "Monthly spending", 100)
+        return repository.create(selected_category.uuid, selected_currency.uuid, 10, 20, name, "Monthly spending", 100, "ReceiptText", b"\x80\x80\x80")

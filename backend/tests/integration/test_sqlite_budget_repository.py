@@ -24,13 +24,15 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(budget.from_timestamp, 10)
         self.assertEqual(budget.to_timestamp, 20)
         self.assertEqual(budget.amount, 100)
+        self.assertEqual(budget.icon, "ReceiptText")
+        self.assertEqual(budget.color_code, b"\x80\x80\x80")
 
     def test_create_requires_existing_category_and_currency(self) -> None:
         """Foreign keys reject unknown category or currency identities."""
         for category_uuid, currency_uuid in ((uuid4(), self.currency.uuid), (self.category.uuid, uuid4())):
             with self.subTest(category_uuid=category_uuid, currency_uuid=currency_uuid):
                 with self.assertRaises(sqlite3.IntegrityError):
-                    self.repository.create(category_uuid, currency_uuid, 10, 20, "Monthly", "Spending", 100)
+                    self.repository.create(category_uuid, currency_uuid, 10, 20, "Monthly", "Spending", 100, "ReceiptText", b"\x80\x80\x80")
 
     def test_updates_mutable_budget_fields_without_changing_currency(self) -> None:
         """Budget updates preserve identity and immutable currency relation."""
@@ -65,6 +67,19 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
             self.repository.update_description(budget.uuid, "")
         with self.assertRaises(ValidationError):
             self.repository.update_amount(budget.uuid, -1)
+
+    def test_updates_icon_and_color_without_changing_budget_scope(self) -> None:
+        """Appearance changes preserve the budget period and relations."""
+        budget = self.create_budget(currency=self.currency, category=self.category)
+
+        self.repository.update_icon(budget.uuid, "💰")
+        self.repository.update_color_code(budget.uuid, b"\xff\x80\x00")
+
+        updated = self.repository.get(budget.uuid)
+        assert updated is not None
+        self.assertEqual(updated.icon, "💰")
+        self.assertEqual(updated.color_code, b"\xff\x80\x00")
+        self.assertEqual(updated.category_uuid, budget.category_uuid)
 
     def test_add_list_and_remove_accounts(self) -> None:
         """Budget-account relations support the complete basic lifecycle."""

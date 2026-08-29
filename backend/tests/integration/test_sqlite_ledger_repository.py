@@ -26,20 +26,23 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         self.connection.executescript(SCHEMA_PATH.read_text())
         self.repository = SqliteLedgerRepository(self.connection)
 
+    def create_ledger(self, path: str):
+        return self.repository.create(path, "BookOpen", b"\x80\x80\x80")
+
     def tearDown(self) -> None:
         self.connection.close()
         self.temporary_directory.cleanup()
 
     def test_create_can_be_read_by_uuid_and_path(self) -> None:
         """create persists a generated UUID and the supplied path."""
-        ledger = self.repository.create("ledger.sqlite")
+        ledger = self.create_ledger("ledger.sqlite")
 
         self.assertEqual(self.repository.get(ledger.uuid), ledger)
         self.assertEqual(self.repository.get_by_path("ledger.sqlite"), ledger)
 
     def test_get_returns_none_when_ledger_does_not_exist(self) -> None:
         """get and get_by_path represent an absent row with None."""
-        self.repository.create("ledger.sqlite")
+        self.create_ledger("ledger.sqlite")
         ledger = self.repository.get_by_path("ledger.sqlite")
         assert ledger is not None
         self.repository.delete(ledger.uuid)
@@ -49,8 +52,8 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
 
     def test_update_path_changes_only_the_selected_ledger(self) -> None:
         """update_path keeps the UUID and changes only the requested row."""
-        self.repository.create("first.sqlite")
-        self.repository.create("second.sqlite")
+        self.create_ledger("first.sqlite")
+        self.create_ledger("second.sqlite")
         first = self.repository.get_by_path("first.sqlite")
         second = self.repository.get_by_path("second.sqlite")
         assert first is not None
@@ -65,10 +68,23 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         )
         self.assertEqual(self.repository.get(second.uuid), second)
 
+    def test_update_icon_and_color_changes_only_appearance(self) -> None:
+        """A ledger appearance can change without changing its path or identity."""
+        ledger = self.create_ledger("ledger.sqlite")
+
+        self.repository.update_icon(ledger.uuid, "WalletCards")
+        self.repository.update_color_code(ledger.uuid, b"\xff\x80\x00")
+
+        updated = self.repository.get(ledger.uuid)
+        assert updated is not None
+        self.assertEqual(updated.icon, "WalletCards")
+        self.assertEqual(updated.color_code, b"\xff\x80\x00")
+        self.assertEqual(updated.path, ledger.path)
+
     def test_list_all_returns_every_ledger_without_promising_order(self) -> None:
         """list_all returns the complete collection; ordering is unspecified."""
-        self.repository.create("first.sqlite")
-        self.repository.create("second.sqlite")
+        self.create_ledger("first.sqlite")
+        self.create_ledger("second.sqlite")
 
         ledgers = self.repository.list_all()
 
@@ -82,7 +98,7 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         invitation_repository = SqliteAccessInvitationRepository(self.connection)
         grant_repository = SqliteAccessGrantRepository(self.connection)
         session_repository = SqliteAuthSessionRepository(self.connection)
-        self.repository.create("ledger.sqlite")
+        self.create_ledger("ledger.sqlite")
         ledger = self.repository.get_by_path("ledger.sqlite")
         assert ledger is not None
         invitation = invitation_repository.create(ledger.uuid, b"i" * 32, 10)
@@ -97,7 +113,7 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
 
     def test_repository_does_not_commit_its_own_changes(self) -> None:
         """Transaction ownership remains with the unit of work."""
-        self.repository.create("ledger.sqlite")
+        self.create_ledger("ledger.sqlite")
 
         self.connection.rollback()
 
@@ -106,12 +122,12 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
     def test_create_accepts_path_without_maximum_length(self) -> None:
         path = "x" * 10000
 
-        self.repository.create(path)
+        self.create_ledger(path)
 
         self.assertIsNotNone(self.repository.get_by_path(path))
 
     def test_update_accepts_path_without_maximum_length(self) -> None:
-        self.repository.create("ledger.sqlite")
+        self.create_ledger("ledger.sqlite")
         ledger = self.repository.get_by_path("ledger.sqlite")
         assert ledger is not None
         path = "x" * 10000
@@ -124,10 +140,10 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
 
     def test_database_rejects_duplicate_paths(self) -> None:
         """The schema's unique path constraint is visible through the repository."""
-        self.repository.create("ledger.sqlite")
+        self.create_ledger("ledger.sqlite")
 
         with self.assertRaises(sqlite3.IntegrityError):
-            self.repository.create("ledger.sqlite")
+            self.create_ledger("ledger.sqlite")
 
 
 if __name__ == "__main__":

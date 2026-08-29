@@ -1,6 +1,8 @@
 CREATE TABLE ledger (
     uuid BLOB PRIMARY KEY CHECK (length(uuid) = 16),
-    path TEXT NOT NULL UNIQUE CHECK (length(path) >= 1)
+    path TEXT NOT NULL UNIQUE CHECK (length(path) >= 1),
+    icon TEXT NOT NULL CHECK (length(icon) BETWEEN 1 AND 50),
+    color_code BLOB NOT NULL CHECK (length(color_code) = 3)
 ) STRICT;
 
 CREATE TABLE access_invitation (

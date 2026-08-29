@@ -19,9 +19,12 @@ class BudgetTest(unittest.TestCase):
             name="Monthly",
             description="Monthly spending",
             amount=0,
+            icon="ReceiptText",
+            color_code=b"\x80\x80\x80",
         )
 
         self.assertEqual(budget.amount, 0)
+        self.assertEqual(budget.icon, "ReceiptText")
 
     def test_rejects_empty_or_reversed_period(self) -> None:
         for from_timestamp, to_timestamp in ((10, 10), (20, 10)):
@@ -36,6 +39,8 @@ class BudgetTest(unittest.TestCase):
                         name="Monthly",
                         description="Monthly spending",
                         amount=100,
+                        icon="ReceiptText",
+                        color_code=b"\x80\x80\x80",
                     )
 
     def test_rejects_negative_amount(self) -> None:
@@ -49,6 +54,8 @@ class BudgetTest(unittest.TestCase):
                 name="Monthly",
                 description="Monthly spending",
                 amount=-1,
+                icon="ReceiptText",
+                color_code=b"\x80\x80\x80",
             )
 
     def test_rejects_name_outside_length_limits(self) -> None:
@@ -64,6 +71,8 @@ class BudgetTest(unittest.TestCase):
                         name=name,
                         description="Monthly spending",
                         amount=100,
+                        icon="ReceiptText",
+                        color_code=b"\x80\x80\x80",
                     )
 
     def test_accepts_name_at_maximum_length(self) -> None:
@@ -76,6 +85,8 @@ class BudgetTest(unittest.TestCase):
             name="x" * 50,
             description="Monthly spending",
             amount=100,
+            icon="ReceiptText",
+            color_code=b"\x80\x80\x80",
         )
 
         self.assertEqual(len(budget.name), 50)
@@ -93,7 +104,18 @@ class BudgetTest(unittest.TestCase):
                         name="Monthly",
                         description=description,
                         amount=100,
+                        icon="ReceiptText",
+                        color_code=b"\x80\x80\x80",
                     )
+
+    def test_rejects_icon_or_color_outside_limits(self) -> None:
+        invalid_values = (("icon", ""), ("icon", "x" * 51), ("color_code", b"\x00\x00"), ("color_code", b"\x00" * 4))
+        for field, value in invalid_values:
+            with self.subTest(field=field, length=len(value)):
+                values = {"uuid": uuid4(), "category_uuid": uuid4(), "currency_uuid": uuid4(), "from_timestamp": 10, "to_timestamp": 20, "name": "Monthly", "description": "Monthly spending", "amount": 100, "icon": "ReceiptText", "color_code": b"\x80\x80\x80"}
+                values[field] = value
+                with self.assertRaises(ValidationError):
+                    Budget(**values)
 
 
 if __name__ == "__main__":

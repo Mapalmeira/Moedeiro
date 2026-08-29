@@ -18,7 +18,7 @@ class SqliteBudgetRepository(BudgetRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, category_uuid: UUID, currency_uuid: UUID, from_timestamp: int, to_timestamp: int, name: str, description: str, amount: int) -> Budget:
+    def create(self, category_uuid: UUID, currency_uuid: UUID, from_timestamp: int, to_timestamp: int, name: str, description: str, amount: int, icon: str, color_code: bytes) -> Budget:
         budget = Budget(
             uuid=uuid4(),
             category_uuid=category_uuid,
@@ -28,11 +28,13 @@ class SqliteBudgetRepository(BudgetRepository):
             name=name,
             description=description,
             amount=amount,
+            icon=icon,
+            color_code=color_code,
         )
         self.connection.execute(
             """
-            INSERT INTO budget(uuid, category_uuid, currency_uuid, from_timestamp, to_timestamp, budget_name, description, amount)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO budget(uuid, category_uuid, currency_uuid, from_timestamp, to_timestamp, budget_name, description, amount, icon, color_code)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 budget.uuid.bytes,
@@ -43,6 +45,8 @@ class SqliteBudgetRepository(BudgetRepository):
                 budget.name,
                 budget.description,
                 budget.amount,
+                budget.icon,
+                budget.color_code,
             ),
         )
         return budget
@@ -50,7 +54,7 @@ class SqliteBudgetRepository(BudgetRepository):
     def get(self, uuid: UUID) -> Budget | None:
         row = self.connection.execute(
             """
-            SELECT uuid, category_uuid, currency_uuid, from_timestamp, to_timestamp, budget_name AS name, description, amount
+            SELECT uuid, category_uuid, currency_uuid, from_timestamp, to_timestamp, budget_name AS name, description, amount, icon, color_code
             FROM budget
             WHERE uuid = ?
             """,
@@ -61,38 +65,66 @@ class SqliteBudgetRepository(BudgetRepository):
         return self._to_model(row)
 
     def update_period(self, uuid: UUID, from_timestamp: int, to_timestamp: int) -> None:
-        budget = self._validation_model(uuid, from_timestamp=from_timestamp, to_timestamp=to_timestamp)
+        budget = self._updated_model(uuid, from_timestamp=from_timestamp, to_timestamp=to_timestamp)
+        if budget is None:
+            return
         self.connection.execute(
             "UPDATE budget SET from_timestamp = ?, to_timestamp = ? WHERE uuid = ?",
             (budget.from_timestamp, budget.to_timestamp, budget.uuid.bytes),
         )
 
     def update_name(self, uuid: UUID, value: str) -> None:
-        budget = self._validation_model(uuid, name=value)
+        budget = self._updated_model(uuid, name=value)
+        if budget is None:
+            return
         self.connection.execute(
             "UPDATE budget SET budget_name = ? WHERE uuid = ?",
             (budget.name, budget.uuid.bytes),
         )
 
     def update_description(self, uuid: UUID, value: str) -> None:
-        budget = self._validation_model(uuid, description=value)
+        budget = self._updated_model(uuid, description=value)
+        if budget is None:
+            return
         self.connection.execute(
             "UPDATE budget SET description = ? WHERE uuid = ?",
             (budget.description, budget.uuid.bytes),
         )
 
     def update_amount(self, uuid: UUID, value: int) -> None:
-        budget = self._validation_model(uuid, amount=value)
+        budget = self._updated_model(uuid, amount=value)
+        if budget is None:
+            return
         self.connection.execute(
             "UPDATE budget SET amount = ? WHERE uuid = ?",
             (budget.amount, budget.uuid.bytes),
         )
 
     def update_category(self, uuid: UUID, category_uuid: UUID) -> None:
-        budget = self._validation_model(uuid, category_uuid=category_uuid)
+        budget = self._updated_model(uuid, category_uuid=category_uuid)
+        if budget is None:
+            return
         self.connection.execute(
             "UPDATE budget SET category_uuid = ? WHERE uuid = ?",
             (budget.category_uuid.bytes, budget.uuid.bytes),
+        )
+
+    def update_icon(self, uuid: UUID, value: str) -> None:
+        budget = self._updated_model(uuid, icon=value)
+        if budget is None:
+            return
+        self.connection.execute(
+            "UPDATE budget SET icon = ? WHERE uuid = ?",
+            (budget.icon, budget.uuid.bytes),
+        )
+
+    def update_color_code(self, uuid: UUID, value: bytes) -> None:
+        budget = self._updated_model(uuid, color_code=value)
+        if budget is None:
+            return
+        self.connection.execute(
+            "UPDATE budget SET color_code = ? WHERE uuid = ?",
+            (budget.color_code, budget.uuid.bytes),
         )
 
     def add_account(self, budget_uuid: UUID, account_uuid: UUID) -> None:
@@ -113,7 +145,7 @@ class SqliteBudgetRepository(BudgetRepository):
     def list_accounts(self, budget_uuid: UUID) -> list[Account]:
         rows = self.connection.execute(
             """
-            SELECT account.uuid, account.account_name AS name, account.note, account.currency_uuid
+            SELECT account.uuid, account.account_name AS name, account.note, account.currency_uuid, account.icon, account.color_code
             FROM account
             JOIN budget_accounts ON budget_accounts.account_uuid = account.uuid
             WHERE budget_accounts.budget_uuid = ?
@@ -125,7 +157,7 @@ class SqliteBudgetRepository(BudgetRepository):
     def list_all(self) -> list[Budget]:
         rows = self.connection.execute(
             """
-            SELECT uuid, category_uuid, currency_uuid, from_timestamp, to_timestamp, budget_name AS name, description, amount
+            SELECT uuid, category_uuid, currency_uuid, from_timestamp, to_timestamp, budget_name AS name, description, amount, icon, color_code
             FROM budget
             """
         ).fetchall()
@@ -138,7 +170,7 @@ class SqliteBudgetRepository(BudgetRepository):
         offset = (page_number - 1) * page_size
         rows = self.connection.execute(
             f"""
-            SELECT uuid, category_uuid, currency_uuid, from_timestamp, to_timestamp, budget_name AS name, description, amount
+            SELECT uuid, category_uuid, currency_uuid, from_timestamp, to_timestamp, budget_name AS name, description, amount, icon, color_code
             FROM budget
             ORDER BY {sort_column} {direction}, uuid ASC
             LIMIT ? OFFSET ?
@@ -147,18 +179,11 @@ class SqliteBudgetRepository(BudgetRepository):
         ).fetchall()
         return [self._to_model(row) for row in rows]
 
-    @staticmethod
-    def _validation_model(uuid: UUID, category_uuid: UUID | None = None, from_timestamp: int = 0, to_timestamp: int = 1, name: str = "budget", description: str = "budget", amount: int = 0) -> Budget:
-        return Budget(
-            uuid=uuid,
-            category_uuid=category_uuid or uuid,
-            currency_uuid=uuid,
-            from_timestamp=from_timestamp,
-            to_timestamp=to_timestamp,
-            name=name,
-            description=description,
-            amount=amount,
-        )
+    def _updated_model(self, uuid: UUID, **changes: object) -> Budget | None:
+        budget = self.get(uuid)
+        if budget is None:
+            return None
+        return Budget.model_validate({**budget.model_dump(), **changes})
 
     @staticmethod
     def _to_model(row: sqlite3.Row) -> Budget:

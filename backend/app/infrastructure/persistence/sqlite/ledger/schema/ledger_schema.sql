@@ -12,7 +12,9 @@ CREATE TABLE currency (
     currency_name TEXT NOT NULL CHECK (length(currency_name) BETWEEN 1 AND 30),
     suffix TEXT CHECK (suffix IS NULL OR length(suffix) <= 10),
     prefix TEXT CHECK (prefix IS NULL OR length(prefix) <= 10),
-    decimal_places INTEGER NOT NULL CHECK (decimal_places BETWEEN 0 AND 20)
+    decimal_places INTEGER NOT NULL CHECK (decimal_places BETWEEN 0 AND 20),
+    icon TEXT NOT NULL CHECK (length(icon) BETWEEN 1 AND 50),
+    color_code BLOB NOT NULL CHECK (length(color_code) = 3)
 ) STRICT;
 
 CREATE TABLE account (
@@ -20,6 +22,8 @@ CREATE TABLE account (
     account_name TEXT NOT NULL UNIQUE CHECK (length(account_name) BETWEEN 1 AND 50),
     note TEXT CHECK (note IS NULL OR length(note) <= 300),
     currency_uuid BLOB NOT NULL CHECK (length(currency_uuid) = 16),
+    icon TEXT NOT NULL CHECK (length(icon) BETWEEN 1 AND 50),
+    color_code BLOB NOT NULL CHECK (length(color_code) = 3),
 
     -- needed for FK in budget_accounts.
     UNIQUE (uuid, currency_uuid),
@@ -30,6 +34,8 @@ CREATE TABLE account (
 CREATE TABLE category (
     uuid BLOB PRIMARY KEY CHECK (length(uuid) = 16),
     category_name TEXT NOT NULL CHECK (length(category_name) BETWEEN 1 AND 30),
+    icon TEXT NOT NULL CHECK (length(icon) BETWEEN 1 AND 50),
+    color_code BLOB NOT NULL CHECK (length(color_code) = 3),
     parent_uuid BLOB CHECK (parent_uuid IS NULL OR length(parent_uuid) = 16),
 
     FOREIGN KEY (parent_uuid) REFERENCES category(uuid) ON DELETE CASCADE
@@ -87,6 +93,8 @@ CREATE TABLE budget (
     description TEXT NOT NULL CHECK (length(description) BETWEEN 1 AND 300),
 
     amount INTEGER NOT NULL CHECK (amount >= 0),
+    icon TEXT NOT NULL CHECK (length(icon) BETWEEN 1 AND 50),
+    color_code BLOB NOT NULL CHECK (length(color_code) = 3),
 
     category_uuid BLOB NOT NULL CHECK (length(category_uuid) = 16),
     currency_uuid BLOB NOT NULL CHECK (length(currency_uuid) = 16),

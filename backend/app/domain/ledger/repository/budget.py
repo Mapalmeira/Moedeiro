@@ -16,6 +16,8 @@ class BudgetRepository(ABC):
         name: str,
         description: str,
         amount: int,
+        icon: str,
+        color_code: bytes,
     ) -> Budget:
         pass
 
@@ -46,6 +48,14 @@ class BudgetRepository(ABC):
 
     @abstractmethod
     def update_category(self, uuid: UUID, category_uuid: UUID) -> None:
+        pass
+
+    @abstractmethod
+    def update_icon(self, uuid: UUID, value: str) -> None:
+        pass
+
+    @abstractmethod
+    def update_color_code(self, uuid: UUID, value: bytes) -> None:
         pass
 
     @abstractmethod

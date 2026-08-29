@@ -6,7 +6,7 @@ from app.domain.ledger.model.category import Category
 
 class CategoryRepository(ABC):
     @abstractmethod
-    def create(self, name: str, parent_uuid: UUID | None) -> Category:
+    def create(self, name: str, icon: str, color_code: bytes, parent_uuid: UUID | None) -> Category:
         pass
 
     @abstractmethod
@@ -15,6 +15,14 @@ class CategoryRepository(ABC):
 
     @abstractmethod
     def update_name(self, uuid: UUID, value: str) -> None:
+        pass
+
+    @abstractmethod
+    def update_icon(self, uuid: UUID, value: str) -> None:
+        pass
+
+    @abstractmethod
+    def update_color_code(self, uuid: UUID, value: bytes) -> None:
         pass
 
     @abstractmethod

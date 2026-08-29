@@ -5,7 +5,7 @@ from app.domain.registry.model.ledger import Ledger
 
 class LedgerRepository(ABC):
     @abstractmethod
-    def create(self, path: str) -> Ledger:
+    def create(self, path: str, icon: str, color_code: bytes) -> Ledger:
         pass
 
     @abstractmethod
@@ -18,6 +18,14 @@ class LedgerRepository(ABC):
 
     @abstractmethod
     def update_path(self, uuid: UUID, value: str) -> None:
+        pass
+
+    @abstractmethod
+    def update_icon(self, uuid: UUID, value: str) -> None:
+        pass
+
+    @abstractmethod
+    def update_color_code(self, uuid: UUID, value: bytes) -> None:
         pass
 
     @abstractmethod

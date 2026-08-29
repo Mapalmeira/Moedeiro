@@ -10,6 +10,8 @@ class CurrencyRepository(ABC):
         prefix: str | None,
         suffix: str | None,
         decimal_places: int,
+        icon: str,
+        color_code: bytes,
     ) -> Currency:
         pass
 
@@ -27,6 +29,14 @@ class CurrencyRepository(ABC):
 
     @abstractmethod
     def update_suffix(self, uuid: UUID, value: str | None) -> None:
+        pass
+
+    @abstractmethod
+    def update_icon(self, uuid: UUID, value: str) -> None:
+        pass
+
+    @abstractmethod
+    def update_color_code(self, uuid: UUID, value: bytes) -> None:
         pass
 
     @abstractmethod

@@ -30,7 +30,7 @@ class RegistryRepositoryTestCase(unittest.TestCase):
     def create_ledger(self, path: str | None = None):
         if path is None:
             path = f"{uuid4()}.sqlite"
-        return self.ledger_repository.create(path)
+        return self.ledger_repository.create(path, "BookOpen", b"\x80\x80\x80")
 
     def create_invitation(self, ledger=None, secret_hash: bytes | None = None):
         if ledger is None:

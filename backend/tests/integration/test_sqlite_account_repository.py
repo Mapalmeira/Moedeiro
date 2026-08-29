@@ -17,16 +17,18 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
 
     def test_create_and_get_preserve_account_fields(self) -> None:
         """create generates identity and stores the supplied currency relation."""
-        account = self.repository.create("Checking", "Daily account", self.currency.uuid)
+        account = self.repository.create("Checking", "Daily account", self.currency.uuid, "WalletCards", b"\x80\x80\x80")
 
         self.assertEqual(self.repository.get(account.uuid), account)
         self.assertEqual(account.note, "Daily account")
         self.assertEqual(account.currency_uuid, self.currency.uuid)
+        self.assertEqual(account.icon, "WalletCards")
+        self.assertEqual(account.color_code, b"\x80\x80\x80")
 
     def test_create_requires_an_existing_currency(self) -> None:
         """The database foreign key rejects an unknown currency."""
         with self.assertRaises(sqlite3.IntegrityError):
-            self.repository.create("Checking", None, uuid4())
+            self.repository.create("Checking", None, uuid4(), "WalletCards", b"\x80\x80\x80")
 
     def test_updates_name_and_optional_note_without_changing_currency(self) -> None:
         """The account currency remains immutable through repository updates."""
@@ -51,10 +53,23 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
         with self.assertRaises(ValidationError):
             self.repository.update_note(account.uuid, "x" * 301)
 
+    def test_updates_icon_and_color_without_changing_account_relations(self) -> None:
+        """Appearance changes preserve the account name and currency."""
+        account = self.create_account(currency=self.currency)
+
+        self.repository.update_icon(account.uuid, "💳")
+        self.repository.update_color_code(account.uuid, b"\xff\x80\x00")
+
+        updated = self.repository.get(account.uuid)
+        assert updated is not None
+        self.assertEqual(updated.icon, "💳")
+        self.assertEqual(updated.color_code, b"\xff\x80\x00")
+        self.assertEqual(updated.currency_uuid, account.currency_uuid)
+
     def test_list_page_orders_and_rejects_identity_sorting(self) -> None:
         """Neither entity nor currency UUID is exposed as a sort option."""
         for name in ("Charlie", "Alpha", "Bravo"):
-            self.repository.create(name, None, self.currency.uuid)
+            self.repository.create(name, None, self.currency.uuid, "WalletCards", b"\x80\x80\x80")
 
         page = self.repository.list_page(2, 1, "name", True)
 
@@ -67,7 +82,7 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
     def test_repository_does_not_commit_its_changes(self) -> None:
         """Rolling back removes the account but preserves committed prerequisites."""
         self.connection.commit()
-        self.repository.create("Checking", None, self.currency.uuid)
+        self.repository.create("Checking", None, self.currency.uuid, "WalletCards", b"\x80\x80\x80")
 
         self.connection.rollback()
 
