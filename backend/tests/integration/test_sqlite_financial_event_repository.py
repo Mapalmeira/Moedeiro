@@ -91,13 +91,11 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
 
         self.assertEqual(events, [expected])
 
-    def test_list_filtered_matches_any_tag_category_and_event_type(self) -> None:
-        """Values inside each set use OR while different filter dimensions use AND."""
+    def test_list_filtered_matches_the_selected_tag_category_and_event_type(self) -> None:
+        """The selected category, tag and type are combined with AND."""
         currency = self.create_currency()
         account = self.create_account(currency=currency)
-        first_category = self.create_category("First category")
         second_category = self.create_category("Second category")
-        first_tag = self.create_tag("First tag")
         second_tag = self.create_tag("Second tag")
         event = self.create_event("Expected", "SHOPPING_LIST")
         other_event = self.create_event("Other", "TRANSACTION")
@@ -110,9 +108,9 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
             FinancialEventFilter(
                 from_timestamp=0,
                 to_timestamp=100,
-                category_uuids={first_category.uuid, second_category.uuid},
-                tag_uuids={first_tag.uuid, second_tag.uuid},
-                event_types={"SHOPPING_LIST"},
+                category_uuid=second_category.uuid,
+                tag_uuid=second_tag.uuid,
+                event_type="SHOPPING_LIST",
             )
         )
 
@@ -140,7 +138,7 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
                 from_timestamp=0,
                 to_timestamp=100,
                 account_uuid=selected_account.uuid,
-                category_uuids={selected_category.uuid},
+                category_uuid=selected_category.uuid,
             )
         )
 
@@ -159,7 +157,7 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         movement_repository.create(expected.uuid, account.uuid, grandchild.uuid, -10, None)
 
         events = self.repository.list_filtered(
-            FinancialEventFilter(from_timestamp=0, to_timestamp=100, category_uuids={parent.uuid})
+            FinancialEventFilter(from_timestamp=0, to_timestamp=100, category_uuid=parent.uuid)
         )
 
         self.assertEqual([event.uuid for event in events], [expected.uuid])
@@ -206,7 +204,7 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         first = self.create_event("First", occurred_at=10)
         second = self.create_event("Second", occurred_at=20)
         self.create_event("Excluded", "ACCOUNT_TRANSFER", 15)
-        filters = FinancialEventFilter(from_timestamp=0, to_timestamp=100, event_types={"TRANSACTION"})
+        filters = FinancialEventFilter(from_timestamp=0, to_timestamp=100, event_type="TRANSACTION")
 
         page = self.repository.list_page(1, 2, True, filters)
 

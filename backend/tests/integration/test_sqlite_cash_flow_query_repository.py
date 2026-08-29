@@ -93,7 +93,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
                 from_timestamp=0,
                 to_timestamp=200,
                 account_uuid=selected_account.uuid,
-                category_uuids={selected_category.uuid},
+                category_uuid=selected_category.uuid,
             ),
         )
 
@@ -114,7 +114,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
                 from_timestamp=0,
                 to_timestamp=200,
                 account_uuid=self.account.uuid,
-                category_uuids={selected_category.uuid},
+                category_uuid=selected_category.uuid,
             ),
         )
 
@@ -155,7 +155,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
 
         summary = self.repository.get_summary(
             self.currency.uuid,
-            FinancialEventFilter(from_timestamp=0, to_timestamp=200, category_uuids={parent.uuid}),
+            FinancialEventFilter(from_timestamp=0, to_timestamp=200, category_uuid=parent.uuid),
         )
 
         self.assertEqual(summary.expense, 40)

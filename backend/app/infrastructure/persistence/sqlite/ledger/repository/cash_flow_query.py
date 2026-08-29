@@ -86,15 +86,14 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
         if filters.account_uuid is not None:
             clauses.append("movement.account_uuid = ?")
             parameters.append(filters.account_uuid.bytes)
-        if filters.category_uuids:
-            placeholders = ", ".join("?" for _ in filters.category_uuids)
+        if filters.category_uuid is not None:
             clauses.append(
-                f"""
+                """
                 movement.category_uuid IN (
                     WITH RECURSIVE category_descendants(uuid) AS (
                         SELECT uuid
                         FROM category
-                        WHERE uuid IN ({placeholders})
+                        WHERE uuid = ?
 
                         UNION
 
@@ -106,7 +105,7 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
                 )
                 """
             )
-            parameters.extend(sorted(uuid.bytes for uuid in filters.category_uuids))
+            parameters.append(filters.category_uuid.bytes)
         if not clauses:
             return "", parameters
         return " AND " + " AND ".join(clauses), parameters
