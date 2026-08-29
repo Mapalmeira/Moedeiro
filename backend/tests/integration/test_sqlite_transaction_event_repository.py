@@ -48,7 +48,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
 
         event = self.create_event()
         with self.assertRaises(ValidationError):
-            self.repository.update_description(event.uuid, "x" * 301)
+            self.repository.update_description(event.uuid, "x" * 1001)
 
     def test_add_list_and_remove_tags(self) -> None:
         """Event-tag relations can be created, queried and removed."""

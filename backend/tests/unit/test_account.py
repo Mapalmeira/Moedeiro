@@ -21,7 +21,7 @@ class AccountTest(unittest.TestCase):
         self.assertIsNone(account.note)
 
     def test_rejects_name_outside_length_limits(self) -> None:
-        for name in ("", "x" * 31):
+        for name in ("", "x" * 51):
             with self.subTest(name_length=len(name)):
                 with self.assertRaises(ValidationError):
                     Account(
@@ -29,6 +29,11 @@ class AccountTest(unittest.TestCase):
                         name=name,
                         currency_uuid=uuid4(),
                     )
+
+    def test_accepts_name_at_maximum_length(self) -> None:
+        account = Account(uuid=uuid4(), name="x" * 50, currency_uuid=uuid4())
+
+        self.assertEqual(len(account.name), 50)
 
     def test_rejects_note_longer_than_limit(self) -> None:
         with self.assertRaises(ValidationError):

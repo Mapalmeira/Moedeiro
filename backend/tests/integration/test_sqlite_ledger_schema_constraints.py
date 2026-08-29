@@ -101,23 +101,23 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
     def test_enforces_domain_text_lengths(self) -> None:
         invalid_values = (
             ("ledger_metadata", "name", ""),
-            ("ledger_metadata", "name", "x" * 31),
+            ("ledger_metadata", "name", "x" * 51),
             ("currency", "currency_name", ""),
             ("currency", "currency_name", "x" * 31),
             ("currency", "prefix", "x" * 11),
             ("currency", "suffix", "x" * 11),
             ("account", "account_name", ""),
-            ("account", "account_name", "x" * 31),
+            ("account", "account_name", "x" * 51),
             ("account", "note", "x" * 301),
             ("category", "category_name", ""),
             ("category", "category_name", "x" * 31),
             ("transaction_event", "description", ""),
-            ("transaction_event", "description", "x" * 301),
+            ("transaction_event", "description", "x" * 1001),
             ("tag", "name", ""),
             ("tag", "name", "x" * 31),
-            ("financial_movement", "item_name", "x" * 31),
+            ("financial_movement", "item_name", "x" * 51),
             ("budget", "budget_name", ""),
-            ("budget", "budget_name", "x" * 31),
+            ("budget", "budget_name", "x" * 51),
             ("budget", "description", ""),
             ("budget", "description", "x" * 301),
         )
@@ -126,6 +126,19 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             with self.subTest(table=table, column=column, size=len(value)):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.connection.execute(f"UPDATE {table} SET {column} = ?", (value,))
+
+    def test_accepts_expanded_text_limits(self) -> None:
+        values = (
+            ("ledger_metadata", "name", "x" * 50),
+            ("account", "account_name", "x" * 50),
+            ("transaction_event", "description", "x" * 1000),
+            ("financial_movement", "item_name", "x" * 50),
+            ("budget", "budget_name", "x" * 50),
+        )
+
+        for table, column, value in values:
+            with self.subTest(table=table, column=column):
+                self.connection.execute(f"UPDATE {table} SET {column} = ?", (value,))
 
 
 if __name__ == "__main__":

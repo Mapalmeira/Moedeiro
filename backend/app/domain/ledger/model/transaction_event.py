@@ -15,7 +15,7 @@ TransactionEventType = Literal[
 class TransactionEvent(BaseModel):
     uuid: UUID
     occurred_at: int
-    description: str = Field(min_length=1, max_length=300)
+    description: str = Field(min_length=1, max_length=1000)
     type: TransactionEventType
     movements: list[FinancialMovement]
 

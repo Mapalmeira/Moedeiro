@@ -65,7 +65,7 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         movement = self.create_movement()
 
         with self.assertRaises(ValidationError):
-            self.repository.update_item_name(movement.uuid, "x" * 31)
+            self.repository.update_item_name(movement.uuid, "x" * 51)
 
     def test_create_and_update_reject_zero_value(self) -> None:
         movement = self.create_movement()

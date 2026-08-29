@@ -2,7 +2,7 @@ CREATE TABLE ledger_metadata (
     singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
 
     ledger_uuid BLOB NOT NULL UNIQUE CHECK (length(ledger_uuid) = 16),
-    name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 30),
+    name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 50),
     schema_version INTEGER NOT NULL CHECK (schema_version >= 1),
     created_at INTEGER NOT NULL
 ) STRICT;
@@ -17,7 +17,7 @@ CREATE TABLE currency (
 
 CREATE TABLE account (
     uuid BLOB PRIMARY KEY CHECK (length(uuid) = 16),
-    account_name TEXT NOT NULL UNIQUE CHECK (length(account_name) BETWEEN 1 AND 30),
+    account_name TEXT NOT NULL UNIQUE CHECK (length(account_name) BETWEEN 1 AND 50),
     note TEXT CHECK (note IS NULL OR length(note) <= 300),
     currency_uuid BLOB NOT NULL CHECK (length(currency_uuid) = 16),
 
@@ -38,7 +38,7 @@ CREATE TABLE category (
 CREATE TABLE transaction_event (
     uuid BLOB PRIMARY KEY CHECK (length(uuid) = 16),
     occurred_at INTEGER NOT NULL,
-    description TEXT NOT NULL CHECK (length(description) BETWEEN 1 AND 300),
+    description TEXT NOT NULL CHECK (length(description) BETWEEN 1 AND 1000),
     type TEXT NOT NULL CHECK (type IN ('TRANSACTION', 'ACCOUNT_TRANSFER', 'SHOPPING_LIST'))
 ) STRICT;
 
@@ -62,7 +62,7 @@ CREATE TABLE financial_movement (
     uuid BLOB PRIMARY KEY CHECK (length(uuid) = 16),
     transaction_event_uuid BLOB NOT NULL CHECK (length(transaction_event_uuid) = 16),
     value INTEGER NOT NULL CHECK (value <> 0),
-    item_name TEXT CHECK (item_name IS NULL OR length(item_name) <= 30),
+    item_name TEXT CHECK (item_name IS NULL OR length(item_name) <= 50),
     account_uuid BLOB NOT NULL CHECK (length(account_uuid) = 16),
     category_uuid BLOB NOT NULL CHECK (length(category_uuid) = 16),
 
@@ -83,7 +83,7 @@ CREATE TABLE budget (
     uuid BLOB PRIMARY KEY CHECK (length(uuid) = 16),
     from_timestamp INTEGER NOT NULL,
     to_timestamp INTEGER NOT NULL,
-    budget_name TEXT NOT NULL UNIQUE CHECK (length(budget_name) BETWEEN 1 AND 30),
+    budget_name TEXT NOT NULL UNIQUE CHECK (length(budget_name) BETWEEN 1 AND 50),
     description TEXT NOT NULL CHECK (length(description) BETWEEN 1 AND 300),
 
     amount INTEGER NOT NULL CHECK (amount >= 0),

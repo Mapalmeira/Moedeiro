@@ -35,7 +35,7 @@ class TransactionEventTest(unittest.TestCase):
             )
 
     def test_rejects_description_outside_length_limits(self) -> None:
-        for description in ("", "x" * 301):
+        for description in ("", "x" * 1001):
             with self.subTest(description_length=len(description)):
                 with self.assertRaises(ValidationError):
                     TransactionEvent(
@@ -45,6 +45,17 @@ class TransactionEventTest(unittest.TestCase):
                         type="TRANSACTION",
                         movements=[],
                     )
+
+    def test_accepts_description_at_maximum_length(self) -> None:
+        event = TransactionEvent(
+            uuid=uuid4(),
+            occurred_at=10,
+            description="x" * 1000,
+            type="TRANSACTION",
+            movements=[],
+        )
+
+        self.assertEqual(len(event.description), 1000)
 
     def test_contains_financial_movements(self) -> None:
         event_uuid = uuid4()

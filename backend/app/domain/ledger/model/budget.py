@@ -8,7 +8,7 @@ class Budget(BaseModel):
     currency_uuid: UUID
     from_timestamp: int
     to_timestamp: int
-    name: str = Field(min_length=1, max_length=30)
+    name: str = Field(min_length=1, max_length=50)
     description: str = Field(min_length=1, max_length=300)
     amount: int = Field(ge=0)
 

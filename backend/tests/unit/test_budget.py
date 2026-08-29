@@ -52,7 +52,7 @@ class BudgetTest(unittest.TestCase):
             )
 
     def test_rejects_name_outside_length_limits(self) -> None:
-        for name in ("", "x" * 31):
+        for name in ("", "x" * 51):
             with self.subTest(name_length=len(name)):
                 with self.assertRaises(ValidationError):
                     Budget(
@@ -65,6 +65,20 @@ class BudgetTest(unittest.TestCase):
                         description="Monthly spending",
                         amount=100,
                     )
+
+    def test_accepts_name_at_maximum_length(self) -> None:
+        budget = Budget(
+            uuid=uuid4(),
+            category_uuid=uuid4(),
+            currency_uuid=uuid4(),
+            from_timestamp=10,
+            to_timestamp=20,
+            name="x" * 50,
+            description="Monthly spending",
+            amount=100,
+        )
+
+        self.assertEqual(len(budget.name), 50)
 
     def test_rejects_description_outside_length_limits(self) -> None:
         for description in ("", "x" * 301):

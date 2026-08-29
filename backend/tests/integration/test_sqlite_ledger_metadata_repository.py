@@ -62,7 +62,7 @@ class SqliteLedgerMetadataRepositoryTest(LedgerRepositoryTestCase):
 
         self.repository.create(uuid4(), "Personal", 1)
         with self.assertRaises(ValidationError):
-            self.repository.update_name("x" * 31)
+            self.repository.update_name("x" * 51)
         with self.assertRaises(ValidationError):
             self.repository.update_schema_version(0)
 

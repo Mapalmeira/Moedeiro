@@ -50,8 +50,20 @@ class FinancialMovementTest(unittest.TestCase):
                 account_uuid=uuid4(),
                 category_uuid=uuid4(),
                 value=-100,
-                item_name="x" * 31,
+                item_name="x" * 51,
             )
+
+    def test_accepts_item_name_at_maximum_length(self) -> None:
+        movement = FinancialMovement(
+            uuid=uuid4(),
+            transaction_event_uuid=uuid4(),
+            account_uuid=uuid4(),
+            category_uuid=uuid4(),
+            value=-100,
+            item_name="x" * 50,
+        )
+
+        self.assertEqual(len(movement.item_name or ""), 50)
 
 
 if __name__ == "__main__":

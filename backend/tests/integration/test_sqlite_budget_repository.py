@@ -60,7 +60,7 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
         with self.assertRaises(ValidationError):
             self.repository.update_period(budget.uuid, 20, 10)
         with self.assertRaises(ValidationError):
-            self.repository.update_name(budget.uuid, "x" * 31)
+            self.repository.update_name(budget.uuid, "x" * 51)
         with self.assertRaises(ValidationError):
             self.repository.update_description(budget.uuid, "")
         with self.assertRaises(ValidationError):

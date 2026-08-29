@@ -9,7 +9,7 @@ class FinancialMovement(BaseModel):
     account_uuid: UUID
     category_uuid: UUID
     value: int
-    item_name: str | None = Field(default=None, max_length=30)
+    item_name: str | None = Field(default=None, max_length=50)
 
     @field_validator("value")
     @classmethod

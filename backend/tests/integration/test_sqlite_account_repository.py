@@ -47,7 +47,7 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
         account = self.create_account(currency=self.currency)
 
         with self.assertRaises(ValidationError):
-            self.repository.update_name(account.uuid, "x" * 31)
+            self.repository.update_name(account.uuid, "x" * 51)
         with self.assertRaises(ValidationError):
             self.repository.update_note(account.uuid, "x" * 301)
 
