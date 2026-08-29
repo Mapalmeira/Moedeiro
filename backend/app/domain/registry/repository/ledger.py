@@ -5,7 +5,7 @@ from app.domain.registry.model.ledger import Ledger
 
 class LedgerRepository(ABC):
     @abstractmethod
-    def create(self, path: str) -> None:
+    def create(self, path: str) -> Ledger:
         pass
 
     @abstractmethod

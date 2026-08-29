@@ -13,7 +13,7 @@ class FinancialMovementRepository(ABC):
         category_uuid: UUID,
         value: int,
         item_name: str | None,
-    ) -> None:
+    ) -> FinancialMovement:
         pass
 
     @abstractmethod

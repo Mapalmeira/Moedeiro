@@ -14,12 +14,13 @@ class SqliteAccountRepository(AccountRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, name: str, note: str | None, currency_uuid: UUID) -> None:
+    def create(self, name: str, note: str | None, currency_uuid: UUID) -> Account:
         account = Account(uuid=uuid4(), name=name, note=note, currency_uuid=currency_uuid)
         self.connection.execute(
             "INSERT INTO account(uuid, account_name, note, currency_uuid) VALUES (?, ?, ?, ?)",
             (str(account.uuid), account.name, account.note, str(account.currency_uuid)),
         )
+        return account
 
     def get(self, uuid: UUID) -> Account | None:
         row = self.connection.execute(

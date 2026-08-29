@@ -16,12 +16,13 @@ class SqliteCurrencyRepository(CurrencyRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, name: str, prefix: str | None, suffix: str | None, decimal_places: int) -> None:
+    def create(self, name: str, prefix: str | None, suffix: str | None, decimal_places: int) -> Currency:
         currency = Currency(uuid=uuid4(), name=name, prefix=prefix, suffix=suffix, decimal_places=decimal_places)
         self.connection.execute(
             "INSERT INTO currency(uuid, currency_name, prefix, suffix, decimal_places) VALUES (?, ?, ?, ?, ?)",
             (str(currency.uuid), currency.name, currency.prefix, currency.suffix, currency.decimal_places),
         )
+        return currency
 
     def get(self, uuid: UUID) -> Currency | None:
         row = self.connection.execute(

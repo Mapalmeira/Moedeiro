@@ -18,5 +18,5 @@ class LedgerMetadataRepository(ABC):
         pass
 
     @abstractmethod
-    def create(self, ledger_uuid: UUID, name: str, version: int) -> None:
+    def create(self, ledger_uuid: UUID, name: str, version: int) -> LedgerMetadata:
         pass

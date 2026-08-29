@@ -11,7 +11,7 @@ class LedgerTokenRepository(ABC):
         token_hash: str,
         label: str | None,
         created_at: int,
-    ) -> None:
+    ) -> LedgerToken:
         pass
 
     @abstractmethod

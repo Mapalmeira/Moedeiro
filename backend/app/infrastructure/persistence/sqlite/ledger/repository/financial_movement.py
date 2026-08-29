@@ -14,7 +14,7 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, transaction_event_uuid: UUID, account_uuid: UUID, category_uuid: UUID, value: int, item_name: str | None) -> None:
+    def create(self, transaction_event_uuid: UUID, account_uuid: UUID, category_uuid: UUID, value: int, item_name: str | None) -> FinancialMovement:
         movement = FinancialMovement(
             uuid=uuid4(),
             transaction_event_uuid=transaction_event_uuid,
@@ -37,6 +37,7 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
                 movement.item_name,
             ),
         )
+        return movement
 
     def get(self, uuid: UUID) -> FinancialMovement | None:
         row = self.connection.execute(

@@ -10,7 +10,7 @@ class CurrencyRepository(ABC):
         prefix: str | None,
         suffix: str | None,
         decimal_places: int,
-    ) -> None:
+    ) -> Currency:
         pass
 
     @abstractmethod

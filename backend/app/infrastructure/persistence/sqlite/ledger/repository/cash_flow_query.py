@@ -15,6 +15,7 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
 
     def get_summary(self, currency_uuid: UUID, filters: TransactionEventFilter) -> CashFlow:
         where_clause, parameters = self._filtered_events(filters)
+        movement_clause, movement_parameters = self._movement_filter(filters)
         row = self.connection.execute(
             f"""
             WITH filtered_events AS (
@@ -31,15 +32,16 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
             FROM filtered_events
             JOIN financial_movement AS movement ON movement.transaction_event_uuid = filtered_events.uuid
             JOIN account ON account.uuid = movement.account_uuid
-            WHERE account.currency_uuid = ?
+            WHERE account.currency_uuid = ?{movement_clause}
             """,
-            [*parameters, str(currency_uuid)],
+            [*parameters, str(currency_uuid), *movement_parameters],
         ).fetchone()
         return self._to_model(row, currency_uuid)
 
     def list_points(self, currency_uuid: UUID, filters: TransactionEventFilter) -> list[CashFlow]:
         from_timestamp, to_timestamp = self._validate_point_period(filters)
         where_clause, parameters = self._filtered_events(filters)
+        movement_clause, movement_parameters = self._movement_filter(filters)
         rows = self.connection.execute(
             f"""
             WITH filtered_events AS (
@@ -58,10 +60,10 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
             FROM filtered_events
             JOIN financial_movement AS movement ON movement.transaction_event_uuid = filtered_events.uuid
             JOIN account ON account.uuid = movement.account_uuid
-            WHERE account.currency_uuid = ?
+            WHERE account.currency_uuid = ?{movement_clause}
             GROUP BY filtered_events.day_start
             """,
-            [from_timestamp, from_timestamp, *parameters, str(currency_uuid)],
+            [from_timestamp, from_timestamp, *parameters, str(currency_uuid), *movement_parameters],
         ).fetchall()
         rows_by_day = {row["day_start"]: row for row in rows}
         return [
@@ -79,6 +81,21 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
     def _filtered_events(filters: TransactionEventFilter) -> tuple[str, list[str | int]]:
         where_clause, parameters = build_transaction_event_filter(filters)
         return where_clause + " AND event.type <> ?", [*parameters, "ACCOUNT_TRANSFER"]
+
+    @staticmethod
+    def _movement_filter(filters: TransactionEventFilter) -> tuple[str, list[str]]:
+        clauses: list[str] = []
+        parameters: list[str] = []
+        if filters.account_uuid is not None:
+            clauses.append("movement.account_uuid = ?")
+            parameters.append(str(filters.account_uuid))
+        if filters.category_uuids:
+            placeholders = ", ".join("?" for _ in filters.category_uuids)
+            clauses.append(f"movement.category_uuid IN ({placeholders})")
+            parameters.extend(sorted(str(uuid) for uuid in filters.category_uuids))
+        if not clauses:
+            return "", parameters
+        return " AND " + " AND ".join(clauses), parameters
 
     @staticmethod
     def _to_model(row: sqlite3.Row | None, currency_uuid: UUID) -> CashFlow:

@@ -34,33 +34,27 @@ class LedgerRepositoryTestCase(unittest.TestCase):
 
     def create_currency(self, name: str = "Real") -> Currency:
         repository = SqliteCurrencyRepository(self.connection)
-        repository.create(name, "R$", None, 2)
-        return next(currency for currency in repository.list_all() if currency.name == name)
+        return repository.create(name, "R$", None, 2)
 
     def create_category(self, name: str = "Food") -> Category:
         repository = SqliteCategoryRepository(self.connection)
-        repository.create(name, None)
-        return next(category for category in repository.list_all() if category.name == name)
+        return repository.create(name, None)
 
     def create_account(self, name: str = "Checking", currency: Currency | None = None) -> Account:
         selected_currency = currency or self.create_currency()
         repository = SqliteAccountRepository(self.connection)
-        repository.create(name, None, selected_currency.uuid)
-        return next(account for account in repository.list_all() if account.name == name)
+        return repository.create(name, None, selected_currency.uuid)
 
     def create_tag(self, name: str = "Important") -> Tag:
         repository = SqliteTagRepository(self.connection)
-        repository.create(name)
-        return next(tag for tag in repository.list_all() if tag.name == name)
+        return repository.create(name)
 
     def create_event(self, description: str = "Purchase", type: TransactionEventType = "TRANSACTION", occurred_at: int = 10) -> TransactionEvent:
         repository = SqliteTransactionEventRepository(self.connection)
-        repository.create(occurred_at, description, type)
-        return next(event for event in repository.list_all() if event.description == description)
+        return repository.create(occurred_at, description, type)
 
     def create_budget(self, name: str = "Monthly", currency: Currency | None = None, category: Category | None = None) -> Budget:
         selected_currency = currency or self.create_currency()
         selected_category = category or self.create_category()
         repository = SqliteBudgetRepository(self.connection)
-        repository.create(selected_category.uuid, selected_currency.uuid, 10, 20, name, "Monthly spending", 100)
-        return next(budget for budget in repository.list_all() if budget.name == name)
+        return repository.create(selected_category.uuid, selected_currency.uuid, 10, 20, name, "Monthly spending", 100)

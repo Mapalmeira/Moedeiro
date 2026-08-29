@@ -6,7 +6,7 @@ from app.domain.ledger.model.tag import Tag
 
 class TagRepository(ABC):
     @abstractmethod
-    def create(self, name: str) -> None:
+    def create(self, name: str) -> Tag:
         pass
 
     @abstractmethod

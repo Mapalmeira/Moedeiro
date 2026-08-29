@@ -18,7 +18,7 @@ class SqliteBudgetRepository(BudgetRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, category_uuid: UUID, currency_uuid: UUID, from_timestamp: int, to_timestamp: int, name: str, description: str, amount: int) -> None:
+    def create(self, category_uuid: UUID, currency_uuid: UUID, from_timestamp: int, to_timestamp: int, name: str, description: str, amount: int) -> Budget:
         budget = Budget(
             uuid=uuid4(),
             category_uuid=category_uuid,
@@ -45,6 +45,7 @@ class SqliteBudgetRepository(BudgetRepository):
                 budget.amount,
             ),
         )
+        return budget
 
     def get(self, uuid: UUID) -> Budget | None:
         row = self.connection.execute(

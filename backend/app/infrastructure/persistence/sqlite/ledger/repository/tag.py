@@ -11,12 +11,13 @@ class SqliteTagRepository(TagRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, name: str) -> None:
+    def create(self, name: str) -> Tag:
         tag = Tag(uuid=uuid4(), name=name)
         self.connection.execute(
             "INSERT INTO tag(uuid, name) VALUES (?, ?)",
             (str(tag.uuid), tag.name),
         )
+        return tag
 
     def get(self, uuid: UUID) -> Tag | None:
         row = self.connection.execute(

@@ -11,12 +11,13 @@ class SqliteCategoryRepository(CategoryRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, name: str, parent_uuid: UUID | None) -> None:
+    def create(self, name: str, parent_uuid: UUID | None) -> Category:
         category = Category(uuid=uuid4(), name=name, parent_uuid=parent_uuid)
         self.connection.execute(
             "INSERT INTO category(uuid, category_name, parent_uuid) VALUES (?, ?, ?)",
             (str(category.uuid), category.name, self._serialize_uuid(category.parent_uuid)),
         )
+        return category
 
     def get(self, uuid: UUID) -> Category | None:
         row = self.connection.execute(

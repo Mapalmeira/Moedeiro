@@ -13,12 +13,13 @@ class SqliteTransactionEventRepository(TransactionEventRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, occurred_at: int, description: str, type: TransactionEventType) -> None:
+    def create(self, occurred_at: int, description: str, type: TransactionEventType) -> TransactionEvent:
         event = TransactionEvent(uuid=uuid4(), occurred_at=occurred_at, description=description, type=type, movements=[])
         self.connection.execute(
             "INSERT INTO transaction_event(uuid, occurred_at, description, type) VALUES (?, ?, ?, ?)",
             (str(event.uuid), event.occurred_at, event.description, event.type),
         )
+        return event
 
     def get(self, uuid: UUID) -> TransactionEvent | None:
         row = self.connection.execute(

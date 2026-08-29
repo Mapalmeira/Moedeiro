@@ -22,7 +22,7 @@ class SqliteLedgerTokenRepository(LedgerTokenRepository):
         token_hash: str,
         label: str | None,
         created_at: int,
-    ) -> None:
+    ) -> LedgerToken:
         ledger_token = LedgerToken(
             uuid=uuid4(),
             ledger_uuid=ledger_uuid,
@@ -50,6 +50,7 @@ class SqliteLedgerTokenRepository(LedgerTokenRepository):
                 ledger_token.revoked_at,
             ),
         )
+        return ledger_token
 
     def get(self, uuid: UUID) -> LedgerToken | None:
         row = self.connection.execute(

@@ -13,7 +13,7 @@ class TransactionEventRepository(ABC):
         occurred_at: int,
         description: str,
         type: TransactionEventType,
-    ) -> None:
+    ) -> TransactionEvent:
         pass
 
     @abstractmethod

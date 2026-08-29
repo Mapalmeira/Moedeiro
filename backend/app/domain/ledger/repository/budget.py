@@ -16,7 +16,7 @@ class BudgetRepository(ABC):
         name: str,
         description: str,
         amount: int,
-    ) -> None:
+    ) -> Budget:
         pass
 
     @abstractmethod

@@ -32,7 +32,7 @@ class SqliteLedgerMetadataRepository(LedgerMetadataRepository):
             (metadata.name,),
         )
 
-    def create(self, ledger_uuid: UUID, name: str, version: int) -> None:
+    def create(self, ledger_uuid: UUID, name: str, version: int) -> LedgerMetadata:
         metadata = LedgerMetadata(
             ledger_uuid=ledger_uuid,
             name=name,
@@ -46,3 +46,4 @@ class SqliteLedgerMetadataRepository(LedgerMetadataRepository):
             """,
             (str(metadata.ledger_uuid), metadata.name, metadata.schema_version, metadata.created_at),
         )
+        return metadata

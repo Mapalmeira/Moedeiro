@@ -9,12 +9,13 @@ class SqliteLedgerRepository(LedgerRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, path: str) -> None:
+    def create(self, path: str) -> Ledger:
         ledger = Ledger(uuid=uuid4(), path=path)
         self.connection.execute(
             "INSERT INTO ledger(uuid, path) VALUES (?, ?)",
             (str(ledger.uuid), ledger.path),
         )
+        return ledger
 
     def get(self, uuid: UUID) -> Ledger | None:
         row = self.connection.execute(

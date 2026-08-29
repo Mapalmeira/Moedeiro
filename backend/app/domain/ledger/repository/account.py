@@ -11,7 +11,7 @@ class AccountRepository(ABC):
         name: str,
         note: str | None,
         currency_uuid: UUID,
-    ) -> None:
+    ) -> Account:
         pass
 
     @abstractmethod
