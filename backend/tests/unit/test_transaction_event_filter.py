@@ -1,5 +1,3 @@
-"""Tests for transaction-event filter validation and defaults."""
-
 import unittest
 from uuid import uuid4
 
@@ -29,7 +27,7 @@ class TransactionEventFilterTest(unittest.TestCase):
         self.assertEqual(filters.event_types, {"TRANSACTION", "SHOPPING_LIST"})
 
     def test_uses_empty_sets_when_multi_value_filters_are_absent(self) -> None:
-        filters = TransactionEventFilter()
+        filters = TransactionEventFilter(from_timestamp=10, to_timestamp=20)
 
         self.assertEqual(filters.category_uuids, set())
         self.assertEqual(filters.tag_uuids, set())
@@ -40,6 +38,8 @@ class TransactionEventFilterTest(unittest.TestCase):
 
         filters = TransactionEventFilter.model_validate(
             {
+                "from_timestamp": 10,
+                "to_timestamp": 20,
                 "category_uuids": [category_uuid, category_uuid],
                 "event_types": ["TRANSACTION", "TRANSACTION"],
             }
@@ -60,18 +60,17 @@ class TransactionEventFilterTest(unittest.TestCase):
                         to_timestamp=to_timestamp,
                     )
 
-    def test_accepts_an_open_period(self) -> None:
-        from_only = TransactionEventFilter(from_timestamp=10)
-        to_only = TransactionEventFilter(to_timestamp=20)
-
-        self.assertEqual(from_only.from_timestamp, 10)
-        self.assertIsNone(from_only.to_timestamp)
-        self.assertIsNone(to_only.from_timestamp)
-        self.assertEqual(to_only.to_timestamp, 20)
+    def test_requires_both_period_boundaries(self) -> None:
+        for values in ({}, {"from_timestamp": 10}, {"to_timestamp": 20}):
+            with self.subTest(values=values):
+                with self.assertRaises(ValidationError):
+                    TransactionEventFilter.model_validate(values)
 
     def test_rejects_unknown_event_type(self) -> None:
         with self.assertRaises(ValidationError):
-            TransactionEventFilter.model_validate({"event_types": ["UNKNOWN"]})
+            TransactionEventFilter.model_validate(
+                {"from_timestamp": 10, "to_timestamp": 20, "event_types": ["UNKNOWN"]}
+            )
 
 
 if __name__ == "__main__":
