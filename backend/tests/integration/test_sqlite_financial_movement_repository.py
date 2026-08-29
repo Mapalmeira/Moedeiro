@@ -67,6 +67,14 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         with self.assertRaises(ValidationError):
             self.repository.update_item_name(movement.uuid, "x" * 31)
 
+    def test_create_and_update_reject_zero_value(self) -> None:
+        movement = self.create_movement()
+
+        with self.assertRaises(ValidationError):
+            self.repository.create(self.event.uuid, self.account.uuid, self.category.uuid, 0, None)
+        with self.assertRaises(ValidationError):
+            self.repository.update_value(movement.uuid, 0)
+
     def test_list_by_transaction_event_excludes_other_events(self) -> None:
         """The relation-specific listing only returns movements from one event."""
         first = self.create_movement(-100)

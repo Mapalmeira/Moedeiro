@@ -101,6 +101,66 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(summary.expense, 0)
         self.assertEqual(summary.event_count, 1)
 
+    def test_event_matching_account_and_category_separately_contributes_zero(self) -> None:
+        selected_category = self.create_category("Selected category")
+        other_category = self.create_category("Other category")
+        event = self.create_event("No common movement", occurred_at=100)
+        self.movement_repository.create(event.uuid, self.account.uuid, other_category.uuid, -20, None)
+        self.movement_repository.create(event.uuid, self.other_account.uuid, selected_category.uuid, -40, None)
+
+        summary = self.repository.get_summary(
+            self.currency.uuid,
+            TransactionEventFilter(
+                from_timestamp=0,
+                to_timestamp=200,
+                account_uuid=self.account.uuid,
+                category_uuids={selected_category.uuid},
+            ),
+        )
+
+        self.assertEqual(summary.income, 0)
+        self.assertEqual(summary.expense, 0)
+        self.assertEqual(summary.event_count, 0)
+        self.assertEqual(summary.income_movement_count, 0)
+        self.assertEqual(summary.expense_movement_count, 0)
+
+    def test_shopping_list_movements_are_cash_flow(self) -> None:
+        self.add_movement("Groceries", 100, -40, event_type="SHOPPING_LIST")
+
+        summary = self.repository.get_summary(
+            self.currency.uuid,
+            TransactionEventFilter(from_timestamp=0, to_timestamp=200),
+        )
+
+        self.assertEqual(summary.expense, 40)
+        self.assertEqual(summary.event_count, 1)
+
+    def test_positive_reimbursement_is_income(self) -> None:
+        self.add_movement("Reimbursement", 100, 40)
+
+        summary = self.repository.get_summary(
+            self.currency.uuid,
+            TransactionEventFilter(from_timestamp=0, to_timestamp=200),
+        )
+
+        self.assertEqual(summary.income, 40)
+        self.assertEqual(summary.expense, 0)
+        self.assertEqual(summary.income_movement_count, 1)
+
+    def test_category_filter_aggregates_descendant_categories(self) -> None:
+        parent = self.create_category("Parent")
+        child = self.create_category("Child", parent)
+        event = self.create_event("Child expense", occurred_at=100)
+        self.movement_repository.create(event.uuid, self.account.uuid, child.uuid, -40, None)
+
+        summary = self.repository.get_summary(
+            self.currency.uuid,
+            TransactionEventFilter(from_timestamp=0, to_timestamp=200, category_uuids={parent.uuid}),
+        )
+
+        self.assertEqual(summary.expense, 40)
+        self.assertEqual(summary.event_count, 1)
+
     def test_list_points_groups_flow_from_caller_day_boundary_and_orders_it(self) -> None:
         """Daily buckets are anchored to the supplied first local-day timestamp."""
         self.add_movement("Second day", 86400 + 100, -20)

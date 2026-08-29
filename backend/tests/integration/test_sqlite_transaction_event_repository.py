@@ -1,6 +1,5 @@
-"""Integration tests for the basic ledger SQLite transaction-event repository."""
-
-from uuid import uuid4
+from unittest.mock import patch
+from uuid import UUID, uuid4
 
 from pydantic import ValidationError
 
@@ -148,6 +147,23 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual([event.uuid for event in events], [expected.uuid])
         self.assertEqual(len(events[0].movements), 2)
 
+    def test_category_filter_includes_descendant_categories(self) -> None:
+        currency = self.create_currency()
+        account = self.create_account(currency=currency)
+        parent = self.create_category("Parent")
+        child = self.create_category("Child", parent)
+        grandchild = self.create_category("Grandchild", child)
+        expected = self.create_event("Expected")
+        self.create_event("Unrelated")
+        movement_repository = SqliteFinancialMovementRepository(self.connection)
+        movement_repository.create(expected.uuid, account.uuid, grandchild.uuid, -10, None)
+
+        events = self.repository.list_filtered(
+            TransactionEventFilter(from_timestamp=0, to_timestamp=100, category_uuids={parent.uuid})
+        )
+
+        self.assertEqual([event.uuid for event in events], [expected.uuid])
+
     def test_get_and_list_page_load_movements_in_the_event(self) -> None:
         """Rich event reads hydrate movements without one query per event."""
         currency = self.create_currency()
@@ -185,7 +201,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(len(select_statements), 2)
 
     def test_list_page_filters_orders_and_paginates(self) -> None:
-        """Pagination is applied after filtering and uses deterministic ordering."""
+        """Pagination is applied after filtering and orders by timestamp."""
         self.create_event("Third", occurred_at=30)
         first = self.create_event("First", occurred_at=10)
         second = self.create_event("Second", occurred_at=20)
@@ -204,6 +220,23 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         page = self.repository.list_page(1, 10, False, TransactionEventFilter(from_timestamp=0, to_timestamp=100))
 
         self.assertEqual(page, [second, first])
+
+    def test_list_page_uses_uuid_to_break_timestamp_ties(self) -> None:
+        with patch(
+            "app.infrastructure.persistence.sqlite.ledger.repository.transaction_event.uuid4",
+            side_effect=[UUID(int=2), UUID(int=1)],
+        ):
+            higher_uuid = self.create_event("Higher UUID", occurred_at=10)
+            lower_uuid = self.create_event("Lower UUID", occurred_at=10)
+
+        page = self.repository.list_page(
+            1,
+            10,
+            True,
+            TransactionEventFilter(from_timestamp=0, to_timestamp=100),
+        )
+
+        self.assertEqual(page, [lower_uuid, higher_uuid])
 
 
 if __name__ == "__main__":

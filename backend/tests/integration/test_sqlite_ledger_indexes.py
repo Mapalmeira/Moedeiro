@@ -25,6 +25,7 @@ class SqliteLedgerIndexesTest(unittest.TestCase):
         """The schema includes every index required by the initial query paths."""
         expected_indexes = {
             "category_name_idx",
+            "category_parent_idx",
             "transaction_event_occurred_at_idx",
             "transaction_tag_tag_event_idx",
             "financial_movement_transaction_event_idx",
@@ -51,6 +52,15 @@ class SqliteLedgerIndexesTest(unittest.TestCase):
         details = " ".join(row["detail"] for row in rows)
 
         self.assertIn("financial_movement_category_event_idx", details)
+
+    def test_descendant_category_lookup_uses_parent_index(self) -> None:
+        rows = self.connection.execute(
+            "EXPLAIN QUERY PLAN SELECT uuid FROM category WHERE parent_uuid = ?",
+            ("category-uuid",),
+        ).fetchall()
+        details = " ".join(row["detail"] for row in rows)
+
+        self.assertIn("category_parent_idx", details)
 
 
 if __name__ == "__main__":

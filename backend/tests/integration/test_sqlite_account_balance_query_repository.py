@@ -40,10 +40,16 @@ class SqliteAccountBalanceQueryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(self.repository.get_balance_at(self.account.uuid, 10), -40)
         self.assertEqual(self.repository.get_balance_at(self.other_account.uuid, 10), 40)
 
-    def test_get_balance_at_returns_zero_without_movements(self) -> None:
-        """Unknown accounts and accounts without movements both have a zero aggregate."""
+    def test_get_balance_at_returns_zero_for_an_account_without_movements(self) -> None:
         self.assertEqual(self.repository.get_balance_at(self.account.uuid, 10), 0)
-        self.assertEqual(self.repository.get_balance_at(uuid4(), 10), 0)
+
+    def test_queries_raise_for_an_unknown_account(self) -> None:
+        account_uuid = uuid4()
+
+        with self.assertRaises(LookupError):
+            self.repository.get_balance_at(account_uuid, 10)
+        with self.assertRaises(LookupError):
+            self.repository.list_points(account_uuid, 100, 86500)
 
     def test_list_points_returns_closing_balance_for_every_anchored_day(self) -> None:
         """Points include empty days and accumulate the balance from before the interval."""
@@ -66,10 +72,17 @@ class SqliteAccountBalanceQueryRepositoryTest(LedgerRepositoryTestCase):
         """Daily closing balance follows the same transfer semantics as get_balance_at."""
         transfer = self.create_event("Transfer", "ACCOUNT_TRANSFER", 100)
         self.movement_repository.create(transfer.uuid, self.account.uuid, self.category.uuid, -40, None)
+        self.movement_repository.create(transfer.uuid, self.other_account.uuid, self.category.uuid, 40, None)
 
         points = self.repository.list_points(self.account.uuid, 100, 86500)
 
         self.assertEqual(points, [-40])
+
+    def test_shopping_list_movements_affect_account_balance(self) -> None:
+        shopping_list = self.create_event("Groceries", "SHOPPING_LIST", 10)
+        self.movement_repository.create(shopping_list.uuid, self.account.uuid, self.category.uuid, -30, None)
+
+        self.assertEqual(self.repository.get_balance_at(self.account.uuid, 10), -30)
 
     def test_list_points_requires_complete_fixed_days(self) -> None:
         """Invalid or partial fixed-day intervals are rejected before querying."""

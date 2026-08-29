@@ -9,8 +9,8 @@ from app.domain.ledger.model.financial_movement import FinancialMovement
 
 
 class FinancialMovementTest(unittest.TestCase):
-    def test_accepts_positive_negative_and_zero_values(self) -> None:
-        for value in (-100, 0, 100):
+    def test_accepts_positive_and_negative_values(self) -> None:
+        for value in (-100, 100):
             with self.subTest(value=value):
                 movement = FinancialMovement(
                     uuid=uuid4(),
@@ -20,6 +20,16 @@ class FinancialMovementTest(unittest.TestCase):
                     value=value,
                 )
                 self.assertEqual(movement.value, value)
+
+    def test_rejects_zero_value(self) -> None:
+        with self.assertRaises(ValidationError):
+            FinancialMovement(
+                uuid=uuid4(),
+                transaction_event_uuid=uuid4(),
+                account_uuid=uuid4(),
+                category_uuid=uuid4(),
+                value=0,
+            )
 
     def test_accepts_optional_item_name(self) -> None:
         movement = FinancialMovement(

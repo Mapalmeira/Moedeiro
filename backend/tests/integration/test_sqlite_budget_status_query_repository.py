@@ -39,8 +39,10 @@ class SqliteBudgetStatusQueryRepositoryTest(LedgerRepositoryTestCase):
         self.add_movement("At start", 10, -60)
         self.add_movement("At timestamp", 15, -50)
         self.add_movement("After timestamp", 16, -500)
-        self.add_movement("Income", 12, 300)
-        self.add_movement("Transfer", 13, -400, event_type="ACCOUNT_TRANSFER")
+        self.add_movement("Reimbursement", 12, 300)
+        transfer = self.create_event("Transfer", "ACCOUNT_TRANSFER", 13)
+        self.movement_repository.create(transfer.uuid, self.account.uuid, self.category.uuid, -400, None)
+        self.movement_repository.create(transfer.uuid, self.other_account.uuid, self.category.uuid, 400, None)
         self.add_movement("Other category", 14, -600, category=self.other_category)
         self.add_movement("Other account", 14, -700, account=self.other_account)
 
@@ -60,6 +62,23 @@ class SqliteBudgetStatusQueryRepositoryTest(LedgerRepositoryTestCase):
         assert status is not None
         self.assertEqual(status.spent_amount, 100)
         self.assertFalse(status.over_budget)
+
+    def test_positive_reimbursement_does_not_reduce_spending(self) -> None:
+        self.add_movement("Expense", 10, -100)
+        self.add_movement("Reimbursement", 11, 40)
+
+        status = self.repository.get_status(self.budget.uuid, 15)
+
+        assert status is not None
+        self.assertEqual(status.spent_amount, 100)
+
+    def test_shopping_list_expenses_are_included(self) -> None:
+        self.add_movement("Groceries", 10, -40, event_type="SHOPPING_LIST")
+
+        status = self.repository.get_status(self.budget.uuid, 15)
+
+        assert status is not None
+        self.assertEqual(status.spent_amount, 40)
 
     def test_get_status_returns_none_outside_budget_interval(self) -> None:
         """A budget is active on its inclusive lower and exclusive upper boundary."""
@@ -86,6 +105,16 @@ class SqliteBudgetStatusQueryRepositoryTest(LedgerRepositoryTestCase):
 
         assert status is not None
         self.assertEqual(status.spent_amount, 0)
+
+    def test_budget_includes_expenses_from_descendant_categories(self) -> None:
+        child = self.create_category("Child", self.category)
+        grandchild = self.create_category("Grandchild", child)
+        self.add_movement("Descendant expense", 10, -40, category=grandchild)
+
+        status = self.repository.get_status(self.budget.uuid, 15)
+
+        assert status is not None
+        self.assertEqual(status.spent_amount, 40)
 
 
 if __name__ == "__main__":
