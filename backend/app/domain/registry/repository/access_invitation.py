@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.registry.model.access_invitation import AccessInvitation
+from app.domain.registry.model.access_invitation import AccessInvitation, DEFAULT_EXPIRATION_TIMEOUT_SECONDS
 
 
 class AccessInvitationRepository(ABC):
     @abstractmethod
-    def create(self, ledger_uuid: UUID, secret_hash: bytes, created_at: int, expires_at: int) -> AccessInvitation:
+    def create(self, ledger_uuid: UUID, secret_hash: bytes, created_at: int, expiration_timeout_seconds: int = DEFAULT_EXPIRATION_TIMEOUT_SECONDS) -> AccessInvitation:
         pass
 
     @abstractmethod

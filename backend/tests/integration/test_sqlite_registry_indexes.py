@@ -24,7 +24,7 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
         """The schema contains all explicitly named registry query indexes."""
         expected_indexes = {
             "access_invitation_ledger_idx",
-            "access_invitation_expires_at_idx",
+            "access_invitation_created_at_idx",
             "access_grant_ledger_idx",
             "access_grant_credential_id_idx",
             "auth_session_grant_idx",

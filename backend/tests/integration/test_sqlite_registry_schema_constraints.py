@@ -22,7 +22,7 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         self.grant_uuid = uuid4().bytes
         self.session_uuid = uuid4().bytes
         self.connection.execute("INSERT INTO ledger VALUES (?, 'ledger.sqlite')", (self.ledger_uuid,))
-        self.connection.execute("INSERT INTO access_invitation VALUES (?, ?, ?, ?, 10, 100, NULL, NULL)", (self.invitation_uuid, self.ledger_uuid, self.grant_uuid, b"i" * 32))
+        self.connection.execute("INSERT INTO access_invitation VALUES (?, ?, ?, ?, 10, 90, NULL, NULL)", (self.invitation_uuid, self.ledger_uuid, self.grant_uuid, b"i" * 32))
         self.connection.execute("INSERT INTO access_grant VALUES (?, ?, 'WEBCRYPTO', 'browser', ?, 'ES256', NULL, NULL, 20, NULL)", (self.grant_uuid, self.ledger_uuid, b"public-key"))
         self.connection.execute("INSERT INTO auth_session VALUES (?, ?, ?, 40, 1800, 43200, NULL, NULL)", (self.session_uuid, self.grant_uuid, b"s" * 32))
 
@@ -85,6 +85,10 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
             with self.subTest(column=column, value=value):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.connection.execute(f"UPDATE auth_session SET {column} = ?", (value,))
+
+    def test_enforces_invitation_expiration_timeout(self) -> None:
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("UPDATE access_invitation SET expiration_timeout_seconds = 0")
 
     def test_consumption_and_usage_must_precede_expiration(self) -> None:
         """Expired invitations and sessions cannot record a successful use."""

@@ -37,7 +37,7 @@ class RegistryRepositoryTestCase(unittest.TestCase):
             ledger = self.create_ledger()
         if secret_hash is None:
             secret_hash = ledger.uuid.bytes * 2
-        return self.invitation_repository.create(ledger.uuid, secret_hash, 10, 100)
+        return self.invitation_repository.create(ledger.uuid, secret_hash, 10, 90)
 
     def create_grant(self, invitation=None):
         if invitation is None:

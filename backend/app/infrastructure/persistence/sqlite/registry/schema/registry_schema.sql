@@ -9,8 +9,8 @@ CREATE TABLE access_invitation (
     grant_uuid BLOB NOT NULL UNIQUE CHECK (length(grant_uuid) = 16),
     secret_hash BLOB NOT NULL UNIQUE CHECK (length(secret_hash) = 32),
     created_at INTEGER NOT NULL CHECK (created_at >= 0),
-    expires_at INTEGER NOT NULL CHECK (expires_at > created_at),
-    consumed_at INTEGER CHECK (consumed_at IS NULL OR (consumed_at >= created_at AND consumed_at < expires_at)),
+    expiration_timeout_seconds INTEGER NOT NULL DEFAULT 3600 CHECK (expiration_timeout_seconds > 0),
+    consumed_at INTEGER CHECK (consumed_at IS NULL OR (consumed_at >= created_at AND consumed_at < created_at + expiration_timeout_seconds)),
     revoked_at INTEGER CHECK (revoked_at IS NULL OR revoked_at >= created_at),
 
     CHECK (consumed_at IS NULL OR revoked_at IS NULL),
@@ -65,7 +65,7 @@ CREATE TABLE auth_session (
 ) STRICT;
 
 CREATE INDEX access_invitation_ledger_idx ON access_invitation(ledger_uuid);
-CREATE INDEX access_invitation_expires_at_idx ON access_invitation(expires_at);
+CREATE INDEX access_invitation_created_at_idx ON access_invitation(created_at);
 CREATE INDEX access_grant_ledger_idx ON access_grant(ledger_uuid);
 CREATE UNIQUE INDEX access_grant_credential_id_idx ON access_grant(credential_id) WHERE credential_id IS NOT NULL;
 CREATE INDEX auth_session_grant_idx ON auth_session(grant_uuid);

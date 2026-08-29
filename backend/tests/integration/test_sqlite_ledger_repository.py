@@ -85,7 +85,7 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         self.repository.create("ledger.sqlite")
         ledger = self.repository.get_by_path("ledger.sqlite")
         assert ledger is not None
-        invitation = invitation_repository.create(ledger.uuid, b"i" * 32, 10, 20)
+        invitation = invitation_repository.create(ledger.uuid, b"i" * 32, 10)
         grant = grant_repository.create_webcrypto(invitation.grant_uuid, ledger.uuid, None, b"public-key", 15)
         session = session_repository.create(grant.uuid, b"s" * 32, 17)
 

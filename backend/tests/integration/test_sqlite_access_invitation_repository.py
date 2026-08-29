@@ -11,9 +11,10 @@ class SqliteAccessInvitationRepositoryTest(RegistryRepositoryTestCase):
         """create generates both the invitation identity and reserved grant identity."""
         ledger = self.create_ledger()
 
-        invitation = self.invitation_repository.create(ledger.uuid, b"s" * 32, 10, 20)
+        invitation = self.invitation_repository.create(ledger.uuid, b"s" * 32, 10)
 
         self.assertNotEqual(invitation.uuid, invitation.grant_uuid)
+        self.assertEqual(invitation.expiration_timeout_seconds, 3600)
         self.assertEqual(self.invitation_repository.get(invitation.uuid), invitation)
         self.assertEqual(self.invitation_repository.get_by_secret_hash(b"s" * 32), invitation)
 
@@ -33,7 +34,7 @@ class SqliteAccessInvitationRepositoryTest(RegistryRepositoryTestCase):
         self.assertEqual(consumed.consumed_at, 20)
 
     def test_consume_rejects_expired_and_not_yet_active_invitation(self) -> None:
-        """The supplied operation time must fall inside [created_at, expires_at)."""
+        """The supplied operation time must fall inside the configured lifetime."""
         invitation = self.create_invitation()
 
         self.assertFalse(self.invitation_repository.consume(invitation.uuid, 9))
@@ -66,13 +67,13 @@ class SqliteAccessInvitationRepositoryTest(RegistryRepositoryTestCase):
     def test_create_rejects_an_unknown_ledger(self) -> None:
         """The schema prevents invitations from referring to nonexistent ledgers."""
         with self.assertRaises(sqlite3.IntegrityError):
-            self.invitation_repository.create(uuid4(), b"s" * 32, 10, 20)
+            self.invitation_repository.create(uuid4(), b"s" * 32, 10)
 
     def test_repository_does_not_commit_its_own_changes(self) -> None:
         """Transaction ownership remains with the registry unit of work."""
         ledger = self.create_ledger()
         self.connection.commit()
-        self.invitation_repository.create(ledger.uuid, b"s" * 32, 10, 20)
+        self.invitation_repository.create(ledger.uuid, b"s" * 32, 10)
 
         self.connection.rollback()
 
