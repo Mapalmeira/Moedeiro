@@ -100,21 +100,36 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(summary.expense, 40)
         self.assertEqual(summary.event_count, 1)
 
-    def test_list_points_groups_flow_by_utc_day_and_orders_it(self) -> None:
-        """Each returned point covers one complete Unix UTC day in chronological order."""
+    def test_list_points_groups_flow_from_caller_day_boundary_and_orders_it(self) -> None:
+        """Daily buckets are anchored to the supplied first local-day timestamp."""
         self.add_movement("Second day", 86400 + 100, -20)
         self.add_movement("First day income", 100, 50)
         self.add_movement("First day expense", 200, -10)
 
-        points = self.repository.list_points(self.currency.uuid, TransactionEventFilter())
+        points = self.repository.list_points(
+            self.currency.uuid,
+            TransactionEventFilter(from_timestamp=100, to_timestamp=172900),
+        )
 
-        self.assertEqual([point.from_timestamp for point in points], [0, 86400])
-        self.assertEqual([point.to_timestamp for point in points], [86400, 172800])
+        self.assertEqual([point.from_timestamp for point in points], [100, 86500])
+        self.assertEqual([point.to_timestamp for point in points], [86500, 172900])
         self.assertEqual(points[0].income, 50)
         self.assertEqual(points[0].expense, 10)
         self.assertEqual(points[0].event_count, 2)
         self.assertEqual(points[1].income, 0)
         self.assertEqual(points[1].expense, 20)
+
+    def test_list_points_requires_explicit_complete_fixed_days(self) -> None:
+        """Daily grouping rejects missing boundaries and partial fixed days."""
+        for filters in (
+            TransactionEventFilter(),
+            TransactionEventFilter(from_timestamp=100),
+            TransactionEventFilter(to_timestamp=86500),
+            TransactionEventFilter(from_timestamp=100, to_timestamp=200),
+        ):
+            with self.subTest(filters=filters):
+                with self.assertRaises(ValueError):
+                    self.repository.list_points(self.currency.uuid, filters)
 
 
 if __name__ == "__main__":

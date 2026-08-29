@@ -44,12 +44,13 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
         return self._to_model(row, currency_uuid, from_timestamp, to_timestamp)
 
     def list_points(self, currency_uuid: UUID, filters: TransactionEventFilter) -> list[CashFlow]:
+        from_timestamp, to_timestamp = self._validate_point_period(filters)
         where_clause, parameters = self._filtered_events(filters)
         rows = self.connection.execute(
             f"""
             WITH filtered_events AS (
                 SELECT event.uuid, event.occurred_at,
-                       (event.occurred_at / {self._SECONDS_PER_DAY}) * {self._SECONDS_PER_DAY} AS day_start
+                       ? + ((event.occurred_at - ?) / {self._SECONDS_PER_DAY}) * {self._SECONDS_PER_DAY} AS day_start
                 FROM transaction_event AS event
                 {where_clause}
             )
@@ -66,13 +67,21 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
             WHERE account.currency_uuid = ?
             GROUP BY filtered_events.day_start
             """,
-            [*parameters, str(currency_uuid)],
+            [from_timestamp, from_timestamp, *parameters, str(currency_uuid)],
         ).fetchall()
         points = [
             self._to_model(row, currency_uuid, row["day_start"], row["day_start"] + self._SECONDS_PER_DAY)
             for row in rows
         ]
         return sorted(points, key=lambda point: point.from_timestamp)
+
+    @classmethod
+    def _validate_point_period(cls, filters: TransactionEventFilter) -> tuple[int, int]:
+        if filters.from_timestamp is None or filters.to_timestamp is None:
+            raise ValueError("cash-flow points require from_timestamp and to_timestamp")
+        if (filters.to_timestamp - filters.from_timestamp) % cls._SECONDS_PER_DAY != 0:
+            raise ValueError("the interval must contain complete 24-hour days")
+        return filters.from_timestamp, filters.to_timestamp
 
     @staticmethod
     def _filtered_events(filters: TransactionEventFilter) -> tuple[str, list[str | int]]:
