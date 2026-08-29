@@ -36,9 +36,9 @@ class LedgerRepositoryTestCase(unittest.TestCase):
         repository = SqliteCurrencyRepository(self.connection)
         return repository.create(name, "R$", None, 2)
 
-    def create_category(self, name: str = "Food") -> Category:
+    def create_category(self, name: str = "Food", parent: Category | None = None) -> Category:
         repository = SqliteCategoryRepository(self.connection)
-        return repository.create(name, None)
+        return repository.create(name, None if parent is None else parent.uuid)
 
     def create_account(self, name: str = "Checking", currency: Currency | None = None) -> Account:
         selected_currency = currency or self.create_currency()
