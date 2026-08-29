@@ -41,18 +41,15 @@ class SqliteLedgerTokenRepositoryTest(unittest.TestCase):
 
     def test_create_can_be_read_by_uuid_and_token_hash(self) -> None:
         """create persists generated identity and all supplied token fields."""
-        self.repository.create(
+        token = self.repository.create(
             self.ledger.uuid,
             "token-hash",
             "personal",
             10,
         )
 
-        token = self.repository.get_by_token_hash("token-hash")
-
-        self.assertIsNotNone(token)
-        assert token is not None
         self.assertEqual(self.repository.get(token.uuid), token)
+        self.assertEqual(self.repository.get_by_token_hash("token-hash"), token)
         self.assertEqual(token.ledger_uuid, self.ledger.uuid)
         self.assertEqual(token.label, "personal")
         self.assertEqual(token.created_at, 10)

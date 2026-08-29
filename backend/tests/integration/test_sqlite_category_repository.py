@@ -16,8 +16,7 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
     def test_create_get_and_update_parent(self) -> None:
         """A category can acquire and clear an existing parent."""
         parent = self.create_category("Parent")
-        self.repository.create("Child", None)
-        child = next(category for category in self.repository.list_all() if category.name == "Child")
+        child = self.repository.create("Child", None)
 
         self.repository.update_parent(child.uuid, parent.uuid)
         updated = self.repository.get(child.uuid)

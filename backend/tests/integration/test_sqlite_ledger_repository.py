@@ -30,13 +30,10 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
 
     def test_create_can_be_read_by_uuid_and_path(self) -> None:
         """create persists a generated UUID and the supplied path."""
-        self.repository.create("ledger.sqlite")
+        ledger = self.repository.create("ledger.sqlite")
 
-        ledger = self.repository.get_by_path("ledger.sqlite")
-
-        self.assertIsNotNone(ledger)
-        assert ledger is not None
         self.assertEqual(self.repository.get(ledger.uuid), ledger)
+        self.assertEqual(self.repository.get_by_path("ledger.sqlite"), ledger)
 
     def test_get_returns_none_when_ledger_does_not_exist(self) -> None:
         """get and get_by_path represent an absent row with None."""

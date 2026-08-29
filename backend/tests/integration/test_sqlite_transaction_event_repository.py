@@ -17,8 +17,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
 
     def test_create_get_and_list_all_preserve_event_fields(self) -> None:
         """Basic reads return generated identity and all supplied event data."""
-        self.repository.create(10, "Purchase", "TRANSACTION")
-        event = self.repository.list_all()[0]
+        event = self.repository.create(10, "Purchase", "TRANSACTION")
 
         self.assertEqual(self.repository.get(event.uuid), event)
         self.assertEqual(event.occurred_at, 10)

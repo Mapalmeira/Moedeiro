@@ -17,8 +17,7 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
 
     def test_create_and_get_preserve_account_fields(self) -> None:
         """create generates identity and stores the supplied currency relation."""
-        self.repository.create("Checking", "Daily account", self.currency.uuid)
-        account = self.repository.list_all()[0]
+        account = self.repository.create("Checking", "Daily account", self.currency.uuid)
 
         self.assertEqual(self.repository.get(account.uuid), account)
         self.assertEqual(account.note, "Daily account")

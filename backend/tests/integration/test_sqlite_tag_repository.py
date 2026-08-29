@@ -15,8 +15,7 @@ class SqliteTagRepositoryTest(LedgerRepositoryTestCase):
 
     def test_create_get_update_and_list_all(self) -> None:
         """Basic operations preserve identity while changing the tag name."""
-        self.repository.create("Old")
-        tag = self.repository.list_all()[0]
+        tag = self.repository.create("Old")
 
         self.repository.update_name(tag.uuid, "New")
 

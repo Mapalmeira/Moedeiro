@@ -13,8 +13,7 @@ class SqliteCurrencyRepositoryTest(LedgerRepositoryTestCase):
 
     def test_create_and_get_preserve_all_currency_fields(self) -> None:
         """create generates an identity and persists optional formatting fields."""
-        self.repository.create("Real", "R$", None, 2)
-        currency = self.repository.list_all()[0]
+        currency = self.repository.create("Real", "R$", None, 2)
 
         self.assertEqual(self.repository.get(currency.uuid), currency)
         self.assertEqual(currency.name, "Real")

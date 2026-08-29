@@ -24,11 +24,12 @@ class SqliteLedgerMetadataRepositoryTest(LedgerRepositoryTestCase):
         ledger_uuid = uuid4()
         before_creation = int(time())
 
-        self.repository.create(ledger_uuid, "Personal", 1)
+        created_metadata = self.repository.create(ledger_uuid, "Personal", 1)
 
         after_creation = int(time())
         metadata = self.repository.get()
         assert metadata is not None
+        self.assertEqual(created_metadata, metadata)
         self.assertEqual(metadata.ledger_uuid, ledger_uuid)
         self.assertEqual(metadata.name, "Personal")
         self.assertEqual(metadata.schema_version, 1)
