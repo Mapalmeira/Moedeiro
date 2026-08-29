@@ -15,7 +15,7 @@ FinancialEventType = Literal[
 class FinancialEvent(BaseModel):
     uuid: UUID
     occurred_at: int
-    description: str = Field(min_length=1, max_length=1000)
+    description: str = Field(min_length=1, max_length=300)
     type: FinancialEventType
     movements: list[FinancialMovement]
 

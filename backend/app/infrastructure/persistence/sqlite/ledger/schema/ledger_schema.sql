@@ -44,7 +44,7 @@ CREATE TABLE category (
 CREATE TABLE financial_event (
     uuid BLOB PRIMARY KEY CHECK (length(uuid) = 16),
     occurred_at INTEGER NOT NULL,
-    description TEXT NOT NULL CHECK (length(description) BETWEEN 1 AND 1000),
+    description TEXT NOT NULL CHECK (length(description) BETWEEN 1 AND 300),
     type TEXT NOT NULL CHECK (type IN ('TRANSACTION', 'ACCOUNT_TRANSFER', 'SHOPPING_LIST'))
 ) STRICT;
 

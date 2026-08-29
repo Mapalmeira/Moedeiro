@@ -118,7 +118,7 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             ("category", "icon", ""),
             ("category", "icon", "x" * 51),
             ("financial_event", "description", ""),
-            ("financial_event", "description", "x" * 1001),
+            ("financial_event", "description", "x" * 301),
             ("tag", "name", ""),
             ("tag", "name", "x" * 31),
             ("financial_movement", "item_name", "x" * 51),
@@ -146,7 +146,7 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
         values = (
             ("ledger_metadata", "name", "x" * 50),
             ("account", "account_name", "x" * 50),
-            ("financial_event", "description", "x" * 1000),
+            ("financial_event", "description", "x" * 300),
             ("financial_movement", "item_name", "x" * 50),
             ("budget", "budget_name", "x" * 50),
         )

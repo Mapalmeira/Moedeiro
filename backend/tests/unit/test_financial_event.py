@@ -35,7 +35,7 @@ class FinancialEventTest(unittest.TestCase):
             )
 
     def test_rejects_description_outside_length_limits(self) -> None:
-        for description in ("", "x" * 1001):
+        for description in ("", "x" * 301):
             with self.subTest(description_length=len(description)):
                 with self.assertRaises(ValidationError):
                     FinancialEvent(
@@ -50,12 +50,12 @@ class FinancialEventTest(unittest.TestCase):
         event = FinancialEvent(
             uuid=uuid4(),
             occurred_at=10,
-            description="x" * 1000,
+            description="x" * 300,
             type="TRANSACTION",
             movements=[],
         )
 
-        self.assertEqual(len(event.description), 1000)
+        self.assertEqual(len(event.description), 300)
 
     def test_contains_financial_movements(self) -> None:
         event_uuid = uuid4()
