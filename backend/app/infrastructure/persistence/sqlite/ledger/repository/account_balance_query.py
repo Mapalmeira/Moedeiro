@@ -5,8 +5,6 @@ from app.domain.ledger.repository.account_balance_query import AccountBalanceQue
 
 
 class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
-    _SECONDS_PER_DAY = 86400
-
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
@@ -23,9 +21,10 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
         ).fetchone()
         return row["balance"]
 
-    def list_points(self, account_uuid: UUID, from_timestamp: int, to_timestamp: int) -> list[int]:
-        self._validate_period(from_timestamp, to_timestamp)
+    def list_points(self, account_uuid: UUID, from_timestamp: int, point_count: int, point_interval: int) -> list[int]:
+        self._validate_point_parameters(point_count, point_interval)
         self._ensure_account_exists(account_uuid)
+        to_timestamp = from_timestamp + point_count * point_interval
         opening_row = self.connection.execute(
             """
             SELECT COALESCE(SUM(movement.value), 0) AS balance
@@ -38,22 +37,22 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
         change_rows = self.connection.execute(
             f"""
             SELECT
-                ? + ((event.occurred_at - ?) / {self._SECONDS_PER_DAY}) * {self._SECONDS_PER_DAY} AS day_start,
+                ? + ((event.occurred_at - ?) / ?) * ? AS point_start,
                 SUM(movement.value) AS balance_change
             FROM financial_movement AS movement
             JOIN financial_event AS event ON event.uuid = movement.financial_event_uuid
             WHERE movement.account_uuid = ?
               AND event.occurred_at >= ?
               AND event.occurred_at < ?
-            GROUP BY day_start
+            GROUP BY point_start
             """,
-            (from_timestamp, from_timestamp, account_uuid.bytes, from_timestamp, to_timestamp),
+            (from_timestamp, from_timestamp, point_interval, point_interval, account_uuid.bytes, from_timestamp, to_timestamp),
         ).fetchall()
-        changes = {row["day_start"]: row["balance_change"] for row in change_rows}
+        changes = {row["point_start"]: row["balance_change"] for row in change_rows}
         balance = opening_row["balance"]
         points: list[int] = []
-        for day_start in range(from_timestamp, to_timestamp, self._SECONDS_PER_DAY):
-            balance += changes.get(day_start, 0)
+        for point_start in range(from_timestamp, to_timestamp, point_interval):
+            balance += changes.get(point_start, 0)
             points.append(balance)
         return points
 
@@ -65,9 +64,9 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
         if row is None:
             raise LookupError(f"account {account_uuid} does not exist")
 
-    @classmethod
-    def _validate_period(cls, from_timestamp: int, to_timestamp: int) -> None:
-        if from_timestamp >= to_timestamp:
-            raise ValueError("from_timestamp must be less than to_timestamp")
-        if (to_timestamp - from_timestamp) % cls._SECONDS_PER_DAY != 0:
-            raise ValueError("the interval must contain complete 24-hour days")
+    @staticmethod
+    def _validate_point_parameters(point_count: int, point_interval: int) -> None:
+        if point_count < 1:
+            raise ValueError("point_count must be greater than zero")
+        if point_interval < 1:
+            raise ValueError("point_interval must be greater than zero")

@@ -49,12 +49,14 @@ class SqliteAccountBalanceQueryRepositoryTest(LedgerRepositoryTestCase):
         with self.assertRaises(LookupError):
             self.repository.get_balance_at(account_uuid, 10)
         with self.assertRaises(LookupError):
-            self.repository.list_points(account_uuid, 100, 86500)
+            self.repository.list_points(account_uuid, 100, 1, 86400)
 
-    def test_list_points_returns_closing_balance_for_every_anchored_day(self) -> None:
-        """Points include empty days and accumulate the balance from before the interval."""
+    def test_list_points_returns_closing_balance_for_every_anchored_interval(self) -> None:
+        """Points include empty intervals and accumulate the prior balance."""
         from_timestamp = 100
-        to_timestamp = from_timestamp + 3 * 86400
+        point_count = 3
+        point_interval = 86400
+        to_timestamp = from_timestamp + point_count * point_interval
         before = self.create_event("Before", occurred_at=50)
         first_day = self.create_event("First day", occurred_at=from_timestamp)
         third_day = self.create_event("Third day", occurred_at=from_timestamp + 2 * 86400 + 10)
@@ -64,19 +66,31 @@ class SqliteAccountBalanceQueryRepositoryTest(LedgerRepositoryTestCase):
         self.movement_repository.create(third_day.uuid, self.account.uuid, self.category.uuid, 20, None)
         self.movement_repository.create(upper_boundary.uuid, self.account.uuid, self.category.uuid, 500, None)
 
-        points = self.repository.list_points(self.account.uuid, from_timestamp, to_timestamp)
+        points = self.repository.list_points(self.account.uuid, from_timestamp, point_count, point_interval)
 
         self.assertEqual(points, [70, 70, 90])
 
     def test_list_points_includes_account_transfers(self) -> None:
-        """Daily closing balance follows the same transfer semantics as get_balance_at."""
+        """Each point follows the same transfer semantics as get_balance_at."""
         transfer = self.create_event("Transfer", "ACCOUNT_TRANSFER", 100)
         self.movement_repository.create(transfer.uuid, self.account.uuid, self.category.uuid, -40, None)
         self.movement_repository.create(transfer.uuid, self.other_account.uuid, self.category.uuid, 40, None)
 
-        points = self.repository.list_points(self.account.uuid, 100, 86500)
+        points = self.repository.list_points(self.account.uuid, 100, 1, 86400)
 
         self.assertEqual(points, [-40])
+
+    def test_list_points_uses_the_supplied_interval(self) -> None:
+        before = self.create_event("Before", occurred_at=50)
+        first_point = self.create_event("First point", occurred_at=109)
+        second_point = self.create_event("Second point", occurred_at=110)
+        self.movement_repository.create(before.uuid, self.account.uuid, self.category.uuid, 100, None)
+        self.movement_repository.create(first_point.uuid, self.account.uuid, self.category.uuid, -20, None)
+        self.movement_repository.create(second_point.uuid, self.account.uuid, self.category.uuid, 30, None)
+
+        points = self.repository.list_points(self.account.uuid, 100, 3, 10)
+
+        self.assertEqual(points, [80, 110, 110])
 
     def test_shopping_list_movements_affect_account_balance(self) -> None:
         shopping_list = self.create_event("Groceries", "SHOPPING_LIST", 10)
@@ -84,12 +98,12 @@ class SqliteAccountBalanceQueryRepositoryTest(LedgerRepositoryTestCase):
 
         self.assertEqual(self.repository.get_balance_at(self.account.uuid, 10), -30)
 
-    def test_list_points_requires_complete_fixed_days(self) -> None:
-        """Invalid or partial fixed-day intervals are rejected before querying."""
-        for from_timestamp, to_timestamp in ((100, 100), (200, 100), (100, 200)):
-            with self.subTest(from_timestamp=from_timestamp, to_timestamp=to_timestamp):
+    def test_list_points_requires_positive_count_and_interval(self) -> None:
+        """The caller explicitly controls both the number and width of points."""
+        for point_count, point_interval in ((0, 86400), (-1, 86400), (1, 0), (1, -1)):
+            with self.subTest(point_count=point_count, point_interval=point_interval):
                 with self.assertRaises(ValueError):
-                    self.repository.list_points(self.account.uuid, from_timestamp, to_timestamp)
+                    self.repository.list_points(self.account.uuid, 100, point_count, point_interval)
 
 
 if __name__ == "__main__":

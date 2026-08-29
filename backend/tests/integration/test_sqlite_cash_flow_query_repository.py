@@ -170,6 +170,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         points = self.repository.list_points(
             self.currency.uuid,
             FinancialEventFilter(from_timestamp=100, to_timestamp=172900),
+            86400,
         )
 
         self.assertEqual(points[0].income, 50)
@@ -178,12 +179,23 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(points[1].income, 0)
         self.assertEqual(points[1].expense, 20)
 
-    def test_list_points_requires_explicit_complete_fixed_days(self) -> None:
-        """Daily grouping rejects partial fixed days."""
+    def test_list_points_truncates_the_final_point_to_the_filter_interval(self) -> None:
+        """A partial final interval is retained instead of rejected."""
+        self.add_movement("First point", 100, 50)
+        self.add_movement("Truncated point", 1000, -20)
+        filters = FinancialEventFilter(from_timestamp=100, to_timestamp=1100)
+
+        points = self.repository.list_points(self.currency.uuid, filters, 600)
+
+        self.assertEqual([(point.income, point.expense) for point in points], [(50, 0), (0, 20)])
+
+    def test_list_points_requires_a_positive_point_width(self) -> None:
         filters = FinancialEventFilter(from_timestamp=100, to_timestamp=200)
 
-        with self.assertRaises(ValueError):
-            self.repository.list_points(self.currency.uuid, filters)
+        for point_width in (0, -1):
+            with self.subTest(point_width=point_width):
+                with self.assertRaises(ValueError):
+                    self.repository.list_points(self.currency.uuid, filters, point_width)
 
 
 if __name__ == "__main__":

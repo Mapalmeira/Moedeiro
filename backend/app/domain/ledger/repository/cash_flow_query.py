@@ -11,11 +11,10 @@ class CashFlowQueryRepository(ABC):
         pass
 
     @abstractmethod
-    def list_points(self, currency_uuid: UUID, filters: FinancialEventFilter) -> list[CashFlow]:
-        """Return cash flow for consecutive fixed 24-hour intervals.
+    def list_points(self, currency_uuid: UUID, filters: FinancialEventFilter, point_width: int) -> list[CashFlow]:
+        """Return cash flow for consecutive intervals of point_width seconds.
 
-        The filter's from_timestamp must be the first day boundary and the filter's
-        to_timestamp the exclusive boundary after the last day. Item i belongs to the
-        interval starting at from_timestamp + i * 86400.
+        The final point covers the remaining portion of the filter interval when it
+        is narrower than point_width.
         """
         pass

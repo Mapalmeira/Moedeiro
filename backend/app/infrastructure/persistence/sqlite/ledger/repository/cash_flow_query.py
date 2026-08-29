@@ -8,8 +8,6 @@ from app.infrastructure.persistence.sqlite.ledger.repository._financial_event_fi
 
 
 class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
-    _SECONDS_PER_DAY = 86400
-
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
@@ -38,20 +36,20 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
         ).fetchone()
         return self._to_model(row, currency_uuid)
 
-    def list_points(self, currency_uuid: UUID, filters: FinancialEventFilter) -> list[CashFlow]:
-        from_timestamp, to_timestamp = self._validate_point_period(filters)
+    def list_points(self, currency_uuid: UUID, filters: FinancialEventFilter, point_width: int) -> list[CashFlow]:
+        self._validate_point_width(point_width)
         where_clause, parameters = self._filtered_events(filters)
         movement_clause, movement_parameters = self._movement_filter(filters)
         rows = self.connection.execute(
             f"""
             WITH filtered_events AS (
                 SELECT event.uuid, event.occurred_at,
-                       ? + ((event.occurred_at - ?) / {self._SECONDS_PER_DAY}) * {self._SECONDS_PER_DAY} AS day_start
+                       ? + ((event.occurred_at - ?) / ?) * ? AS point_start
                 FROM financial_event AS event
                 {where_clause}
             )
             SELECT
-                filtered_events.day_start,
+                filtered_events.point_start,
                 COALESCE(SUM(CASE WHEN movement.value > 0 THEN movement.value ELSE 0 END), 0) AS income,
                 COALESCE(SUM(CASE WHEN movement.value < 0 THEN -movement.value ELSE 0 END), 0) AS expense,
                 COUNT(DISTINCT filtered_events.uuid) AS event_count,
@@ -61,21 +59,20 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
             JOIN financial_movement AS movement ON movement.financial_event_uuid = filtered_events.uuid
             JOIN account ON account.uuid = movement.account_uuid
             WHERE account.currency_uuid = ?{movement_clause}
-            GROUP BY filtered_events.day_start
+            GROUP BY filtered_events.point_start
             """,
-            [from_timestamp, from_timestamp, *parameters, currency_uuid.bytes, *movement_parameters],
+            [filters.from_timestamp, filters.from_timestamp, point_width, point_width, *parameters, currency_uuid.bytes, *movement_parameters],
         ).fetchall()
-        rows_by_day = {row["day_start"]: row for row in rows}
+        rows_by_point = {row["point_start"]: row for row in rows}
         return [
-            self._to_model(rows_by_day.get(day_start), currency_uuid)
-            for day_start in range(from_timestamp, to_timestamp, self._SECONDS_PER_DAY)
+            self._to_model(rows_by_point.get(point_start), currency_uuid)
+            for point_start in range(filters.from_timestamp, filters.to_timestamp, point_width)
         ]
 
-    @classmethod
-    def _validate_point_period(cls, filters: FinancialEventFilter) -> tuple[int, int]:
-        if (filters.to_timestamp - filters.from_timestamp) % cls._SECONDS_PER_DAY != 0:
-            raise ValueError("the interval must contain complete 24-hour days")
-        return filters.from_timestamp, filters.to_timestamp
+    @staticmethod
+    def _validate_point_width(point_width: int) -> None:
+        if point_width < 1:
+            raise ValueError("point_width must be greater than zero")
 
     @staticmethod
     def _filtered_events(filters: FinancialEventFilter) -> tuple[str, list[bytes | str | int]]:
