@@ -20,8 +20,7 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         self.event = self.create_event()
 
     def create_movement(self, value: int = -100, item_name: str | None = "Lunch") -> FinancialMovement:
-        self.repository.create(self.event.uuid, self.account.uuid, self.category.uuid, value, item_name)
-        return self.repository.list_by_transaction_event(self.event.uuid)[-1]
+        return self.repository.create(self.event.uuid, self.account.uuid, self.category.uuid, value, item_name)
 
     def test_create_and_get_preserve_movement_relations(self) -> None:
         """create stores the event, account and category identities supplied."""
