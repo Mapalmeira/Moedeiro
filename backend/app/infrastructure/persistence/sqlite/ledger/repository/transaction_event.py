@@ -17,14 +17,14 @@ class SqliteTransactionEventRepository(TransactionEventRepository):
         event = TransactionEvent(uuid=uuid4(), occurred_at=occurred_at, description=description, type=type, movements=[])
         self.connection.execute(
             "INSERT INTO transaction_event(uuid, occurred_at, description, type) VALUES (?, ?, ?, ?)",
-            (str(event.uuid), event.occurred_at, event.description, event.type),
+            (event.uuid.bytes, event.occurred_at, event.description, event.type),
         )
         return event
 
     def get(self, uuid: UUID) -> TransactionEvent | None:
         row = self.connection.execute(
             "SELECT uuid, occurred_at, description, type FROM transaction_event WHERE uuid = ?",
-            (str(uuid),),
+            (uuid.bytes,),
         ).fetchone()
         if row is None:
             return None
@@ -34,26 +34,26 @@ class SqliteTransactionEventRepository(TransactionEventRepository):
         event = TransactionEvent(uuid=uuid, occurred_at=value, description="event", type="TRANSACTION", movements=[])
         self.connection.execute(
             "UPDATE transaction_event SET occurred_at = ? WHERE uuid = ?",
-            (event.occurred_at, str(event.uuid)),
+            (event.occurred_at, event.uuid.bytes),
         )
 
     def update_description(self, uuid: UUID, value: str) -> None:
         event = TransactionEvent(uuid=uuid, occurred_at=0, description=value, type="TRANSACTION", movements=[])
         self.connection.execute(
             "UPDATE transaction_event SET description = ? WHERE uuid = ?",
-            (event.description, str(event.uuid)),
+            (event.description, event.uuid.bytes),
         )
 
     def add_tag(self, transaction_event_uuid: UUID, tag_uuid: UUID) -> None:
         self.connection.execute(
             "INSERT INTO transaction_tag(transaction_event_uuid, tag_uuid) VALUES (?, ?)",
-            (str(transaction_event_uuid), str(tag_uuid)),
+            (transaction_event_uuid.bytes, tag_uuid.bytes),
         )
 
     def remove_tag(self, transaction_event_uuid: UUID, tag_uuid: UUID) -> None:
         self.connection.execute(
             "DELETE FROM transaction_tag WHERE transaction_event_uuid = ? AND tag_uuid = ?",
-            (str(transaction_event_uuid), str(tag_uuid)),
+            (transaction_event_uuid.bytes, tag_uuid.bytes),
         )
 
     def list_tags(self, transaction_event_uuid: UUID) -> list[Tag]:
@@ -64,7 +64,7 @@ class SqliteTransactionEventRepository(TransactionEventRepository):
             JOIN transaction_tag ON transaction_tag.tag_uuid = tag.uuid
             WHERE transaction_tag.transaction_event_uuid = ?
             """,
-            (str(transaction_event_uuid),),
+            (transaction_event_uuid.bytes,),
         ).fetchall()
         return [Tag.model_validate(dict(row)) for row in rows]
 
@@ -118,7 +118,7 @@ class SqliteTransactionEventRepository(TransactionEventRepository):
         ).fetchall()
         for movement_row in movement_rows:
             movement = FinancialMovement.model_validate(dict(movement_row))
-            events[str(movement.transaction_event_uuid)]["movements"].append(movement)
+            events[movement.transaction_event_uuid.bytes]["movements"].append(movement)
         return [TransactionEvent.model_validate(events[row["uuid"]]) for row in rows]
 
     @staticmethod

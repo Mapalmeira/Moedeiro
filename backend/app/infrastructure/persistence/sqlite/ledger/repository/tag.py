@@ -15,14 +15,14 @@ class SqliteTagRepository(TagRepository):
         tag = Tag(uuid=uuid4(), name=name)
         self.connection.execute(
             "INSERT INTO tag(uuid, name) VALUES (?, ?)",
-            (str(tag.uuid), tag.name),
+            (tag.uuid.bytes, tag.name),
         )
         return tag
 
     def get(self, uuid: UUID) -> Tag | None:
         row = self.connection.execute(
             "SELECT uuid, name FROM tag WHERE uuid = ?",
-            (str(uuid),),
+            (uuid.bytes,),
         ).fetchone()
         if row is None:
             return None
@@ -32,7 +32,7 @@ class SqliteTagRepository(TagRepository):
         tag = Tag(uuid=uuid, name=value)
         self.connection.execute(
             "UPDATE tag SET name = ? WHERE uuid = ?",
-            (tag.name, str(tag.uuid)),
+            (tag.name, tag.uuid.bytes),
         )
 
     def list_all(self) -> list[Tag]:

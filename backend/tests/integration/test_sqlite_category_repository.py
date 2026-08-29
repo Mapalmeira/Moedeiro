@@ -40,7 +40,7 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         parent = self.create_category("Parent")
         self.repository.create("Child", parent.uuid)
 
-        self.connection.execute("DELETE FROM category WHERE uuid = ?", (str(parent.uuid),))
+        self.connection.execute("DELETE FROM category WHERE uuid = ?", (parent.uuid.bytes,))
 
         self.assertEqual(self.repository.list_all(), [])
 

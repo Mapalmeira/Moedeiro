@@ -34,7 +34,7 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
             JOIN account ON account.uuid = movement.account_uuid
             WHERE account.currency_uuid = ?{movement_clause}
             """,
-            [*parameters, str(currency_uuid), *movement_parameters],
+            [*parameters, currency_uuid.bytes, *movement_parameters],
         ).fetchone()
         return self._to_model(row, currency_uuid)
 
@@ -63,7 +63,7 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
             WHERE account.currency_uuid = ?{movement_clause}
             GROUP BY filtered_events.day_start
             """,
-            [from_timestamp, from_timestamp, *parameters, str(currency_uuid), *movement_parameters],
+            [from_timestamp, from_timestamp, *parameters, currency_uuid.bytes, *movement_parameters],
         ).fetchall()
         rows_by_day = {row["day_start"]: row for row in rows}
         return [
@@ -78,17 +78,17 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
         return filters.from_timestamp, filters.to_timestamp
 
     @staticmethod
-    def _filtered_events(filters: TransactionEventFilter) -> tuple[str, list[str | int]]:
+    def _filtered_events(filters: TransactionEventFilter) -> tuple[str, list[bytes | str | int]]:
         where_clause, parameters = build_transaction_event_filter(filters)
         return where_clause + " AND event.type <> ?", [*parameters, "ACCOUNT_TRANSFER"]
 
     @staticmethod
-    def _movement_filter(filters: TransactionEventFilter) -> tuple[str, list[str]]:
+    def _movement_filter(filters: TransactionEventFilter) -> tuple[str, list[bytes]]:
         clauses: list[str] = []
-        parameters: list[str] = []
+        parameters: list[bytes] = []
         if filters.account_uuid is not None:
             clauses.append("movement.account_uuid = ?")
-            parameters.append(str(filters.account_uuid))
+            parameters.append(filters.account_uuid.bytes)
         if filters.category_uuids:
             placeholders = ", ".join("?" for _ in filters.category_uuids)
             clauses.append(
@@ -109,7 +109,7 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
                 )
                 """
             )
-            parameters.extend(sorted(str(uuid) for uuid in filters.category_uuids))
+            parameters.extend(sorted(uuid.bytes for uuid in filters.category_uuids))
         if not clauses:
             return "", parameters
         return " AND " + " AND ".join(clauses), parameters

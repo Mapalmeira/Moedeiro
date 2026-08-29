@@ -13,14 +13,14 @@ class SqliteLedgerRepository(LedgerRepository):
         ledger = Ledger(uuid=uuid4(), path=path)
         self.connection.execute(
             "INSERT INTO ledger(uuid, path) VALUES (?, ?)",
-            (str(ledger.uuid), ledger.path),
+            (ledger.uuid.bytes, ledger.path),
         )
         return ledger
 
     def get(self, uuid: UUID) -> Ledger | None:
         row = self.connection.execute(
             "SELECT uuid, path FROM ledger WHERE uuid = ?",
-            (str(uuid),),
+            (uuid.bytes,),
         ).fetchone()
         if row is None:
             return None
@@ -39,13 +39,13 @@ class SqliteLedgerRepository(LedgerRepository):
         ledger = Ledger(uuid=uuid, path=value)
         self.connection.execute(
             "UPDATE ledger SET path = ? WHERE uuid = ?",
-            (ledger.path, str(ledger.uuid)),
+            (ledger.path, ledger.uuid.bytes),
         )
 
     def delete(self, uuid: UUID) -> None:
         self.connection.execute(
             "DELETE FROM ledger WHERE uuid = ?",
-            (str(uuid),),
+            (uuid.bytes,),
         )
 
     def list_all(self) -> list[Ledger]:

@@ -45,7 +45,7 @@ class SqliteBudgetStatusQueryRepository(BudgetStatusQueryRepository):
     def get_status(self, budget_uuid: UUID, timestamp: int) -> BudgetStatus | None:
         row = self.connection.execute(
             self._SELECT + " WHERE budget.uuid = ? AND budget.from_timestamp <= ? AND budget.to_timestamp > ?",
-            (timestamp, str(budget_uuid), timestamp, timestamp),
+            (timestamp, budget_uuid.bytes, timestamp, timestamp),
         ).fetchone()
         if row is None:
             return None

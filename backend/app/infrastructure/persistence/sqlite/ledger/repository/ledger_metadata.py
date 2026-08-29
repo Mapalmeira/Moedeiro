@@ -44,6 +44,6 @@ class SqliteLedgerMetadataRepository(LedgerMetadataRepository):
             INSERT INTO ledger_metadata(singleton, ledger_uuid, name, schema_version, created_at)
             VALUES (1, ?, ?, ?, ?)
             """,
-            (str(metadata.ledger_uuid), metadata.name, metadata.schema_version, metadata.created_at),
+            (metadata.ledger_uuid.bytes, metadata.name, metadata.schema_version, metadata.created_at),
         )
         return metadata

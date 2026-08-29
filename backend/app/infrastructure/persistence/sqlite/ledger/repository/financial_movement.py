@@ -29,10 +29,10 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
             VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
-                str(movement.uuid),
-                str(movement.transaction_event_uuid),
-                str(movement.account_uuid),
-                str(movement.category_uuid),
+                movement.uuid.bytes,
+                movement.transaction_event_uuid.bytes,
+                movement.account_uuid.bytes,
+                movement.category_uuid.bytes,
                 movement.value,
                 movement.item_name,
             ),
@@ -46,7 +46,7 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
             FROM financial_movement
             WHERE uuid = ?
             """,
-            (str(uuid),),
+            (uuid.bytes,),
         ).fetchone()
         if row is None:
             return None
@@ -56,21 +56,21 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
         movement = self._validation_model(uuid, value=value)
         self.connection.execute(
             "UPDATE financial_movement SET value = ? WHERE uuid = ?",
-            (movement.value, str(movement.uuid)),
+            (movement.value, movement.uuid.bytes),
         )
 
     def update_item_name(self, uuid: UUID, value: str | None) -> None:
         movement = self._validation_model(uuid, item_name=value)
         self.connection.execute(
             "UPDATE financial_movement SET item_name = ? WHERE uuid = ?",
-            (movement.item_name, str(movement.uuid)),
+            (movement.item_name, movement.uuid.bytes),
         )
 
     def update_category(self, uuid: UUID, category_uuid: UUID) -> None:
         movement = self._validation_model(uuid, category_uuid=category_uuid)
         self.connection.execute(
             "UPDATE financial_movement SET category_uuid = ? WHERE uuid = ?",
-            (str(movement.category_uuid), str(movement.uuid)),
+            (movement.category_uuid.bytes, movement.uuid.bytes),
         )
 
     def list_by_transaction_event(self, transaction_event_uuid: UUID) -> list[FinancialMovement]:
@@ -80,7 +80,7 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
             FROM financial_movement
             WHERE transaction_event_uuid = ?
             """,
-            (str(transaction_event_uuid),),
+            (transaction_event_uuid.bytes,),
         ).fetchall()
         return [self._to_model(row) for row in rows]
 

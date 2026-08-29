@@ -18,14 +18,14 @@ class SqliteAccountRepository(AccountRepository):
         account = Account(uuid=uuid4(), name=name, note=note, currency_uuid=currency_uuid)
         self.connection.execute(
             "INSERT INTO account(uuid, account_name, note, currency_uuid) VALUES (?, ?, ?, ?)",
-            (str(account.uuid), account.name, account.note, str(account.currency_uuid)),
+            (account.uuid.bytes, account.name, account.note, account.currency_uuid.bytes),
         )
         return account
 
     def get(self, uuid: UUID) -> Account | None:
         row = self.connection.execute(
             "SELECT uuid, account_name AS name, note, currency_uuid FROM account WHERE uuid = ?",
-            (str(uuid),),
+            (uuid.bytes,),
         ).fetchone()
         if row is None:
             return None
@@ -35,14 +35,14 @@ class SqliteAccountRepository(AccountRepository):
         account = Account(uuid=uuid, name=value, note=None, currency_uuid=uuid)
         self.connection.execute(
             "UPDATE account SET account_name = ? WHERE uuid = ?",
-            (account.name, str(account.uuid)),
+            (account.name, account.uuid.bytes),
         )
 
     def update_note(self, uuid: UUID, value: str | None) -> None:
         account = Account(uuid=uuid, name="account", note=value, currency_uuid=uuid)
         self.connection.execute(
             "UPDATE account SET note = ? WHERE uuid = ?",
-            (account.note, str(account.uuid)),
+            (account.note, account.uuid.bytes),
         )
 
     def list_all(self) -> list[Account]:

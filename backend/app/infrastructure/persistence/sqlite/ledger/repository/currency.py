@@ -20,14 +20,14 @@ class SqliteCurrencyRepository(CurrencyRepository):
         currency = Currency(uuid=uuid4(), name=name, prefix=prefix, suffix=suffix, decimal_places=decimal_places)
         self.connection.execute(
             "INSERT INTO currency(uuid, currency_name, prefix, suffix, decimal_places) VALUES (?, ?, ?, ?, ?)",
-            (str(currency.uuid), currency.name, currency.prefix, currency.suffix, currency.decimal_places),
+            (currency.uuid.bytes, currency.name, currency.prefix, currency.suffix, currency.decimal_places),
         )
         return currency
 
     def get(self, uuid: UUID) -> Currency | None:
         row = self.connection.execute(
             "SELECT uuid, currency_name AS name, prefix, suffix, decimal_places FROM currency WHERE uuid = ?",
-            (str(uuid),),
+            (uuid.bytes,),
         ).fetchone()
         if row is None:
             return None
@@ -37,21 +37,21 @@ class SqliteCurrencyRepository(CurrencyRepository):
         currency = Currency(uuid=uuid, name=value, prefix=None, suffix=None, decimal_places=0)
         self.connection.execute(
             "UPDATE currency SET currency_name = ? WHERE uuid = ?",
-            (currency.name, str(currency.uuid)),
+            (currency.name, currency.uuid.bytes),
         )
 
     def update_prefix(self, uuid: UUID, value: str | None) -> None:
         currency = Currency(uuid=uuid, name="currency", prefix=value, suffix=None, decimal_places=0)
         self.connection.execute(
             "UPDATE currency SET prefix = ? WHERE uuid = ?",
-            (currency.prefix, str(currency.uuid)),
+            (currency.prefix, currency.uuid.bytes),
         )
 
     def update_suffix(self, uuid: UUID, value: str | None) -> None:
         currency = Currency(uuid=uuid, name="currency", prefix=None, suffix=value, decimal_places=0)
         self.connection.execute(
             "UPDATE currency SET suffix = ? WHERE uuid = ?",
-            (currency.suffix, str(currency.uuid)),
+            (currency.suffix, currency.uuid.bytes),
         )
 
     def list_all(self) -> list[Currency]:

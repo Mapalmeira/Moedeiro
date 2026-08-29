@@ -19,7 +19,7 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
             JOIN transaction_event AS event ON event.uuid = movement.transaction_event_uuid
             WHERE movement.account_uuid = ? AND event.occurred_at <= ?
             """,
-            (str(account_uuid), timestamp),
+            (account_uuid.bytes, timestamp),
         ).fetchone()
         return row["balance"]
 
@@ -33,7 +33,7 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
             JOIN transaction_event AS event ON event.uuid = movement.transaction_event_uuid
             WHERE movement.account_uuid = ? AND event.occurred_at < ?
             """,
-            (str(account_uuid), from_timestamp),
+            (account_uuid.bytes, from_timestamp),
         ).fetchone()
         change_rows = self.connection.execute(
             f"""
@@ -47,7 +47,7 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
               AND event.occurred_at < ?
             GROUP BY day_start
             """,
-            (from_timestamp, from_timestamp, str(account_uuid), from_timestamp, to_timestamp),
+            (from_timestamp, from_timestamp, account_uuid.bytes, from_timestamp, to_timestamp),
         ).fetchall()
         changes = {row["day_start"]: row["balance_change"] for row in change_rows}
         balance = opening_row["balance"]
@@ -60,7 +60,7 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
     def _ensure_account_exists(self, account_uuid: UUID) -> None:
         row = self.connection.execute(
             "SELECT 1 FROM account WHERE uuid = ?",
-            (str(account_uuid),),
+            (account_uuid.bytes,),
         ).fetchone()
         if row is None:
             raise LookupError(f"account {account_uuid} does not exist")

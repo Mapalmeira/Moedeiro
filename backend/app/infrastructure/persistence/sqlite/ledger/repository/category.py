@@ -15,14 +15,14 @@ class SqliteCategoryRepository(CategoryRepository):
         category = Category(uuid=uuid4(), name=name, parent_uuid=parent_uuid)
         self.connection.execute(
             "INSERT INTO category(uuid, category_name, parent_uuid) VALUES (?, ?, ?)",
-            (str(category.uuid), category.name, self._serialize_uuid(category.parent_uuid)),
+            (category.uuid.bytes, category.name, self._serialize_uuid(category.parent_uuid)),
         )
         return category
 
     def get(self, uuid: UUID) -> Category | None:
         row = self.connection.execute(
             "SELECT uuid, category_name AS name, parent_uuid FROM category WHERE uuid = ?",
-            (str(uuid),),
+            (uuid.bytes,),
         ).fetchone()
         if row is None:
             return None
@@ -32,14 +32,14 @@ class SqliteCategoryRepository(CategoryRepository):
         category = Category(uuid=uuid, name=value, parent_uuid=None)
         self.connection.execute(
             "UPDATE category SET category_name = ? WHERE uuid = ?",
-            (category.name, str(category.uuid)),
+            (category.name, category.uuid.bytes),
         )
 
     def update_parent(self, uuid: UUID, parent_uuid: UUID | None) -> None:
         category = Category(uuid=uuid, name="category", parent_uuid=parent_uuid)
         self.connection.execute(
             "UPDATE category SET parent_uuid = ? WHERE uuid = ?",
-            (self._serialize_uuid(category.parent_uuid), str(category.uuid)),
+            (self._serialize_uuid(category.parent_uuid), category.uuid.bytes),
         )
 
     def list_all(self) -> list[Category]:
@@ -69,10 +69,10 @@ class SqliteCategoryRepository(CategoryRepository):
         return Category.model_validate(dict(row))
 
     @staticmethod
-    def _serialize_uuid(value: UUID | None) -> str | None:
+    def _serialize_uuid(value: UUID | None) -> bytes | None:
         if value is None:
             return None
-        return str(value)
+        return value.bytes
 
     @classmethod
     def _get_sort_column(cls, sort_key: str) -> str:

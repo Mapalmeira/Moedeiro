@@ -42,8 +42,8 @@ class SqliteLedgerTokenRepository(LedgerTokenRepository):
             ) VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
-                str(ledger_token.uuid),
-                str(ledger_token.ledger_uuid),
+                ledger_token.uuid.bytes,
+                ledger_token.ledger_uuid.bytes,
                 ledger_token.token_hash,
                 ledger_token.label,
                 ledger_token.created_at,
@@ -59,7 +59,7 @@ class SqliteLedgerTokenRepository(LedgerTokenRepository):
             FROM ledger_token
             WHERE uuid = ?
             """,
-            (str(uuid),),
+            (uuid.bytes,),
         ).fetchone()
         if row is None:
             return None
@@ -93,7 +93,7 @@ class SqliteLedgerTokenRepository(LedgerTokenRepository):
         )
         self.connection.execute(
             "UPDATE ledger_token SET label = ? WHERE uuid = ?",
-            (updated_token.label, str(updated_token.uuid)),
+            (updated_token.label, updated_token.uuid.bytes),
         )
 
     def revoke(self, uuid: UUID, revoked_at: int) -> None:
@@ -103,7 +103,7 @@ class SqliteLedgerTokenRepository(LedgerTokenRepository):
             SET revoked_at = ?
             WHERE uuid = ? AND revoked_at IS NULL
             """,
-            (revoked_at, str(uuid)),
+            (revoked_at, uuid.bytes),
         )
 
     def list_by_ledger(self, ledger_uuid: UUID) -> list[LedgerToken]:
@@ -113,7 +113,7 @@ class SqliteLedgerTokenRepository(LedgerTokenRepository):
             FROM ledger_token
             WHERE ledger_uuid = ?
             """,
-            (str(ledger_uuid),),
+            (ledger_uuid.bytes,),
         ).fetchall()
         return [self._to_model(row) for row in rows]
 
