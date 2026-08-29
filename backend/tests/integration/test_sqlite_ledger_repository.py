@@ -6,8 +6,10 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
+from app.infrastructure.persistence.sqlite.registry.repository.access_grant import SqliteAccessGrantRepository
+from app.infrastructure.persistence.sqlite.registry.repository.access_invitation import SqliteAccessInvitationRepository
+from app.infrastructure.persistence.sqlite.registry.repository.auth_session import SqliteAuthSessionRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger import SqliteLedgerRepository
-from app.infrastructure.persistence.sqlite.registry.repository.ledger_token import SqliteLedgerTokenRepository
 
 
 SCHEMA_PATH = (
@@ -75,19 +77,23 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
             ["first.sqlite", "second.sqlite"],
         )
 
-    def test_delete_ledger_cascades_to_its_tokens(self) -> None:
-        """The repository uses a connection with SQLite foreign keys enabled."""
-        token_repository = SqliteLedgerTokenRepository(self.connection)
+    def test_delete_ledger_cascades_through_its_access_records(self) -> None:
+        """Deleting a ledger removes invitations, grants and sessions."""
+        invitation_repository = SqliteAccessInvitationRepository(self.connection)
+        grant_repository = SqliteAccessGrantRepository(self.connection)
+        session_repository = SqliteAuthSessionRepository(self.connection)
         self.repository.create("ledger.sqlite")
         ledger = self.repository.get_by_path("ledger.sqlite")
         assert ledger is not None
-        token_repository.create(ledger.uuid, "token-hash", None, 10)
-        token = token_repository.get_by_token_hash("token-hash")
-        assert token is not None
+        invitation = invitation_repository.create(ledger.uuid, b"i" * 32, 10, 20)
+        grant = grant_repository.create_webcrypto(invitation.grant_uuid, ledger.uuid, None, b"public-key", 15)
+        session = session_repository.create(grant.uuid, b"s" * 32, 17)
 
         self.repository.delete(ledger.uuid)
 
-        self.assertIsNone(token_repository.get(token.uuid))
+        self.assertIsNone(invitation_repository.get(invitation.uuid))
+        self.assertIsNone(grant_repository.get(grant.uuid))
+        self.assertIsNone(session_repository.get(session.uuid))
 
     def test_repository_does_not_commit_its_own_changes(self) -> None:
         """Transaction ownership remains with the unit of work."""
