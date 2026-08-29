@@ -4,6 +4,7 @@ import sqlite3
 
 from pydantic import ValidationError
 
+from app.domain.ledger.model.category_tree_node import CategoryTreeNode
 from app.infrastructure.persistence.sqlite.ledger.repository.category import SqliteCategoryRepository
 from tests.integration.ledger_repository_test_case import LedgerRepositoryTestCase
 
@@ -76,6 +77,28 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
             with self.subTest(sort_key=sort_key):
                 with self.assertRaises(ValueError):
                     self.repository.list_page(1, 10, sort_key, True)
+
+    def test_get_tree_returns_roots_with_ordered_descendants(self) -> None:
+        leisure = self.create_category("Leisure")
+        food = self.create_category("Food")
+        restaurants = self.create_category("Restaurants", food)
+        groceries = self.create_category("Groceries", food)
+        self.create_category("Bakeries", groceries)
+
+        tree = self.repository.get_tree()
+
+        self.assertEqual(self._names(tree), [("Food", [("Groceries", [("Bakeries", [])]), ("Restaurants", [])]), ("Leisure", [])])
+        self.assertEqual(tree[0].category, food)
+        self.assertEqual(tree[1].category, leisure)
+        self.assertEqual(tree[0].children[0].category, groceries)
+        self.assertEqual(tree[0].children[1].category, restaurants)
+
+    def test_get_tree_returns_no_nodes_when_there_are_no_categories(self) -> None:
+        self.assertEqual(self.repository.get_tree(), [])
+
+    @classmethod
+    def _names(cls, nodes: list[CategoryTreeNode]) -> list[tuple[str, list]]:
+        return [(node.category.name, cls._names(node.children)) for node in nodes]
 
 
 if __name__ == "__main__":

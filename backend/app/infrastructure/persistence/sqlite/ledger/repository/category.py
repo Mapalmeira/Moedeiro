@@ -5,6 +5,7 @@ from pydantic import TypeAdapter
 
 from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.category import Category, CategoryName
+from app.domain.ledger.model.category_tree_node import CategoryTreeNode
 from app.domain.ledger.repository.category import CategoryRepository
 
 
@@ -66,6 +67,27 @@ class SqliteCategoryRepository(CategoryRepository):
             "SELECT uuid, category_name AS name, icon, color_code, parent_uuid FROM category"
         ).fetchall()
         return [self._to_model(row) for row in rows]
+
+    def get_tree(self) -> list[CategoryTreeNode]:
+        rows = self.connection.execute(
+            """
+            SELECT uuid, category_name AS name, icon, color_code, parent_uuid
+            FROM category
+            ORDER BY category_name ASC, uuid ASC
+            """
+        ).fetchall()
+        categories = [self._to_model(row) for row in rows]
+        nodes = {category.uuid: CategoryTreeNode(category=category) for category in categories}
+        roots: list[CategoryTreeNode] = []
+
+        for category in categories:
+            node = nodes[category.uuid]
+            if category.parent_uuid is None:
+                roots.append(node)
+                continue
+            nodes[category.parent_uuid].children.append(node)
+
+        return roots
 
     def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[Category]:
         self._validate_page(page_number, page_size)

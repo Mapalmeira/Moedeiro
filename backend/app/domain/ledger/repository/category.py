@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from uuid import UUID
 
 from app.domain.ledger.model.category import Category
+from app.domain.ledger.model.category_tree_node import CategoryTreeNode
 
 
 class CategoryRepository(ABC):
@@ -31,6 +32,10 @@ class CategoryRepository(ABC):
 
     @abstractmethod
     def list_all(self) -> list[Category]:
+        pass
+
+    @abstractmethod
+    def get_tree(self) -> list[CategoryTreeNode]:
         pass
 
     @abstractmethod
