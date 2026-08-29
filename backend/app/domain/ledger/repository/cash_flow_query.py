@@ -7,10 +7,15 @@ from app.domain.ledger.model.transaction_event_filter import TransactionEventFil
 
 class CashFlowQueryRepository(ABC):
     @abstractmethod
-    def get_summary(self, currency_uuid: UUID, filters: TransactionEventFilter) -> CashFlow | None:
+    def get_summary(self, currency_uuid: UUID, filters: TransactionEventFilter) -> CashFlow:
         pass
 
     @abstractmethod
     def list_points(self, currency_uuid: UUID, filters: TransactionEventFilter) -> list[CashFlow]:
-        """Return cash flow grouped from caller-provided fixed day boundaries."""
+        """Return cash flow for consecutive fixed 24-hour intervals.
+
+        The filter's from_timestamp must be the first day boundary and the filter's
+        to_timestamp the exclusive boundary after the last day. Item i belongs to the
+        interval starting at from_timestamp + i * 86400.
+        """
         pass

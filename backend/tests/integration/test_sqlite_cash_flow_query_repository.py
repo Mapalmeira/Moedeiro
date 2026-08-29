@@ -43,41 +43,37 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
             TransactionEventFilter(from_timestamp=50, to_timestamp=300),
         )
 
-        assert summary is not None
         self.assertEqual(summary.currency_uuid, self.currency.uuid)
-        self.assertEqual(summary.from_timestamp, 50)
-        self.assertEqual(summary.to_timestamp, 300)
         self.assertEqual(summary.income, 100)
         self.assertEqual(summary.expense, 50)
         self.assertEqual(summary.event_count, 2)
         self.assertEqual(summary.income_movement_count, 1)
         self.assertEqual(summary.expense_movement_count, 2)
 
-    def test_get_summary_derives_missing_bounds_from_matching_events(self) -> None:
-        """Absent filter bounds become the first and last represented event timestamps."""
+    def test_get_summary_applies_required_interval(self) -> None:
+        """Only events inside the required half-open interval are represented."""
         self.add_movement("First", 100, 50)
         self.add_movement("Last", 200, -20)
-        self.add_movement("Other currency", 300, 1000, self.foreign_currency_account)
+        self.add_movement("Outside", 300, 1000)
 
-        summary = self.repository.get_summary(self.currency.uuid, TransactionEventFilter())
+        summary = self.repository.get_summary(
+            self.currency.uuid,
+            TransactionEventFilter(from_timestamp=100, to_timestamp=300),
+        )
 
-        assert summary is not None
-        self.assertEqual(summary.from_timestamp, 100)
-        self.assertEqual(summary.to_timestamp, 200)
+        self.assertEqual(summary.income, 50)
+        self.assertEqual(summary.expense, 20)
 
-    def test_get_summary_returns_zero_for_empty_fixed_interval_and_none_without_bounds(self) -> None:
-        """A defined interval can represent zero flow; an unbounded empty result has no range."""
-        fixed = self.repository.get_summary(
+    def test_get_summary_returns_zero_for_empty_interval(self) -> None:
+        """An interval without matching movements returns a zero-valued summary."""
+        summary = self.repository.get_summary(
             self.currency.uuid,
             TransactionEventFilter(from_timestamp=10, to_timestamp=20),
         )
-        unbounded = self.repository.get_summary(self.currency.uuid, TransactionEventFilter())
 
-        assert fixed is not None
-        self.assertEqual(fixed.income, 0)
-        self.assertEqual(fixed.expense, 0)
-        self.assertEqual(fixed.event_count, 0)
-        self.assertIsNone(unbounded)
+        self.assertEqual(summary.income, 0)
+        self.assertEqual(summary.expense, 0)
+        self.assertEqual(summary.event_count, 0)
 
     def test_get_summary_applies_event_filters_before_aggregation(self) -> None:
         """Account and category may select an event through different movements."""
@@ -92,10 +88,14 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
 
         summary = self.repository.get_summary(
             self.currency.uuid,
-            TransactionEventFilter(account_uuid=selected_account.uuid, category_uuids={selected_category.uuid}),
+            TransactionEventFilter(
+                from_timestamp=0,
+                to_timestamp=200,
+                account_uuid=selected_account.uuid,
+                category_uuids={selected_category.uuid},
+            ),
         )
 
-        assert summary is not None
         self.assertEqual(summary.income, 100)
         self.assertEqual(summary.expense, 40)
         self.assertEqual(summary.event_count, 1)
@@ -111,8 +111,6 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
             TransactionEventFilter(from_timestamp=100, to_timestamp=172900),
         )
 
-        self.assertEqual([point.from_timestamp for point in points], [100, 86500])
-        self.assertEqual([point.to_timestamp for point in points], [86500, 172900])
         self.assertEqual(points[0].income, 50)
         self.assertEqual(points[0].expense, 10)
         self.assertEqual(points[0].event_count, 2)
@@ -120,16 +118,11 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(points[1].expense, 20)
 
     def test_list_points_requires_explicit_complete_fixed_days(self) -> None:
-        """Daily grouping rejects missing boundaries and partial fixed days."""
-        for filters in (
-            TransactionEventFilter(),
-            TransactionEventFilter(from_timestamp=100),
-            TransactionEventFilter(to_timestamp=86500),
-            TransactionEventFilter(from_timestamp=100, to_timestamp=200),
-        ):
-            with self.subTest(filters=filters):
-                with self.assertRaises(ValueError):
-                    self.repository.list_points(self.currency.uuid, filters)
+        """Daily grouping rejects partial fixed days."""
+        filters = TransactionEventFilter(from_timestamp=100, to_timestamp=200)
+
+        with self.assertRaises(ValueError):
+            self.repository.list_points(self.currency.uuid, filters)
 
 
 if __name__ == "__main__":

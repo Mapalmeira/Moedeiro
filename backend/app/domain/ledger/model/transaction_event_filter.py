@@ -11,12 +11,12 @@ class TransactionEventFilter(BaseModel):
     Different criteria are combined with AND. Within category_uuids, tag_uuids
     and event_types, matching any value is sufficient.
     
-    The time interval is half-open: from_timestamp is inclusive and to_timestamp
-    is exclusive. Either boundary may be omitted.
+    The required time interval is half-open: from_timestamp is inclusive and
+    to_timestamp is exclusive.
     """
 
-    from_timestamp: int | None = None
-    to_timestamp: int | None = None
+    from_timestamp: int
+    to_timestamp: int
     account_uuid: UUID | None = None
     category_uuids: set[UUID] = Field(default_factory=set)
     tag_uuids: set[UUID] = Field(default_factory=set)
@@ -24,10 +24,6 @@ class TransactionEventFilter(BaseModel):
 
     @model_validator(mode="after")
     def validate_period(self) -> "TransactionEventFilter":
-        if (
-            self.from_timestamp is not None
-            and self.to_timestamp is not None
-            and self.from_timestamp >= self.to_timestamp
-        ):
+        if self.from_timestamp >= self.to_timestamp:
             raise ValueError("from_timestamp must be less than to_timestamp")
         return self

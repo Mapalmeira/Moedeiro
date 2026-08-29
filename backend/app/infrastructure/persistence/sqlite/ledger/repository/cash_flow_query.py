@@ -13,7 +13,7 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def get_summary(self, currency_uuid: UUID, filters: TransactionEventFilter) -> CashFlow | None:
+    def get_summary(self, currency_uuid: UUID, filters: TransactionEventFilter) -> CashFlow:
         where_clause, parameters = self._filtered_events(filters)
         row = self.connection.execute(
             f"""
@@ -23,8 +23,6 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
                 {where_clause}
             )
             SELECT
-                MIN(filtered_events.occurred_at) AS first_timestamp,
-                MAX(filtered_events.occurred_at) AS last_timestamp,
                 COALESCE(SUM(CASE WHEN movement.value > 0 THEN movement.value ELSE 0 END), 0) AS income,
                 COALESCE(SUM(CASE WHEN movement.value < 0 THEN -movement.value ELSE 0 END), 0) AS expense,
                 COUNT(DISTINCT filtered_events.uuid) AS event_count,
@@ -37,11 +35,7 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
             """,
             [*parameters, str(currency_uuid)],
         ).fetchone()
-        from_timestamp = filters.from_timestamp if filters.from_timestamp is not None else row["first_timestamp"]
-        to_timestamp = filters.to_timestamp if filters.to_timestamp is not None else row["last_timestamp"]
-        if from_timestamp is None or to_timestamp is None:
-            return None
-        return self._to_model(row, currency_uuid, from_timestamp, to_timestamp)
+        return self._to_model(row, currency_uuid)
 
     def list_points(self, currency_uuid: UUID, filters: TransactionEventFilter) -> list[CashFlow]:
         from_timestamp, to_timestamp = self._validate_point_period(filters)
@@ -69,16 +63,14 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
             """,
             [from_timestamp, from_timestamp, *parameters, str(currency_uuid)],
         ).fetchall()
-        points = [
-            self._to_model(row, currency_uuid, row["day_start"], row["day_start"] + self._SECONDS_PER_DAY)
-            for row in rows
+        rows_by_day = {row["day_start"]: row for row in rows}
+        return [
+            self._to_model(rows_by_day.get(day_start), currency_uuid)
+            for day_start in range(from_timestamp, to_timestamp, self._SECONDS_PER_DAY)
         ]
-        return sorted(points, key=lambda point: point.from_timestamp)
 
     @classmethod
     def _validate_point_period(cls, filters: TransactionEventFilter) -> tuple[int, int]:
-        if filters.from_timestamp is None or filters.to_timestamp is None:
-            raise ValueError("cash-flow points require from_timestamp and to_timestamp")
         if (filters.to_timestamp - filters.from_timestamp) % cls._SECONDS_PER_DAY != 0:
             raise ValueError("the interval must contain complete 24-hour days")
         return filters.from_timestamp, filters.to_timestamp
@@ -86,18 +78,15 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
     @staticmethod
     def _filtered_events(filters: TransactionEventFilter) -> tuple[str, list[str | int]]:
         where_clause, parameters = build_transaction_event_filter(filters)
-        conjunction = " AND " if where_clause else "WHERE "
-        return where_clause + conjunction + "event.type <> ?", [*parameters, "ACCOUNT_TRANSFER"]
+        return where_clause + " AND event.type <> ?", [*parameters, "ACCOUNT_TRANSFER"]
 
     @staticmethod
-    def _to_model(row: sqlite3.Row, currency_uuid: UUID, from_timestamp: int, to_timestamp: int) -> CashFlow:
+    def _to_model(row: sqlite3.Row | None, currency_uuid: UUID) -> CashFlow:
         return CashFlow(
             currency_uuid=currency_uuid,
-            from_timestamp=from_timestamp,
-            to_timestamp=to_timestamp,
-            income=row["income"],
-            expense=row["expense"],
-            event_count=row["event_count"],
-            income_movement_count=row["income_movement_count"],
-            expense_movement_count=row["expense_movement_count"],
+            income=0 if row is None else row["income"],
+            expense=0 if row is None else row["expense"],
+            event_count=0 if row is None else row["event_count"],
+            income_movement_count=0 if row is None else row["income_movement_count"],
+            expense_movement_count=0 if row is None else row["expense_movement_count"],
         )

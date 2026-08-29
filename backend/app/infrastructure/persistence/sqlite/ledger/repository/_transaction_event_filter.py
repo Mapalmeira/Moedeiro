@@ -2,15 +2,9 @@ from app.domain.ledger.model.transaction_event_filter import TransactionEventFil
 
 
 def build_transaction_event_filter(filters: TransactionEventFilter) -> tuple[str, list[str | int]]:
-    clauses: list[str] = []
-    parameters: list[str | int] = []
+    clauses = ["event.occurred_at >= ?", "event.occurred_at < ?"]
+    parameters: list[str | int] = [filters.from_timestamp, filters.to_timestamp]
 
-    if filters.from_timestamp is not None:
-        clauses.append("event.occurred_at >= ?")
-        parameters.append(filters.from_timestamp)
-    if filters.to_timestamp is not None:
-        clauses.append("event.occurred_at < ?")
-        parameters.append(filters.to_timestamp)
     if filters.account_uuid is not None:
         clauses.append(
             """
@@ -54,6 +48,4 @@ def build_transaction_event_filter(filters: TransactionEventFilter) -> tuple[str
         clauses.append(f"event.type IN ({placeholders})")
         parameters.extend(sorted(filters.event_types))
 
-    if not clauses:
-        return "", parameters
     return "WHERE " + " AND ".join(clauses), parameters

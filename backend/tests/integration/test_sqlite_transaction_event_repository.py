@@ -110,6 +110,8 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
 
         events = self.repository.list_filtered(
             TransactionEventFilter(
+                from_timestamp=0,
+                to_timestamp=100,
                 category_uuids={first_category.uuid, second_category.uuid},
                 tag_uuids={first_tag.uuid, second_tag.uuid},
                 event_types={"SHOPPING_LIST"},
@@ -136,7 +138,12 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         movement_repository.create(category_only.uuid, other_account.uuid, selected_category.uuid, -40, None)
 
         events = self.repository.list_filtered(
-            TransactionEventFilter(account_uuid=selected_account.uuid, category_uuids={selected_category.uuid})
+            TransactionEventFilter(
+                from_timestamp=0,
+                to_timestamp=100,
+                account_uuid=selected_account.uuid,
+                category_uuids={selected_category.uuid},
+            )
         )
 
         self.assertEqual([event.uuid for event in events], [expected.uuid])
@@ -154,7 +161,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         movement_repository.create(second.uuid, account.uuid, category.uuid, -20, "Second item")
 
         loaded = self.repository.get(first.uuid)
-        page = self.repository.list_page(1, 10, True, TransactionEventFilter())
+        page = self.repository.list_page(1, 10, True, TransactionEventFilter(from_timestamp=0, to_timestamp=100))
 
         assert loaded is not None
         self.assertEqual([movement.value for movement in loaded.movements], [-10])
@@ -171,7 +178,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         self.connection.set_trace_callback(statements.append)
 
         try:
-            self.repository.list_page(1, 10, True, TransactionEventFilter())
+            self.repository.list_page(1, 10, True, TransactionEventFilter(from_timestamp=0, to_timestamp=100))
         finally:
             self.connection.set_trace_callback(None)
 
@@ -184,7 +191,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         first = self.create_event("First", occurred_at=10)
         second = self.create_event("Second", occurred_at=20)
         self.create_event("Excluded", "ACCOUNT_TRANSFER", 15)
-        filters = TransactionEventFilter(event_types={"TRANSACTION"})
+        filters = TransactionEventFilter(from_timestamp=0, to_timestamp=100, event_types={"TRANSACTION"})
 
         page = self.repository.list_page(1, 2, True, filters)
 
@@ -195,7 +202,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         first = self.create_event("First", occurred_at=10)
         second = self.create_event("Second", occurred_at=20)
 
-        page = self.repository.list_page(1, 10, False, TransactionEventFilter())
+        page = self.repository.list_page(1, 10, False, TransactionEventFilter(from_timestamp=0, to_timestamp=100))
 
         self.assertEqual(page, [second, first])
 
