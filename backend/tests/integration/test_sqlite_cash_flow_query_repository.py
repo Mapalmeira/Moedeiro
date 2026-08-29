@@ -1,10 +1,10 @@
 """Integration tests for cash-flow SQLite queries."""
 
 from app.domain.ledger.model.account import Account
-from app.domain.ledger.model.transaction_event import TransactionEvent, TransactionEventType
-from app.domain.ledger.model.transaction_event_filter import TransactionEventFilter
+from app.domain.ledger.model.financial_event import FinancialEvent, FinancialEventType
+from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 from app.infrastructure.persistence.sqlite.ledger.repository.financial_movement import SqliteFinancialMovementRepository
-from app.infrastructure.persistence.sqlite.ledger.repository.transaction_event import SqliteTransactionEventRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.financial_event import SqliteFinancialEventRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.cash_flow_query import SqliteCashFlowQueryRepository
 from tests.integration.ledger_repository_test_case import LedgerRepositoryTestCase
 
@@ -13,7 +13,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.repository = SqliteCashFlowQueryRepository(self.connection)
-        self.event_repository = SqliteTransactionEventRepository(self.connection)
+        self.event_repository = SqliteFinancialEventRepository(self.connection)
         self.movement_repository = SqliteFinancialMovementRepository(self.connection)
         self.currency = self.create_currency()
         self.other_currency = self.create_currency("Dollar")
@@ -22,7 +22,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         self.foreign_currency_account = self.create_account("Dollar account", self.other_currency)
         self.category = self.create_category()
 
-    def add_movement(self, description: str, occurred_at: int, value: int, account: Account | None = None, event_type: TransactionEventType = "TRANSACTION") -> TransactionEvent:
+    def add_movement(self, description: str, occurred_at: int, value: int, account: Account | None = None, event_type: FinancialEventType = "TRANSACTION") -> FinancialEvent:
         event = self.create_event(description, event_type, occurred_at)
         self.movement_repository.create(event.uuid, (account or self.account).uuid, self.category.uuid, value, None)
         return event
@@ -40,7 +40,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
 
         summary = self.repository.get_summary(
             self.currency.uuid,
-            TransactionEventFilter(from_timestamp=50, to_timestamp=300),
+            FinancialEventFilter(from_timestamp=50, to_timestamp=300),
         )
 
         self.assertEqual(summary.currency_uuid, self.currency.uuid)
@@ -58,7 +58,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
 
         summary = self.repository.get_summary(
             self.currency.uuid,
-            TransactionEventFilter(from_timestamp=100, to_timestamp=300),
+            FinancialEventFilter(from_timestamp=100, to_timestamp=300),
         )
 
         self.assertEqual(summary.income, 50)
@@ -68,7 +68,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         """An interval without matching movements returns a zero-valued summary."""
         summary = self.repository.get_summary(
             self.currency.uuid,
-            TransactionEventFilter(from_timestamp=10, to_timestamp=20),
+            FinancialEventFilter(from_timestamp=10, to_timestamp=20),
         )
 
         self.assertEqual(summary.income, 0)
@@ -89,7 +89,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
 
         summary = self.repository.get_summary(
             self.currency.uuid,
-            TransactionEventFilter(
+            FinancialEventFilter(
                 from_timestamp=0,
                 to_timestamp=200,
                 account_uuid=selected_account.uuid,
@@ -110,7 +110,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
 
         summary = self.repository.get_summary(
             self.currency.uuid,
-            TransactionEventFilter(
+            FinancialEventFilter(
                 from_timestamp=0,
                 to_timestamp=200,
                 account_uuid=self.account.uuid,
@@ -129,7 +129,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
 
         summary = self.repository.get_summary(
             self.currency.uuid,
-            TransactionEventFilter(from_timestamp=0, to_timestamp=200),
+            FinancialEventFilter(from_timestamp=0, to_timestamp=200),
         )
 
         self.assertEqual(summary.expense, 40)
@@ -140,7 +140,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
 
         summary = self.repository.get_summary(
             self.currency.uuid,
-            TransactionEventFilter(from_timestamp=0, to_timestamp=200),
+            FinancialEventFilter(from_timestamp=0, to_timestamp=200),
         )
 
         self.assertEqual(summary.income, 40)
@@ -155,7 +155,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
 
         summary = self.repository.get_summary(
             self.currency.uuid,
-            TransactionEventFilter(from_timestamp=0, to_timestamp=200, category_uuids={parent.uuid}),
+            FinancialEventFilter(from_timestamp=0, to_timestamp=200, category_uuids={parent.uuid}),
         )
 
         self.assertEqual(summary.expense, 40)
@@ -169,7 +169,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
 
         points = self.repository.list_points(
             self.currency.uuid,
-            TransactionEventFilter(from_timestamp=100, to_timestamp=172900),
+            FinancialEventFilter(from_timestamp=100, to_timestamp=172900),
         )
 
         self.assertEqual(points[0].income, 50)
@@ -180,7 +180,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
 
     def test_list_points_requires_explicit_complete_fixed_days(self) -> None:
         """Daily grouping rejects partial fixed days."""
-        filters = TransactionEventFilter(from_timestamp=100, to_timestamp=200)
+        filters = FinancialEventFilter(from_timestamp=100, to_timestamp=200)
 
         with self.assertRaises(ValueError):
             self.repository.list_points(self.currency.uuid, filters)

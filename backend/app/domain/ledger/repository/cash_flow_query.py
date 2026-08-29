@@ -2,16 +2,16 @@ from abc import ABC, abstractmethod
 from uuid import UUID
 
 from app.domain.ledger.model.cash_flow import CashFlow
-from app.domain.ledger.model.transaction_event_filter import TransactionEventFilter
+from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 
 
 class CashFlowQueryRepository(ABC):
     @abstractmethod
-    def get_summary(self, currency_uuid: UUID, filters: TransactionEventFilter) -> CashFlow:
+    def get_summary(self, currency_uuid: UUID, filters: FinancialEventFilter) -> CashFlow:
         pass
 
     @abstractmethod
-    def list_points(self, currency_uuid: UUID, filters: TransactionEventFilter) -> list[CashFlow]:
+    def list_points(self, currency_uuid: UUID, filters: FinancialEventFilter) -> list[CashFlow]:
         """Return cash flow for consecutive fixed 24-hour intervals.
 
         The filter's from_timestamp must be the first day boundary and the filter's

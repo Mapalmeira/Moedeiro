@@ -3,16 +3,16 @@ from uuid import UUID, uuid4
 
 from pydantic import ValidationError
 
-from app.domain.ledger.model.transaction_event_filter import TransactionEventFilter
+from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 from app.infrastructure.persistence.sqlite.ledger.repository.financial_movement import SqliteFinancialMovementRepository
-from app.infrastructure.persistence.sqlite.ledger.repository.transaction_event import SqliteTransactionEventRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.financial_event import SqliteFinancialEventRepository
 from tests.integration.ledger_repository_test_case import LedgerRepositoryTestCase
 
 
-class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
+class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.repository = SqliteTransactionEventRepository(self.connection)
+        self.repository = SqliteFinancialEventRepository(self.connection)
 
     def test_create_get_and_list_all_preserve_event_fields(self) -> None:
         """Basic reads return generated identity and all supplied event data."""
@@ -42,7 +42,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(updated.type, "SHOPPING_LIST")
 
     def test_create_and_update_validate_event_fields(self) -> None:
-        """Repository writes enforce TransactionEvent constraints."""
+        """Repository writes enforce FinancialEvent constraints."""
         with self.assertRaises(ValidationError):
             self.repository.create(10, "", "TRANSACTION")
 
@@ -87,7 +87,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         expected = self.create_event("Inside", occurred_at=20)
         self.create_event("Upper bound", occurred_at=30)
 
-        events = self.repository.list_filtered(TransactionEventFilter(from_timestamp=20, to_timestamp=30))
+        events = self.repository.list_filtered(FinancialEventFilter(from_timestamp=20, to_timestamp=30))
 
         self.assertEqual(events, [expected])
 
@@ -107,7 +107,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         self.repository.add_tag(event.uuid, second_tag.uuid)
 
         events = self.repository.list_filtered(
-            TransactionEventFilter(
+            FinancialEventFilter(
                 from_timestamp=0,
                 to_timestamp=100,
                 category_uuids={first_category.uuid, second_category.uuid},
@@ -136,7 +136,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         movement_repository.create(category_only.uuid, other_account.uuid, selected_category.uuid, -40, None)
 
         events = self.repository.list_filtered(
-            TransactionEventFilter(
+            FinancialEventFilter(
                 from_timestamp=0,
                 to_timestamp=100,
                 account_uuid=selected_account.uuid,
@@ -159,7 +159,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         movement_repository.create(expected.uuid, account.uuid, grandchild.uuid, -10, None)
 
         events = self.repository.list_filtered(
-            TransactionEventFilter(from_timestamp=0, to_timestamp=100, category_uuids={parent.uuid})
+            FinancialEventFilter(from_timestamp=0, to_timestamp=100, category_uuids={parent.uuid})
         )
 
         self.assertEqual([event.uuid for event in events], [expected.uuid])
@@ -176,7 +176,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         movement_repository.create(second.uuid, account.uuid, category.uuid, -20, "Second item")
 
         loaded = self.repository.get(first.uuid)
-        page = self.repository.list_page(1, 10, True, TransactionEventFilter(from_timestamp=0, to_timestamp=100))
+        page = self.repository.list_page(1, 10, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100))
 
         assert loaded is not None
         self.assertEqual([movement.value for movement in loaded.movements], [-10])
@@ -193,7 +193,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         self.connection.set_trace_callback(statements.append)
 
         try:
-            self.repository.list_page(1, 10, True, TransactionEventFilter(from_timestamp=0, to_timestamp=100))
+            self.repository.list_page(1, 10, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100))
         finally:
             self.connection.set_trace_callback(None)
 
@@ -206,7 +206,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         first = self.create_event("First", occurred_at=10)
         second = self.create_event("Second", occurred_at=20)
         self.create_event("Excluded", "ACCOUNT_TRANSFER", 15)
-        filters = TransactionEventFilter(from_timestamp=0, to_timestamp=100, event_types={"TRANSACTION"})
+        filters = FinancialEventFilter(from_timestamp=0, to_timestamp=100, event_types={"TRANSACTION"})
 
         page = self.repository.list_page(1, 2, True, filters)
 
@@ -217,13 +217,13 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
         first = self.create_event("First", occurred_at=10)
         second = self.create_event("Second", occurred_at=20)
 
-        page = self.repository.list_page(1, 10, False, TransactionEventFilter(from_timestamp=0, to_timestamp=100))
+        page = self.repository.list_page(1, 10, False, FinancialEventFilter(from_timestamp=0, to_timestamp=100))
 
         self.assertEqual(page, [second, first])
 
     def test_list_page_uses_uuid_to_break_timestamp_ties(self) -> None:
         with patch(
-            "app.infrastructure.persistence.sqlite.ledger.repository.transaction_event.uuid4",
+            "app.infrastructure.persistence.sqlite.ledger.repository.financial_event.uuid4",
             side_effect=[UUID(int=2), UUID(int=1)],
         ):
             higher_uuid = self.create_event("Higher UUID", occurred_at=10)
@@ -233,7 +233,7 @@ class SqliteTransactionEventRepositoryTest(LedgerRepositoryTestCase):
             1,
             10,
             True,
-            TransactionEventFilter(from_timestamp=0, to_timestamp=100),
+            FinancialEventFilter(from_timestamp=0, to_timestamp=100),
         )
 
         self.assertEqual(page, [lower_uuid, higher_uuid])

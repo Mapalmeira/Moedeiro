@@ -14,10 +14,10 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, transaction_event_uuid: UUID, account_uuid: UUID, category_uuid: UUID, value: int, item_name: str | None) -> FinancialMovement:
+    def create(self, financial_event_uuid: UUID, account_uuid: UUID, category_uuid: UUID, value: int, item_name: str | None) -> FinancialMovement:
         movement = FinancialMovement(
             uuid=uuid4(),
-            transaction_event_uuid=transaction_event_uuid,
+            financial_event_uuid=financial_event_uuid,
             account_uuid=account_uuid,
             category_uuid=category_uuid,
             value=value,
@@ -25,12 +25,12 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
         )
         self.connection.execute(
             """
-            INSERT INTO financial_movement(uuid, transaction_event_uuid, account_uuid, category_uuid, value, item_name)
+            INSERT INTO financial_movement(uuid, financial_event_uuid, account_uuid, category_uuid, value, item_name)
             VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
                 movement.uuid.bytes,
-                movement.transaction_event_uuid.bytes,
+                movement.financial_event_uuid.bytes,
                 movement.account_uuid.bytes,
                 movement.category_uuid.bytes,
                 movement.value,
@@ -42,7 +42,7 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
     def get(self, uuid: UUID) -> FinancialMovement | None:
         row = self.connection.execute(
             """
-            SELECT uuid, transaction_event_uuid, account_uuid, category_uuid, value, item_name
+            SELECT uuid, financial_event_uuid, account_uuid, category_uuid, value, item_name
             FROM financial_movement
             WHERE uuid = ?
             """,
@@ -73,20 +73,20 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
             (movement.category_uuid.bytes, movement.uuid.bytes),
         )
 
-    def list_by_transaction_event(self, transaction_event_uuid: UUID) -> list[FinancialMovement]:
+    def list_by_financial_event(self, financial_event_uuid: UUID) -> list[FinancialMovement]:
         rows = self.connection.execute(
             """
-            SELECT uuid, transaction_event_uuid, account_uuid, category_uuid, value, item_name
+            SELECT uuid, financial_event_uuid, account_uuid, category_uuid, value, item_name
             FROM financial_movement
-            WHERE transaction_event_uuid = ?
+            WHERE financial_event_uuid = ?
             """,
-            (transaction_event_uuid.bytes,),
+            (financial_event_uuid.bytes,),
         ).fetchall()
         return [self._to_model(row) for row in rows]
 
     def list_all(self) -> list[FinancialMovement]:
         rows = self.connection.execute(
-            "SELECT uuid, transaction_event_uuid, account_uuid, category_uuid, value, item_name FROM financial_movement"
+            "SELECT uuid, financial_event_uuid, account_uuid, category_uuid, value, item_name FROM financial_movement"
         ).fetchall()
         return [self._to_model(row) for row in rows]
 
@@ -97,7 +97,7 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
         offset = (page_number - 1) * page_size
         rows = self.connection.execute(
             f"""
-            SELECT uuid, transaction_event_uuid, account_uuid, category_uuid, value, item_name
+            SELECT uuid, financial_event_uuid, account_uuid, category_uuid, value, item_name
             FROM financial_movement
             ORDER BY {sort_column} {direction}, uuid ASC
             LIMIT ? OFFSET ?
@@ -110,7 +110,7 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
     def _validation_model(uuid: UUID, value: int = 1, item_name: str | None = None, category_uuid: UUID | None = None) -> FinancialMovement:
         return FinancialMovement(
             uuid=uuid,
-            transaction_event_uuid=uuid,
+            financial_event_uuid=uuid,
             account_uuid=uuid,
             category_uuid=category_uuid or uuid,
             value=value,

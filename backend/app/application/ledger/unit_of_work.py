@@ -11,7 +11,7 @@ from app.domain.ledger.repository.currency import CurrencyRepository
 from app.domain.ledger.repository.financial_movement import FinancialMovementRepository
 from app.domain.ledger.repository.ledger_metadata import LedgerMetadataRepository
 from app.domain.ledger.repository.tag import TagRepository
-from app.domain.ledger.repository.transaction_event import TransactionEventRepository
+from app.domain.ledger.repository.financial_event import FinancialEventRepository
 
 
 class LedgerUnitOfWork(UnitOfWork):
@@ -25,4 +25,4 @@ class LedgerUnitOfWork(UnitOfWork):
     financial_movement_repository: FinancialMovementRepository
     ledger_metadata_repository: LedgerMetadataRepository
     tag_repository: TagRepository
-    transaction_event_repository: TransactionEventRepository
+    financial_event_repository: FinancialEventRepository

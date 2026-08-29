@@ -43,7 +43,7 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             (self.category_uuid,),
         )
         self.connection.execute(
-            "INSERT INTO transaction_event VALUES (?, 0, 'Purchase', 'TRANSACTION')",
+            "INSERT INTO financial_event VALUES (?, 0, 'Purchase', 'TRANSACTION')",
             (self.event_uuid,),
         )
         self.connection.execute(
@@ -69,10 +69,10 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             "currency": {"uuid"},
             "account": {"uuid", "currency_uuid"},
             "category": {"uuid", "parent_uuid"},
-            "transaction_event": {"uuid"},
+            "financial_event": {"uuid"},
             "tag": {"uuid"},
-            "transaction_tag": {"transaction_event_uuid", "tag_uuid"},
-            "financial_movement": {"uuid", "transaction_event_uuid", "account_uuid", "category_uuid"},
+            "financial_event_tag": {"financial_event_uuid", "tag_uuid"},
+            "financial_movement": {"uuid", "financial_event_uuid", "account_uuid", "category_uuid"},
             "budget": {"uuid", "category_uuid", "currency_uuid"},
             "budget_accounts": {"budget_uuid", "account_uuid", "currency_uuid"},
         }
@@ -111,8 +111,8 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             ("account", "note", "x" * 301),
             ("category", "category_name", ""),
             ("category", "category_name", "x" * 31),
-            ("transaction_event", "description", ""),
-            ("transaction_event", "description", "x" * 1001),
+            ("financial_event", "description", ""),
+            ("financial_event", "description", "x" * 1001),
             ("tag", "name", ""),
             ("tag", "name", "x" * 31),
             ("financial_movement", "item_name", "x" * 51),
@@ -131,7 +131,7 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
         values = (
             ("ledger_metadata", "name", "x" * 50),
             ("account", "account_name", "x" * 50),
-            ("transaction_event", "description", "x" * 1000),
+            ("financial_event", "description", "x" * 1000),
             ("financial_movement", "item_name", "x" * 50),
             ("budget", "budget_name", "x" * 50),
         )

@@ -26,9 +26,9 @@ class SqliteLedgerIndexesTest(unittest.TestCase):
         expected_indexes = {
             "category_name_idx",
             "category_parent_idx",
-            "transaction_event_occurred_at_idx",
-            "transaction_tag_tag_event_idx",
-            "financial_movement_transaction_event_idx",
+            "financial_event_occurred_at_idx",
+            "financial_event_tag_tag_event_idx",
+            "financial_movement_financial_event_idx",
             "financial_movement_account_event_idx",
             "financial_movement_category_event_idx",
         }
@@ -45,7 +45,7 @@ class SqliteLedgerIndexesTest(unittest.TestCase):
             EXPLAIN QUERY PLAN
             SELECT uuid
             FROM financial_movement
-            WHERE category_uuid = ? AND transaction_event_uuid = ?
+            WHERE category_uuid = ? AND financial_event_uuid = ?
             """,
             ("category-uuid", "event-uuid"),
         ).fetchall()

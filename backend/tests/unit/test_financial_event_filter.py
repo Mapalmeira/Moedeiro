@@ -3,16 +3,16 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.domain.ledger.model.transaction_event_filter import TransactionEventFilter
+from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 
 
-class TransactionEventFilterTest(unittest.TestCase):
+class FinancialEventFilterTest(unittest.TestCase):
     def test_accepts_all_supported_filter_dimensions(self) -> None:
         account_uuid = uuid4()
         category_uuids = {uuid4(), uuid4()}
         tag_uuids = {uuid4(), uuid4()}
 
-        filters = TransactionEventFilter(
+        filters = FinancialEventFilter(
             from_timestamp=10,
             to_timestamp=20,
             account_uuid=account_uuid,
@@ -27,7 +27,7 @@ class TransactionEventFilterTest(unittest.TestCase):
         self.assertEqual(filters.event_types, {"TRANSACTION", "SHOPPING_LIST"})
 
     def test_uses_empty_sets_when_multi_value_filters_are_absent(self) -> None:
-        filters = TransactionEventFilter(from_timestamp=10, to_timestamp=20)
+        filters = FinancialEventFilter(from_timestamp=10, to_timestamp=20)
 
         self.assertEqual(filters.category_uuids, set())
         self.assertEqual(filters.tag_uuids, set())
@@ -36,7 +36,7 @@ class TransactionEventFilterTest(unittest.TestCase):
     def test_removes_duplicate_values(self) -> None:
         category_uuid = uuid4()
 
-        filters = TransactionEventFilter.model_validate(
+        filters = FinancialEventFilter.model_validate(
             {
                 "from_timestamp": 10,
                 "to_timestamp": 20,
@@ -55,7 +55,7 @@ class TransactionEventFilterTest(unittest.TestCase):
                 to_timestamp=to_timestamp,
             ):
                 with self.assertRaises(ValidationError):
-                    TransactionEventFilter(
+                    FinancialEventFilter(
                         from_timestamp=from_timestamp,
                         to_timestamp=to_timestamp,
                     )
@@ -64,11 +64,11 @@ class TransactionEventFilterTest(unittest.TestCase):
         for values in ({}, {"from_timestamp": 10}, {"to_timestamp": 20}):
             with self.subTest(values=values):
                 with self.assertRaises(ValidationError):
-                    TransactionEventFilter.model_validate(values)
+                    FinancialEventFilter.model_validate(values)
 
     def test_rejects_unknown_event_type(self) -> None:
         with self.assertRaises(ValidationError):
-            TransactionEventFilter.model_validate(
+            FinancialEventFilter.model_validate(
                 {"from_timestamp": 10, "to_timestamp": 20, "event_types": ["UNKNOWN"]}
             )
 

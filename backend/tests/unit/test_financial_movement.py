@@ -14,7 +14,7 @@ class FinancialMovementTest(unittest.TestCase):
             with self.subTest(value=value):
                 movement = FinancialMovement(
                     uuid=uuid4(),
-                    transaction_event_uuid=uuid4(),
+                    financial_event_uuid=uuid4(),
                     account_uuid=uuid4(),
                     category_uuid=uuid4(),
                     value=value,
@@ -25,7 +25,7 @@ class FinancialMovementTest(unittest.TestCase):
         with self.assertRaises(ValidationError):
             FinancialMovement(
                 uuid=uuid4(),
-                transaction_event_uuid=uuid4(),
+                financial_event_uuid=uuid4(),
                 account_uuid=uuid4(),
                 category_uuid=uuid4(),
                 value=0,
@@ -34,7 +34,7 @@ class FinancialMovementTest(unittest.TestCase):
     def test_accepts_optional_item_name(self) -> None:
         movement = FinancialMovement(
             uuid=uuid4(),
-            transaction_event_uuid=uuid4(),
+            financial_event_uuid=uuid4(),
             account_uuid=uuid4(),
             category_uuid=uuid4(),
             value=-100,
@@ -46,7 +46,7 @@ class FinancialMovementTest(unittest.TestCase):
         with self.assertRaises(ValidationError):
             FinancialMovement(
                 uuid=uuid4(),
-                transaction_event_uuid=uuid4(),
+                financial_event_uuid=uuid4(),
                 account_uuid=uuid4(),
                 category_uuid=uuid4(),
                 value=-100,
@@ -56,7 +56,7 @@ class FinancialMovementTest(unittest.TestCase):
     def test_accepts_item_name_at_maximum_length(self) -> None:
         movement = FinancialMovement(
             uuid=uuid4(),
-            transaction_event_uuid=uuid4(),
+            financial_event_uuid=uuid4(),
             account_uuid=uuid4(),
             category_uuid=uuid4(),
             value=-100,

@@ -21,7 +21,7 @@ from app.infrastructure.persistence.sqlite.ledger.repository.currency import Sql
 from app.infrastructure.persistence.sqlite.ledger.repository.financial_movement import SqliteFinancialMovementRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.ledger_metadata import SqliteLedgerMetadataRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.tag import SqliteTagRepository
-from app.infrastructure.persistence.sqlite.ledger.repository.transaction_event import SqliteTransactionEventRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.financial_event import SqliteFinancialEventRepository
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
 
 
@@ -55,7 +55,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
             financial_movement_repository = unit_of_work.financial_movement_repository
             ledger_metadata_repository = unit_of_work.ledger_metadata_repository
             tag_repository = unit_of_work.tag_repository
-            transaction_event_repository = unit_of_work.transaction_event_repository
+            financial_event_repository = unit_of_work.financial_event_repository
             assert isinstance(account_repository, SqliteAccountRepository)
             assert isinstance(account_balance_query_repository, SqliteAccountBalanceQueryRepository)
             assert isinstance(budget_repository, SqliteBudgetRepository)
@@ -66,7 +66,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
             assert isinstance(financial_movement_repository, SqliteFinancialMovementRepository)
             assert isinstance(ledger_metadata_repository, SqliteLedgerMetadataRepository)
             assert isinstance(tag_repository, SqliteTagRepository)
-            assert isinstance(transaction_event_repository, SqliteTransactionEventRepository)
+            assert isinstance(financial_event_repository, SqliteFinancialEventRepository)
             repositories = [
                 account_repository,
                 account_balance_query_repository,
@@ -78,7 +78,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
                 financial_movement_repository,
                 ledger_metadata_repository,
                 tag_repository,
-                transaction_event_repository,
+                financial_event_repository,
             ]
 
             for repository in repositories:

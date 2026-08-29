@@ -8,14 +8,14 @@ from app.domain.ledger.model.budget import Budget
 from app.domain.ledger.model.category import Category
 from app.domain.ledger.model.currency import Currency
 from app.domain.ledger.model.tag import Tag
-from app.domain.ledger.model.transaction_event import TransactionEvent, TransactionEventType
+from app.domain.ledger.model.financial_event import FinancialEvent, FinancialEventType
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.repository.account import SqliteAccountRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.budget import SqliteBudgetRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.category import SqliteCategoryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.currency import SqliteCurrencyRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.tag import SqliteTagRepository
-from app.infrastructure.persistence.sqlite.ledger.repository.transaction_event import SqliteTransactionEventRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.financial_event import SqliteFinancialEventRepository
 
 
 SCHEMA_PATH = Path(__file__).resolve().parents[2] / "app/infrastructure/persistence/sqlite/ledger/schema/ledger_schema.sql"
@@ -49,8 +49,8 @@ class LedgerRepositoryTestCase(unittest.TestCase):
         repository = SqliteTagRepository(self.connection)
         return repository.create(name)
 
-    def create_event(self, description: str = "Purchase", type: TransactionEventType = "TRANSACTION", occurred_at: int = 10) -> TransactionEvent:
-        repository = SqliteTransactionEventRepository(self.connection)
+    def create_event(self, description: str = "Purchase", type: FinancialEventType = "TRANSACTION", occurred_at: int = 10) -> FinancialEvent:
+        repository = SqliteFinancialEventRepository(self.connection)
         return repository.create(occurred_at, description, type)
 
     def create_budget(self, name: str = "Monthly", currency: Currency | None = None, category: Category | None = None) -> Budget:

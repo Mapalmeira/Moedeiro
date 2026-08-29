@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class FinancialMovement(BaseModel):
     uuid: UUID
-    transaction_event_uuid: UUID
+    financial_event_uuid: UUID
     account_uuid: UUID
     category_uuid: UUID
     value: int

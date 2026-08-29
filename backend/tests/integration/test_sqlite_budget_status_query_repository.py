@@ -2,7 +2,7 @@
 
 from app.domain.ledger.model.account import Account
 from app.domain.ledger.model.category import Category
-from app.domain.ledger.model.transaction_event import TransactionEventType
+from app.domain.ledger.model.financial_event import FinancialEventType
 from app.infrastructure.persistence.sqlite.ledger.repository.budget import SqliteBudgetRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.budget_status_query import SqliteBudgetStatusQueryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.financial_movement import SqliteFinancialMovementRepository
@@ -23,7 +23,7 @@ class SqliteBudgetStatusQueryRepositoryTest(LedgerRepositoryTestCase):
         self.budget = self.create_budget(currency=self.currency, category=self.category)
         self.budget_repository.add_account(self.budget.uuid, self.account.uuid)
 
-    def add_movement(self, description: str, occurred_at: int, value: int, account: Account | None = None, category: Category | None = None, event_type: TransactionEventType = "TRANSACTION") -> None:
+    def add_movement(self, description: str, occurred_at: int, value: int, account: Account | None = None, category: Category | None = None, event_type: FinancialEventType = "TRANSACTION") -> None:
         event = self.create_event(description, event_type, occurred_at)
         self.movement_repository.create(
             event.uuid,

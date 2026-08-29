@@ -16,7 +16,7 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
             """
             SELECT COALESCE(SUM(movement.value), 0) AS balance
             FROM financial_movement AS movement
-            JOIN transaction_event AS event ON event.uuid = movement.transaction_event_uuid
+            JOIN financial_event AS event ON event.uuid = movement.financial_event_uuid
             WHERE movement.account_uuid = ? AND event.occurred_at <= ?
             """,
             (account_uuid.bytes, timestamp),
@@ -30,7 +30,7 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
             """
             SELECT COALESCE(SUM(movement.value), 0) AS balance
             FROM financial_movement AS movement
-            JOIN transaction_event AS event ON event.uuid = movement.transaction_event_uuid
+            JOIN financial_event AS event ON event.uuid = movement.financial_event_uuid
             WHERE movement.account_uuid = ? AND event.occurred_at < ?
             """,
             (account_uuid.bytes, from_timestamp),
@@ -41,7 +41,7 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
                 ? + ((event.occurred_at - ?) / {self._SECONDS_PER_DAY}) * {self._SECONDS_PER_DAY} AS day_start,
                 SUM(movement.value) AS balance_change
             FROM financial_movement AS movement
-            JOIN transaction_event AS event ON event.uuid = movement.transaction_event_uuid
+            JOIN financial_event AS event ON event.uuid = movement.financial_event_uuid
             WHERE movement.account_uuid = ?
               AND event.occurred_at >= ?
               AND event.occurred_at < ?

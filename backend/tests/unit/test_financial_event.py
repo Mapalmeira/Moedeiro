@@ -6,14 +6,14 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from app.domain.ledger.model.financial_movement import FinancialMovement
-from app.domain.ledger.model.transaction_event import TransactionEvent
+from app.domain.ledger.model.financial_event import FinancialEvent
 
 
-class TransactionEventTest(unittest.TestCase):
+class FinancialEventTest(unittest.TestCase):
     def test_accepts_every_supported_event_type(self) -> None:
         for event_type in ("TRANSACTION", "ACCOUNT_TRANSFER", "SHOPPING_LIST"):
             with self.subTest(event_type=event_type):
-                event = TransactionEvent(
+                event = FinancialEvent(
                     uuid=uuid4(),
                     occurred_at=10,
                     description="Event",
@@ -24,7 +24,7 @@ class TransactionEventTest(unittest.TestCase):
 
     def test_rejects_unknown_event_type(self) -> None:
         with self.assertRaises(ValidationError):
-            TransactionEvent.model_validate(
+            FinancialEvent.model_validate(
                 {
                     "uuid": uuid4(),
                     "occurred_at": 10,
@@ -38,7 +38,7 @@ class TransactionEventTest(unittest.TestCase):
         for description in ("", "x" * 1001):
             with self.subTest(description_length=len(description)):
                 with self.assertRaises(ValidationError):
-                    TransactionEvent(
+                    FinancialEvent(
                         uuid=uuid4(),
                         occurred_at=10,
                         description=description,
@@ -47,7 +47,7 @@ class TransactionEventTest(unittest.TestCase):
                     )
 
     def test_accepts_description_at_maximum_length(self) -> None:
-        event = TransactionEvent(
+        event = FinancialEvent(
             uuid=uuid4(),
             occurred_at=10,
             description="x" * 1000,
@@ -61,14 +61,14 @@ class TransactionEventTest(unittest.TestCase):
         event_uuid = uuid4()
         movement = FinancialMovement(
             uuid=uuid4(),
-            transaction_event_uuid=event_uuid,
+            financial_event_uuid=event_uuid,
             account_uuid=uuid4(),
             category_uuid=uuid4(),
             value=-100,
             item_name=None,
         )
 
-        event = TransactionEvent(
+        event = FinancialEvent(
             uuid=event_uuid,
             occurred_at=10,
             description="Event",
@@ -80,7 +80,7 @@ class TransactionEventTest(unittest.TestCase):
 
     def test_requires_movements_to_be_explicitly_loaded(self) -> None:
         with self.assertRaises(ValidationError):
-            TransactionEvent.model_validate(
+            FinancialEvent.model_validate(
                 {
                     "uuid": uuid4(),
                     "occurred_at": 10,
@@ -91,7 +91,7 @@ class TransactionEventTest(unittest.TestCase):
 
     def test_rejects_movement_from_another_event(self) -> None:
         with self.assertRaises(ValidationError):
-            TransactionEvent(
+            FinancialEvent(
                 uuid=uuid4(),
                 occurred_at=10,
                 description="Event",
@@ -99,7 +99,7 @@ class TransactionEventTest(unittest.TestCase):
                 movements=[
                     FinancialMovement(
                         uuid=uuid4(),
-                        transaction_event_uuid=uuid4(),
+                        financial_event_uuid=uuid4(),
                         account_uuid=uuid4(),
                         category_uuid=uuid4(),
                         value=-100,

@@ -27,7 +27,7 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         movement = self.create_movement()
 
         self.assertEqual(self.repository.get(movement.uuid), movement)
-        self.assertEqual(movement.transaction_event_uuid, self.event.uuid)
+        self.assertEqual(movement.financial_event_uuid, self.event.uuid)
         self.assertEqual(movement.account_uuid, self.account.uuid)
         self.assertEqual(movement.category_uuid, self.category.uuid)
 
@@ -58,7 +58,7 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         self.assertIsNone(updated.item_name)
         self.assertEqual(updated.category_uuid, other_category.uuid)
         self.assertEqual(updated.account_uuid, self.account.uuid)
-        self.assertEqual(updated.transaction_event_uuid, self.event.uuid)
+        self.assertEqual(updated.financial_event_uuid, self.event.uuid)
 
     def test_update_item_name_validates_model_limit(self) -> None:
         """Movement item names are validated before executing an update."""
@@ -75,13 +75,13 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         with self.assertRaises(ValidationError):
             self.repository.update_value(movement.uuid, 0)
 
-    def test_list_by_transaction_event_excludes_other_events(self) -> None:
+    def test_list_by_financial_event_excludes_other_events(self) -> None:
         """The relation-specific listing only returns movements from one event."""
         first = self.create_movement(-100)
         other_event = self.create_event("Other")
         self.repository.create(other_event.uuid, self.account.uuid, self.category.uuid, 50, None)
 
-        movements = self.repository.list_by_transaction_event(self.event.uuid)
+        movements = self.repository.list_by_financial_event(self.event.uuid)
 
         self.assertEqual(movements, [first])
 
@@ -93,7 +93,7 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         page = self.repository.list_page(1, 2, "value", True)
 
         self.assertEqual([movement.value for movement in page], [10, 20])
-        for sort_key in ("uuid", "transaction_event_uuid", "account_uuid", "category_uuid"):
+        for sort_key in ("uuid", "financial_event_uuid", "account_uuid", "category_uuid"):
             with self.subTest(sort_key=sort_key):
                 with self.assertRaises(ValueError):
                     self.repository.list_page(1, 10, sort_key, True)

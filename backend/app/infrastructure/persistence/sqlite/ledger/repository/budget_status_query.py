@@ -24,7 +24,7 @@ class SqliteBudgetStatusQueryRepository(BudgetStatusQueryRepository):
                 SELECT SUM(-movement.value)
                 FROM budget_accounts
                 JOIN financial_movement AS movement ON movement.account_uuid = budget_accounts.account_uuid
-                JOIN transaction_event AS event ON event.uuid = movement.transaction_event_uuid
+                JOIN financial_event AS event ON event.uuid = movement.financial_event_uuid
                 WHERE budget_accounts.budget_uuid = budget.uuid
                   AND movement.category_uuid IN (
                       SELECT uuid

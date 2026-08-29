@@ -1,7 +1,7 @@
-from app.domain.ledger.model.transaction_event_filter import TransactionEventFilter
+from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 
 
-def build_transaction_event_filter(filters: TransactionEventFilter) -> tuple[str, list[bytes | str | int]]:
+def build_financial_event_filter(filters: FinancialEventFilter) -> tuple[str, list[bytes | str | int]]:
     clauses = ["event.occurred_at >= ?", "event.occurred_at < ?"]
     parameters: list[bytes | str | int] = [filters.from_timestamp, filters.to_timestamp]
 
@@ -11,7 +11,7 @@ def build_transaction_event_filter(filters: TransactionEventFilter) -> tuple[str
             EXISTS (
                 SELECT 1
                 FROM financial_movement AS account_movement
-                WHERE account_movement.transaction_event_uuid = event.uuid
+                WHERE account_movement.financial_event_uuid = event.uuid
                   AND account_movement.account_uuid = ?
             )
             """
@@ -24,7 +24,7 @@ def build_transaction_event_filter(filters: TransactionEventFilter) -> tuple[str
             EXISTS (
                 SELECT 1
                 FROM financial_movement AS category_movement
-                WHERE category_movement.transaction_event_uuid = event.uuid
+                WHERE category_movement.financial_event_uuid = event.uuid
                   AND category_movement.category_uuid IN (
                       WITH RECURSIVE category_descendants(uuid) AS (
                           SELECT uuid
@@ -49,9 +49,9 @@ def build_transaction_event_filter(filters: TransactionEventFilter) -> tuple[str
             f"""
             EXISTS (
                 SELECT 1
-                FROM transaction_tag
-                WHERE transaction_tag.transaction_event_uuid = event.uuid
-                  AND transaction_tag.tag_uuid IN ({placeholders})
+                FROM financial_event_tag
+                WHERE financial_event_tag.financial_event_uuid = event.uuid
+                  AND financial_event_tag.tag_uuid IN ({placeholders})
             )
             """
         )

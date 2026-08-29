@@ -8,7 +8,7 @@ class FinancialMovementRepository(ABC):
     @abstractmethod
     def create(
         self,
-        transaction_event_uuid: UUID,
+        financial_event_uuid: UUID,
         account_uuid: UUID,
         category_uuid: UUID,
         value: int,
@@ -33,9 +33,9 @@ class FinancialMovementRepository(ABC):
         pass
 
     @abstractmethod
-    def list_by_transaction_event(
+    def list_by_financial_event(
         self,
-        transaction_event_uuid: UUID,
+        financial_event_uuid: UUID,
     ) -> list[FinancialMovement]:
         pass
 

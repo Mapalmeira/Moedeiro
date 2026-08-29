@@ -35,7 +35,7 @@ CREATE TABLE category (
     FOREIGN KEY (parent_uuid) REFERENCES category(uuid) ON DELETE CASCADE
 ) STRICT;
 
-CREATE TABLE transaction_event (
+CREATE TABLE financial_event (
     uuid BLOB PRIMARY KEY CHECK (length(uuid) = 16),
     occurred_at INTEGER NOT NULL,
     description TEXT NOT NULL CHECK (length(description) BETWEEN 1 AND 1000),
@@ -48,26 +48,26 @@ CREATE TABLE tag (
     name TEXT NOT NULL UNIQUE CHECK (length(name) BETWEEN 1 AND 30)
 ) STRICT;
 
-CREATE TABLE transaction_tag (
-    transaction_event_uuid BLOB NOT NULL CHECK (length(transaction_event_uuid) = 16),
+CREATE TABLE financial_event_tag (
+    financial_event_uuid BLOB NOT NULL CHECK (length(financial_event_uuid) = 16),
     tag_uuid BLOB NOT NULL CHECK (length(tag_uuid) = 16),
 
-    PRIMARY KEY (transaction_event_uuid, tag_uuid),
+    PRIMARY KEY (financial_event_uuid, tag_uuid),
 
-    FOREIGN KEY (transaction_event_uuid) REFERENCES transaction_event(uuid) ON DELETE CASCADE,
+    FOREIGN KEY (financial_event_uuid) REFERENCES financial_event(uuid) ON DELETE CASCADE,
     FOREIGN KEY (tag_uuid) REFERENCES tag(uuid) ON DELETE CASCADE
 ) STRICT;
 
 CREATE TABLE financial_movement (
     uuid BLOB PRIMARY KEY CHECK (length(uuid) = 16),
-    transaction_event_uuid BLOB NOT NULL CHECK (length(transaction_event_uuid) = 16),
+    financial_event_uuid BLOB NOT NULL CHECK (length(financial_event_uuid) = 16),
     value INTEGER NOT NULL CHECK (value <> 0),
     item_name TEXT CHECK (item_name IS NULL OR length(item_name) <= 50),
     account_uuid BLOB NOT NULL CHECK (length(account_uuid) = 16),
     category_uuid BLOB NOT NULL CHECK (length(category_uuid) = 16),
 
-    FOREIGN KEY (transaction_event_uuid)
-        REFERENCES transaction_event(uuid)
+    FOREIGN KEY (financial_event_uuid)
+        REFERENCES financial_event(uuid)
         ON DELETE CASCADE,
 
     FOREIGN KEY (account_uuid)
@@ -131,17 +131,17 @@ ON category(category_name);
 CREATE INDEX category_parent_idx
 ON category(parent_uuid);
 
-CREATE INDEX transaction_event_occurred_at_idx
-ON transaction_event(occurred_at);
+CREATE INDEX financial_event_occurred_at_idx
+ON financial_event(occurred_at);
 
-CREATE INDEX transaction_tag_tag_event_idx
-ON transaction_tag(tag_uuid, transaction_event_uuid);
+CREATE INDEX financial_event_tag_tag_event_idx
+ON financial_event_tag(tag_uuid, financial_event_uuid);
 
-CREATE INDEX financial_movement_transaction_event_idx
-ON financial_movement(transaction_event_uuid);
+CREATE INDEX financial_movement_financial_event_idx
+ON financial_movement(financial_event_uuid);
 
 CREATE INDEX financial_movement_account_event_idx
-ON financial_movement(account_uuid, transaction_event_uuid);
+ON financial_movement(account_uuid, financial_event_uuid);
 
 CREATE INDEX financial_movement_category_event_idx
-ON financial_movement(category_uuid, transaction_event_uuid);
+ON financial_movement(category_uuid, financial_event_uuid);
