@@ -75,15 +75,16 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(summary.expense, 0)
         self.assertEqual(summary.event_count, 0)
 
-    def test_get_summary_applies_event_filters_before_aggregation(self) -> None:
-        """Account and category may select an event through different movements."""
+    def test_get_summary_aggregates_only_movements_matching_account_and_category(self) -> None:
+        """Event matches do not include amounts from unrelated movements."""
         selected_account = self.account
         selected_category = self.create_category("Selected category")
         other_category = self.create_category("Other category")
         expected = self.create_event("Expected", occurred_at=100)
         excluded = self.create_event("Excluded", occurred_at=100)
-        self.movement_repository.create(expected.uuid, selected_account.uuid, other_category.uuid, 100, None)
+        self.movement_repository.create(expected.uuid, selected_account.uuid, selected_category.uuid, 100, None)
         self.movement_repository.create(expected.uuid, self.other_account.uuid, selected_category.uuid, -40, None)
+        self.movement_repository.create(expected.uuid, selected_account.uuid, other_category.uuid, -20, None)
         self.movement_repository.create(excluded.uuid, self.other_account.uuid, selected_category.uuid, -500, None)
 
         summary = self.repository.get_summary(
@@ -97,7 +98,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         )
 
         self.assertEqual(summary.income, 100)
-        self.assertEqual(summary.expense, 40)
+        self.assertEqual(summary.expense, 0)
         self.assertEqual(summary.event_count, 1)
 
     def test_list_points_groups_flow_from_caller_day_boundary_and_orders_it(self) -> None:
