@@ -22,10 +22,22 @@ class SqliteBudgetStatusQueryRepository(BudgetStatusQueryRepository):
             budget.amount AS budgeted_amount,
             COALESCE((
                 SELECT SUM(-movement.value)
-                FROM budget_accounts
-                JOIN financial_movement AS movement ON movement.account_uuid = budget_accounts.account_uuid
+                FROM financial_movement AS movement
+                JOIN account ON account.uuid = movement.account_uuid
                 JOIN financial_event AS event ON event.uuid = movement.financial_event_uuid
-                WHERE budget_accounts.budget_uuid = budget.uuid
+                WHERE account.currency_uuid = budget.currency_uuid
+                  AND (
+                      NOT EXISTS (
+                          SELECT 1
+                          FROM budget_accounts
+                          WHERE budget_accounts.budget_uuid = budget.uuid
+                      )
+                      OR movement.account_uuid IN (
+                          SELECT account_uuid
+                          FROM budget_accounts
+                          WHERE budget_accounts.budget_uuid = budget.uuid
+                      )
+                  )
                   AND movement.category_uuid IN (
                       SELECT uuid
                       FROM category_descendants

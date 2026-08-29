@@ -96,15 +96,19 @@ class SqliteBudgetStatusQueryRepositoryTest(LedgerRepositoryTestCase):
 
         self.assertEqual([status.budget_uuid for status in statuses], [active.uuid])
 
-    def test_budget_without_accounts_has_zero_spending(self) -> None:
-        """Movements only participate after their account is attached to the budget."""
+    def test_budget_without_accounts_includes_every_account_in_its_currency(self) -> None:
+        """Absent account selectors make the budget apply to its complete currency."""
         empty_budget = self.create_budget("Empty", self.currency, self.category)
-        self.add_movement("Expense", 10, -50)
+        other_currency = self.create_currency("Dollar")
+        other_currency_account = self.create_account("Dollar account", other_currency)
+        self.add_movement("First expense", 10, -50, account=self.account)
+        self.add_movement("Second expense", 11, -30, account=self.other_account)
+        self.add_movement("Other currency", 12, -500, account=other_currency_account)
 
         status = self.repository.get_status(empty_budget.uuid, 15)
 
         assert status is not None
-        self.assertEqual(status.spent_amount, 0)
+        self.assertEqual(status.spent_amount, 80)
 
     def test_budget_includes_expenses_from_descendant_categories(self) -> None:
         child = self.create_category("Child", self.category)
