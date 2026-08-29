@@ -11,8 +11,10 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
+from app.infrastructure.persistence.sqlite.registry.repository.access_grant import SqliteAccessGrantRepository
+from app.infrastructure.persistence.sqlite.registry.repository.access_invitation import SqliteAccessInvitationRepository
+from app.infrastructure.persistence.sqlite.registry.repository.auth_session import SqliteAuthSessionRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger import SqliteLedgerRepository
-from app.infrastructure.persistence.sqlite.registry.repository.ledger_token import SqliteLedgerTokenRepository
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
 
 
@@ -49,19 +51,16 @@ class SqliteRegistryUnitOfWorkTest(unittest.TestCase):
     def test_repositories_share_the_unit_of_work_connection(self) -> None:
         """All registry operations in one scope participate in one transaction."""
         with SqliteRegistryUnitOfWork(self.database) as unit_of_work:
-            ledger_repository = unit_of_work.ledger_repository
-            ledger_token_repository = unit_of_work.ledger_token_repository
-            assert isinstance(ledger_repository, SqliteLedgerRepository)
-            assert isinstance(ledger_token_repository, SqliteLedgerTokenRepository)
-
-            self.assertIs(
-                ledger_repository.connection,
-                unit_of_work.connection,
+            repositories = (
+                (unit_of_work.ledger_repository, SqliteLedgerRepository),
+                (unit_of_work.access_invitation_repository, SqliteAccessInvitationRepository),
+                (unit_of_work.access_grant_repository, SqliteAccessGrantRepository),
+                (unit_of_work.auth_session_repository, SqliteAuthSessionRepository),
             )
-            self.assertIs(
-                ledger_token_repository.connection,
-                unit_of_work.connection,
-            )
+            for repository, repository_type in repositories:
+                with self.subTest(repository_type=repository_type.__name__):
+                    self.assertIsInstance(repository, repository_type)
+                    self.assertIs(repository.connection, unit_of_work.connection)
 
     def test_commit_persists_changes_after_the_scope_ends(self) -> None:
         """An explicit commit makes changes visible to a later connection."""

@@ -5,8 +5,11 @@ from typing import Self
 
 from app.application.registry.unit_of_work import RegistryUnitOfWork
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
+from app.infrastructure.persistence.sqlite.registry.repository.access_grant import SqliteAccessGrantRepository
+from app.infrastructure.persistence.sqlite.registry.repository.access_invitation import SqliteAccessInvitationRepository
+from app.infrastructure.persistence.sqlite.registry.repository.auth_session import SqliteAuthSessionRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger import SqliteLedgerRepository
-from app.infrastructure.persistence.sqlite.registry.repository.ledger_token import SqliteLedgerTokenRepository
+
 
 class SqliteRegistryUnitOfWork(RegistryUnitOfWork):
     def __init__(self, database: SqliteDatabase):
@@ -15,7 +18,9 @@ class SqliteRegistryUnitOfWork(RegistryUnitOfWork):
     def __enter__(self) -> Self:
         self.connection: sqlite3.Connection = self.database.get_connection()
         self.ledger_repository = SqliteLedgerRepository(self.connection)
-        self.ledger_token_repository = SqliteLedgerTokenRepository(self.connection)
+        self.access_invitation_repository = SqliteAccessInvitationRepository(self.connection)
+        self.access_grant_repository = SqliteAccessGrantRepository(self.connection)
+        self.auth_session_repository = SqliteAuthSessionRepository(self.connection)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
