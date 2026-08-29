@@ -12,5 +12,5 @@ class CashFlowQueryRepository(ABC):
 
     @abstractmethod
     def list_points(self, currency_uuid: UUID, filters: TransactionEventFilter) -> list[CashFlow]:
-        """Return the filtered cash flow grouped into daily intervals."""
+        """Return cash flow grouped from caller-provided fixed day boundaries."""
         pass
