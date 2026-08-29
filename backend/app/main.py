@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from app.factory import create_app
 
 
-app = FastAPI(title="Moedeiro")
+app = create_app()
