@@ -11,6 +11,7 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
         self.connection = connection
 
     def get_balance_at(self, account_uuid: UUID, timestamp: int) -> int:
+        self._ensure_account_exists(account_uuid)
         row = self.connection.execute(
             """
             SELECT COALESCE(SUM(movement.value), 0) AS balance
@@ -24,6 +25,7 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
 
     def list_points(self, account_uuid: UUID, from_timestamp: int, to_timestamp: int) -> list[int]:
         self._validate_period(from_timestamp, to_timestamp)
+        self._ensure_account_exists(account_uuid)
         opening_row = self.connection.execute(
             """
             SELECT COALESCE(SUM(movement.value), 0) AS balance
@@ -54,6 +56,14 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
             balance += changes.get(day_start, 0)
             points.append(balance)
         return points
+
+    def _ensure_account_exists(self, account_uuid: UUID) -> None:
+        row = self.connection.execute(
+            "SELECT 1 FROM account WHERE uuid = ?",
+            (str(account_uuid),),
+        ).fetchone()
+        if row is None:
+            raise LookupError(f"account {account_uuid} does not exist")
 
     @classmethod
     def _validate_period(cls, from_timestamp: int, to_timestamp: int) -> None:
