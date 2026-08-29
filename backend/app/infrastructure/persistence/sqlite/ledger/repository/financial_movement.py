@@ -107,7 +107,7 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
         return [self._to_model(row) for row in rows]
 
     @staticmethod
-    def _validation_model(uuid: UUID, value: int = 0, item_name: str | None = None, category_uuid: UUID | None = None) -> FinancialMovement:
+    def _validation_model(uuid: UUID, value: int = 1, item_name: str | None = None, category_uuid: UUID | None = None) -> FinancialMovement:
         return FinancialMovement(
             uuid=uuid,
             transaction_event_uuid=uuid,
