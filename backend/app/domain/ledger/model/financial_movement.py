@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class FinancialMovement(BaseModel):
@@ -10,3 +10,10 @@ class FinancialMovement(BaseModel):
     category_uuid: UUID
     value: int
     item_name: str | None = Field(default=None, max_length=30)
+
+    @field_validator("value")
+    @classmethod
+    def reject_zero_value(cls, value: int) -> int:
+        if value == 0:
+            raise ValueError("value must not be zero")
+        return value

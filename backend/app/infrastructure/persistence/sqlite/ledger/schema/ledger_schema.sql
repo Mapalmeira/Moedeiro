@@ -61,7 +61,7 @@ CREATE TABLE transaction_tag (
 CREATE TABLE financial_movement (
     uuid TEXT PRIMARY KEY,
     transaction_event_uuid TEXT NOT NULL,
-    value INTEGER NOT NULL,
+    value INTEGER NOT NULL CHECK (value <> 0),
     item_name TEXT,
     account_uuid TEXT NOT NULL,
     category_uuid TEXT NOT NULL,
