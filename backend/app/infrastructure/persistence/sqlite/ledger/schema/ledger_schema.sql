@@ -2,9 +2,8 @@ CREATE TABLE ledger_metadata (
     singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
 
     ledger_uuid BLOB NOT NULL UNIQUE CHECK (length(ledger_uuid) = 16),
-    name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 50),
     schema_version INTEGER NOT NULL CHECK (schema_version >= 1),
-    created_at INTEGER NOT NULL
+    created_at INTEGER NOT NULL CHECK (created_at >= 0)
 ) STRICT;
 
 CREATE TABLE currency (
