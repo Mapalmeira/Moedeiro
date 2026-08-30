@@ -7,14 +7,12 @@ from app.domain.ledger.model.account import Account
 from app.domain.ledger.model.budget import Budget
 from app.domain.ledger.model.category import Category
 from app.domain.ledger.model.currency import Currency
-from app.domain.ledger.model.tag import Tag
 from app.domain.ledger.model.financial_event import FinancialEvent, FinancialEventType
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.repository.account import SqliteAccountRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.budget import SqliteBudgetRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.category import SqliteCategoryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.currency import SqliteCurrencyRepository
-from app.infrastructure.persistence.sqlite.ledger.repository.tag import SqliteTagRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.financial_event import SqliteFinancialEventRepository
 
 
@@ -44,10 +42,6 @@ class LedgerRepositoryTestCase(unittest.TestCase):
         selected_currency = currency or self.create_currency()
         repository = SqliteAccountRepository(self.connection)
         return repository.create(name, None, selected_currency.uuid, "WalletCards", b"\x80\x80\x80")
-
-    def create_tag(self, name: str = "Important") -> Tag:
-        repository = SqliteTagRepository(self.connection)
-        return repository.create(name)
 
     def create_event(self, description: str = "Purchase", type: FinancialEventType = "TRANSACTION", occurred_at: int = 10) -> FinancialEvent:
         repository = SqliteFinancialEventRepository(self.connection)

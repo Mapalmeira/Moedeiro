@@ -50,20 +50,6 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         with self.assertRaises(ValidationError):
             self.repository.update_description(event.uuid, "x" * 301)
 
-    def test_add_list_and_remove_tags(self) -> None:
-        """Event-tag relations can be created, queried and removed."""
-        event = self.create_event()
-        first_tag = self.create_tag("First")
-        second_tag = self.create_tag("Second")
-
-        self.repository.add_tag(event.uuid, first_tag.uuid)
-        self.repository.add_tag(event.uuid, second_tag.uuid)
-
-        self.assertCountEqual(self.repository.list_tags(event.uuid), [first_tag, second_tag])
-
-        self.repository.remove_tag(event.uuid, first_tag.uuid)
-        self.assertEqual(self.repository.list_tags(event.uuid), [second_tag])
-
     def test_list_all_returns_every_event_without_promising_order(self) -> None:
         """list_all has no filter and returns the complete collection."""
         self.repository.create(10, "First", "TRANSACTION")
@@ -91,25 +77,22 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
 
         self.assertEqual(events, [expected])
 
-    def test_list_filtered_matches_the_selected_tag_category_and_event_type(self) -> None:
-        """The selected category, tag and type are combined with AND."""
+    def test_list_filtered_matches_the_selected_category_and_event_type(self) -> None:
+        """The selected category and type are combined with AND."""
         currency = self.create_currency()
         account = self.create_account(currency=currency)
         second_category = self.create_category("Second category")
-        second_tag = self.create_tag("Second tag")
         event = self.create_event("Expected", "SHOPPING_LIST")
         other_event = self.create_event("Other", "TRANSACTION")
         movement_repository = SqliteFinancialMovementRepository(self.connection)
         movement_repository.create(event.uuid, account.uuid, second_category.uuid, -10, None)
         movement_repository.create(other_event.uuid, account.uuid, second_category.uuid, -10, None)
-        self.repository.add_tag(event.uuid, second_tag.uuid)
 
         events = self.repository.list_filtered(
             FinancialEventFilter(
                 from_timestamp=0,
                 to_timestamp=100,
                 category_uuid=second_category.uuid,
-                tag_uuid=second_tag.uuid,
                 event_type="SHOPPING_LIST",
             )
         )

@@ -12,10 +12,9 @@ from app.infrastructure.persistence.sqlite.ledger.repository.budget_status_query
 from app.infrastructure.persistence.sqlite.ledger.repository.cash_flow_query import SqliteCashFlowQueryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.category import SqliteCategoryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.currency import SqliteCurrencyRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.financial_event import SqliteFinancialEventRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.financial_movement import SqliteFinancialMovementRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.ledger_metadata import SqliteLedgerMetadataRepository
-from app.infrastructure.persistence.sqlite.ledger.repository.tag import SqliteTagRepository
-from app.infrastructure.persistence.sqlite.ledger.repository.financial_event import SqliteFinancialEventRepository
 
 
 class SqliteLedgerUnitOfWork(LedgerUnitOfWork):
@@ -34,7 +33,6 @@ class SqliteLedgerUnitOfWork(LedgerUnitOfWork):
         self.currency_repository = SqliteCurrencyRepository(self.connection)
         self.financial_movement_repository = SqliteFinancialMovementRepository(self.connection)
         self.ledger_metadata_repository = SqliteLedgerMetadataRepository(self.connection)
-        self.tag_repository = SqliteTagRepository(self.connection)
         self.financial_event_repository = SqliteFinancialEventRepository(self.connection)
 
         return self

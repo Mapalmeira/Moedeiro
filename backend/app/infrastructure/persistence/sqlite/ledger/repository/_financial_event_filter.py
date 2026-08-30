@@ -42,18 +42,6 @@ def build_financial_event_filter(filters: FinancialEventFilter) -> tuple[str, li
             """
         )
         parameters.append(filters.category_uuid.bytes)
-    if filters.tag_uuid is not None:
-        clauses.append(
-            """
-            EXISTS (
-                SELECT 1
-                FROM financial_event_tag
-                WHERE financial_event_tag.financial_event_uuid = event.uuid
-                  AND financial_event_tag.tag_uuid = ?
-            )
-            """
-        )
-        parameters.append(filters.tag_uuid.bytes)
     if filters.event_type is not None:
         clauses.append("event.type = ?")
         parameters.append(filters.event_type)

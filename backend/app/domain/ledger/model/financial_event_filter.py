@@ -20,7 +20,6 @@ class FinancialEventFilter(BaseModel):
     to_timestamp: int
     account_uuid: UUID | None = None
     category_uuid: UUID | None = None
-    tag_uuid: UUID | None = None
     event_type: FinancialEventType | None = None
 
     @model_validator(mode="after")

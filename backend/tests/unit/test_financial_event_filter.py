@@ -10,27 +10,23 @@ class FinancialEventFilterTest(unittest.TestCase):
     def test_accepts_all_supported_filter_dimensions(self) -> None:
         account_uuid = uuid4()
         category_uuid = uuid4()
-        tag_uuid = uuid4()
 
         filters = FinancialEventFilter(
             from_timestamp=10,
             to_timestamp=20,
             account_uuid=account_uuid,
             category_uuid=category_uuid,
-            tag_uuid=tag_uuid,
             event_type="TRANSACTION",
         )
 
         self.assertEqual(filters.account_uuid, account_uuid)
         self.assertEqual(filters.category_uuid, category_uuid)
-        self.assertEqual(filters.tag_uuid, tag_uuid)
         self.assertEqual(filters.event_type, "TRANSACTION")
 
     def test_uses_none_when_optional_filters_are_absent(self) -> None:
         filters = FinancialEventFilter(from_timestamp=10, to_timestamp=20)
 
         self.assertIsNone(filters.category_uuid)
-        self.assertIsNone(filters.tag_uuid)
         self.assertIsNone(filters.event_type)
 
     def test_rejects_multi_value_filter_fields(self) -> None:

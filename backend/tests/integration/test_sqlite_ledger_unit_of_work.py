@@ -18,10 +18,9 @@ from app.infrastructure.persistence.sqlite.ledger.repository.budget_status_query
 from app.infrastructure.persistence.sqlite.ledger.repository.cash_flow_query import SqliteCashFlowQueryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.category import SqliteCategoryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.currency import SqliteCurrencyRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.financial_event import SqliteFinancialEventRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.financial_movement import SqliteFinancialMovementRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.ledger_metadata import SqliteLedgerMetadataRepository
-from app.infrastructure.persistence.sqlite.ledger.repository.tag import SqliteTagRepository
-from app.infrastructure.persistence.sqlite.ledger.repository.financial_event import SqliteFinancialEventRepository
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
 
 
@@ -54,7 +53,6 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
             currency_repository = unit_of_work.currency_repository
             financial_movement_repository = unit_of_work.financial_movement_repository
             ledger_metadata_repository = unit_of_work.ledger_metadata_repository
-            tag_repository = unit_of_work.tag_repository
             financial_event_repository = unit_of_work.financial_event_repository
             assert isinstance(account_repository, SqliteAccountRepository)
             assert isinstance(account_balance_query_repository, SqliteAccountBalanceQueryRepository)
@@ -65,7 +63,6 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
             assert isinstance(currency_repository, SqliteCurrencyRepository)
             assert isinstance(financial_movement_repository, SqliteFinancialMovementRepository)
             assert isinstance(ledger_metadata_repository, SqliteLedgerMetadataRepository)
-            assert isinstance(tag_repository, SqliteTagRepository)
             assert isinstance(financial_event_repository, SqliteFinancialEventRepository)
             repositories = [
                 account_repository,
@@ -77,7 +74,6 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
                 currency_repository,
                 financial_movement_repository,
                 ledger_metadata_repository,
-                tag_repository,
                 financial_event_repository,
             ]
 
@@ -100,20 +96,24 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
     def test_exit_without_commit_rolls_back_changes(self) -> None:
         """Leaving the scope discards pending writes."""
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
-            unit_of_work.tag_repository.create("Temporary")
+            unit_of_work.currency_repository.create(
+                "Temporary", None, None, 2, "Circle", b"\x80\x80\x80"
+            )
 
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
-            self.assertEqual(unit_of_work.tag_repository.list_all(), [])
+            self.assertEqual(unit_of_work.currency_repository.list_all(), [])
 
     def test_exception_rolls_back_and_propagates(self) -> None:
         """An exceptional exit discards pending writes without suppressing the error."""
         with self.assertRaisesRegex(RuntimeError, "expected failure"):
             with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
-                unit_of_work.tag_repository.create("Temporary")
+                unit_of_work.currency_repository.create(
+                    "Temporary", None, None, 2, "Circle", b"\x80\x80\x80"
+                )
                 raise RuntimeError("expected failure")
 
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
-            self.assertEqual(unit_of_work.tag_repository.list_all(), [])
+            self.assertEqual(unit_of_work.currency_repository.list_all(), [])
 
     def test_exit_closes_the_owned_connection(self) -> None:
         """The connection cannot be reused after the transactional scope ends."""

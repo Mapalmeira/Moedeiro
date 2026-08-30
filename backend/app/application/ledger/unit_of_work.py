@@ -8,10 +8,9 @@ from app.domain.ledger.repository.budget_status_query import BudgetStatusQueryRe
 from app.domain.ledger.repository.cash_flow_query import CashFlowQueryRepository
 from app.domain.ledger.repository.category import CategoryRepository
 from app.domain.ledger.repository.currency import CurrencyRepository
+from app.domain.ledger.repository.financial_event import FinancialEventRepository
 from app.domain.ledger.repository.financial_movement import FinancialMovementRepository
 from app.domain.ledger.repository.ledger_metadata import LedgerMetadataRepository
-from app.domain.ledger.repository.tag import TagRepository
-from app.domain.ledger.repository.financial_event import FinancialEventRepository
 
 
 class LedgerUnitOfWork(UnitOfWork):
@@ -24,5 +23,4 @@ class LedgerUnitOfWork(UnitOfWork):
     currency_repository: CurrencyRepository
     financial_movement_repository: FinancialMovementRepository
     ledger_metadata_repository: LedgerMetadataRepository
-    tag_repository: TagRepository
     financial_event_repository: FinancialEventRepository

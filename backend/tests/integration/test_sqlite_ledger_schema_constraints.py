@@ -23,7 +23,6 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
         self.account_uuid = uuid4().bytes
         self.category_uuid = uuid4().bytes
         self.event_uuid = uuid4().bytes
-        self.tag_uuid = uuid4().bytes
         self.movement_uuid = uuid4().bytes
         self.budget_uuid = uuid4().bytes
         self.connection.execute(
@@ -47,10 +46,6 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             (self.event_uuid,),
         )
         self.connection.execute(
-            "INSERT INTO tag VALUES (?, 'Important')",
-            (self.tag_uuid,),
-        )
-        self.connection.execute(
             "INSERT INTO financial_movement VALUES (?, ?, -100, 'Lunch', ?, ?)",
             (self.movement_uuid, self.event_uuid, self.account_uuid, self.category_uuid),
         )
@@ -70,8 +65,6 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             "account": {"uuid", "currency_uuid"},
             "category": {"uuid", "parent_uuid"},
             "financial_event": {"uuid"},
-            "tag": {"uuid"},
-            "financial_event_tag": {"financial_event_uuid", "tag_uuid"},
             "financial_movement": {"uuid", "financial_event_uuid", "account_uuid", "category_uuid"},
             "budget": {"uuid", "category_uuid", "currency_uuid"},
             "budget_accounts": {"budget_uuid", "account_uuid", "currency_uuid"},
@@ -119,8 +112,6 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             ("category", "icon", "x" * 51),
             ("financial_event", "description", ""),
             ("financial_event", "description", "x" * 301),
-            ("tag", "name", ""),
-            ("tag", "name", "x" * 31),
             ("financial_movement", "item_name", "x" * 51),
             ("budget", "budget_name", ""),
             ("budget", "budget_name", "x" * 51),

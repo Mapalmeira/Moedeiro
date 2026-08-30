@@ -27,7 +27,6 @@ class SqliteLedgerIndexesTest(unittest.TestCase):
             "category_name_idx",
             "category_parent_idx",
             "financial_event_occurred_at_idx",
-            "financial_event_tag_tag_event_idx",
             "financial_movement_financial_event_idx",
             "financial_movement_account_event_idx",
             "financial_movement_category_event_idx",

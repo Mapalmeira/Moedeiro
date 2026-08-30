@@ -1,10 +1,9 @@
 import sqlite3
 from uuid import UUID, uuid4
 
-from app.domain.ledger.model.financial_movement import FinancialMovement
-from app.domain.ledger.model.tag import Tag
 from app.domain.ledger.model.financial_event import FinancialEvent, FinancialEventType
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
+from app.domain.ledger.model.financial_movement import FinancialMovement
 from app.domain.ledger.repository.financial_event import FinancialEventRepository
 from app.infrastructure.persistence.sqlite.ledger.repository._financial_event_filter import build_financial_event_filter
 
@@ -43,30 +42,6 @@ class SqliteFinancialEventRepository(FinancialEventRepository):
             "UPDATE financial_event SET description = ? WHERE uuid = ?",
             (event.description, event.uuid.bytes),
         )
-
-    def add_tag(self, financial_event_uuid: UUID, tag_uuid: UUID) -> None:
-        self.connection.execute(
-            "INSERT INTO financial_event_tag(financial_event_uuid, tag_uuid) VALUES (?, ?)",
-            (financial_event_uuid.bytes, tag_uuid.bytes),
-        )
-
-    def remove_tag(self, financial_event_uuid: UUID, tag_uuid: UUID) -> None:
-        self.connection.execute(
-            "DELETE FROM financial_event_tag WHERE financial_event_uuid = ? AND tag_uuid = ?",
-            (financial_event_uuid.bytes, tag_uuid.bytes),
-        )
-
-    def list_tags(self, financial_event_uuid: UUID) -> list[Tag]:
-        rows = self.connection.execute(
-            """
-            SELECT tag.uuid, tag.name
-            FROM tag
-            JOIN financial_event_tag ON financial_event_tag.tag_uuid = tag.uuid
-            WHERE financial_event_tag.financial_event_uuid = ?
-            """,
-            (financial_event_uuid.bytes,),
-        ).fetchall()
-        return [Tag.model_validate(dict(row)) for row in rows]
 
     def list_all(self) -> list[FinancialEvent]:
         rows = self.connection.execute(

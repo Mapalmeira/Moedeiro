@@ -49,21 +49,6 @@ CREATE TABLE financial_event (
 ) STRICT;
 
 
-CREATE TABLE tag (
-    uuid BLOB PRIMARY KEY CHECK (length(uuid) = 16),
-    name TEXT NOT NULL UNIQUE CHECK (length(name) BETWEEN 1 AND 30)
-) STRICT;
-
-CREATE TABLE financial_event_tag (
-    financial_event_uuid BLOB NOT NULL CHECK (length(financial_event_uuid) = 16),
-    tag_uuid BLOB NOT NULL CHECK (length(tag_uuid) = 16),
-
-    PRIMARY KEY (financial_event_uuid, tag_uuid),
-
-    FOREIGN KEY (financial_event_uuid) REFERENCES financial_event(uuid) ON DELETE CASCADE,
-    FOREIGN KEY (tag_uuid) REFERENCES tag(uuid) ON DELETE CASCADE
-) STRICT;
-
 CREATE TABLE financial_movement (
     uuid BLOB PRIMARY KEY CHECK (length(uuid) = 16),
     financial_event_uuid BLOB NOT NULL CHECK (length(financial_event_uuid) = 16),
@@ -141,9 +126,6 @@ ON category(parent_uuid);
 
 CREATE INDEX financial_event_occurred_at_idx
 ON financial_event(occurred_at);
-
-CREATE INDEX financial_event_tag_tag_event_idx
-ON financial_event_tag(tag_uuid, financial_event_uuid);
 
 CREATE INDEX financial_movement_financial_event_idx
 ON financial_movement(financial_event_uuid);
