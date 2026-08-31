@@ -21,12 +21,12 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         self.grant_uuid = uuid4().bytes
         self.auth_session_uuid = uuid4().bytes
         self.remember_session_uuid = uuid4().bytes
-        self.connection.execute("INSERT INTO user_invitation(uuid, secret_hash, created_at) VALUES (?, ?, 10)", (self.invitation_uuid, b"i" * 32))
+        self.connection.execute("INSERT INTO user_invitation VALUES (?, ?, 10, 3610, NULL, NULL)", (self.invitation_uuid, b"i" * 32))
         self.connection.execute("INSERT INTO user_account VALUES (?, 'Alice', 'alice', '$argon2id$encoded', 20, 20)", (self.user_uuid,))
         self.connection.execute("INSERT INTO ledger VALUES (?, 'Main ledger', 'ledger.sqlite', 'BookOpen', ?)", (self.ledger_uuid, b"\x80\x80\x80"))
         self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'OWNER', 30, NULL)", (self.grant_uuid, self.user_uuid, self.ledger_uuid))
-        self.connection.execute("INSERT INTO auth_session VALUES (?, ?, ?, 40, NULL, NULL)", (self.auth_session_uuid, self.user_uuid, b"s" * 32))
-        self.connection.execute("INSERT INTO remember_session VALUES (?, ?, ?, 40, 2592000, NULL, NULL)", (self.remember_session_uuid, self.user_uuid, b"r" * 32))
+        self.connection.execute("INSERT INTO auth_session VALUES (?, ?, ?, 40, 43240, 1800, NULL, NULL)", (self.auth_session_uuid, self.user_uuid, b"s" * 32))
+        self.connection.execute("INSERT INTO remember_session VALUES (?, ?, ?, 40, 2592040, NULL, NULL)", (self.remember_session_uuid, self.user_uuid, b"r" * 32))
 
     def tearDown(self) -> None:
         self.connection.close()
@@ -120,11 +120,15 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
 
         self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'READER', 50, NULL)", (uuid4().bytes, self.user_uuid, self.ledger_uuid))
 
-    def test_enforces_invitation_and_remember_session_expiration_timeouts(self) -> None:
-        for table in ("user_invitation", "remember_session"):
+    def test_expiration_must_follow_creation(self) -> None:
+        for table in ("user_invitation", "auth_session", "remember_session"):
             with self.subTest(table=table):
                 with self.assertRaises(sqlite3.IntegrityError):
-                    self.connection.execute(f"UPDATE {table} SET expiration_timeout_seconds = 0")
+                    self.connection.execute(f"UPDATE {table} SET expires_at = created_at")
+
+    def test_auth_session_inactivity_timeout_must_be_positive(self) -> None:
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("UPDATE auth_session SET inactivity_timeout_seconds = 0")
 
     def test_invitation_cannot_be_consumed_and_revoked(self) -> None:
         self.connection.execute("UPDATE user_invitation SET consumed_at = 20")

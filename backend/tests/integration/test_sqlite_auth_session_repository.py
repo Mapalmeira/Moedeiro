@@ -1,6 +1,7 @@
 import sqlite3
 from uuid import uuid4
 
+from app.domain.registry.model.auth_session import DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS
 from tests.integration.registry_repository_test_case import RegistryRepositoryTestCase
 
 
@@ -8,21 +9,23 @@ class SqliteAuthSessionRepositoryTest(RegistryRepositoryTestCase):
     def test_create_returns_a_session_readable_by_uuid_and_token_hash(self) -> None:
         user = self.create_user()
 
-        session = self.session_repository.create(user.uuid, b"t" * 32, 40)
+        session = self.session_repository.create(user.uuid, b"t" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
 
+        self.assertEqual(session.expires_at, 40 + 12 * 60 * 60)
+        self.assertEqual(session.inactivity_timeout_seconds, 30 * 60)
         self.assertEqual(self.session_repository.get(session.uuid), session)
         self.assertEqual(self.session_repository.get_by_token_hash(b"t" * 32), session)
 
     def test_create_requires_an_existing_user(self) -> None:
         with self.assertRaises(sqlite3.IntegrityError):
-            self.session_repository.create(uuid4(), b"t" * 32, 40)
+            self.session_repository.create(uuid4(), b"t" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
 
     def test_update_last_activity_records_use_only_while_session_is_active(self) -> None:
         user = self.create_user()
-        active = self.session_repository.create(user.uuid, b"v" * 32, 40)
-        inactive = self.session_repository.create(user.uuid, b"i" * 32, 40)
-        expired = self.session_repository.create(user.uuid, b"e" * 32, 40)
-        revoked = self.session_repository.create(user.uuid, b"r" * 32, 40)
+        active = self.session_repository.create(user.uuid, b"v" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
+        inactive = self.session_repository.create(user.uuid, b"i" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
+        expired = self.session_repository.create(user.uuid, b"e" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
+        revoked = self.session_repository.create(user.uuid, b"r" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
         self.session_repository.revoke(revoked.uuid, 45)
 
         self.session_repository.update_last_activity(active.uuid, 50)
@@ -45,9 +48,9 @@ class SqliteAuthSessionRepositoryTest(RegistryRepositoryTestCase):
 
     def test_revoke_by_user_preserves_existing_revocation_and_excludes_other_user(self) -> None:
         user = self.create_user()
-        first = self.session_repository.create(user.uuid, b"a" * 32, 40)
-        second = self.session_repository.create(user.uuid, b"b" * 32, 40)
-        other = self.session_repository.create(self.create_user().uuid, b"c" * 32, 40)
+        first = self.session_repository.create(user.uuid, b"a" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
+        second = self.session_repository.create(user.uuid, b"b" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
+        other = self.session_repository.create(self.create_user().uuid, b"c" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
         self.session_repository.revoke(first.uuid, 45)
 
         self.session_repository.revoke_by_user(user.uuid, 50)
@@ -66,13 +69,13 @@ class SqliteAuthSessionRepositoryTest(RegistryRepositoryTestCase):
 
     def test_token_hash_is_unique(self) -> None:
         user = self.create_user()
-        self.session_repository.create(user.uuid, b"t" * 32, 40)
+        self.session_repository.create(user.uuid, b"t" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
 
         with self.assertRaises(sqlite3.IntegrityError):
-            self.session_repository.create(user.uuid, b"t" * 32, 40)
+            self.session_repository.create(user.uuid, b"t" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
 
     def test_repository_does_not_commit_its_own_changes(self) -> None:
-        session = self.session_repository.create(self.create_user().uuid, b"t" * 32, 40)
+        session = self.session_repository.create(self.create_user().uuid, b"t" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
 
         self.connection.rollback()
 

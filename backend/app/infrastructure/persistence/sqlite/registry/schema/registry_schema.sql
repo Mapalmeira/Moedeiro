@@ -2,8 +2,8 @@ CREATE TABLE user_invitation (
     uuid BLOB PRIMARY KEY,
     secret_hash BLOB NOT NULL UNIQUE,
     created_at INTEGER NOT NULL CHECK (created_at >= 0),
-    expiration_timeout_seconds INTEGER NOT NULL DEFAULT 3600 CHECK (expiration_timeout_seconds > 0),
-    consumed_at INTEGER CHECK (consumed_at IS NULL OR (consumed_at >= created_at AND consumed_at < created_at + expiration_timeout_seconds)),
+    expires_at INTEGER NOT NULL CHECK (expires_at > created_at),
+    consumed_at INTEGER CHECK (consumed_at IS NULL OR (consumed_at >= created_at AND consumed_at < expires_at)),
     revoked_at INTEGER CHECK (revoked_at IS NULL OR revoked_at >= created_at),
 
     CHECK (consumed_at IS NULL OR revoked_at IS NULL)
@@ -87,7 +87,9 @@ CREATE TABLE auth_session (
     user_uuid BLOB NOT NULL,
     token_hash BLOB NOT NULL UNIQUE,
     created_at INTEGER NOT NULL CHECK (created_at >= 0),
-    last_activity_at INTEGER CHECK (last_activity_at IS NULL OR last_activity_at >= created_at),
+    expires_at INTEGER NOT NULL CHECK (expires_at > created_at),
+    inactivity_timeout_seconds INTEGER NOT NULL CHECK (inactivity_timeout_seconds > 0),
+    last_activity_at INTEGER CHECK (last_activity_at IS NULL OR (last_activity_at >= created_at AND last_activity_at < expires_at)),
     revoked_at INTEGER CHECK (revoked_at IS NULL OR revoked_at >= created_at),
 
     FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE
@@ -98,14 +100,14 @@ CREATE TABLE remember_session (
     user_uuid BLOB NOT NULL,
     token_hash BLOB NOT NULL UNIQUE,
     created_at INTEGER NOT NULL CHECK (created_at >= 0),
-    expiration_timeout_seconds INTEGER NOT NULL DEFAULT 2592000 CHECK (expiration_timeout_seconds > 0),
-    last_used_at INTEGER CHECK (last_used_at IS NULL OR (last_used_at >= created_at AND last_used_at < created_at + expiration_timeout_seconds)),
+    expires_at INTEGER NOT NULL CHECK (expires_at > created_at),
+    last_used_at INTEGER CHECK (last_used_at IS NULL OR (last_used_at >= created_at AND last_used_at < expires_at)),
     revoked_at INTEGER CHECK (revoked_at IS NULL OR revoked_at >= created_at),
 
     FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE
 ) STRICT;
 
-CREATE INDEX user_invitation_created_at_idx ON user_invitation(created_at);
+CREATE INDEX user_invitation_expires_at_idx ON user_invitation(expires_at);
 CREATE UNIQUE INDEX ledger_grant_active_user_ledger_idx ON ledger_grant(user_uuid, ledger_uuid) WHERE revoked_at IS NULL;
 CREATE INDEX ledger_grant_user_idx ON ledger_grant(user_uuid);
 CREATE INDEX ledger_grant_ledger_idx ON ledger_grant(ledger_uuid);
@@ -113,8 +115,7 @@ CREATE INDEX webauthn_credential_user_idx ON webauthn_credential(user_uuid);
 CREATE INDEX mfa_method_user_idx ON mfa_method(user_uuid);
 CREATE INDEX recovery_code_user_idx ON recovery_code(user_uuid);
 CREATE INDEX auth_session_user_idx ON auth_session(user_uuid);
-CREATE INDEX auth_session_created_at_idx ON auth_session(created_at);
-CREATE INDEX auth_session_last_activity_at_idx ON auth_session(last_activity_at);
+CREATE INDEX auth_session_expires_at_idx ON auth_session(expires_at);
+CREATE INDEX auth_session_inactivity_expiration_idx ON auth_session(COALESCE(last_activity_at, created_at) + inactivity_timeout_seconds);
 CREATE INDEX remember_session_user_idx ON remember_session(user_uuid);
-CREATE INDEX remember_session_created_at_idx ON remember_session(created_at);
-CREATE INDEX remember_session_last_used_at_idx ON remember_session(last_used_at);
+CREATE INDEX remember_session_expires_at_idx ON remember_session(expires_at);

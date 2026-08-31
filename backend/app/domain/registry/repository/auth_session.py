@@ -6,7 +6,7 @@ from app.domain.registry.model.auth_session import AuthSession
 
 class AuthSessionRepository(ABC):
     @abstractmethod
-    def create(self, user_uuid: UUID, token_hash: bytes, created_at: int) -> AuthSession:
+    def create(self, user_uuid: UUID, token_hash: bytes, created_at: int, expires_at: int, inactivity_timeout_seconds: int) -> AuthSession:
         pass
 
     @abstractmethod

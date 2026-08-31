@@ -8,20 +8,20 @@ from app.domain.registry.model.user_invitation import DEFAULT_EXPIRATION_TIMEOUT
 
 class UserInvitationTest(unittest.TestCase):
     def create_invitation(self, **changes) -> UserInvitation:
-        values = {"uuid": uuid4(), "secret_hash": b"s" * 32, "created_at": 10}
+        values = {"uuid": uuid4(), "secret_hash": b"s" * 32, "created_at": 10, "expires_at": 10 + DEFAULT_EXPIRATION_TIMEOUT_SECONDS}
         values.update(changes)
         return UserInvitation(**values)
 
     def test_accepts_an_active_invitation_with_one_hour_lifetime(self) -> None:
         invitation = self.create_invitation()
 
-        self.assertEqual(invitation.expiration_timeout_seconds, DEFAULT_EXPIRATION_TIMEOUT_SECONDS)
+        self.assertEqual(invitation.expires_at, 10 + DEFAULT_EXPIRATION_TIMEOUT_SECONDS)
         self.assertIsNone(invitation.consumed_at)
         self.assertIsNone(invitation.revoked_at)
 
-    def test_expiration_timeout_must_be_positive(self) -> None:
+    def test_expiration_must_follow_creation(self) -> None:
         with self.assertRaises(ValidationError):
-            self.create_invitation(expiration_timeout_seconds=0)
+            self.create_invitation(expires_at=10)
 
     def test_state_timestamps_cannot_precede_creation(self) -> None:
         for field in ("consumed_at", "revoked_at"):
@@ -31,7 +31,7 @@ class UserInvitationTest(unittest.TestCase):
 
     def test_consumption_must_precede_expiration(self) -> None:
         with self.assertRaises(ValidationError):
-            self.create_invitation(expiration_timeout_seconds=10, consumed_at=20)
+            self.create_invitation(expires_at=20, consumed_at=20)
 
     def test_cannot_be_consumed_and_revoked(self) -> None:
         with self.assertRaises(ValidationError):

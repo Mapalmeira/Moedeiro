@@ -42,7 +42,7 @@ class RegistryRepositoryTestCase(unittest.TestCase):
     def create_invitation(self, secret_hash: bytes | None = None):
         if secret_hash is None:
             secret_hash = uuid4().bytes * 2
-        return self.invitation_repository.create(secret_hash, 10, 90)
+        return self.invitation_repository.create(secret_hash, 10, 100)
 
     def create_user(self, name: str | None = None, secret_hash: bytes | None = None):
         invitation = self.create_invitation(secret_hash)

@@ -1,14 +1,15 @@
 import sqlite3
 from uuid import uuid4
 
+from app.domain.registry.model.user_invitation import DEFAULT_EXPIRATION_TIMEOUT_SECONDS
 from tests.integration.registry_repository_test_case import RegistryRepositoryTestCase
 
 
 class SqliteUserInvitationRepositoryTest(RegistryRepositoryTestCase):
     def test_create_returns_an_invitation_readable_by_uuid_and_secret_hash(self) -> None:
-        invitation = self.invitation_repository.create(b"s" * 32, 10)
+        invitation = self.invitation_repository.create(b"s" * 32, 10, 10 + DEFAULT_EXPIRATION_TIMEOUT_SECONDS)
 
-        self.assertEqual(invitation.expiration_timeout_seconds, 3600)
+        self.assertEqual(invitation.expires_at, 3610)
         self.assertEqual(self.invitation_repository.get(invitation.uuid), invitation)
         self.assertEqual(self.invitation_repository.get_by_secret_hash(b"s" * 32), invitation)
 

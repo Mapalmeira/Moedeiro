@@ -1,20 +1,21 @@
 import sqlite3
 from uuid import UUID, uuid4
 
-from app.domain.registry.model.remember_session import DEFAULT_EXPIRATION_TIMEOUT_SECONDS, RememberSession
+from app.domain.registry.model.remember_session import RememberSession
 from app.domain.registry.repository.remember_session import RememberSessionRepository
 
 
 class SqliteRememberSessionRepository(RememberSessionRepository):
-    _columns = "uuid, user_uuid, token_hash, created_at, expiration_timeout_seconds, last_used_at, revoked_at"
+    _columns = "uuid, user_uuid, token_hash, created_at, expires_at, last_used_at, revoked_at"
+
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, user_uuid: UUID, token_hash: bytes, created_at: int, expiration_timeout_seconds: int = DEFAULT_EXPIRATION_TIMEOUT_SECONDS) -> RememberSession:
-        session = RememberSession(uuid=uuid4(), user_uuid=user_uuid, token_hash=token_hash, created_at=created_at, expiration_timeout_seconds=expiration_timeout_seconds)
+    def create(self, user_uuid: UUID, token_hash: bytes, created_at: int, expires_at: int) -> RememberSession:
+        session = RememberSession(uuid=uuid4(), user_uuid=user_uuid, token_hash=token_hash, created_at=created_at, expires_at=expires_at)
         self.connection.execute(
-            "INSERT INTO remember_session(uuid, user_uuid, token_hash, created_at, expiration_timeout_seconds, last_used_at, revoked_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (session.uuid.bytes, session.user_uuid.bytes, session.token_hash, session.created_at, session.expiration_timeout_seconds, session.last_used_at, session.revoked_at),
+            "INSERT INTO remember_session(uuid, user_uuid, token_hash, created_at, expires_at, last_used_at, revoked_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (session.uuid.bytes, session.user_uuid.bytes, session.token_hash, session.created_at, session.expires_at, session.last_used_at, session.revoked_at),
         )
         return session
 
@@ -28,7 +29,7 @@ class SqliteRememberSessionRepository(RememberSessionRepository):
 
     def rotate(self, uuid: UUID, token_hash: bytes, last_used_at: int) -> bool:
         cursor = self.connection.execute(
-            "UPDATE remember_session SET token_hash = ?, last_used_at = ? WHERE uuid = ? AND revoked_at IS NULL AND created_at <= ? AND created_at + expiration_timeout_seconds > ? AND COALESCE(last_used_at, created_at) <= ?",
+            "UPDATE remember_session SET token_hash = ?, last_used_at = ? WHERE uuid = ? AND revoked_at IS NULL AND created_at <= ? AND expires_at > ? AND COALESCE(last_used_at, created_at) <= ?",
             (token_hash, last_used_at, uuid.bytes, last_used_at, last_used_at, last_used_at),
         )
         return cursor.rowcount == 1

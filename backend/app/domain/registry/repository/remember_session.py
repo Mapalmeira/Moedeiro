@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.registry.model.remember_session import DEFAULT_EXPIRATION_TIMEOUT_SECONDS, RememberSession
+from app.domain.registry.model.remember_session import RememberSession
 
 
 class RememberSessionRepository(ABC):
     @abstractmethod
-    def create(self, user_uuid: UUID, token_hash: bytes, created_at: int, expiration_timeout_seconds: int = DEFAULT_EXPIRATION_TIMEOUT_SECONDS) -> RememberSession:
+    def create(self, user_uuid: UUID, token_hash: bytes, created_at: int, expires_at: int) -> RememberSession:
         pass
 
     @abstractmethod

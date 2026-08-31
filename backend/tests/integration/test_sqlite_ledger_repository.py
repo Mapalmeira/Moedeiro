@@ -5,6 +5,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
+from app.domain.registry.model.auth_session import DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS
+from app.domain.registry.model.user_invitation import DEFAULT_EXPIRATION_TIMEOUT_SECONDS
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.repository.auth_session import SqliteAuthSessionRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger_grant import SqliteLedgerGrantRepository
@@ -110,10 +112,10 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         invitation_repository = SqliteUserInvitationRepository(self.connection)
         user_repository = SqliteUserRepository(self.connection)
         ledger = self.create_ledger("ledger.sqlite")
-        invitation = invitation_repository.create(b"i" * 32, 10)
+        invitation = invitation_repository.create(b"i" * 32, 10, 10 + DEFAULT_EXPIRATION_TIMEOUT_SECONDS)
         user = user_repository.create("Alice", "$argon2id$test", 15)
         grant = grant_repository.create(user.uuid, ledger.uuid, "OWNER", 16)
-        session = session_repository.create(user.uuid, b"s" * 32, 17)
+        session = session_repository.create(user.uuid, b"s" * 32, 17, 17 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
 
         self.repository.delete(ledger.uuid)
 
