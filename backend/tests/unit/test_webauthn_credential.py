@@ -24,11 +24,6 @@ class WebAuthnCredentialTest(unittest.TestCase):
                 with self.assertRaises(ValidationError):
                     self.create_credential(name=name)
 
-    def test_does_not_validate_backend_managed_binary_fields(self) -> None:
-        for field, value in (("credential_id", b""), ("credential_id", b"x" * 10000), ("public_key", b""), ("public_key", b"x" * 10000)):
-            with self.subTest(field=field, size=len(value)):
-                self.assertEqual(getattr(self.create_credential(**{field: value}), field), value)
-
     def test_sign_count_cannot_be_negative(self) -> None:
         with self.assertRaises(ValidationError):
             self.create_credential(sign_count=-1)

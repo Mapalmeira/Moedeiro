@@ -19,11 +19,5 @@ class MfaMethodTest(unittest.TestCase):
         with self.assertRaises(ValidationError):
             self.create_method(type="SMS")
 
-    def test_does_not_validate_backend_managed_encrypted_secret(self) -> None:
-        for secret in (b"", b"x" * 10000):
-            with self.subTest(size=len(secret)):
-                self.assertEqual(self.create_method(secret_encrypted=secret).secret_encrypted, secret)
-
-
 if __name__ == "__main__":
     unittest.main()

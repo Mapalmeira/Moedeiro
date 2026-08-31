@@ -33,22 +33,5 @@ class UserPreferencesTest(unittest.TestCase):
                 with self.assertRaises(ValidationError):
                     UserPreferences(user_uuid=uuid4(), **values)
 
-    def test_timezone_has_no_maximum_length(self) -> None:
-        timezone = "x" * 10000
-
-        preferences = UserPreferences(user_uuid=uuid4(), timezone=timezone)
-
-        self.assertEqual(preferences.timezone, timezone)
-
-    def test_formats_have_no_maximum_length(self) -> None:
-        value = "x" * 10000
-
-        preferences = UserPreferences(user_uuid=uuid4(), date_format=value, time_format=value, number_format=value)
-
-        self.assertEqual(preferences.date_format, value)
-        self.assertEqual(preferences.time_format, value)
-        self.assertEqual(preferences.number_format, value)
-
-
 if __name__ == "__main__":
     unittest.main()

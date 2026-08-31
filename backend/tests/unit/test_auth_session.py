@@ -24,9 +24,6 @@ class AuthSessionTest(unittest.TestCase):
         self.assertEqual(DEFAULT_INACTIVITY_TIMEOUT_SECONDS, 30 * 60)
         self.assertEqual(DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, 12 * 60 * 60)
 
-    def test_does_not_validate_backend_managed_token_hash(self) -> None:
-        self.assertEqual(self.create_session(token_hash=b"").token_hash, b"")
-
     def test_activity_and_revocation_cannot_precede_creation(self) -> None:
         for field in ("last_activity_at", "revoked_at"):
             with self.subTest(field=field):

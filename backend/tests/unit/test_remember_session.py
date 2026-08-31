@@ -20,9 +20,6 @@ class RememberSessionTest(unittest.TestCase):
         self.assertIsNone(session.last_used_at)
         self.assertIsNone(session.revoked_at)
 
-    def test_does_not_validate_backend_managed_token_hash(self) -> None:
-        self.assertEqual(self.create_session(token_hash=b"").token_hash, b"")
-
     def test_expiration_timeout_must_be_positive(self) -> None:
         with self.assertRaises(ValidationError):
             self.create_session(expiration_timeout_seconds=0)

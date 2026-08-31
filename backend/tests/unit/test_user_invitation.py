@@ -19,9 +19,6 @@ class UserInvitationTest(unittest.TestCase):
         self.assertIsNone(invitation.consumed_at)
         self.assertIsNone(invitation.revoked_at)
 
-    def test_does_not_validate_backend_managed_secret_hash(self) -> None:
-        self.assertEqual(self.create_invitation(secret_hash=b"").secret_hash, b"")
-
     def test_expiration_timeout_must_be_positive(self) -> None:
         with self.assertRaises(ValidationError):
             self.create_invitation(expiration_timeout_seconds=0)

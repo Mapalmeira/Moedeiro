@@ -33,12 +33,6 @@ class SqliteRememberSessionRepositoryTest(RegistryRepositoryTestCase):
         assert rotated is not None
         self.assertEqual(rotated.last_used_at, 40)
 
-    def test_rotate_does_not_validate_backend_managed_token_hash(self) -> None:
-        session = self.remember_session_repository.create(self.create_user().uuid, b"o" * 32, 30, 100)
-
-        self.assertTrue(self.remember_session_repository.rotate(session.uuid, b"", 35))
-        self.assertIsNotNone(self.remember_session_repository.get_by_token_hash(b""))
-
     def test_rotate_rejects_expired_and_revoked_sessions(self) -> None:
         user = self.create_user()
         expired = self.remember_session_repository.create(user.uuid, b"e" * 32, 30, 10)

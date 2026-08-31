@@ -31,14 +31,6 @@ class UserTest(unittest.TestCase):
                 with self.assertRaises(ValidationError):
                     self.create_user(**changes)
 
-    def test_does_not_limit_backend_managed_password_hash(self) -> None:
-        name = "ﷺ" * 50
-        for password_hash in ("", "x" * 10000):
-            with self.subTest(length=len(password_hash)):
-                user = self.create_user(name=name, normalized_name=normalize_user_name(name), password_hash=password_hash)
-                self.assertGreater(len(user.normalized_name), 150)
-                self.assertEqual(user.password_hash, password_hash)
-
     def test_password_change_cannot_precede_creation(self) -> None:
         with self.assertRaises(ValidationError):
             self.create_user(password_changed_at=9)

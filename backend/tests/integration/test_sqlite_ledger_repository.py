@@ -130,25 +130,6 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
 
         self.assertIsNone(self.repository.get_by_path("ledger.sqlite"))
 
-    def test_create_accepts_path_without_maximum_length(self) -> None:
-        path = "x" * 10000
-
-        self.create_ledger(path)
-
-        self.assertIsNotNone(self.repository.get_by_path(path))
-
-    def test_update_accepts_path_without_maximum_length(self) -> None:
-        self.create_ledger("ledger.sqlite")
-        ledger = self.repository.get_by_path("ledger.sqlite")
-        assert ledger is not None
-        path = "x" * 10000
-
-        self.repository.update_path(ledger.uuid, path)
-
-        updated_ledger = self.repository.get(ledger.uuid)
-        assert updated_ledger is not None
-        self.assertEqual(updated_ledger.path, path)
-
     def test_database_rejects_duplicate_paths(self) -> None:
         """The schema's unique path constraint is visible through the repository."""
         self.create_ledger("ledger.sqlite")

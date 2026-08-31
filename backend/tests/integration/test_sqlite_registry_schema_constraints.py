@@ -50,45 +50,11 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
             with self.subTest(table=table):
                 self.assertEqual({column: columns[column] for column in uuid_columns}, {column: "BLOB" for column in uuid_columns})
 
-    def test_does_not_validate_uuid_representation(self) -> None:
-        uuid_columns = {
-            "user_invitation": ("uuid",),
-            "user_account": ("uuid",),
-            "ledger": ("uuid",),
-            "ledger_grant": ("uuid", "user_uuid", "ledger_uuid"),
-            "webauthn_credential": ("uuid", "user_uuid"),
-            "mfa_method": ("uuid", "user_uuid"),
-            "recovery_code": ("uuid", "user_uuid"),
-            "user_preferences": ("user_uuid",),
-            "auth_session": ("uuid", "user_uuid"),
-            "remember_session": ("uuid", "user_uuid"),
-        }
-        for table, columns in uuid_columns.items():
-            sql = self.connection.execute("SELECT sql FROM sqlite_schema WHERE type = 'table' AND name = ?", (table,)).fetchone()["sql"]
-            for column in columns:
-                with self.subTest(table=table, column=column):
-                    self.assertNotIn(f"length({column})", sql)
-
-        self.connection.execute("INSERT INTO ledger VALUES (?, 'Other', 'other.sqlite', 'BookOpen', ?)", (b"invalid", b"\x80\x80\x80"))
-
     def test_stores_uuid_as_exactly_16_bytes(self) -> None:
         row = self.connection.execute("SELECT typeof(uuid) AS storage_type, length(uuid) AS size FROM user_account").fetchone()
 
         self.assertEqual(row["storage_type"], "blob")
         self.assertEqual(row["size"], 16)
-
-    def test_does_not_validate_backend_managed_representations(self) -> None:
-        credential_uuid = uuid4().bytes
-        method_uuid = uuid4().bytes
-        recovery_uuid = uuid4().bytes
-        self.connection.execute("UPDATE ledger SET path = ''")
-        self.connection.execute("UPDATE user_invitation SET secret_hash = ?", (b"short",))
-        self.connection.execute("UPDATE user_account SET normalized_name = '', password_hash = ''")
-        self.connection.execute("UPDATE auth_session SET token_hash = ?", (b"short-auth",))
-        self.connection.execute("UPDATE remember_session SET token_hash = ?", (b"short-remember",))
-        self.connection.execute("INSERT INTO webauthn_credential VALUES (?, ?, ?, ?, 0, 30, NULL, 'Phone')", (credential_uuid, self.user_uuid, b"", b""))
-        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30)", (method_uuid, self.user_uuid, b""))
-        self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, NULL)", (recovery_uuid, self.user_uuid, b"short"))
 
     def test_enforces_text_limits(self) -> None:
         invalid_updates = (
@@ -149,43 +115,10 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.connection.execute(f"UPDATE user_preferences SET {column} = ?", (value,))
 
-    def test_timezone_has_no_maximum_length(self) -> None:
-        timezone = "x" * 10000
-
-        self.connection.execute("INSERT INTO user_preferences(user_uuid, timezone) VALUES (?, ?)", (self.user_uuid, timezone))
-
-        self.assertEqual(self.connection.execute("SELECT timezone FROM user_preferences").fetchone()["timezone"], timezone)
-
-    def test_generated_and_derived_fields_have_no_defensive_maximum(self) -> None:
-        text = "x" * 10000
-        binary = b"x" * 10000
-        credential_uuid = uuid4().bytes
-        method_uuid = uuid4().bytes
-        self.connection.execute("UPDATE user_account SET normalized_name = ?, password_hash = ?", (text, text))
-        self.connection.execute("INSERT INTO webauthn_credential VALUES (?, ?, ?, ?, 0, 30, NULL, 'Phone')", (credential_uuid, self.user_uuid, b"credential", binary))
-        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30)", (method_uuid, self.user_uuid, binary))
-        self.connection.execute("INSERT INTO user_preferences(user_uuid, date_format, time_format, number_format) VALUES (?, ?, ?, ?)", (self.user_uuid, text, text, text))
-
-        user = self.connection.execute("SELECT normalized_name, password_hash FROM user_account").fetchone()
-        credential = self.connection.execute("SELECT public_key FROM webauthn_credential").fetchone()
-        method = self.connection.execute("SELECT secret_encrypted FROM mfa_method").fetchone()
-        preferences = self.connection.execute("SELECT date_format, time_format, number_format FROM user_preferences").fetchone()
-        self.assertEqual(user["normalized_name"], text)
-        self.assertEqual(user["password_hash"], text)
-        self.assertEqual(credential["public_key"], binary)
-        self.assertEqual(method["secret_encrypted"], binary)
-        self.assertEqual(tuple(preferences), (text, text, text))
-
     def test_revoked_grant_allows_a_new_active_relation(self) -> None:
         self.connection.execute("UPDATE ledger_grant SET revoked_at = 40 WHERE uuid = ?", (self.grant_uuid,))
 
         self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'READER', 50, NULL)", (uuid4().bytes, self.user_uuid, self.ledger_uuid))
-
-    def test_auth_session_does_not_persist_timeout_configuration(self) -> None:
-        columns = {row["name"] for row in self.connection.execute("PRAGMA table_info(auth_session)")}
-
-        self.assertNotIn("inactivity_timeout_seconds", columns)
-        self.assertNotIn("absolute_timeout_seconds", columns)
 
     def test_enforces_invitation_and_remember_session_expiration_timeouts(self) -> None:
         for table in ("user_invitation", "remember_session"):

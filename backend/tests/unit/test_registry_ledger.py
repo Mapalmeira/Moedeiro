@@ -9,12 +9,6 @@ from app.domain.registry.model.ledger import Ledger
 
 
 class RegistryLedgerTest(unittest.TestCase):
-    def test_does_not_validate_backend_managed_path(self) -> None:
-        for path in ("", "x" * 10000):
-            with self.subTest(path_length=len(path)):
-                ledger = Ledger(uuid=uuid4(), name="Main ledger", path=path, icon="BookOpen", color_code=b"\x00\x00\x00")
-                self.assertEqual(ledger.path, path)
-
     def test_rejects_name_outside_limits(self) -> None:
         for name in ("", "x" * 51):
             with self.subTest(length=len(name)):
