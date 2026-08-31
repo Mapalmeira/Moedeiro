@@ -5,10 +5,16 @@ from typing import Self
 
 from app.application.registry.unit_of_work import RegistryUnitOfWork
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
-from app.infrastructure.persistence.sqlite.registry.repository.access_grant import SqliteAccessGrantRepository
-from app.infrastructure.persistence.sqlite.registry.repository.access_invitation import SqliteAccessInvitationRepository
 from app.infrastructure.persistence.sqlite.registry.repository.auth_session import SqliteAuthSessionRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger import SqliteLedgerRepository
+from app.infrastructure.persistence.sqlite.registry.repository.ledger_grant import SqliteLedgerGrantRepository
+from app.infrastructure.persistence.sqlite.registry.repository.mfa_method import SqliteMfaMethodRepository
+from app.infrastructure.persistence.sqlite.registry.repository.recovery_code import SqliteRecoveryCodeRepository
+from app.infrastructure.persistence.sqlite.registry.repository.remember_session import SqliteRememberSessionRepository
+from app.infrastructure.persistence.sqlite.registry.repository.user import SqliteUserRepository
+from app.infrastructure.persistence.sqlite.registry.repository.user_invitation import SqliteUserInvitationRepository
+from app.infrastructure.persistence.sqlite.registry.repository.user_preferences import SqliteUserPreferencesRepository
+from app.infrastructure.persistence.sqlite.registry.repository.webauthn_credential import SqliteWebAuthnCredentialRepository
 
 
 class SqliteRegistryUnitOfWork(RegistryUnitOfWork):
@@ -18,9 +24,15 @@ class SqliteRegistryUnitOfWork(RegistryUnitOfWork):
     def __enter__(self) -> Self:
         self.connection: sqlite3.Connection = self.database.get_connection()
         self.ledger_repository = SqliteLedgerRepository(self.connection)
-        self.access_invitation_repository = SqliteAccessInvitationRepository(self.connection)
-        self.access_grant_repository = SqliteAccessGrantRepository(self.connection)
+        self.user_repository = SqliteUserRepository(self.connection)
+        self.user_invitation_repository = SqliteUserInvitationRepository(self.connection)
+        self.ledger_grant_repository = SqliteLedgerGrantRepository(self.connection)
+        self.webauthn_credential_repository = SqliteWebAuthnCredentialRepository(self.connection)
+        self.mfa_method_repository = SqliteMfaMethodRepository(self.connection)
+        self.recovery_code_repository = SqliteRecoveryCodeRepository(self.connection)
+        self.user_preferences_repository = SqliteUserPreferencesRepository(self.connection)
         self.auth_session_repository = SqliteAuthSessionRepository(self.connection)
+        self.remember_session_repository = SqliteRememberSessionRepository(self.connection)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:

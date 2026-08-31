@@ -11,10 +11,16 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
-from app.infrastructure.persistence.sqlite.registry.repository.access_grant import SqliteAccessGrantRepository
-from app.infrastructure.persistence.sqlite.registry.repository.access_invitation import SqliteAccessInvitationRepository
 from app.infrastructure.persistence.sqlite.registry.repository.auth_session import SqliteAuthSessionRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger import SqliteLedgerRepository
+from app.infrastructure.persistence.sqlite.registry.repository.ledger_grant import SqliteLedgerGrantRepository
+from app.infrastructure.persistence.sqlite.registry.repository.mfa_method import SqliteMfaMethodRepository
+from app.infrastructure.persistence.sqlite.registry.repository.recovery_code import SqliteRecoveryCodeRepository
+from app.infrastructure.persistence.sqlite.registry.repository.remember_session import SqliteRememberSessionRepository
+from app.infrastructure.persistence.sqlite.registry.repository.user import SqliteUserRepository
+from app.infrastructure.persistence.sqlite.registry.repository.user_invitation import SqliteUserInvitationRepository
+from app.infrastructure.persistence.sqlite.registry.repository.user_preferences import SqliteUserPreferencesRepository
+from app.infrastructure.persistence.sqlite.registry.repository.webauthn_credential import SqliteWebAuthnCredentialRepository
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
 
 
@@ -53,9 +59,15 @@ class SqliteRegistryUnitOfWorkTest(unittest.TestCase):
         with SqliteRegistryUnitOfWork(self.database) as unit_of_work:
             repositories = (
                 (unit_of_work.ledger_repository, SqliteLedgerRepository),
-                (unit_of_work.access_invitation_repository, SqliteAccessInvitationRepository),
-                (unit_of_work.access_grant_repository, SqliteAccessGrantRepository),
+                (unit_of_work.user_repository, SqliteUserRepository),
+                (unit_of_work.user_invitation_repository, SqliteUserInvitationRepository),
+                (unit_of_work.ledger_grant_repository, SqliteLedgerGrantRepository),
+                (unit_of_work.webauthn_credential_repository, SqliteWebAuthnCredentialRepository),
+                (unit_of_work.mfa_method_repository, SqliteMfaMethodRepository),
+                (unit_of_work.recovery_code_repository, SqliteRecoveryCodeRepository),
+                (unit_of_work.user_preferences_repository, SqliteUserPreferencesRepository),
                 (unit_of_work.auth_session_repository, SqliteAuthSessionRepository),
+                (unit_of_work.remember_session_repository, SqliteRememberSessionRepository),
             )
             for repository, repository_type in repositories:
                 with self.subTest(repository_type=repository_type.__name__):
@@ -65,7 +77,7 @@ class SqliteRegistryUnitOfWorkTest(unittest.TestCase):
     def test_commit_persists_changes_after_the_scope_ends(self) -> None:
         """An explicit commit makes changes visible to a later connection."""
         with SqliteRegistryUnitOfWork(self.database) as unit_of_work:
-            unit_of_work.ledger_repository.create("committed.sqlite", "BookOpen", b"\x80\x80\x80")
+            unit_of_work.ledger_repository.create("Committed", "committed.sqlite", "BookOpen", b"\x80\x80\x80")
             unit_of_work.commit()
 
         with SqliteRegistryUnitOfWork(self.database) as verification_unit_of_work:
@@ -77,7 +89,7 @@ class SqliteRegistryUnitOfWorkTest(unittest.TestCase):
     def test_explicit_rollback_discards_pending_changes(self) -> None:
         """rollback can cancel the current transaction before leaving the scope."""
         with SqliteRegistryUnitOfWork(self.database) as unit_of_work:
-            unit_of_work.ledger_repository.create("rolled-back.sqlite", "BookOpen", b"\x80\x80\x80")
+            unit_of_work.ledger_repository.create("Rolled back", "rolled-back.sqlite", "BookOpen", b"\x80\x80\x80")
             unit_of_work.rollback()
 
             ledger = unit_of_work.ledger_repository.get_by_path(
@@ -88,7 +100,7 @@ class SqliteRegistryUnitOfWorkTest(unittest.TestCase):
     def test_exit_without_commit_rolls_back_pending_changes(self) -> None:
         """Leaving a scope never commits changes implicitly."""
         with SqliteRegistryUnitOfWork(self.database) as unit_of_work:
-            unit_of_work.ledger_repository.create("uncommitted.sqlite", "BookOpen", b"\x80\x80\x80")
+            unit_of_work.ledger_repository.create("Uncommitted", "uncommitted.sqlite", "BookOpen", b"\x80\x80\x80")
 
         with SqliteRegistryUnitOfWork(self.database) as verification_unit_of_work:
             ledger = verification_unit_of_work.ledger_repository.get_by_path(
@@ -114,7 +126,7 @@ class SqliteRegistryUnitOfWorkTest(unittest.TestCase):
         """An exceptional exit discards every uncommitted operation in the scope."""
         with self.assertRaises(RuntimeError):
             with SqliteRegistryUnitOfWork(self.database) as unit_of_work:
-                unit_of_work.ledger_repository.create("failing.sqlite", "BookOpen", b"\x80\x80\x80")
+                unit_of_work.ledger_repository.create("Failing", "failing.sqlite", "BookOpen", b"\x80\x80\x80")
                 raise RuntimeError("expected failure")
 
         with SqliteRegistryUnitOfWork(self.database) as verification_unit_of_work:

@@ -1,5 +1,3 @@
-"""Integration tests for constraints enforced by the registry SQLite schema."""
-
 import sqlite3
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -17,105 +15,214 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         self.temporary_directory = TemporaryDirectory()
         self.connection = SqliteDatabase(Path(self.temporary_directory.name) / "registry.sqlite").get_connection()
         self.connection.executescript(SCHEMA_PATH.read_text())
-        self.ledger_uuid = uuid4().bytes
         self.invitation_uuid = uuid4().bytes
+        self.user_uuid = uuid4().bytes
+        self.ledger_uuid = uuid4().bytes
         self.grant_uuid = uuid4().bytes
-        self.session_uuid = uuid4().bytes
-        self.connection.execute("INSERT INTO ledger VALUES (?, 'ledger.sqlite', 'BookOpen', ?)", (self.ledger_uuid, b"\x80\x80\x80"))
-        self.connection.execute("INSERT INTO access_invitation VALUES (?, ?, ?, ?, 10, 90, NULL, NULL)", (self.invitation_uuid, self.ledger_uuid, self.grant_uuid, b"i" * 32))
-        self.connection.execute("INSERT INTO access_grant VALUES (?, ?, 'WEBCRYPTO', 'browser', ?, 'ES256', NULL, NULL, 20, NULL)", (self.grant_uuid, self.ledger_uuid, b"public-key"))
-        self.connection.execute("INSERT INTO auth_session VALUES (?, ?, ?, 40, 1800, 43200, NULL, NULL)", (self.session_uuid, self.grant_uuid, b"s" * 32))
+        self.auth_session_uuid = uuid4().bytes
+        self.remember_session_uuid = uuid4().bytes
+        self.connection.execute("INSERT INTO user_invitation(uuid, secret_hash, created_at) VALUES (?, ?, 10)", (self.invitation_uuid, b"i" * 32))
+        self.connection.execute("INSERT INTO user_account VALUES (?, 'Alice', 'alice', '$argon2id$encoded', 20, 20)", (self.user_uuid,))
+        self.connection.execute("INSERT INTO ledger VALUES (?, 'Main ledger', 'ledger.sqlite', 'BookOpen', ?)", (self.ledger_uuid, b"\x80\x80\x80"))
+        self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'OWNER', 30, NULL)", (self.grant_uuid, self.user_uuid, self.ledger_uuid))
+        self.connection.execute("INSERT INTO auth_session VALUES (?, ?, ?, 40, NULL, NULL)", (self.auth_session_uuid, self.user_uuid, b"s" * 32))
+        self.connection.execute("INSERT INTO remember_session VALUES (?, ?, ?, 40, 2592000, NULL, NULL)", (self.remember_session_uuid, self.user_uuid, b"r" * 32))
 
     def tearDown(self) -> None:
         self.connection.close()
         self.temporary_directory.cleanup()
 
     def test_declares_every_uuid_column_as_blob(self) -> None:
-        """Entity identities and all UUID foreign keys use the same binary representation."""
         expected_columns = {
+            "user_invitation": {"uuid"},
+            "user_account": {"uuid"},
             "ledger": {"uuid"},
-            "access_invitation": {"uuid", "ledger_uuid", "grant_uuid"},
-            "access_grant": {"uuid", "ledger_uuid"},
-            "auth_session": {"uuid", "grant_uuid"},
+            "ledger_grant": {"uuid", "user_uuid", "ledger_uuid"},
+            "webauthn_credential": {"uuid", "user_uuid"},
+            "mfa_method": {"uuid", "user_uuid"},
+            "recovery_code": {"uuid", "user_uuid"},
+            "user_preferences": {"user_uuid"},
+            "auth_session": {"uuid", "user_uuid"},
+            "remember_session": {"uuid", "user_uuid"},
         }
         for table, uuid_columns in expected_columns.items():
             columns = {row["name"]: row["type"] for row in self.connection.execute(f"PRAGMA table_info({table})")}
             with self.subTest(table=table):
                 self.assertEqual({column: columns[column] for column in uuid_columns}, {column: "BLOB" for column in uuid_columns})
 
+    def test_does_not_validate_uuid_representation(self) -> None:
+        uuid_columns = {
+            "user_invitation": ("uuid",),
+            "user_account": ("uuid",),
+            "ledger": ("uuid",),
+            "ledger_grant": ("uuid", "user_uuid", "ledger_uuid"),
+            "webauthn_credential": ("uuid", "user_uuid"),
+            "mfa_method": ("uuid", "user_uuid"),
+            "recovery_code": ("uuid", "user_uuid"),
+            "user_preferences": ("user_uuid",),
+            "auth_session": ("uuid", "user_uuid"),
+            "remember_session": ("uuid", "user_uuid"),
+        }
+        for table, columns in uuid_columns.items():
+            sql = self.connection.execute("SELECT sql FROM sqlite_schema WHERE type = 'table' AND name = ?", (table,)).fetchone()["sql"]
+            for column in columns:
+                with self.subTest(table=table, column=column):
+                    self.assertNotIn(f"length({column})", sql)
+
+        self.connection.execute("INSERT INTO ledger VALUES (?, 'Other', 'other.sqlite', 'BookOpen', ?)", (b"invalid", b"\x80\x80\x80"))
+
     def test_stores_uuid_as_exactly_16_bytes(self) -> None:
-        """SQLite stores the binary UUID value without textual conversion."""
-        row = self.connection.execute("SELECT typeof(uuid) AS storage_type, length(uuid) AS size FROM ledger").fetchone()
+        row = self.connection.execute("SELECT typeof(uuid) AS storage_type, length(uuid) AS size FROM user_account").fetchone()
 
         self.assertEqual(row["storage_type"], "blob")
         self.assertEqual(row["size"], 16)
 
-    def test_rejects_uuid_with_invalid_size(self) -> None:
-        """The schema rejects a BLOB that is not a complete UUID."""
-        with self.assertRaises(sqlite3.IntegrityError):
-            self.connection.execute("INSERT INTO ledger VALUES (?, 'other.sqlite', 'BookOpen', ?)", (b"invalid", b"\x80\x80\x80"))
+    def test_does_not_validate_backend_managed_representations(self) -> None:
+        credential_uuid = uuid4().bytes
+        method_uuid = uuid4().bytes
+        recovery_uuid = uuid4().bytes
+        self.connection.execute("UPDATE ledger SET path = ''")
+        self.connection.execute("UPDATE user_invitation SET secret_hash = ?", (b"short",))
+        self.connection.execute("UPDATE user_account SET normalized_name = '', password_hash = ''")
+        self.connection.execute("UPDATE auth_session SET token_hash = ?", (b"short-auth",))
+        self.connection.execute("UPDATE remember_session SET token_hash = ?", (b"short-remember",))
+        self.connection.execute("INSERT INTO webauthn_credential VALUES (?, ?, ?, ?, 0, 30, NULL, 'Phone')", (credential_uuid, self.user_uuid, b"", b""))
+        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30)", (method_uuid, self.user_uuid, b""))
+        self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, NULL)", (recovery_uuid, self.user_uuid, b"short"))
 
-    def test_enforces_ledger_icon_and_color_limits(self) -> None:
-        invalid_updates = (("icon", ""), ("icon", "x" * 51), ("color_code", b"\x00\x00"), ("color_code", b"\x00" * 4))
-        for column, value in invalid_updates:
-            with self.subTest(column=column, size=len(value)):
-                with self.assertRaises(sqlite3.IntegrityError):
-                    self.connection.execute(f"UPDATE ledger SET {column} = ?", (value,))
-
-    def test_enforces_invitation_and_session_hash_sizes(self) -> None:
-        """Persisted digests must match the selected 256-bit hash output."""
+    def test_enforces_text_limits(self) -> None:
         invalid_updates = (
-            ("access_invitation", "secret_hash", b"x" * 31),
-            ("auth_session", "token_hash", b"x" * 31),
+            ("user_account", "name", ""),
+            ("user_account", "name", "x" * 51),
+            ("ledger", "name", ""),
+            ("ledger", "name", "x" * 51),
+            ("ledger", "icon", ""),
+            ("ledger", "icon", "x" * 51),
         )
         for table, column, value in invalid_updates:
             with self.subTest(table=table, column=column):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.connection.execute(f"UPDATE {table} SET {column} = ?", (value,))
 
-    def test_enforces_grant_field_limits(self) -> None:
-        """The combined authorization and credential record uses domain limits."""
-        invalid_updates = (("label", "x" * 31), ("public_key", b""), ("public_key", b"x" * 4097))
-        for column, value in invalid_updates:
-            with self.subTest(column=column, size=len(value)):
-                with self.assertRaises(sqlite3.IntegrityError):
-                    self.connection.execute(f"UPDATE access_grant SET {column} = ?", (value,))
-
-    def test_enforces_authentication_method_specific_state(self) -> None:
-        """A WebCrypto grant cannot contain authenticator-only state."""
+    def test_enforces_user_timestamp_and_normalized_name_uniqueness(self) -> None:
         with self.assertRaises(sqlite3.IntegrityError):
-            self.connection.execute("UPDATE access_grant SET credential_id = ?, signature_counter = 0", (b"credential-id",))
-
-    def test_enforces_session_timeout_limits(self) -> None:
-        invalid_updates = (("inactivity_timeout_seconds", 0), ("absolute_timeout_seconds", 0), ("inactivity_timeout_seconds", 43201))
-        for column, value in invalid_updates:
-            with self.subTest(column=column, value=value):
-                with self.assertRaises(sqlite3.IntegrityError):
-                    self.connection.execute(f"UPDATE auth_session SET {column} = ?", (value,))
-
-    def test_enforces_invitation_expiration_timeout(self) -> None:
+            self.connection.execute("UPDATE user_account SET password_changed_at = 19")
         with self.assertRaises(sqlite3.IntegrityError):
-            self.connection.execute("UPDATE access_invitation SET expiration_timeout_seconds = 0")
+            self.connection.execute("INSERT INTO user_account VALUES (?, 'Other', 'alice', '$argon2id$other', 20, 20)", (uuid4().bytes,))
 
-    def test_consumption_and_usage_must_precede_expiration(self) -> None:
-        """Expired invitations and sessions cannot record a successful use."""
+    def test_enforces_color_size(self) -> None:
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("UPDATE ledger SET color_code = ?", (b"xx",))
+
+    def test_enforces_grant_roles_and_one_active_relation(self) -> None:
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("UPDATE ledger_grant SET role = 'ADMIN'")
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'READER', 31, NULL)", (uuid4().bytes, self.user_uuid, self.ledger_uuid))
+
+    def test_enforces_webauthn_domain_and_user_input_limits(self) -> None:
+        credential_uuid = uuid4().bytes
+        self.connection.execute("INSERT INTO webauthn_credential VALUES (?, ?, ?, ?, 0, 30, NULL, 'Phone')", (credential_uuid, self.user_uuid, b"credential", b"public-key"))
+        invalid_updates = (("sign_count", -1), ("last_used_at", 29), ("name", "x" * 51))
+        for column, value in invalid_updates:
+            with self.subTest(column=column):
+                with self.assertRaises(sqlite3.IntegrityError):
+                    self.connection.execute(f"UPDATE webauthn_credential SET {column} = ? WHERE uuid = ?", (value, credential_uuid))
+
+    def test_enforces_mfa_type(self) -> None:
+        method_uuid = uuid4().bytes
+        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30)", (method_uuid, self.user_uuid, b"encrypted"))
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("UPDATE mfa_method SET type = 'SMS' WHERE uuid = ?", (method_uuid,))
+
+    def test_enforces_recovery_code_usage_timestamp(self) -> None:
+        code_uuid = uuid4().bytes
+        self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, NULL)", (code_uuid, self.user_uuid, b"c" * 32))
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("UPDATE recovery_code SET used_at = 29 WHERE uuid = ?", (code_uuid,))
+
+    def test_enforces_user_preference_limits(self) -> None:
+        self.connection.execute("INSERT INTO user_preferences VALUES (?, 'DD/MM/YYYY', 'HH:mm', 'pt-BR', 'DARK', 'UTC')", (self.user_uuid,))
+        invalid_updates = (("date_format", ""), ("time_format", ""), ("number_format", ""), ("theme", "SYSTEM"), ("timezone", ""))
+        for column, value in invalid_updates:
+            with self.subTest(column=column):
+                with self.assertRaises(sqlite3.IntegrityError):
+                    self.connection.execute(f"UPDATE user_preferences SET {column} = ?", (value,))
+
+    def test_timezone_has_no_maximum_length(self) -> None:
+        timezone = "x" * 10000
+
+        self.connection.execute("INSERT INTO user_preferences(user_uuid, timezone) VALUES (?, ?)", (self.user_uuid, timezone))
+
+        self.assertEqual(self.connection.execute("SELECT timezone FROM user_preferences").fetchone()["timezone"], timezone)
+
+    def test_generated_and_derived_fields_have_no_defensive_maximum(self) -> None:
+        text = "x" * 10000
+        binary = b"x" * 10000
+        credential_uuid = uuid4().bytes
+        method_uuid = uuid4().bytes
+        self.connection.execute("UPDATE user_account SET normalized_name = ?, password_hash = ?", (text, text))
+        self.connection.execute("INSERT INTO webauthn_credential VALUES (?, ?, ?, ?, 0, 30, NULL, 'Phone')", (credential_uuid, self.user_uuid, b"credential", binary))
+        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30)", (method_uuid, self.user_uuid, binary))
+        self.connection.execute("INSERT INTO user_preferences(user_uuid, date_format, time_format, number_format) VALUES (?, ?, ?, ?)", (self.user_uuid, text, text, text))
+
+        user = self.connection.execute("SELECT normalized_name, password_hash FROM user_account").fetchone()
+        credential = self.connection.execute("SELECT public_key FROM webauthn_credential").fetchone()
+        method = self.connection.execute("SELECT secret_encrypted FROM mfa_method").fetchone()
+        preferences = self.connection.execute("SELECT date_format, time_format, number_format FROM user_preferences").fetchone()
+        self.assertEqual(user["normalized_name"], text)
+        self.assertEqual(user["password_hash"], text)
+        self.assertEqual(credential["public_key"], binary)
+        self.assertEqual(method["secret_encrypted"], binary)
+        self.assertEqual(tuple(preferences), (text, text, text))
+
+    def test_revoked_grant_allows_a_new_active_relation(self) -> None:
+        self.connection.execute("UPDATE ledger_grant SET revoked_at = 40 WHERE uuid = ?", (self.grant_uuid,))
+
+        self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'READER', 50, NULL)", (uuid4().bytes, self.user_uuid, self.ledger_uuid))
+
+    def test_auth_session_does_not_persist_timeout_configuration(self) -> None:
+        columns = {row["name"] for row in self.connection.execute("PRAGMA table_info(auth_session)")}
+
+        self.assertNotIn("inactivity_timeout_seconds", columns)
+        self.assertNotIn("absolute_timeout_seconds", columns)
+
+    def test_enforces_invitation_and_remember_session_expiration_timeouts(self) -> None:
+        for table in ("user_invitation", "remember_session"):
+            with self.subTest(table=table):
+                with self.assertRaises(sqlite3.IntegrityError):
+                    self.connection.execute(f"UPDATE {table} SET expiration_timeout_seconds = 0")
+
+    def test_invitation_cannot_be_consumed_and_revoked(self) -> None:
+        self.connection.execute("UPDATE user_invitation SET consumed_at = 20")
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("UPDATE user_invitation SET revoked_at = 21")
+
+    def test_invitation_and_remember_session_use_must_precede_expiration(self) -> None:
         invalid_updates = (
-            ("access_invitation", "consumed_at", 100),
-            ("auth_session", "last_activity_at", 43240),
+            ("user_invitation", "consumed_at", 3610),
+            ("remember_session", "last_used_at", 2592040),
         )
         for table, column, timestamp in invalid_updates:
             with self.subTest(table=table, column=column):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.connection.execute(f"UPDATE {table} SET {column} = ?", (timestamp,))
 
-    def test_grant_survives_removal_of_its_consumed_invitation(self) -> None:
-        """The temporary invitation does not own the lifetime of the resulting grant."""
-        self.connection.execute("UPDATE access_invitation SET consumed_at = 30 WHERE uuid = ?", (self.invitation_uuid,))
-        self.connection.execute("DELETE FROM access_invitation WHERE uuid = ?", (self.invitation_uuid,))
+    def test_deleting_user_cascades_authentication_records_and_grants(self) -> None:
+        credential_uuid = uuid4().bytes
+        mfa_uuid = uuid4().bytes
+        recovery_uuid = uuid4().bytes
+        self.connection.execute("INSERT INTO webauthn_credential VALUES (?, ?, ?, ?, 0, 30, NULL, 'Phone')", (credential_uuid, self.user_uuid, b"credential", b"public-key"))
+        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30)", (mfa_uuid, self.user_uuid, b"encrypted"))
+        self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, NULL)", (recovery_uuid, self.user_uuid, b"c" * 32))
+        self.connection.execute("INSERT INTO user_preferences VALUES (?, NULL, NULL, NULL, 'DARK', 'UTC')", (self.user_uuid,))
 
-        row = self.connection.execute("SELECT uuid FROM access_grant WHERE uuid = ?", (self.grant_uuid,)).fetchone()
+        self.connection.execute("DELETE FROM user_account WHERE uuid = ?", (self.user_uuid,))
 
-        self.assertIsNotNone(row)
+        for table in ("ledger_grant", "webauthn_credential", "mfa_method", "recovery_code", "user_preferences", "auth_session", "remember_session"):
+            with self.subTest(table=table):
+                self.assertEqual(self.connection.execute(f"SELECT count(*) AS count FROM {table}").fetchone()["count"], 0)
 
 
 if __name__ == "__main__":

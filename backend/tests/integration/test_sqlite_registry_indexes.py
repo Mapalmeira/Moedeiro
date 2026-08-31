@@ -23,23 +23,31 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
     def test_defines_indexes_for_lookup_listing_and_expiration(self) -> None:
         """The schema contains all explicitly named registry query indexes."""
         expected_indexes = {
-            "access_invitation_ledger_idx",
-            "access_invitation_created_at_idx",
-            "access_grant_ledger_idx",
-            "access_grant_credential_id_idx",
-            "auth_session_grant_idx",
+            "user_invitation_created_at_idx",
+            "ledger_grant_active_user_ledger_idx",
+            "ledger_grant_user_idx",
+            "ledger_grant_ledger_idx",
+            "webauthn_credential_user_idx",
+            "mfa_method_user_idx",
+            "recovery_code_user_idx",
+            "auth_session_user_idx",
             "auth_session_created_at_idx",
             "auth_session_last_activity_at_idx",
+            "remember_session_user_idx",
+            "remember_session_created_at_idx",
+            "remember_session_last_used_at_idx",
         }
         rows = self.connection.execute("SELECT name FROM sqlite_schema WHERE type = 'index' AND name NOT LIKE 'sqlite_autoindex_%'").fetchall()
 
         self.assertEqual({row["name"] for row in rows}, expected_indexes)
 
-    def test_session_cleanup_uses_activity_indexes(self) -> None:
+    def test_session_cleanup_uses_time_indexes(self) -> None:
         """Session age and last activity can be filtered without full table scans."""
         queries = (
             ("SELECT uuid FROM auth_session WHERE created_at <= ?", "auth_session_created_at_idx"),
             ("SELECT uuid FROM auth_session WHERE last_activity_at <= ?", "auth_session_last_activity_at_idx"),
+            ("SELECT uuid FROM remember_session WHERE created_at <= ?", "remember_session_created_at_idx"),
+            ("SELECT uuid FROM remember_session WHERE last_used_at <= ?", "remember_session_last_used_at_idx"),
         )
         for query, index_name in queries:
             with self.subTest(index_name=index_name):
