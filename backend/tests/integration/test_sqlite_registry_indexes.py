@@ -20,10 +20,8 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
         self.connection.close()
         self.temporary_directory.cleanup()
 
-    def test_defines_indexes_for_lookup_listing_and_expiration(self) -> None:
-        """The schema contains all explicitly named registry query indexes."""
+    def test_defines_only_indexes_used_by_registry_queries(self) -> None:
         expected_indexes = {
-            "user_invitation_expires_at_idx",
             "ledger_grant_active_user_ledger_idx",
             "ledger_grant_user_idx",
             "ledger_grant_ledger_idx",
@@ -31,26 +29,30 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
             "mfa_method_user_idx",
             "recovery_code_user_idx",
             "auth_session_user_idx",
-            "auth_session_expires_at_idx",
-            "auth_session_inactivity_expiration_idx",
             "remember_session_user_idx",
-            "remember_session_expires_at_idx",
         }
         rows = self.connection.execute("SELECT name FROM sqlite_schema WHERE type = 'index' AND name NOT LIKE 'sqlite_autoindex_%'").fetchall()
 
         self.assertEqual({row["name"] for row in rows}, expected_indexes)
 
-    def test_session_cleanup_uses_time_indexes(self) -> None:
-        """Expired sessions can be filtered without full table scans."""
+    def test_repository_queries_use_declared_indexes(self) -> None:
         queries = (
-            ("SELECT uuid FROM user_invitation WHERE expires_at <= ?", "user_invitation_expires_at_idx"),
-            ("SELECT uuid FROM auth_session WHERE expires_at <= ?", "auth_session_expires_at_idx"),
-            ("SELECT uuid FROM auth_session WHERE COALESCE(last_activity_at, created_at) + inactivity_timeout_seconds <= ?", "auth_session_inactivity_expiration_idx"),
-            ("SELECT uuid FROM remember_session WHERE expires_at <= ?", "remember_session_expires_at_idx"),
+            (
+                "SELECT uuid FROM ledger_grant WHERE user_uuid = ? AND ledger_uuid = ? AND revoked_at IS NULL",
+                (b"user", b"ledger"),
+                "ledger_grant_active_user_ledger_idx",
+            ),
+            ("SELECT uuid FROM ledger_grant WHERE user_uuid = ?", (b"user",), "ledger_grant_user_idx"),
+            ("SELECT uuid FROM ledger_grant WHERE ledger_uuid = ?", (b"ledger",), "ledger_grant_ledger_idx"),
+            ("SELECT uuid FROM webauthn_credential WHERE user_uuid = ?", (b"user",), "webauthn_credential_user_idx"),
+            ("SELECT uuid FROM mfa_method WHERE user_uuid = ?", (b"user",), "mfa_method_user_idx"),
+            ("SELECT uuid FROM recovery_code WHERE user_uuid = ?", (b"user",), "recovery_code_user_idx"),
+            ("SELECT uuid FROM auth_session WHERE user_uuid = ?", (b"user",), "auth_session_user_idx"),
+            ("SELECT uuid FROM remember_session WHERE user_uuid = ?", (b"user",), "remember_session_user_idx"),
         )
-        for query, index_name in queries:
+        for query, parameters, index_name in queries:
             with self.subTest(index_name=index_name):
-                rows = self.connection.execute(f"EXPLAIN QUERY PLAN {query}", (100,)).fetchall()
+                rows = self.connection.execute(f"EXPLAIN QUERY PLAN {query}", parameters).fetchall()
                 details = " ".join(row["detail"] for row in rows)
 
                 self.assertIn(index_name, details)

@@ -107,7 +107,6 @@ CREATE TABLE remember_session (
     FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE
 ) STRICT;
 
-CREATE INDEX user_invitation_expires_at_idx ON user_invitation(expires_at);
 CREATE UNIQUE INDEX ledger_grant_active_user_ledger_idx ON ledger_grant(user_uuid, ledger_uuid) WHERE revoked_at IS NULL;
 CREATE INDEX ledger_grant_user_idx ON ledger_grant(user_uuid);
 CREATE INDEX ledger_grant_ledger_idx ON ledger_grant(ledger_uuid);
@@ -115,7 +114,4 @@ CREATE INDEX webauthn_credential_user_idx ON webauthn_credential(user_uuid);
 CREATE INDEX mfa_method_user_idx ON mfa_method(user_uuid);
 CREATE INDEX recovery_code_user_idx ON recovery_code(user_uuid);
 CREATE INDEX auth_session_user_idx ON auth_session(user_uuid);
-CREATE INDEX auth_session_expires_at_idx ON auth_session(expires_at);
-CREATE INDEX auth_session_inactivity_expiration_idx ON auth_session(COALESCE(last_activity_at, created_at) + inactivity_timeout_seconds);
 CREATE INDEX remember_session_user_idx ON remember_session(user_uuid);
-CREATE INDEX remember_session_expires_at_idx ON remember_session(expires_at);
