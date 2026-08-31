@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Self
 from unicodedata import normalize
 from uuid import UUID
 
@@ -22,7 +22,7 @@ class User(BaseModel):
     password_changed_at: int = Field(ge=0)
 
     @model_validator(mode="after")
-    def validate_state(self) -> "User":
+    def validate_state(self) -> Self:
         if self.normalized_name != normalize_user_name(self.name):
             raise ValueError("normalized_name must match name")
         if self.password_changed_at < self.created_at:

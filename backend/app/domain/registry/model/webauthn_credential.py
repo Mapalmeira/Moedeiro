@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Self
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
@@ -18,7 +18,7 @@ class WebAuthnCredential(BaseModel):
     name: WebAuthnCredentialName
 
     @model_validator(mode="after")
-    def validate_state(self) -> "WebAuthnCredential":
+    def validate_state(self) -> Self:
         if self.last_used_at is not None and self.last_used_at < self.created_at:
             raise ValueError("last_used_at must not precede created_at")
         return self

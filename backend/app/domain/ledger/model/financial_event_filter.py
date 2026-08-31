@@ -1,3 +1,4 @@
+from typing import Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, model_validator
@@ -23,7 +24,7 @@ class FinancialEventFilter(BaseModel):
     event_type: FinancialEventType | None = None
 
     @model_validator(mode="after")
-    def validate_period(self) -> "FinancialEventFilter":
+    def validate_period(self) -> Self:
         if self.from_timestamp >= self.to_timestamp:
             raise ValueError("from_timestamp must be less than to_timestamp")
         return self

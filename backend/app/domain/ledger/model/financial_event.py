@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Self
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
@@ -20,7 +20,7 @@ class FinancialEvent(BaseModel):
     movements: list[FinancialMovement]
 
     @model_validator(mode="after")
-    def validate_movement_events(self) -> "FinancialEvent":
+    def validate_movement_events(self) -> Self:
         if any(movement.financial_event_uuid != self.uuid for movement in self.movements):
             raise ValueError("every movement must belong to the transaction event")
         return self

@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Self
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
@@ -16,7 +16,7 @@ class LedgerGrant(BaseModel):
     revoked_at: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
-    def validate_state(self) -> "LedgerGrant":
+    def validate_state(self) -> Self:
         if self.revoked_at is not None and self.revoked_at < self.created_at:
             raise ValueError("revoked_at must not precede created_at")
         return self

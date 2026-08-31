@@ -1,3 +1,4 @@
+from typing import Self
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
@@ -15,7 +16,7 @@ class UserInvitation(BaseModel):
     revoked_at: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
-    def validate_state(self) -> "UserInvitation":
+    def validate_state(self) -> Self:
         if self.consumed_at is not None and self.consumed_at < self.created_at:
             raise ValueError("consumed_at must not precede created_at")
         if self.consumed_at is not None and self.consumed_at >= self.created_at + self.expiration_timeout_seconds:

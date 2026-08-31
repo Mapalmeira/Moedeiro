@@ -1,3 +1,4 @@
+from typing import Self
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
@@ -11,7 +12,7 @@ class RecoveryCode(BaseModel):
     used_at: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
-    def validate_state(self) -> "RecoveryCode":
+    def validate_state(self) -> Self:
         if self.used_at is not None and self.used_at < self.created_at:
             raise ValueError("used_at must not precede created_at")
         return self
