@@ -10,7 +10,6 @@ from app.domain.registry.repository.remember_session import RememberSessionRepos
 from app.domain.registry.repository.user import UserRepository
 from app.domain.registry.repository.user_invitation import UserInvitationRepository
 from app.domain.registry.repository.user_preferences import UserPreferencesRepository
-from app.domain.registry.repository.webauthn_credential import WebAuthnCredentialRepository
 
 
 class RegistryUnitOfWork(UnitOfWork):
@@ -18,7 +17,6 @@ class RegistryUnitOfWork(UnitOfWork):
     user_repository: UserRepository
     user_invitation_repository: UserInvitationRepository
     ledger_grant_repository: LedgerGrantRepository
-    webauthn_credential_repository: WebAuthnCredentialRepository
     mfa_method_repository: MfaMethodRepository
     recovery_code_repository: RecoveryCodeRepository
     user_preferences_repository: UserPreferencesRepository

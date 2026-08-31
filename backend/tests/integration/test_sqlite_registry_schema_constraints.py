@@ -38,7 +38,6 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
             "user_account": {"uuid"},
             "ledger": {"uuid"},
             "ledger_grant": {"uuid", "user_uuid", "ledger_uuid"},
-            "webauthn_credential": {"uuid", "user_uuid"},
             "mfa_method": {"uuid", "user_uuid"},
             "recovery_code": {"uuid", "user_uuid"},
             "user_preferences": {"user_uuid"},
@@ -85,15 +84,6 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
             self.connection.execute("UPDATE ledger_grant SET role = 'READER'")
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'OWNER', 31, NULL)", (uuid4().bytes, self.user_uuid, self.ledger_uuid))
-
-    def test_enforces_webauthn_domain_and_user_input_limits(self) -> None:
-        credential_uuid = uuid4().bytes
-        self.connection.execute("INSERT INTO webauthn_credential VALUES (?, ?, ?, ?, 0, 30, NULL, 'Phone')", (credential_uuid, self.user_uuid, b"credential", b"public-key"))
-        invalid_updates = (("sign_count", -1), ("last_used_at", 29), ("name", "x" * 51))
-        for column, value in invalid_updates:
-            with self.subTest(column=column):
-                with self.assertRaises(sqlite3.IntegrityError):
-                    self.connection.execute(f"UPDATE webauthn_credential SET {column} = ? WHERE uuid = ?", (value, credential_uuid))
 
     def test_enforces_mfa_type(self) -> None:
         method_uuid = uuid4().bytes
@@ -147,17 +137,15 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
                     self.connection.execute(f"UPDATE {table} SET {column} = ?", (timestamp,))
 
     def test_deleting_user_cascades_authentication_records_and_grants(self) -> None:
-        credential_uuid = uuid4().bytes
         mfa_uuid = uuid4().bytes
         recovery_uuid = uuid4().bytes
-        self.connection.execute("INSERT INTO webauthn_credential VALUES (?, ?, ?, ?, 0, 30, NULL, 'Phone')", (credential_uuid, self.user_uuid, b"credential", b"public-key"))
         self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30)", (mfa_uuid, self.user_uuid, b"encrypted"))
         self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, NULL)", (recovery_uuid, self.user_uuid, b"c" * 32))
         self.connection.execute("INSERT INTO user_preferences VALUES (?, NULL, NULL, NULL, 'DARK', 'UTC')", (self.user_uuid,))
 
         self.connection.execute("DELETE FROM user_account WHERE uuid = ?", (self.user_uuid,))
 
-        for table in ("ledger_grant", "webauthn_credential", "mfa_method", "recovery_code", "user_preferences", "auth_session", "remember_session"):
+        for table in ("ledger_grant", "mfa_method", "recovery_code", "user_preferences", "auth_session", "remember_session"):
             with self.subTest(table=table):
                 self.assertEqual(self.connection.execute(f"SELECT count(*) AS count FROM {table}").fetchone()["count"], 0)
 

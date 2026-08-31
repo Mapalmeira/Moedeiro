@@ -13,7 +13,6 @@ from app.infrastructure.persistence.sqlite.registry.repository.remember_session 
 from app.infrastructure.persistence.sqlite.registry.repository.user import SqliteUserRepository
 from app.infrastructure.persistence.sqlite.registry.repository.user_invitation import SqliteUserInvitationRepository
 from app.infrastructure.persistence.sqlite.registry.repository.user_preferences import SqliteUserPreferencesRepository
-from app.infrastructure.persistence.sqlite.registry.repository.webauthn_credential import SqliteWebAuthnCredentialRepository
 
 
 SCHEMA_PATH = Path(__file__).resolve().parents[2] / "app/infrastructure/persistence/sqlite/registry/schema/registry_schema.sql"
@@ -28,7 +27,6 @@ class RegistryRepositoryTestCase(unittest.TestCase):
         self.user_repository = SqliteUserRepository(self.connection)
         self.invitation_repository = SqliteUserInvitationRepository(self.connection)
         self.grant_repository = SqliteLedgerGrantRepository(self.connection)
-        self.webauthn_repository = SqliteWebAuthnCredentialRepository(self.connection)
         self.mfa_repository = SqliteMfaMethodRepository(self.connection)
         self.recovery_code_repository = SqliteRecoveryCodeRepository(self.connection)
         self.preferences_repository = SqliteUserPreferencesRepository(self.connection)

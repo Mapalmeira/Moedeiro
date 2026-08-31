@@ -20,7 +20,6 @@ from app.infrastructure.persistence.sqlite.registry.repository.remember_session 
 from app.infrastructure.persistence.sqlite.registry.repository.user import SqliteUserRepository
 from app.infrastructure.persistence.sqlite.registry.repository.user_invitation import SqliteUserInvitationRepository
 from app.infrastructure.persistence.sqlite.registry.repository.user_preferences import SqliteUserPreferencesRepository
-from app.infrastructure.persistence.sqlite.registry.repository.webauthn_credential import SqliteWebAuthnCredentialRepository
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
 
 
@@ -62,7 +61,6 @@ class SqliteRegistryUnitOfWorkTest(unittest.TestCase):
                 (unit_of_work.user_repository, SqliteUserRepository),
                 (unit_of_work.user_invitation_repository, SqliteUserInvitationRepository),
                 (unit_of_work.ledger_grant_repository, SqliteLedgerGrantRepository),
-                (unit_of_work.webauthn_credential_repository, SqliteWebAuthnCredentialRepository),
                 (unit_of_work.mfa_method_repository, SqliteMfaMethodRepository),
                 (unit_of_work.recovery_code_repository, SqliteRecoveryCodeRepository),
                 (unit_of_work.user_preferences_repository, SqliteUserPreferencesRepository),

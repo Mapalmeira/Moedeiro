@@ -38,19 +38,6 @@ CREATE TABLE ledger_grant (
     FOREIGN KEY (ledger_uuid) REFERENCES ledger(uuid) ON DELETE CASCADE
 ) STRICT;
 
-CREATE TABLE webauthn_credential (
-    uuid BLOB PRIMARY KEY,
-    user_uuid BLOB NOT NULL,
-    credential_id BLOB NOT NULL UNIQUE,
-    public_key BLOB NOT NULL,
-    sign_count INTEGER NOT NULL CHECK (sign_count >= 0),
-    created_at INTEGER NOT NULL CHECK (created_at >= 0),
-    last_used_at INTEGER CHECK (last_used_at IS NULL OR last_used_at >= created_at),
-    name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 50),
-
-    FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE
-) STRICT;
-
 CREATE TABLE mfa_method (
     uuid BLOB PRIMARY KEY,
     user_uuid BLOB NOT NULL,
@@ -110,7 +97,6 @@ CREATE TABLE remember_session (
 CREATE UNIQUE INDEX ledger_grant_active_user_ledger_idx ON ledger_grant(user_uuid, ledger_uuid) WHERE revoked_at IS NULL;
 CREATE INDEX ledger_grant_user_idx ON ledger_grant(user_uuid);
 CREATE INDEX ledger_grant_ledger_idx ON ledger_grant(ledger_uuid);
-CREATE INDEX webauthn_credential_user_idx ON webauthn_credential(user_uuid);
 CREATE INDEX mfa_method_user_idx ON mfa_method(user_uuid);
 CREATE INDEX recovery_code_user_idx ON recovery_code(user_uuid);
 CREATE INDEX auth_session_user_idx ON auth_session(user_uuid);
