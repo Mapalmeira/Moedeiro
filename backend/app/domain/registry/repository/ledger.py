@@ -3,9 +3,10 @@ from uuid import UUID
 
 from app.domain.registry.model.ledger import Ledger
 
+
 class LedgerRepository(ABC):
     @abstractmethod
-    def create(self, path: str, icon: str, color_code: bytes) -> Ledger:
+    def create(self, name: str, path: str, icon: str, color_code: bytes) -> Ledger:
         pass
 
     @abstractmethod
@@ -18,6 +19,10 @@ class LedgerRepository(ABC):
 
     @abstractmethod
     def update_path(self, uuid: UUID, value: str) -> None:
+        pass
+
+    @abstractmethod
+    def update_name(self, uuid: UUID, value: str) -> None:
         pass
 
     @abstractmethod

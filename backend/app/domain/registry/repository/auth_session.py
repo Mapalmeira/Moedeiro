@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.registry.model.auth_session import AuthSession, DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS
+from app.domain.registry.model.auth_session import AuthSession
 
 
 class AuthSessionRepository(ABC):
     @abstractmethod
-    def create(self, grant_uuid: UUID, token_hash: bytes, created_at: int, inactivity_timeout_seconds: int = DEFAULT_INACTIVITY_TIMEOUT_SECONDS, absolute_timeout_seconds: int = DEFAULT_ABSOLUTE_TIMEOUT_SECONDS) -> AuthSession:
+    def create(self, user_uuid: UUID, token_hash: bytes, created_at: int) -> AuthSession:
         pass
 
     @abstractmethod
@@ -26,9 +26,9 @@ class AuthSessionRepository(ABC):
         pass
 
     @abstractmethod
-    def revoke_by_grant(self, grant_uuid: UUID, revoked_at: int) -> None:
+    def revoke_by_user(self, user_uuid: UUID, revoked_at: int) -> None:
         pass
 
     @abstractmethod
-    def list_by_grant(self, grant_uuid: UUID) -> list[AuthSession]:
+    def list_by_user(self, user_uuid: UUID) -> list[AuthSession]:
         pass
