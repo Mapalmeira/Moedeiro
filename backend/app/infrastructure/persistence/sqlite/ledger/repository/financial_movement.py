@@ -6,11 +6,6 @@ from app.domain.ledger.repository.financial_movement import FinancialMovementRep
 
 
 class SqliteFinancialMovementRepository(FinancialMovementRepository):
-    _SORT_COLUMNS = {
-        "value": "value",
-        "item_name": "item_name",
-    }
-
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
@@ -90,22 +85,6 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
         ).fetchall()
         return [self._to_model(row) for row in rows]
 
-    def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[FinancialMovement]:
-        self._validate_page(page_number, page_size)
-        sort_column = self._get_sort_column(sort_key)
-        direction = "ASC" if ascending else "DESC"
-        offset = (page_number - 1) * page_size
-        rows = self.connection.execute(
-            f"""
-            SELECT uuid, financial_event_uuid, account_uuid, category_uuid, value, item_name
-            FROM financial_movement
-            ORDER BY {sort_column} {direction}, uuid ASC
-            LIMIT ? OFFSET ?
-            """,
-            (page_size, offset),
-        ).fetchall()
-        return [self._to_model(row) for row in rows]
-
     @staticmethod
     def _validation_model(uuid: UUID, value: int = 1, item_name: str | None = None, category_uuid: UUID | None = None) -> FinancialMovement:
         return FinancialMovement(
@@ -120,13 +99,6 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
     @staticmethod
     def _to_model(row: sqlite3.Row) -> FinancialMovement:
         return FinancialMovement.model_validate(dict(row))
-
-    @classmethod
-    def _get_sort_column(cls, sort_key: str) -> str:
-        try:
-            return cls._SORT_COLUMNS[sort_key]
-        except KeyError as error:
-            raise ValueError(f"Invalid financial movement sort key: {sort_key}") from error
 
     @staticmethod
     def _validate_page(page_number: int, page_size: int) -> None:

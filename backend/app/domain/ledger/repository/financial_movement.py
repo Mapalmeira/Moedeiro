@@ -42,13 +42,3 @@ class FinancialMovementRepository(ABC):
     @abstractmethod
     def list_all(self) -> list[FinancialMovement]:
         pass
-
-    @abstractmethod
-    def list_page(
-        self,
-        page_number: int,
-        page_size: int,
-        sort_key: str,
-        ascending: bool,
-    ) -> list[FinancialMovement]:
-        pass
