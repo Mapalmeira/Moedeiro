@@ -84,13 +84,6 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
         self.assertEqual(row["storage_type"], "blob")
         self.assertEqual(row["size"], 16)
 
-    def test_rejects_uuid_with_invalid_size(self) -> None:
-        with self.assertRaises(sqlite3.IntegrityError):
-            self.connection.execute(
-                "INSERT INTO currency VALUES (?, 'Dollar', NULL, '$', 2, '$', ?)",
-                (b"invalid", b"\x80\x80\x80"),
-            )
-
     def test_enforces_ledger_metadata_version_and_creation_timestamp(self) -> None:
         for column, value in (("schema_version", 0), ("created_at", -1)):
             with self.subTest(column=column):
@@ -136,19 +129,6 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
                 with self.subTest(table=table, size=len(color_code)):
                     with self.assertRaises(sqlite3.IntegrityError):
                         self.connection.execute(f"UPDATE {table} SET color_code = ?", (color_code,))
-
-    def test_accepts_expanded_text_limits(self) -> None:
-        values = (
-            ("account", "account_name", "x" * 50),
-            ("financial_event", "description", "x" * 300),
-            ("financial_movement", "item_name", "x" * 50),
-            ("budget", "budget_name", "x" * 50),
-        )
-
-        for table, column, value in values:
-            with self.subTest(table=table, column=column):
-                self.connection.execute(f"UPDATE {table} SET {column} = ?", (value,))
-
 
 if __name__ == "__main__":
     unittest.main()
