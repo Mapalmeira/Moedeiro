@@ -112,7 +112,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
             assert metadata is not None
             self.assertEqual(metadata.revision, 2)
 
-    def test_each_committed_unit_of_work_increments_revision(self) -> None:
+    def test_read_only_commit_does_not_increment_revision(self) -> None:
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             unit_of_work.ledger_metadata_repository.create(uuid4(), 1)
             unit_of_work.commit()
@@ -123,7 +123,32 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             metadata = unit_of_work.ledger_metadata_repository.get()
             assert metadata is not None
-            self.assertEqual(metadata.revision, 2)
+            self.assertEqual(metadata.revision, 1)
+
+    def test_second_commit_without_new_changes_does_not_increment_revision(self) -> None:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
+            unit_of_work.ledger_metadata_repository.create(uuid4(), 1)
+            unit_of_work.commit()
+            unit_of_work.commit()
+
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
+            metadata = unit_of_work.ledger_metadata_repository.get()
+            assert metadata is not None
+            self.assertEqual(metadata.revision, 1)
+
+    def test_commit_after_rollback_without_new_changes_does_not_increment_revision(self) -> None:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
+            unit_of_work.ledger_metadata_repository.create(uuid4(), 1)
+            unit_of_work.commit()
+            unit_of_work.currency_repository.create("Temporary", None, None, 2, "Circle", b"\x80\x80\x80")
+            unit_of_work.rollback()
+            unit_of_work.commit()
+
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
+            metadata = unit_of_work.ledger_metadata_repository.get()
+            assert metadata is not None
+            self.assertEqual(metadata.revision, 1)
+            self.assertEqual(unit_of_work.currency_repository.list_all(), [])
 
     def test_rollback_does_not_increment_revision(self) -> None:
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:

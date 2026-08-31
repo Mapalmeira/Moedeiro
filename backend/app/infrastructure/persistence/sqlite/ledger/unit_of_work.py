@@ -23,6 +23,7 @@ class SqliteLedgerUnitOfWork(LedgerUnitOfWork):
 
     def __enter__(self) -> Self:
         self.connection: sqlite3.Connection = self.database.get_connection()
+        self._transaction_start_total_changes = self.connection.total_changes
 
         self.account_repository = SqliteAccountRepository(self.connection)
         self.account_balance_query_repository = SqliteAccountBalanceQueryRepository(self.connection)
@@ -44,10 +45,11 @@ class SqliteLedgerUnitOfWork(LedgerUnitOfWork):
             self.connection.close()
 
     def commit(self) -> None:
-        self.connection.execute(
-            "UPDATE ledger_metadata SET revision = revision + 1 WHERE singleton = 1"
-        )
+        if self.connection.total_changes > self._transaction_start_total_changes:
+            self.connection.execute("UPDATE ledger_metadata SET revision = revision + 1 WHERE singleton = 1")
         self.connection.commit()
+        self._transaction_start_total_changes = self.connection.total_changes
 
     def rollback(self) -> None:
         self.connection.rollback()
+        self._transaction_start_total_changes = self.connection.total_changes
