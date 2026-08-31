@@ -37,12 +37,16 @@ class SqliteUserRepository(UserRepository):
         normalized_name = self._normalized_name_adapter.validate_python(normalize_user_name(name))
         self.connection.execute("UPDATE user_account SET name = ?, normalized_name = ? WHERE uuid = ?", (name, normalized_name, uuid.bytes))
 
-    def update_password(self, uuid: UUID, password_hash: str, changed_at: int) -> None:
+    def update_password(self, uuid: UUID, expected_password_hash: str, new_password_hash: str, changed_at: int) -> bool:
         user = self.get(uuid)
         if user is None:
-            return
-        User.model_validate({**user.model_dump(), "password_hash": password_hash, "password_changed_at": changed_at})
-        self.connection.execute("UPDATE user_account SET password_hash = ?, password_changed_at = ? WHERE uuid = ?", (password_hash, changed_at, uuid.bytes))
+            return False
+        User.model_validate({**user.model_dump(), "password_hash": new_password_hash, "password_changed_at": changed_at})
+        cursor = self.connection.execute(
+            "UPDATE user_account SET password_hash = ?, password_changed_at = ? WHERE uuid = ? AND password_hash = ?",
+            (new_password_hash, changed_at, uuid.bytes, expected_password_hash),
+        )
+        return cursor.rowcount == 1
 
     def list_all(self) -> list[User]:
         rows = self.connection.execute(f"SELECT {self._columns} FROM user_account").fetchall()

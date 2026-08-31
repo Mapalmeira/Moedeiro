@@ -27,10 +27,10 @@ class SqliteRememberSessionRepository(RememberSessionRepository):
         row = self.connection.execute(f"SELECT {self._columns} FROM remember_session WHERE token_hash = ?", (token_hash,)).fetchone()
         return None if row is None else self._to_model(row)
 
-    def rotate(self, uuid: UUID, token_hash: bytes, last_used_at: int) -> bool:
+    def rotate(self, uuid: UUID, expected_token_hash: bytes, new_token_hash: bytes, last_used_at: int) -> bool:
         cursor = self.connection.execute(
-            "UPDATE remember_session SET token_hash = ?, last_used_at = ? WHERE uuid = ? AND revoked_at IS NULL AND created_at <= ? AND expires_at > ? AND COALESCE(last_used_at, created_at) <= ?",
-            (token_hash, last_used_at, uuid.bytes, last_used_at, last_used_at, last_used_at),
+            "UPDATE remember_session SET token_hash = ?, last_used_at = ? WHERE uuid = ? AND token_hash = ? AND revoked_at IS NULL AND created_at <= ? AND expires_at > ? AND COALESCE(last_used_at, created_at) <= ?",
+            (new_token_hash, last_used_at, uuid.bytes, expected_token_hash, last_used_at, last_used_at, last_used_at),
         )
         return cursor.rowcount == 1
 

@@ -33,7 +33,7 @@ class SqliteUserRepositoryTest(RegistryRepositoryTestCase):
     def test_update_password_changes_hash_and_timestamp_together(self) -> None:
         user = self.create_user("Alice")
 
-        self.user_repository.update_password(user.uuid, "$argon2id$new", 30)
+        self.assertTrue(self.user_repository.update_password(user.uuid, user.password_hash, "$argon2id$new", 30))
 
         updated = self.user_repository.get(user.uuid)
         assert updated is not None
@@ -44,7 +44,14 @@ class SqliteUserRepositoryTest(RegistryRepositoryTestCase):
         user = self.create_user("Alice")
 
         with self.assertRaises(ValidationError):
-            self.user_repository.update_password(user.uuid, "$argon2id$new", 19)
+            self.user_repository.update_password(user.uuid, user.password_hash, "$argon2id$new", 19)
+
+    def test_update_password_rejects_a_stale_password_hash(self) -> None:
+        user = self.create_user("Alice")
+
+        self.assertFalse(self.user_repository.update_password(user.uuid, "$argon2id$stale", "$argon2id$new", 30))
+
+        self.assertEqual(self.user_repository.get(user.uuid), user)
 
     def test_list_all_returns_every_user(self) -> None:
         first = self.create_user("Alice")

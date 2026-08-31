@@ -27,12 +27,20 @@ class SqliteRememberSessionRepositoryTest(RegistryRepositoryTestCase):
     def test_rotate_replaces_token_and_records_use_while_active(self) -> None:
         session = self.remember_session_repository.create(self.create_user().uuid, b"o" * 32, 30, 130)
 
-        self.assertTrue(self.remember_session_repository.rotate(session.uuid, b"n" * 32, 40))
+        self.assertTrue(self.remember_session_repository.rotate(session.uuid, b"o" * 32, b"n" * 32, 40))
 
         self.assertIsNone(self.remember_session_repository.get_by_token_hash(b"o" * 32))
         rotated = self.remember_session_repository.get_by_token_hash(b"n" * 32)
         assert rotated is not None
         self.assertEqual(rotated.last_used_at, 40)
+
+    def test_rotate_rejects_a_stale_token_hash(self) -> None:
+        session = self.remember_session_repository.create(self.create_user().uuid, b"o" * 32, 30, 130)
+
+        self.assertFalse(self.remember_session_repository.rotate(session.uuid, b"wrong", b"n" * 32, 40))
+
+        self.assertEqual(self.remember_session_repository.get_by_token_hash(b"o" * 32), session)
+        self.assertIsNone(self.remember_session_repository.get_by_token_hash(b"n" * 32))
 
     def test_rotate_rejects_expired_and_revoked_sessions(self) -> None:
         user = self.create_user()
@@ -40,8 +48,8 @@ class SqliteRememberSessionRepositoryTest(RegistryRepositoryTestCase):
         revoked = self.remember_session_repository.create(user.uuid, b"r" * 32, 30, 130)
         self.remember_session_repository.revoke(revoked.uuid, 35)
 
-        self.assertFalse(self.remember_session_repository.rotate(expired.uuid, b"x" * 32, 40))
-        self.assertFalse(self.remember_session_repository.rotate(revoked.uuid, b"y" * 32, 40))
+        self.assertFalse(self.remember_session_repository.rotate(expired.uuid, b"e" * 32, b"x" * 32, 40))
+        self.assertFalse(self.remember_session_repository.rotate(revoked.uuid, b"r" * 32, b"y" * 32, 40))
 
     def test_revoke_by_user_preserves_existing_revocation_and_excludes_other_user(self) -> None:
         user = self.create_user()

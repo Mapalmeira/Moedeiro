@@ -18,7 +18,7 @@ class RememberSessionRepository(ABC):
         pass
 
     @abstractmethod
-    def rotate(self, uuid: UUID, token_hash: bytes, last_used_at: int) -> bool:
+    def rotate(self, uuid: UUID, expected_token_hash: bytes, new_token_hash: bytes, last_used_at: int) -> bool:
         pass
 
     @abstractmethod

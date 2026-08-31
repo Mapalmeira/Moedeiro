@@ -22,7 +22,7 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
-    def update_password(self, uuid: UUID, password_hash: str, changed_at: int) -> None:
+    def update_password(self, uuid: UUID, expected_password_hash: str, new_password_hash: str, changed_at: int) -> bool:
         pass
 
     @abstractmethod
