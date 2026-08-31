@@ -5,11 +5,12 @@ from pydantic import BaseModel, Field
 
 from app.domain.appearance import Icon, RgbColorCode
 
-LedgerPath = Annotated[str, Field(min_length=1)]
+LedgerName = Annotated[str, Field(min_length=1, max_length=50)]
 
 
 class Ledger(BaseModel):
     uuid: UUID
-    path: LedgerPath
+    name: LedgerName
+    path: str
     icon: Icon
     color_code: RgbColorCode
