@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, model_validator
 
 
-LedgerRole = Literal["OWNER", "EDITOR", "READER"]
+LedgerRole = Literal["OWNER"]
 
 
 class LedgerGrant(BaseModel):

@@ -80,11 +80,11 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute("UPDATE ledger SET color_code = ?", (b"xx",))
 
-    def test_enforces_grant_roles_and_one_active_relation(self) -> None:
+    def test_enforces_owner_grants_and_one_active_relation(self) -> None:
         with self.assertRaises(sqlite3.IntegrityError):
-            self.connection.execute("UPDATE ledger_grant SET role = 'ADMIN'")
+            self.connection.execute("UPDATE ledger_grant SET role = 'READER'")
         with self.assertRaises(sqlite3.IntegrityError):
-            self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'READER', 31, NULL)", (uuid4().bytes, self.user_uuid, self.ledger_uuid))
+            self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'OWNER', 31, NULL)", (uuid4().bytes, self.user_uuid, self.ledger_uuid))
 
     def test_enforces_webauthn_domain_and_user_input_limits(self) -> None:
         credential_uuid = uuid4().bytes
@@ -118,7 +118,7 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
     def test_revoked_grant_allows_a_new_active_relation(self) -> None:
         self.connection.execute("UPDATE ledger_grant SET revoked_at = 40 WHERE uuid = ?", (self.grant_uuid,))
 
-        self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'READER', 50, NULL)", (uuid4().bytes, self.user_uuid, self.ledger_uuid))
+        self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'OWNER', 50, NULL)", (uuid4().bytes, self.user_uuid, self.ledger_uuid))
 
     def test_expiration_must_follow_creation(self) -> None:
         for table in ("user_invitation", "auth_session", "remember_session"):

@@ -18,10 +18,6 @@ class LedgerGrantRepository(ABC):
         pass
 
     @abstractmethod
-    def update_role(self, uuid: UUID, role: LedgerRole) -> None:
-        pass
-
-    @abstractmethod
     def revoke(self, uuid: UUID, revoked_at: int) -> None:
         pass
 

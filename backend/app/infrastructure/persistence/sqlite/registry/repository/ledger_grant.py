@@ -1,15 +1,12 @@
 import sqlite3
 from uuid import UUID, uuid4
 
-from pydantic import TypeAdapter
-
 from app.domain.registry.model.ledger_grant import LedgerGrant, LedgerRole
 from app.domain.registry.repository.ledger_grant import LedgerGrantRepository
 
 
 class SqliteLedgerGrantRepository(LedgerGrantRepository):
     _columns = "uuid, user_uuid, ledger_uuid, role, created_at, revoked_at"
-    _role_adapter = TypeAdapter(LedgerRole)
 
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
@@ -32,10 +29,6 @@ class SqliteLedgerGrantRepository(LedgerGrantRepository):
             (user_uuid.bytes, ledger_uuid.bytes),
         ).fetchone()
         return None if row is None else self._to_model(row)
-
-    def update_role(self, uuid: UUID, role: LedgerRole) -> None:
-        value = self._role_adapter.validate_python(role)
-        self.connection.execute("UPDATE ledger_grant SET role = ? WHERE uuid = ? AND revoked_at IS NULL", (value, uuid.bytes))
 
     def revoke(self, uuid: UUID, revoked_at: int) -> None:
         self.connection.execute("UPDATE ledger_grant SET revoked_at = ? WHERE uuid = ? AND revoked_at IS NULL", (revoked_at, uuid.bytes))

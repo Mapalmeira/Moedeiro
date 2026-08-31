@@ -12,14 +12,14 @@ class LedgerGrantTest(unittest.TestCase):
         values.update(changes)
         return LedgerGrant(**values)
 
-    def test_accepts_every_supported_role(self) -> None:
-        for role in ("OWNER", "EDITOR", "READER"):
-            with self.subTest(role=role):
-                self.assertEqual(self.create_grant(role=role).role, role)
+    def test_accepts_owner_role(self) -> None:
+        self.assertEqual(self.create_grant().role, "OWNER")
 
-    def test_rejects_an_unknown_role(self) -> None:
-        with self.assertRaises(ValidationError):
-            self.create_grant(role="ADMIN")
+    def test_rejects_unsupported_roles(self) -> None:
+        for role in ("EDITOR", "READER", "ADMIN"):
+            with self.subTest(role=role):
+                with self.assertRaises(ValidationError):
+                    self.create_grant(role=role)
 
     def test_revocation_cannot_precede_creation(self) -> None:
         with self.assertRaises(ValidationError):

@@ -30,7 +30,7 @@ CREATE TABLE ledger_grant (
     uuid BLOB PRIMARY KEY,
     user_uuid BLOB NOT NULL,
     ledger_uuid BLOB NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('OWNER', 'EDITOR', 'READER')),
+    role TEXT NOT NULL CHECK (role IN ('OWNER')),
     created_at INTEGER NOT NULL CHECK (created_at >= 0),
     revoked_at INTEGER CHECK (revoked_at IS NULL OR revoked_at >= created_at),
 

@@ -30,7 +30,7 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
         self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 30)
 
         with self.assertRaises(sqlite3.IntegrityError):
-            self.grant_repository.create(user.uuid, ledger.uuid, "READER", 31)
+            self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 31)
 
     def test_revoked_grant_can_be_replaced(self) -> None:
         user = self.create_user()
@@ -38,24 +38,9 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
         original = self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 30)
         self.grant_repository.revoke(original.uuid, 40)
 
-        replacement = self.grant_repository.create(user.uuid, ledger.uuid, "READER", 50)
+        replacement = self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 50)
 
         self.assertEqual(self.grant_repository.get_active(user.uuid, ledger.uuid), replacement)
-
-    def test_update_role_changes_only_an_active_grant(self) -> None:
-        active = self.create_grant()
-        revoked = self.create_grant()
-        self.grant_repository.revoke(revoked.uuid, 40)
-
-        self.grant_repository.update_role(active.uuid, "EDITOR")
-        self.grant_repository.update_role(revoked.uuid, "READER")
-
-        updated = self.grant_repository.get(active.uuid)
-        unchanged = self.grant_repository.get(revoked.uuid)
-        assert updated is not None
-        assert unchanged is not None
-        self.assertEqual(updated.role, "EDITOR")
-        self.assertEqual(unchanged.role, "OWNER")
 
     def test_revoke_is_idempotent_and_removes_active_relation(self) -> None:
         grant = self.create_grant()
