@@ -32,6 +32,7 @@ class SqliteLedgerMetadataRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(created_metadata, metadata)
         self.assertEqual(metadata.ledger_uuid, ledger_uuid)
         self.assertEqual(metadata.schema_version, 1)
+        self.assertEqual(metadata.revision, 0)
         self.assertGreaterEqual(metadata.created_at, before_creation)
         self.assertLessEqual(metadata.created_at, after_creation)
 
@@ -48,6 +49,7 @@ class SqliteLedgerMetadataRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(updated.ledger_uuid, ledger_uuid)
         self.assertEqual(updated.created_at, original.created_at)
         self.assertEqual(updated.schema_version, 2)
+        self.assertEqual(updated.revision, original.revision)
 
     def test_create_and_update_validate_schema_version(self) -> None:
         with self.assertRaises(ValidationError):

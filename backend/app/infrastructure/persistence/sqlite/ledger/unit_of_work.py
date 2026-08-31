@@ -44,6 +44,9 @@ class SqliteLedgerUnitOfWork(LedgerUnitOfWork):
             self.connection.close()
 
     def commit(self) -> None:
+        self.connection.execute(
+            "UPDATE ledger_metadata SET revision = revision + 1 WHERE singleton = 1"
+        )
         self.connection.commit()
 
     def rollback(self) -> None:

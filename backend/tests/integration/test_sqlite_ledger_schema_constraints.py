@@ -26,7 +26,7 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
         self.movement_uuid = uuid4().bytes
         self.budget_uuid = uuid4().bytes
         self.connection.execute(
-            "INSERT INTO ledger_metadata VALUES (1, ?, 1, 0)",
+            "INSERT INTO ledger_metadata VALUES (1, ?, 1, 0, 0)",
             (self.ledger_uuid,),
         )
         self.connection.execute(
@@ -84,8 +84,8 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
         self.assertEqual(row["storage_type"], "blob")
         self.assertEqual(row["size"], 16)
 
-    def test_enforces_ledger_metadata_version_and_creation_timestamp(self) -> None:
-        for column, value in (("schema_version", 0), ("created_at", -1)):
+    def test_enforces_ledger_metadata_counters_and_creation_timestamp(self) -> None:
+        for column, value in (("schema_version", 0), ("revision", -1), ("created_at", -1)):
             with self.subTest(column=column):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.connection.execute(f"UPDATE ledger_metadata SET {column} = ?", (value,))

@@ -3,6 +3,7 @@ CREATE TABLE ledger_metadata (
 
     ledger_uuid BLOB NOT NULL UNIQUE,
     schema_version INTEGER NOT NULL CHECK (schema_version >= 1),
+    revision INTEGER NOT NULL DEFAULT 0 CHECK (revision >= 0),
     created_at INTEGER NOT NULL CHECK (created_at >= 0)
 ) STRICT;
 
