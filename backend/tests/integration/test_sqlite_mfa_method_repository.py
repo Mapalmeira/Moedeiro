@@ -16,6 +16,13 @@ class SqliteMfaMethodRepositoryTest(RegistryRepositoryTestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             self.mfa_repository.create(uuid4(), "TOTP", b"encrypted-secret", 30)
 
+    def test_user_can_have_only_one_totp_method(self) -> None:
+        user = self.create_user()
+        self.mfa_repository.create(user.uuid, "TOTP", b"first", 30)
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.mfa_repository.create(user.uuid, "TOTP", b"second", 40)
+
     def test_list_by_user_excludes_other_users(self) -> None:
         first_user = self.create_user()
         second_user = self.create_user()

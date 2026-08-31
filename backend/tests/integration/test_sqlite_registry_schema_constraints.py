@@ -91,11 +91,23 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute("UPDATE mfa_method SET type = 'SMS' WHERE uuid = ?", (method_uuid,))
 
-    def test_enforces_recovery_code_usage_timestamp(self) -> None:
+    def test_enforces_one_mfa_method_of_each_type_per_user(self) -> None:
+        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30)", (uuid4().bytes, self.user_uuid, b"first"))
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 40)", (uuid4().bytes, self.user_uuid, b"second"))
+
+    def test_enforces_recovery_code_terminal_state_and_timestamps(self) -> None:
         code_uuid = uuid4().bytes
-        self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, NULL)", (code_uuid, self.user_uuid, b"c" * 32))
+        self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, NULL, NULL)", (code_uuid, self.user_uuid, b"c" * 32))
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute("UPDATE recovery_code SET used_at = 29 WHERE uuid = ?", (code_uuid,))
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("UPDATE recovery_code SET revoked_at = 29 WHERE uuid = ?", (code_uuid,))
+
+        self.connection.execute("UPDATE recovery_code SET used_at = 40 WHERE uuid = ?", (code_uuid,))
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("UPDATE recovery_code SET revoked_at = 50 WHERE uuid = ?", (code_uuid,))
 
     def test_enforces_user_preference_limits(self) -> None:
         self.connection.execute("INSERT INTO user_preferences VALUES (?, 'DD/MM/YYYY', 'HH:mm', 'pt-BR', 'DARK', 'UTC')", (self.user_uuid,))
@@ -140,7 +152,7 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         mfa_uuid = uuid4().bytes
         recovery_uuid = uuid4().bytes
         self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30)", (mfa_uuid, self.user_uuid, b"encrypted"))
-        self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, NULL)", (recovery_uuid, self.user_uuid, b"c" * 32))
+        self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, NULL, NULL)", (recovery_uuid, self.user_uuid, b"c" * 32))
         self.connection.execute("INSERT INTO user_preferences VALUES (?, NULL, NULL, NULL, 'DARK', 'UTC')", (self.user_uuid,))
 
         self.connection.execute("DELETE FROM user_account WHERE uuid = ?", (self.user_uuid,))
