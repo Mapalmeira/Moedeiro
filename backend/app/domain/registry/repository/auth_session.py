@@ -18,7 +18,7 @@ class AuthSessionRepository(ABC):
         pass
 
     @abstractmethod
-    def update_last_activity(self, uuid: UUID, last_activity_at: int) -> None:
+    def update_last_activity(self, uuid: UUID, last_activity_at: int) -> bool:
         pass
 
     @abstractmethod

@@ -28,10 +28,10 @@ class SqliteAuthSessionRepositoryTest(RegistryRepositoryTestCase):
         revoked = self.session_repository.create(user.uuid, b"r" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
         self.session_repository.revoke(revoked.uuid, 45)
 
-        self.session_repository.update_last_activity(active.uuid, 50)
-        self.session_repository.update_last_activity(inactive.uuid, 40 + 1800)
-        self.session_repository.update_last_activity(expired.uuid, 40 + 43200)
-        self.session_repository.update_last_activity(revoked.uuid, 50)
+        self.assertTrue(self.session_repository.update_last_activity(active.uuid, 50))
+        self.assertFalse(self.session_repository.update_last_activity(inactive.uuid, 40 + 1800))
+        self.assertFalse(self.session_repository.update_last_activity(expired.uuid, 40 + 43200))
+        self.assertFalse(self.session_repository.update_last_activity(revoked.uuid, 50))
 
         stored_active = self.session_repository.get(active.uuid)
         stored_inactive = self.session_repository.get(inactive.uuid)

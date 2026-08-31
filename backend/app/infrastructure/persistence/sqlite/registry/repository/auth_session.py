@@ -31,11 +31,12 @@ class SqliteAuthSessionRepository(AuthSessionRepository):
         ).fetchone()
         return None if row is None else self._to_model(row)
 
-    def update_last_activity(self, uuid: UUID, last_activity_at: int) -> None:
-        self.connection.execute(
+    def update_last_activity(self, uuid: UUID, last_activity_at: int) -> bool:
+        cursor = self.connection.execute(
             "UPDATE auth_session SET last_activity_at = ? WHERE uuid = ? AND revoked_at IS NULL AND created_at <= ? AND expires_at > ? AND COALESCE(last_activity_at, created_at) + inactivity_timeout_seconds > ? AND COALESCE(last_activity_at, created_at) <= ?",
             (last_activity_at, uuid.bytes, last_activity_at, last_activity_at, last_activity_at, last_activity_at),
         )
+        return cursor.rowcount == 1
 
     def revoke(self, uuid: UUID, revoked_at: int) -> None:
         self.connection.execute(
