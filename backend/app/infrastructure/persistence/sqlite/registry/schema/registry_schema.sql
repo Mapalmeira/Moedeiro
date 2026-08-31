@@ -45,6 +45,7 @@ CREATE TABLE mfa_method (
     secret_encrypted BLOB NOT NULL,
     created_at INTEGER NOT NULL CHECK (created_at >= 0),
 
+    UNIQUE (user_uuid, type),
     FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE
 ) STRICT;
 
@@ -54,8 +55,10 @@ CREATE TABLE recovery_code (
     code_hash BLOB NOT NULL UNIQUE,
     created_at INTEGER NOT NULL CHECK (created_at >= 0),
     used_at INTEGER CHECK (used_at IS NULL OR used_at >= created_at),
+    revoked_at INTEGER CHECK (revoked_at IS NULL OR revoked_at >= created_at),
 
-    FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE
+    FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE,
+    CHECK (used_at IS NULL OR revoked_at IS NULL)
 ) STRICT;
 
 CREATE TABLE user_preferences (
@@ -97,7 +100,6 @@ CREATE TABLE remember_session (
 CREATE UNIQUE INDEX ledger_grant_active_user_ledger_idx ON ledger_grant(user_uuid, ledger_uuid) WHERE revoked_at IS NULL;
 CREATE INDEX ledger_grant_user_idx ON ledger_grant(user_uuid);
 CREATE INDEX ledger_grant_ledger_idx ON ledger_grant(ledger_uuid);
-CREATE INDEX mfa_method_user_idx ON mfa_method(user_uuid);
 CREATE INDEX recovery_code_user_idx ON recovery_code(user_uuid);
 CREATE INDEX auth_session_user_idx ON auth_session(user_uuid);
 CREATE INDEX remember_session_user_idx ON remember_session(user_uuid);

@@ -22,5 +22,9 @@ class RecoveryCodeRepository(ABC):
         pass
 
     @abstractmethod
+    def revoke(self, uuid: UUID, revoked_at: int) -> None:
+        pass
+
+    @abstractmethod
     def list_by_user(self, user_uuid: UUID) -> list[RecoveryCode]:
         pass

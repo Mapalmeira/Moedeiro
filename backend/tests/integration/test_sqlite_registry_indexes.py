@@ -25,7 +25,6 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
             "ledger_grant_active_user_ledger_idx",
             "ledger_grant_user_idx",
             "ledger_grant_ledger_idx",
-            "mfa_method_user_idx",
             "recovery_code_user_idx",
             "auth_session_user_idx",
             "remember_session_user_idx",
@@ -43,7 +42,6 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
             ),
             ("SELECT uuid FROM ledger_grant WHERE user_uuid = ?", (b"user",), "ledger_grant_user_idx"),
             ("SELECT uuid FROM ledger_grant WHERE ledger_uuid = ?", (b"ledger",), "ledger_grant_ledger_idx"),
-            ("SELECT uuid FROM mfa_method WHERE user_uuid = ?", (b"user",), "mfa_method_user_idx"),
             ("SELECT uuid FROM recovery_code WHERE user_uuid = ?", (b"user",), "recovery_code_user_idx"),
             ("SELECT uuid FROM auth_session WHERE user_uuid = ?", (b"user",), "auth_session_user_idx"),
             ("SELECT uuid FROM remember_session WHERE user_uuid = ?", (b"user",), "remember_session_user_idx"),
@@ -54,6 +52,12 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
                 details = " ".join(row["detail"] for row in rows)
 
                 self.assertIn(index_name, details)
+
+    def test_totp_uniqueness_index_also_supports_user_lookup(self) -> None:
+        rows = self.connection.execute("EXPLAIN QUERY PLAN SELECT uuid FROM mfa_method WHERE user_uuid = ?", (b"user",)).fetchall()
+        details = " ".join(row["detail"] for row in rows)
+
+        self.assertIn("sqlite_autoindex_mfa_method_", details)
 
 
 if __name__ == "__main__":
