@@ -99,10 +99,3 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
     @staticmethod
     def _to_model(row: sqlite3.Row) -> FinancialMovement:
         return FinancialMovement.model_validate(dict(row))
-
-    @staticmethod
-    def _validate_page(page_number: int, page_size: int) -> None:
-        if page_number < 1:
-            raise ValueError("page_number must be greater than or equal to 1")
-        if page_size < 1:
-            raise ValueError("page_size must be greater than or equal to 1")

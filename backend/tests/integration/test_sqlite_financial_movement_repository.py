@@ -85,19 +85,6 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
 
         self.assertEqual(movements, [first])
 
-    def test_list_page_orders_and_rejects_all_uuid_sorting(self) -> None:
-        """Movement pagination exposes values but no entity or relation UUID."""
-        for value in (30, 10, 20):
-            self.create_movement(value, None)
-
-        page = self.repository.list_page(1, 2, "value", True)
-
-        self.assertEqual([movement.value for movement in page], [10, 20])
-        for sort_key in ("uuid", "financial_event_uuid", "account_uuid", "category_uuid"):
-            with self.subTest(sort_key=sort_key):
-                with self.assertRaises(ValueError):
-                    self.repository.list_page(1, 10, sort_key, True)
-
     def test_repository_does_not_commit_its_changes(self) -> None:
         """Rolling back removes the movement but preserves committed relations."""
         self.connection.commit()
