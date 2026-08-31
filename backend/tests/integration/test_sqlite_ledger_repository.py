@@ -6,10 +6,11 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
-from app.infrastructure.persistence.sqlite.registry.repository.access_grant import SqliteAccessGrantRepository
-from app.infrastructure.persistence.sqlite.registry.repository.access_invitation import SqliteAccessInvitationRepository
 from app.infrastructure.persistence.sqlite.registry.repository.auth_session import SqliteAuthSessionRepository
+from app.infrastructure.persistence.sqlite.registry.repository.ledger_grant import SqliteLedgerGrantRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger import SqliteLedgerRepository
+from app.infrastructure.persistence.sqlite.registry.repository.user_invitation import SqliteUserInvitationRepository
+from app.infrastructure.persistence.sqlite.registry.repository.user import SqliteUserRepository
 
 
 SCHEMA_PATH = (
@@ -27,7 +28,7 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         self.repository = SqliteLedgerRepository(self.connection)
 
     def create_ledger(self, path: str):
-        return self.repository.create(path, "BookOpen", b"\x80\x80\x80")
+        return self.repository.create("Main ledger", path, "BookOpen", b"\x80\x80\x80")
 
     def tearDown(self) -> None:
         self.connection.close()
@@ -68,6 +69,16 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         )
         self.assertEqual(self.repository.get(second.uuid), second)
 
+    def test_update_name_changes_only_the_selected_ledger(self) -> None:
+        ledger = self.create_ledger("ledger.sqlite")
+
+        self.repository.update_name(ledger.uuid, "Household")
+
+        updated = self.repository.get(ledger.uuid)
+        assert updated is not None
+        self.assertEqual(updated.name, "Household")
+        self.assertEqual(updated.path, ledger.path)
+
     def test_update_icon_and_color_changes_only_appearance(self) -> None:
         """A ledger appearance can change without changing its path or identity."""
         ledger = self.create_ledger("ledger.sqlite")
@@ -93,23 +104,23 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
             ["first.sqlite", "second.sqlite"],
         )
 
-    def test_delete_ledger_cascades_through_its_access_records(self) -> None:
-        """Deleting a ledger removes invitations, grants and sessions."""
-        invitation_repository = SqliteAccessInvitationRepository(self.connection)
-        grant_repository = SqliteAccessGrantRepository(self.connection)
+    def test_delete_ledger_cascades_grants_without_deleting_user_sessions(self) -> None:
+        grant_repository = SqliteLedgerGrantRepository(self.connection)
         session_repository = SqliteAuthSessionRepository(self.connection)
-        self.create_ledger("ledger.sqlite")
-        ledger = self.repository.get_by_path("ledger.sqlite")
-        assert ledger is not None
-        invitation = invitation_repository.create(ledger.uuid, b"i" * 32, 10)
-        grant = grant_repository.create_webcrypto(invitation.grant_uuid, ledger.uuid, None, b"public-key", 15)
-        session = session_repository.create(grant.uuid, b"s" * 32, 17)
+        invitation_repository = SqliteUserInvitationRepository(self.connection)
+        user_repository = SqliteUserRepository(self.connection)
+        ledger = self.create_ledger("ledger.sqlite")
+        invitation = invitation_repository.create(b"i" * 32, 10)
+        user = user_repository.create("Alice", "$argon2id$test", 15)
+        grant = grant_repository.create(user.uuid, ledger.uuid, "OWNER", 16)
+        session = session_repository.create(user.uuid, b"s" * 32, 17)
 
         self.repository.delete(ledger.uuid)
 
-        self.assertIsNone(invitation_repository.get(invitation.uuid))
         self.assertIsNone(grant_repository.get(grant.uuid))
-        self.assertIsNone(session_repository.get(session.uuid))
+        self.assertEqual(invitation_repository.get(invitation.uuid), invitation)
+        self.assertEqual(user_repository.get(user.uuid), user)
+        self.assertEqual(session_repository.get(session.uuid), session)
 
     def test_repository_does_not_commit_its_own_changes(self) -> None:
         """Transaction ownership remains with the unit of work."""

@@ -12,38 +12,30 @@ class SqliteLedgerMetadataRepository(LedgerMetadataRepository):
 
     def get(self) -> LedgerMetadata | None:
         row = self.connection.execute(
-            "SELECT ledger_uuid, name, schema_version, created_at FROM ledger_metadata WHERE singleton = 1"
+            "SELECT ledger_uuid, schema_version, created_at FROM ledger_metadata WHERE singleton = 1"
         ).fetchone()
         if row is None:
             return None
         return LedgerMetadata.model_validate(dict(row))
 
     def update_schema_version(self, value: int) -> None:
-        metadata = LedgerMetadata(ledger_uuid=UUID(int=0), name="ledger", schema_version=value, created_at=0)
+        metadata = LedgerMetadata(ledger_uuid=UUID(int=0), schema_version=value, created_at=0)
         self.connection.execute(
             "UPDATE ledger_metadata SET schema_version = ? WHERE singleton = 1",
             (metadata.schema_version,),
         )
 
-    def update_name(self, value: str) -> None:
-        metadata = LedgerMetadata(ledger_uuid=UUID(int=0), name=value, schema_version=1, created_at=0)
-        self.connection.execute(
-            "UPDATE ledger_metadata SET name = ? WHERE singleton = 1",
-            (metadata.name,),
-        )
-
-    def create(self, ledger_uuid: UUID, name: str, version: int) -> LedgerMetadata:
+    def create(self, ledger_uuid: UUID, version: int) -> LedgerMetadata:
         metadata = LedgerMetadata(
             ledger_uuid=ledger_uuid,
-            name=name,
             schema_version=version,
             created_at=int(time()),
         )
         self.connection.execute(
             """
-            INSERT INTO ledger_metadata(singleton, ledger_uuid, name, schema_version, created_at)
-            VALUES (1, ?, ?, ?, ?)
+            INSERT INTO ledger_metadata(singleton, ledger_uuid, schema_version, created_at)
+            VALUES (1, ?, ?, ?)
             """,
-            (metadata.ledger_uuid.bytes, metadata.name, metadata.schema_version, metadata.created_at),
+            (metadata.ledger_uuid.bytes, metadata.schema_version, metadata.created_at),
         )
         return metadata

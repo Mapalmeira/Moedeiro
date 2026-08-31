@@ -24,58 +24,49 @@ class SqliteLedgerMetadataRepositoryTest(LedgerRepositoryTestCase):
         ledger_uuid = uuid4()
         before_creation = int(time())
 
-        created_metadata = self.repository.create(ledger_uuid, "Personal", 1)
+        created_metadata = self.repository.create(ledger_uuid, 1)
 
         after_creation = int(time())
         metadata = self.repository.get()
         assert metadata is not None
         self.assertEqual(created_metadata, metadata)
         self.assertEqual(metadata.ledger_uuid, ledger_uuid)
-        self.assertEqual(metadata.name, "Personal")
         self.assertEqual(metadata.schema_version, 1)
         self.assertGreaterEqual(metadata.created_at, before_creation)
         self.assertLessEqual(metadata.created_at, after_creation)
 
-    def test_updates_name_and_schema_version_without_changing_identity(self) -> None:
-        """Mutable metadata fields do not replace ledger identity or creation time."""
+    def test_updates_schema_version_without_changing_identity(self) -> None:
         ledger_uuid = uuid4()
-        self.repository.create(ledger_uuid, "Personal", 1)
+        self.repository.create(ledger_uuid, 1)
         original = self.repository.get()
         assert original is not None
 
-        self.repository.update_name("Family")
         self.repository.update_schema_version(2)
 
         updated = self.repository.get()
         assert updated is not None
         self.assertEqual(updated.ledger_uuid, ledger_uuid)
         self.assertEqual(updated.created_at, original.created_at)
-        self.assertEqual(updated.name, "Family")
         self.assertEqual(updated.schema_version, 2)
 
-    def test_create_and_updates_validate_model_constraints(self) -> None:
-        """Metadata operations enforce name and schema-version constraints."""
+    def test_create_and_update_validate_schema_version(self) -> None:
         with self.assertRaises(ValidationError):
-            self.repository.create(uuid4(), "", 1)
-        with self.assertRaises(ValidationError):
-            self.repository.create(uuid4(), "Personal", 0)
+            self.repository.create(uuid4(), 0)
 
-        self.repository.create(uuid4(), "Personal", 1)
-        with self.assertRaises(ValidationError):
-            self.repository.update_name("x" * 51)
+        self.repository.create(uuid4(), 1)
         with self.assertRaises(ValidationError):
             self.repository.update_schema_version(0)
 
     def test_database_allows_only_one_metadata_row(self) -> None:
         """The singleton key prevents a second metadata record."""
-        self.repository.create(uuid4(), "Personal", 1)
+        self.repository.create(uuid4(), 1)
 
         with self.assertRaises(sqlite3.IntegrityError):
-            self.repository.create(uuid4(), "Other", 1)
+            self.repository.create(uuid4(), 1)
 
     def test_repository_does_not_commit_its_changes(self) -> None:
         """Metadata creation remains pending until the unit of work commits."""
-        self.repository.create(uuid4(), "Personal", 1)
+        self.repository.create(uuid4(), 1)
 
         self.connection.rollback()
 

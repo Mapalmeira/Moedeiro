@@ -42,7 +42,7 @@ class SqliteDatabasesTest(unittest.TestCase):
     def test_initialize_preserves_an_existing_registry(self) -> None:
         self.databases.initialize()
         with self.databases.open_registry() as unit_of_work:
-            ledger = unit_of_work.ledger_repository.create("existing.sqlite", "BookOpen", b"\x80\x80\x80")
+            ledger = unit_of_work.ledger_repository.create("Existing", "existing.sqlite", "BookOpen", b"\x80\x80\x80")
             unit_of_work.commit()
 
         self.databases.initialize()
@@ -81,37 +81,36 @@ class SqliteDatabasesTest(unittest.TestCase):
         self.databases.initialize()
         ledger_uuid = uuid4()
 
-        path = self.databases.initialize_ledger(ledger_uuid, "Personal", 1)
+        path = self.databases.initialize_ledger(ledger_uuid, 1)
 
         self.assertEqual(path, self.ledger_dbs_dir / f"{ledger_uuid}.sqlite")
         with self.databases.open_ledger(path) as unit_of_work:
             metadata = unit_of_work.ledger_metadata_repository.get()
             assert metadata is not None
             self.assertEqual(metadata.ledger_uuid, ledger_uuid)
-            self.assertEqual(metadata.name, "Personal")
             self.assertEqual(metadata.schema_version, 1)
 
     def test_initialize_ledger_never_overwrites_an_existing_database(self) -> None:
         self.databases.initialize()
         ledger_uuid = uuid4()
-        path = self.databases.initialize_ledger(ledger_uuid, "Personal", 1)
+        path = self.databases.initialize_ledger(ledger_uuid, 1)
 
         with self.assertRaises(FileExistsError):
-            self.databases.initialize_ledger(ledger_uuid, "Replacement", 1)
+            self.databases.initialize_ledger(ledger_uuid, 1)
 
         self.assertTrue(path.is_file())
         with self.databases.open_ledger(path) as unit_of_work:
             metadata = unit_of_work.ledger_metadata_repository.get()
             assert metadata is not None
-            self.assertEqual(metadata.name, "Personal")
+            self.assertEqual(metadata.ledger_uuid, ledger_uuid)
 
-    def test_initialize_ledger_removes_a_new_database_when_metadata_is_invalid(self) -> None:
+    def test_initialize_ledger_removes_a_new_database_when_schema_version_is_invalid(self) -> None:
         self.databases.initialize()
         ledger_uuid = uuid4()
         path = self.databases.get_ledger_path(ledger_uuid)
 
         with self.assertRaises(ValidationError):
-            self.databases.initialize_ledger(ledger_uuid, "", 1)
+            self.databases.initialize_ledger(ledger_uuid, 0)
 
         self.assertFalse(path.exists())
 

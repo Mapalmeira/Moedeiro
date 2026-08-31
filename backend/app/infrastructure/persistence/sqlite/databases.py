@@ -30,14 +30,14 @@ class SqliteDatabases:
     def get_ledger_path(self, ledger_uuid: UUID) -> Path:
         return self.ledger_dbs_dir / f"{ledger_uuid}.sqlite"
 
-    def initialize_ledger(self, ledger_uuid: UUID, name: str, schema_version: int) -> Path:
+    def initialize_ledger(self, ledger_uuid: UUID, schema_version: int) -> Path:
         path = self.get_ledger_path(ledger_uuid)
         database_initialized = False
         try:
             database = SqliteDatabase.initialize(path, self.ledger_schema_path)
             database_initialized = True
             with SqliteLedgerUnitOfWork(database) as unit_of_work:
-                unit_of_work.ledger_metadata_repository.create(ledger_uuid, name, schema_version)
+                unit_of_work.ledger_metadata_repository.create(ledger_uuid, schema_version)
                 unit_of_work.commit()
         except Exception:
             if database_initialized:

@@ -26,7 +26,7 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
         self.movement_uuid = uuid4().bytes
         self.budget_uuid = uuid4().bytes
         self.connection.execute(
-            "INSERT INTO ledger_metadata VALUES (1, ?, 'Ledger', 1, 0)",
+            "INSERT INTO ledger_metadata VALUES (1, ?, 1, 0)",
             (self.ledger_uuid,),
         )
         self.connection.execute(
@@ -91,10 +91,14 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
                 (b"invalid", b"\x80\x80\x80"),
             )
 
+    def test_enforces_ledger_metadata_version_and_creation_timestamp(self) -> None:
+        for column, value in (("schema_version", 0), ("created_at", -1)):
+            with self.subTest(column=column):
+                with self.assertRaises(sqlite3.IntegrityError):
+                    self.connection.execute(f"UPDATE ledger_metadata SET {column} = ?", (value,))
+
     def test_enforces_domain_text_lengths(self) -> None:
         invalid_values = (
-            ("ledger_metadata", "name", ""),
-            ("ledger_metadata", "name", "x" * 51),
             ("currency", "currency_name", ""),
             ("currency", "currency_name", "x" * 31),
             ("currency", "prefix", "x" * 11),
@@ -135,7 +139,6 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
 
     def test_accepts_expanded_text_limits(self) -> None:
         values = (
-            ("ledger_metadata", "name", "x" * 50),
             ("account", "account_name", "x" * 50),
             ("financial_event", "description", "x" * 300),
             ("financial_movement", "item_name", "x" * 50),

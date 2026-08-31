@@ -85,7 +85,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
         """Only an explicit commit makes changes visible to a later operation."""
         ledger_uuid = uuid4()
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
-            unit_of_work.ledger_metadata_repository.create(ledger_uuid, "Personal", 1)
+            unit_of_work.ledger_metadata_repository.create(ledger_uuid, 1)
             unit_of_work.commit()
 
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
