@@ -4,3 +4,11 @@ class InvitationNotAvailableError(Exception):
 
 class UserNameUnavailableError(Exception):
     pass
+
+
+class InvalidCredentialsError(Exception):
+    pass
+
+
+class InvalidSessionError(Exception):
+    pass

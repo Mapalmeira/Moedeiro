@@ -30,6 +30,6 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
 
 
 def _create_password_hasher() -> PasswordHasher:
-    from argon2 import PasswordHasher as Argon2PasswordHasher
+    from app.infrastructure.security.password_hasher import Argon2PasswordHasher
 
-    return Argon2PasswordHasher(time_cost=2, memory_cost=19456, parallelism=1, hash_len=32, salt_len=16)
+    return Argon2PasswordHasher()
