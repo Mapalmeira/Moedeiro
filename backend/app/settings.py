@@ -14,7 +14,7 @@ class Settings(BaseModel):
     ledger_schema_path: FilePath
     registry_db_path: Path
     ledger_dbs_dir: Path
-    registration_validate_ip_rate_limit: str = Field(default="5/minute", min_length=1)
+    registration_validate_ip_rate_limit: str = Field(default="5/hour", min_length=1)
     registration_create_ip_rate_limit: str = Field(default="5/hour", min_length=1)
     password_hash_concurrency: int = Field(default=2, gt=0)
 

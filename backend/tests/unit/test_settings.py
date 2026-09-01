@@ -32,7 +32,7 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.ledger_schema_path, self.ledger_schema_path)
         self.assertEqual(settings.registry_db_path, self.directory / "registry/registry.sqlite")
         self.assertEqual(settings.ledger_dbs_dir, self.directory / "ledgers")
-        self.assertEqual(settings.registration_validate_ip_rate_limit, "5/minute")
+        self.assertEqual(settings.registration_validate_ip_rate_limit, "5/hour")
         self.assertEqual(settings.registration_create_ip_rate_limit, "5/hour")
         self.assertEqual(settings.password_hash_concurrency, 2)
 
