@@ -65,6 +65,51 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             self.repository.create("Child", "Circle", b"\x80\x80\x80", uuid4())
 
+    def test_create_rejects_a_sixth_category_level(self) -> None:
+        parent = None
+        for level in range(5):
+            parent = self.repository.create(f"Level {level}", "Circle", b"\x80\x80\x80", None if parent is None else parent.uuid)
+        assert parent is not None
+
+        with self.assertRaisesRegex(ValueError, "depth must not exceed 5"):
+            self.repository.create("Too deep", "Circle", b"\x80\x80\x80", parent.uuid)
+
+        self.assertEqual(len(self.repository.list_all()), 5)
+
+    def test_update_parent_rejects_cycles_and_subtrees_that_exceed_the_depth_limit(self) -> None:
+        root = self.create_category("Root")
+        source = self.create_category("Source", root)
+        child = self.create_category("Child", source)
+        self.create_category("Grandchild", child)
+        target_root = self.create_category("Target root")
+        target_child = self.create_category("Target child", target_root)
+        target_grandchild = self.create_category("Target grandchild", target_child)
+
+        with self.assertRaisesRegex(ValueError, "cannot be a descendant"):
+            self.repository.update_parent(root.uuid, child.uuid)
+        with self.assertRaisesRegex(ValueError, "depth must not exceed 5"):
+            self.repository.update_parent(source.uuid, target_grandchild.uuid)
+
+        stored_root = self.repository.get(root.uuid)
+        stored_source = self.repository.get(source.uuid)
+        assert stored_root is not None
+        assert stored_source is not None
+        self.assertIsNone(stored_root.parent_uuid)
+        self.assertEqual(stored_source.parent_uuid, root.uuid)
+
+    def test_update_parent_allows_the_fifth_level(self) -> None:
+        root = self.create_category("Root")
+        second = self.create_category("Second", root)
+        third = self.create_category("Third", second)
+        fourth = self.create_category("Fourth", third)
+        child = self.create_category("Child")
+
+        self.repository.update_parent(child.uuid, fourth.uuid)
+
+        stored_child = self.repository.get(child.uuid)
+        assert stored_child is not None
+        self.assertEqual(stored_child.parent_uuid, fourth.uuid)
+
     def test_list_page_orders_and_rejects_identity_sorting(self) -> None:
         """Category pagination exposes name but not entity or parent UUID."""
         for name in ("Charlie", "Alpha", "Bravo"):

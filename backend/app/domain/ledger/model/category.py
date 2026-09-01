@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from app.domain.appearance import Icon, RgbColorCode
 
 CategoryName = Annotated[str, Field(min_length=1, max_length=30)]
+MAX_CATEGORY_DEPTH = 5
 
 
 class Category(BaseModel):

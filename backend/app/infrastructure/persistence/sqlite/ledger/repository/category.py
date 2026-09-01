@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 from pydantic import TypeAdapter
 
 from app.domain.appearance import Icon, RgbColorCode
-from app.domain.ledger.model.category import Category, CategoryName
+from app.domain.ledger.model.category import Category, CategoryName, MAX_CATEGORY_DEPTH
 from app.domain.ledger.model.category_tree_node import CategoryTreeNode
 from app.domain.ledger.repository.category import CategoryRepository
 
@@ -20,6 +20,10 @@ class SqliteCategoryRepository(CategoryRepository):
 
     def create(self, name: CategoryName, icon: Icon, color_code: RgbColorCode, parent_uuid: UUID | None) -> Category:
         category = Category(uuid=uuid4(), name=name, icon=icon, color_code=color_code, parent_uuid=parent_uuid)
+        if parent_uuid is not None:
+            ancestors = self._get_ancestors(parent_uuid)
+            if ancestors is not None and len(ancestors) >= MAX_CATEGORY_DEPTH:
+                raise ValueError(f"category depth must not exceed {MAX_CATEGORY_DEPTH}")
         self.connection.execute(
             "INSERT INTO category(uuid, category_name, icon, color_code, parent_uuid) VALUES (?, ?, ?, ?, ?)",
             (category.uuid.bytes, category.name, category.icon, category.color_code, self._serialize_uuid(category.parent_uuid)),
@@ -57,6 +61,13 @@ class SqliteCategoryRepository(CategoryRepository):
         )
 
     def update_parent(self, uuid: UUID, parent_uuid: UUID | None) -> None:
+        if parent_uuid is not None and self.get(uuid) is not None:
+            ancestors = self._get_ancestors(parent_uuid)
+            if ancestors is not None:
+                if uuid in ancestors:
+                    raise ValueError("category parent cannot be a descendant")
+                if len(ancestors) + self._get_subtree_height(uuid) > MAX_CATEGORY_DEPTH:
+                    raise ValueError(f"category depth must not exceed {MAX_CATEGORY_DEPTH}")
         self.connection.execute(
             "UPDATE category SET parent_uuid = ? WHERE uuid = ?",
             (self._serialize_uuid(parent_uuid), uuid.bytes),
@@ -114,6 +125,43 @@ class SqliteCategoryRepository(CategoryRepository):
         if value is None:
             return None
         return value.bytes
+
+    def _get_ancestors(self, uuid: UUID) -> list[UUID] | None:
+        ancestors: list[UUID] = []
+        current_uuid = uuid
+        while True:
+            if current_uuid in ancestors:
+                raise ValueError("category hierarchy contains a cycle")
+            row = self.connection.execute("SELECT parent_uuid FROM category WHERE uuid = ?", (current_uuid.bytes,)).fetchone()
+            if row is None:
+                return None
+            ancestors.append(current_uuid)
+            if row["parent_uuid"] is None:
+                return ancestors
+            current_uuid = UUID(bytes=row["parent_uuid"])
+
+    def _get_subtree_height(self, uuid: UUID) -> int:
+        row = self.connection.execute(
+            """
+            WITH RECURSIVE descendants(uuid, depth) AS (
+                SELECT uuid, 1
+                FROM category
+                WHERE uuid = ?
+
+                UNION ALL
+
+                SELECT child.uuid, parent.depth + 1
+                FROM category AS child
+                JOIN descendants AS parent ON child.parent_uuid = parent.uuid
+                WHERE parent.depth < ?
+            )
+            SELECT MAX(depth) AS height
+            FROM descendants
+            """,
+            (uuid.bytes, MAX_CATEGORY_DEPTH + 1),
+        ).fetchone()
+        assert row is not None
+        return row["height"]
 
     @classmethod
     def _get_sort_column(cls, sort_key: str) -> str:
