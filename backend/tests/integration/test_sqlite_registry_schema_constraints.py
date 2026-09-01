@@ -87,15 +87,15 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
 
     def test_enforces_mfa_type(self) -> None:
         method_uuid = uuid4().bytes
-        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30)", (method_uuid, self.user_uuid, b"encrypted"))
+        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, NULL)", (method_uuid, self.user_uuid, b"encrypted"))
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute("UPDATE mfa_method SET type = 'SMS' WHERE uuid = ?", (method_uuid,))
 
     def test_enforces_one_mfa_method_of_each_type_per_user(self) -> None:
-        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30)", (uuid4().bytes, self.user_uuid, b"first"))
+        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, NULL)", (uuid4().bytes, self.user_uuid, b"first"))
 
         with self.assertRaises(sqlite3.IntegrityError):
-            self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 40)", (uuid4().bytes, self.user_uuid, b"second"))
+            self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 40, NULL)", (uuid4().bytes, self.user_uuid, b"second"))
 
     def test_enforces_recovery_code_terminal_state_and_timestamps(self) -> None:
         code_uuid = uuid4().bytes
@@ -151,7 +151,7 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
     def test_deleting_user_cascades_authentication_records_and_grants(self) -> None:
         mfa_uuid = uuid4().bytes
         recovery_uuid = uuid4().bytes
-        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30)", (mfa_uuid, self.user_uuid, b"encrypted"))
+        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, NULL)", (mfa_uuid, self.user_uuid, b"encrypted"))
         self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, NULL, NULL)", (recovery_uuid, self.user_uuid, b"c" * 32))
         self.connection.execute("INSERT INTO user_preferences VALUES (?, NULL, NULL, NULL, 'DARK', 'UTC')", (self.user_uuid,))
 

@@ -44,6 +44,7 @@ CREATE TABLE mfa_method (
     type TEXT NOT NULL CHECK (type IN ('TOTP')),
     secret_encrypted BLOB NOT NULL,
     created_at INTEGER NOT NULL CHECK (created_at >= 0),
+    confirmed_at INTEGER CHECK (confirmed_at IS NULL OR confirmed_at >= created_at),
 
     UNIQUE (user_uuid, type),
     FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE
