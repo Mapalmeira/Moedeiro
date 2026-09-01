@@ -3,7 +3,8 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, FilePath, model_validator
+from limits import parse
+from pydantic import BaseModel, ConfigDict, Field, FilePath, field_validator, model_validator
 
 
 class Settings(BaseModel):
@@ -13,6 +14,16 @@ class Settings(BaseModel):
     ledger_schema_path: FilePath
     registry_db_path: Path
     ledger_dbs_dir: Path
+    registration_validate_rate_limit: str = Field(default="5/minute", min_length=1)
+    registration_create_ip_rate_limit: str = Field(default="5/hour", min_length=1)
+    password_hash_concurrency: int = Field(default=2, gt=0)
+
+    @field_validator("registration_validate_rate_limit", "registration_create_ip_rate_limit")
+    @classmethod
+    def validate_rate_limit(cls, value: str) -> str:
+        if parse(value).amount <= 0:
+            raise ValueError("rate limit amount must be positive")
+        return value
 
     @model_validator(mode="after")
     def validate_data_paths(self) -> Self:
@@ -37,4 +48,12 @@ class Settings(BaseModel):
             if value is None or not value.strip():
                 raise ValueError(f"{variable_name} must be defined")
             values[field_name] = value
+        optional_variable_names = {
+            "registration_validate_rate_limit": "REGISTRATION_VALIDATE_RATE_LIMIT",
+            "registration_create_ip_rate_limit": "REGISTRATION_CREATE_IP_RATE_LIMIT",
+            "password_hash_concurrency": "PASSWORD_HASH_CONCURRENCY",
+        }
+        for field_name, variable_name in optional_variable_names.items():
+            if variable_name in source:
+                values[field_name] = source[variable_name]
         return cls.model_validate(values)

@@ -5,6 +5,7 @@ import unittest
 from app.factory import create_app
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
 from app.settings import Settings
+from tests.fakes import FakePasswordHasher, FakeRateLimiter
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -23,10 +24,21 @@ class ApplicationFactoryTest(unittest.TestCase):
                 ledger_dbs_dir=directory / "ledgers",
             )
 
-            application = create_app(settings)
+            password_hasher = FakePasswordHasher()
+            rate_limiter = FakeRateLimiter()
+
+            application = create_app(settings, password_hasher, rate_limiter)
 
             self.assertIs(application.state.settings, settings)
             self.assertIsInstance(application.state.databases, SqliteDatabases)
+            self.assertIs(application.state.password_hasher, password_hasher)
+            self.assertIs(application.state.rate_limiter, rate_limiter)
+            for _ in range(settings.password_hash_concurrency):
+                self.assertTrue(application.state.password_hash_semaphore.acquire(blocking=False))
+            self.assertFalse(application.state.password_hash_semaphore.acquire(blocking=False))
+            for _ in range(settings.password_hash_concurrency):
+                application.state.password_hash_semaphore.release()
+            self.assertTrue({"/api/registration", "/api/registration/validate"}.issubset(application.openapi()["paths"]))
             self.assertTrue(settings.registry_db_path.is_file())
             self.assertTrue(settings.ledger_dbs_dir.is_dir())
 
