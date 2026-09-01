@@ -1,11 +1,13 @@
-from typing import Annotated, Self
+from typing import Self
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.domain.registry.model.crockford_code import CrockfordCode
+
 
 DEFAULT_EXPIRATION_TIMEOUT_SECONDS = 60 * 60
-InvitationCode = Annotated[str, Field(min_length=16, max_length=16, pattern=r"^[0-9ABCDEFGHJKMNPQRSTVWXYZ]{16}$")]
+InvitationCode = CrockfordCode
 
 
 class UserInvitation(BaseModel):
