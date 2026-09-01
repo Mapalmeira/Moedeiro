@@ -26,5 +26,9 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
+    def delete(self, uuid: UUID) -> None:
+        pass
+
+    @abstractmethod
     def list_all(self) -> list[User]:
         pass

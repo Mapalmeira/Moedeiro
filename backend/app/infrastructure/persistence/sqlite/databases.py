@@ -30,6 +30,16 @@ class SqliteDatabases:
     def get_ledger_path(self, ledger_uuid: UUID) -> Path:
         return self.ledger_dbs_dir / f"{ledger_uuid}.sqlite"
 
+    def delete_ledger_database(self, path: str | Path) -> None:
+        directory = self.ledger_dbs_dir.resolve()
+        supplied_path = Path(path)
+        if not supplied_path.is_absolute():
+            supplied_path = directory / supplied_path
+        ledger_path = supplied_path.resolve()
+        if ledger_path.parent != directory:
+            raise ValueError("ledger database must be directly inside LEDGER_DBS_DIR")
+        ledger_path.unlink(missing_ok=True)
+
     def initialize_ledger(self, ledger_uuid: UUID, schema_version: int) -> Path:
         path = self.get_ledger_path(ledger_uuid)
         database_initialized = False

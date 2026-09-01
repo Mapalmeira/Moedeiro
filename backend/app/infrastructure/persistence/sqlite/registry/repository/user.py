@@ -48,6 +48,9 @@ class SqliteUserRepository(UserRepository):
         )
         return cursor.rowcount == 1
 
+    def delete(self, uuid: UUID) -> None:
+        self.connection.execute("DELETE FROM user_account WHERE uuid = ?", (uuid.bytes,))
+
     def list_all(self) -> list[User]:
         rows = self.connection.execute(f"SELECT {self._columns} FROM user_account").fetchall()
         return [self._to_model(row) for row in rows]
