@@ -101,6 +101,11 @@ CREATE TABLE remember_session (
 CREATE UNIQUE INDEX ledger_grant_active_user_ledger_idx ON ledger_grant(user_uuid, ledger_uuid) WHERE revoked_at IS NULL;
 CREATE INDEX ledger_grant_user_idx ON ledger_grant(user_uuid);
 CREATE INDEX ledger_grant_ledger_idx ON ledger_grant(ledger_uuid);
+CREATE INDEX ledger_grant_revoked_idx ON ledger_grant(revoked_at) WHERE revoked_at IS NOT NULL;
 CREATE INDEX recovery_code_user_idx ON recovery_code(user_uuid);
+CREATE INDEX recovery_code_revoked_idx ON recovery_code(revoked_at) WHERE revoked_at IS NOT NULL;
 CREATE INDEX auth_session_user_idx ON auth_session(user_uuid);
+CREATE INDEX auth_session_revoked_idx ON auth_session(revoked_at) WHERE revoked_at IS NOT NULL;
 CREATE INDEX remember_session_user_idx ON remember_session(user_uuid);
+CREATE INDEX remember_session_revoked_idx ON remember_session(revoked_at) WHERE revoked_at IS NOT NULL;
+CREATE INDEX user_invitation_revoked_idx ON user_invitation(revoked_at) WHERE revoked_at IS NOT NULL;

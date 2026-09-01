@@ -40,6 +40,10 @@ class SqliteUserInvitationRepository(UserInvitationRepository):
             (revoked_at, uuid.bytes),
         )
 
+    def delete_revoked_before(self, timestamp: int) -> int:
+        cursor = self.connection.execute("DELETE FROM user_invitation WHERE revoked_at <= ?", (timestamp,))
+        return cursor.rowcount
+
     def list_all(self) -> list[UserInvitation]:
         rows = self.connection.execute(f"SELECT {self._columns} FROM user_invitation").fetchall()
         return [self._to_model(row) for row in rows]

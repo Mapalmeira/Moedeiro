@@ -25,9 +25,14 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
             "ledger_grant_active_user_ledger_idx",
             "ledger_grant_user_idx",
             "ledger_grant_ledger_idx",
+            "ledger_grant_revoked_idx",
             "recovery_code_user_idx",
+            "recovery_code_revoked_idx",
             "auth_session_user_idx",
+            "auth_session_revoked_idx",
             "remember_session_user_idx",
+            "remember_session_revoked_idx",
+            "user_invitation_revoked_idx",
         }
         rows = self.connection.execute("SELECT name FROM sqlite_schema WHERE type = 'index' AND name NOT LIKE 'sqlite_autoindex_%'").fetchall()
 
@@ -45,6 +50,11 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
             ("SELECT uuid FROM recovery_code WHERE user_uuid = ?", (b"user",), "recovery_code_user_idx"),
             ("SELECT uuid FROM auth_session WHERE user_uuid = ?", (b"user",), "auth_session_user_idx"),
             ("SELECT uuid FROM remember_session WHERE user_uuid = ?", (b"user",), "remember_session_user_idx"),
+            ("DELETE FROM user_invitation WHERE revoked_at <= ?", (100,), "user_invitation_revoked_idx"),
+            ("DELETE FROM ledger_grant WHERE revoked_at <= ?", (100,), "ledger_grant_revoked_idx"),
+            ("DELETE FROM recovery_code WHERE revoked_at <= ?", (100,), "recovery_code_revoked_idx"),
+            ("DELETE FROM auth_session WHERE revoked_at <= ?", (100,), "auth_session_revoked_idx"),
+            ("DELETE FROM remember_session WHERE revoked_at <= ?", (100,), "remember_session_revoked_idx"),
         )
         for query, parameters, index_name in queries:
             with self.subTest(index_name=index_name):

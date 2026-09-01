@@ -33,6 +33,10 @@ class SqliteLedgerGrantRepository(LedgerGrantRepository):
     def revoke(self, uuid: UUID, revoked_at: int) -> None:
         self.connection.execute("UPDATE ledger_grant SET revoked_at = ? WHERE uuid = ? AND revoked_at IS NULL", (revoked_at, uuid.bytes))
 
+    def delete_revoked_before(self, timestamp: int) -> int:
+        cursor = self.connection.execute("DELETE FROM ledger_grant WHERE revoked_at <= ?", (timestamp,))
+        return cursor.rowcount
+
     def list_by_user(self, user_uuid: UUID) -> list[LedgerGrant]:
         rows = self.connection.execute(f"SELECT {self._columns} FROM ledger_grant WHERE user_uuid = ?", (user_uuid.bytes,)).fetchall()
         return [self._to_model(row) for row in rows]

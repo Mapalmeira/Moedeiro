@@ -30,5 +30,9 @@ class RememberSessionRepository(ABC):
         pass
 
     @abstractmethod
+    def delete_revoked_before(self, timestamp: int) -> int:
+        pass
+
+    @abstractmethod
     def list_by_user(self, user_uuid: UUID) -> list[RememberSession]:
         pass

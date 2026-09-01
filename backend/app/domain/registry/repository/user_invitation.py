@@ -26,5 +26,9 @@ class UserInvitationRepository(ABC):
         pass
 
     @abstractmethod
+    def delete_revoked_before(self, timestamp: int) -> int:
+        pass
+
+    @abstractmethod
     def list_all(self) -> list[UserInvitation]:
         pass

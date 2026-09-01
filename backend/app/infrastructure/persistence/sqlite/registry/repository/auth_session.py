@@ -50,6 +50,10 @@ class SqliteAuthSessionRepository(AuthSessionRepository):
             (revoked_at, user_uuid.bytes),
         )
 
+    def delete_revoked_before(self, timestamp: int) -> int:
+        cursor = self.connection.execute("DELETE FROM auth_session WHERE revoked_at <= ?", (timestamp,))
+        return cursor.rowcount
+
     def list_by_user(self, user_uuid: UUID) -> list[AuthSession]:
         rows = self.connection.execute(
             "SELECT uuid, user_uuid, token_hash, created_at, expires_at, inactivity_timeout_seconds, last_activity_at, revoked_at FROM auth_session WHERE user_uuid = ?",
