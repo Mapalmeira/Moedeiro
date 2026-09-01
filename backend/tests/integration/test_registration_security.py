@@ -3,7 +3,6 @@ from tempfile import TemporaryDirectory
 import time
 import unittest
 
-from argon2.exceptions import VerifyMismatchError
 from fastapi import HTTPException, Request
 
 from app.api.registration import create_user, validate_invitation
@@ -102,8 +101,7 @@ class RegistrationSecurityTest(unittest.TestCase):
             sessions = unit_of_work.auth_session_repository.list_by_user(user.uuid)
         self.assertNotEqual(user.password_hash, "correct horse battery")
         self.assertTrue(self.application.state.password_hasher.verify(user.password_hash, "correct horse battery"))
-        with self.assertRaises(VerifyMismatchError):
-            self.application.state.password_hasher.verify(user.password_hash, "wrong horse battery")
+        self.assertFalse(self.application.state.password_hasher.verify(user.password_hash, "wrong horse battery"))
         self.assertEqual(sessions, [])
 
     def test_equal_passwords_are_stored_as_different_hashes(self) -> None:

@@ -1,9 +1,9 @@
 import unittest
 from uuid import uuid4
 
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
-from app.domain.registry.model.user import User, normalize_user_name
+from app.domain.registry.model.user import Password, User, UserName, normalize_user_name
 
 
 class UserTest(unittest.TestCase):
@@ -25,11 +25,24 @@ class UserTest(unittest.TestCase):
             self.create_user(normalized_name="alice")
 
     def test_enforces_user_name_limits(self) -> None:
-        invalid_values = ({"name": "", "normalized_name": ""}, {"name": "x" * 51, "normalized_name": "x" * 51})
+        invalid_values = ({"name": "", "normalized_name": ""}, {"name": "   ", "normalized_name": ""}, {"name": "x" * 51, "normalized_name": "x" * 51})
         for changes in invalid_values:
             with self.subTest(changes=changes):
                 with self.assertRaises(ValidationError):
                     self.create_user(**changes)
+
+    def test_password_enforces_the_shared_input_limits(self) -> None:
+        adapter = TypeAdapter(Password)
+
+        self.assertEqual(adapter.validate_python("x" * 12), "x" * 12)
+        for value in ("x" * 11, "x" * 129):
+            with self.subTest(length=len(value)):
+                with self.assertRaises(ValidationError):
+                    adapter.validate_python(value)
+
+    def test_user_name_type_rejects_blank_normalized_content(self) -> None:
+        with self.assertRaises(ValidationError):
+            TypeAdapter(UserName).validate_python("   ")
 
     def test_password_change_cannot_precede_creation(self) -> None:
         with self.assertRaises(ValidationError):
