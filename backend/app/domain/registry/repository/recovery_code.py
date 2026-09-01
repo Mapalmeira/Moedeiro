@@ -26,7 +26,7 @@ class RecoveryCodeRepository(ABC):
         pass
 
     @abstractmethod
-    def delete_revoked_before(self, timestamp: int) -> int:
+    def delete_inactive_before(self, timestamp: int) -> int:
         pass
 
     @abstractmethod

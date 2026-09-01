@@ -22,6 +22,10 @@ class MfaMethodRepository(ABC):
         pass
 
     @abstractmethod
+    def delete_unconfirmed_before(self, timestamp: int) -> int:
+        pass
+
+    @abstractmethod
     def delete(self, uuid: UUID) -> None:
         pass
 

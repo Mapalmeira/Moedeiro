@@ -31,6 +31,10 @@ class SqliteMfaMethodRepository(MfaMethodRepository):
         cursor = self.connection.execute("UPDATE mfa_method SET confirmed_at = ? WHERE uuid = ? AND confirmed_at IS NULL AND created_at <= ?", (confirmed_at, uuid.bytes, confirmed_at))
         return cursor.rowcount == 1
 
+    def delete_unconfirmed_before(self, timestamp: int) -> int:
+        cursor = self.connection.execute("DELETE FROM mfa_method WHERE confirmed_at IS NULL AND created_at <= ?", (timestamp,))
+        return cursor.rowcount
+
     def delete(self, uuid: UUID) -> None:
         self.connection.execute("DELETE FROM mfa_method WHERE uuid = ?", (uuid.bytes,))
 
