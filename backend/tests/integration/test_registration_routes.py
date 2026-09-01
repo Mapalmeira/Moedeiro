@@ -12,7 +12,7 @@ from app.api.schema.registration import RegisterUserRequest, ValidateInvitationR
 from app.application.registry.use_cases.user_invitation import create_user_invitation
 from app.factory import create_app
 from app.settings import Settings
-from tests.fakes import FakePasswordHasher, FakeRateLimiter
+from tests.fakes import FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -35,7 +35,7 @@ class RegistrationRoutesTest(unittest.TestCase):
         )
         self.password_hasher = FakePasswordHasher()
         self.rate_limiter = FakeRateLimiter()
-        self.application = create_app(settings, self.password_hasher, self.rate_limiter)
+        self.application = create_app(settings, self.password_hasher, self.rate_limiter, FakeTotpAuthenticator())
         self.request = Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": []})
 
     def tearDown(self) -> None:

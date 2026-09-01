@@ -19,6 +19,7 @@ class Settings(BaseModel):
     login_ip_rate_limit: str = Field(default="5/minute", min_length=1)
     password_recovery_ip_rate_limit: str = Field(default="5/hour", min_length=1)
     password_hash_concurrency: int = Field(default=2, gt=0)
+    totp_encryption_key: str | None = None
 
     @field_validator("registration_validate_ip_rate_limit", "registration_create_ip_rate_limit", "login_ip_rate_limit", "password_recovery_ip_rate_limit")
     @classmethod
@@ -56,6 +57,7 @@ class Settings(BaseModel):
             "login_ip_rate_limit": "LOGIN_IP_RATE_LIMIT",
             "password_recovery_ip_rate_limit": "PASSWORD_RECOVERY_IP_RATE_LIMIT",
             "password_hash_concurrency": "PASSWORD_HASH_CONCURRENCY",
+            "totp_encryption_key": "TOTP_ENCRYPTION_KEY",
         }
         for field_name, variable_name in optional_variable_names.items():
             if variable_name in source:

@@ -12,6 +12,14 @@ class SqliteMfaMethodRepositoryTest(RegistryRepositoryTestCase):
 
         self.assertEqual(self.mfa_repository.get(method.uuid), method)
 
+    def test_get_totp_by_user_returns_only_the_method_owned_by_the_user(self) -> None:
+        user = self.create_user()
+        other_user = self.create_user()
+        method = self.mfa_repository.create(user.uuid, "TOTP", b"encrypted-secret", 30)
+        self.mfa_repository.create(other_user.uuid, "TOTP", b"other-secret", 30)
+
+        self.assertEqual(self.mfa_repository.get_totp_by_user(user.uuid), method)
+
     def test_create_requires_an_existing_user(self) -> None:
         with self.assertRaises(sqlite3.IntegrityError):
             self.mfa_repository.create(uuid4(), "TOTP", b"encrypted-secret", 30)

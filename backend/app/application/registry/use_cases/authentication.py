@@ -4,9 +4,12 @@ from collections.abc import Callable
 
 from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError
 from app.application.registry.password_hasher import PasswordHasher
+from app.application.registry.totp_authenticator import TotpAuthenticator
 from app.application.registry.unit_of_work import RegistryUnitOfWork
+from app.application.registry.use_cases.totp import verify_totp
 from app.domain.registry.model.auth_session import DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS
 from app.domain.registry.model.remember_session import DEFAULT_EXPIRATION_TIMEOUT_SECONDS
+from app.domain.registry.model.totp import TotpCode
 from app.domain.registry.model.user import Password, User, UserName, normalize_user_name
 
 
@@ -19,11 +22,14 @@ def login(
     timestamp: int,
     current_session_token: str | None = None,
     current_remember_token: str | None = None,
+    totp_authenticator: TotpAuthenticator | None = None,
+    totp_code: TotpCode | None = None,
 ) -> tuple[str, str | None]:
     with unit_of_work_factory() as unit_of_work:
         user = unit_of_work.user_repository.get_by_normalized_name(normalize_user_name(name))
         if user is None or not password_hasher.verify(user.password_hash, password):
             raise InvalidCredentialsError
+        verify_totp(unit_of_work, totp_authenticator, user.uuid, totp_code, timestamp)
 
         _revoke_presented_sessions(unit_of_work, current_session_token, current_remember_token, timestamp)
 

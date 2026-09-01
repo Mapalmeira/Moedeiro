@@ -6,18 +6,22 @@ from uuid import UUID
 
 from app.application.registry.exceptions import InvalidCurrentPasswordError, RecoveryCodeNotAvailableError, UserNotFoundError
 from app.application.registry.password_hasher import PasswordHasher
+from app.application.registry.totp_authenticator import TotpAuthenticator
 from app.application.registry.unit_of_work import RegistryUnitOfWork
+from app.application.registry.use_cases.totp import verify_totp
 from app.domain.registry.model.crockford_code import CROCKFORD_TRANSLATION, CrockfordCode
 from app.domain.registry.model.recovery_code import RecoveryCode
+from app.domain.registry.model.totp import TotpCode
 from app.domain.registry.model.user import Password, User
 
 
-def change_password(unit_of_work_factory: Callable[[], RegistryUnitOfWork], password_hasher: PasswordHasher, user: User, current_password: Password, new_password: Password, timestamp: int) -> None:
+def change_password(unit_of_work_factory: Callable[[], RegistryUnitOfWork], password_hasher: PasswordHasher, user: User, current_password: Password, new_password: Password, timestamp: int, totp_authenticator: TotpAuthenticator | None = None, totp_code: TotpCode | None = None) -> None:
     if not password_hasher.verify(user.password_hash, current_password):
         raise InvalidCurrentPasswordError
     new_password_hash = password_hasher.hash(new_password)
 
     with unit_of_work_factory() as unit_of_work:
+        verify_totp(unit_of_work, totp_authenticator, user.uuid, totp_code, timestamp)
         if not unit_of_work.user_repository.update_password(user.uuid, user.password_hash, new_password_hash, timestamp):
             raise InvalidCurrentPasswordError
         _revoke_user_sessions(unit_of_work, user.uuid, timestamp)

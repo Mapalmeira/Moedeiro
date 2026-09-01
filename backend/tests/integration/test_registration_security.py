@@ -10,6 +10,7 @@ from app.api.schema.registration import RegisterUserRequest, ValidateInvitationR
 from app.application.registry.use_cases.user_invitation import create_user_invitation
 from app.factory import create_app
 from app.settings import Settings
+from tests.fakes import FakeTotpAuthenticator
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,7 +30,7 @@ class RegistrationSecurityTest(unittest.TestCase):
             registration_validate_ip_rate_limit="2/minute",
             registration_create_ip_rate_limit="2/hour",
         )
-        self.application = create_app(settings)
+        self.application = create_app(settings, totp_authenticator=FakeTotpAuthenticator())
 
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()

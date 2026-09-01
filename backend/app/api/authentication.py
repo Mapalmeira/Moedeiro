@@ -3,7 +3,7 @@ import time
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from app.api.schema.authentication import LoginRequest
-from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError
+from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError, InvalidTotpCodeError
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.use_cases.authentication import authenticate_session, login, logout, refresh_session
 from app.domain.registry.model.remember_session import DEFAULT_EXPIRATION_TIMEOUT_SECONDS
@@ -38,8 +38,10 @@ def login_user(payload: LoginRequest, request: Request, response: Response) -> N
             int(time.time()),
             request.cookies.get(_SESSION_COOKIE),
             request.cookies.get(_REMEMBER_COOKIE),
+            _totp_authenticator(request),
+            payload.totp_code,
         )
-    except InvalidCredentialsError as error:
+    except (InvalidCredentialsError, InvalidTotpCodeError) as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from error
     finally:
         semaphore.release()
@@ -140,3 +142,7 @@ def _password_hasher(request: Request) -> PasswordHasher:
 
 def _rate_limiter(request: Request) -> RateLimiter:
     return request.app.state.rate_limiter
+
+
+def _totp_authenticator(request: Request):
+    return request.app.state.totp_authenticator

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from app.api.authentication import clear_authentication_cookies, require_authenticated_user
 from app.api.schema.password import ChangePasswordRequest, ResetPasswordRequest, ValidateRecoveryCodeRequest
-from app.application.registry.exceptions import InvalidCurrentPasswordError, RecoveryCodeNotAvailableError
+from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, RecoveryCodeNotAvailableError
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.use_cases.password import change_password, get_available_recovery_code, reset_password
 from app.domain.registry.model.user import User
@@ -30,8 +30,10 @@ def change_current_password(payload: ChangePasswordRequest, request: Request, re
             payload.current_password,
             payload.new_password,
             int(time.time()),
+            _totp_authenticator(request),
+            payload.totp_code,
         )
-    except InvalidCurrentPasswordError as error:
+    except (InvalidCurrentPasswordError, InvalidTotpCodeError) as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid current password") from error
     finally:
         semaphore.release()
@@ -94,3 +96,7 @@ def _password_hasher(request: Request) -> PasswordHasher:
 
 def _rate_limiter(request: Request) -> RateLimiter:
     return request.app.state.rate_limiter
+
+
+def _totp_authenticator(request: Request):
+    return request.app.state.totp_authenticator
