@@ -4,6 +4,10 @@ services:
       context: .
       dockerfile: backend/app/Containerfile
     image: moedeiro-backend:latest
+    environment:
+      REGISTRATION_VALIDATE_IP_RATE_LIMIT: ${REGISTRATION_VALIDATE_IP_RATE_LIMIT:-5/hour}
+      REGISTRATION_CREATE_IP_RATE_LIMIT: ${REGISTRATION_CREATE_IP_RATE_LIMIT:-5/hour}
+      PASSWORD_HASH_CONCURRENCY: ${PASSWORD_HASH_CONCURRENCY:-2}
     volumes:
       - registry_data:/data/registry
       - ledger_data:/data/ledgers
