@@ -72,6 +72,28 @@ class SqliteRememberSessionRepositoryTest(RegistryRepositoryTestCase):
         self.assertEqual(stored_second.revoked_at, 40)
         self.assertIsNone(stored_other.revoked_at)
 
+    def test_delete_inactive_before_removes_only_eligible_sessions(self) -> None:
+        user = self.create_user()
+        old = self.remember_session_repository.create(user.uuid, b"a" * 32, 30, 100)
+        recent = self.remember_session_repository.create(user.uuid, b"b" * 32, 30, 100)
+        active = self.remember_session_repository.create(user.uuid, b"c" * 32, 30, 100)
+        self.remember_session_repository.revoke(old.uuid, 40)
+        self.remember_session_repository.revoke(recent.uuid, 41)
+
+        self.assertEqual(self.remember_session_repository.delete_inactive_before(40), 1)
+        self.assertIsNone(self.remember_session_repository.get(old.uuid))
+        self.assertIsNotNone(self.remember_session_repository.get(recent.uuid))
+        self.assertIsNotNone(self.remember_session_repository.get(active.uuid))
+
+    def test_delete_inactive_before_removes_expired_sessions(self) -> None:
+        user = self.create_user()
+        expired = self.remember_session_repository.create(user.uuid, b"e" * 32, 30, 40)
+        active = self.remember_session_repository.create(user.uuid, b"a" * 32, 30, 100)
+
+        self.assertEqual(self.remember_session_repository.delete_inactive_before(40), 1)
+        self.assertIsNone(self.remember_session_repository.get(expired.uuid))
+        self.assertIsNotNone(self.remember_session_repository.get(active.uuid))
+
 
 if __name__ == "__main__":
     import unittest

@@ -28,11 +28,18 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
             "ledger_grant_revoked_idx",
             "recovery_code_user_idx",
             "recovery_code_revoked_idx",
+            "recovery_code_used_idx",
             "auth_session_user_idx",
             "auth_session_revoked_idx",
+            "auth_session_expires_idx",
+            "auth_session_inactive_idx",
             "remember_session_user_idx",
             "remember_session_revoked_idx",
+            "remember_session_expires_idx",
             "user_invitation_revoked_idx",
+            "user_invitation_consumed_idx",
+            "user_invitation_expires_idx",
+            "mfa_method_unconfirmed_idx",
         }
         rows = self.connection.execute("SELECT name FROM sqlite_schema WHERE type = 'index' AND name NOT LIKE 'sqlite_autoindex_%'").fetchall()
 
@@ -55,6 +62,13 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
             ("DELETE FROM recovery_code WHERE revoked_at <= ?", (100,), "recovery_code_revoked_idx"),
             ("DELETE FROM auth_session WHERE revoked_at <= ?", (100,), "auth_session_revoked_idx"),
             ("DELETE FROM remember_session WHERE revoked_at <= ?", (100,), "remember_session_revoked_idx"),
+            ("DELETE FROM user_invitation WHERE consumed_at <= ?", (100,), "user_invitation_consumed_idx"),
+            ("DELETE FROM user_invitation WHERE expires_at <= ?", (100,), "user_invitation_expires_idx"),
+            ("DELETE FROM recovery_code WHERE used_at <= ?", (100,), "recovery_code_used_idx"),
+            ("DELETE FROM auth_session WHERE expires_at <= ?", (100,), "auth_session_expires_idx"),
+            ("DELETE FROM auth_session WHERE COALESCE(last_activity_at, created_at) + inactivity_timeout_seconds <= ?", (100,), "auth_session_inactive_idx"),
+            ("DELETE FROM remember_session WHERE expires_at <= ?", (100,), "remember_session_expires_idx"),
+            ("DELETE FROM mfa_method WHERE confirmed_at IS NULL AND created_at <= ?", (100,), "mfa_method_unconfirmed_idx"),
         )
         for query, parameters, index_name in queries:
             with self.subTest(index_name=index_name):

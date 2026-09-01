@@ -67,6 +67,29 @@ class SqliteRecoveryCodeRepositoryTest(RegistryRepositoryTestCase):
 
         self.assertCountEqual([code.uuid for code in self.recovery_code_repository.list_by_user(user.uuid)], [used.uuid, revoked.uuid, available.uuid])
 
+    def test_delete_inactive_before_removes_only_eligible_codes(self) -> None:
+        user = self.create_user()
+        old = self.recovery_code_repository.create(user.uuid, b"a" * 32, 30)
+        recent = self.recovery_code_repository.create(user.uuid, b"b" * 32, 30)
+        active = self.recovery_code_repository.create(user.uuid, b"c" * 32, 30)
+        self.recovery_code_repository.revoke(old.uuid, 40)
+        self.recovery_code_repository.revoke(recent.uuid, 41)
+
+        self.assertEqual(self.recovery_code_repository.delete_inactive_before(40), 1)
+        self.assertIsNone(self.recovery_code_repository.get(old.uuid))
+        self.assertIsNotNone(self.recovery_code_repository.get(recent.uuid))
+        self.assertIsNotNone(self.recovery_code_repository.get(active.uuid))
+
+    def test_delete_inactive_before_removes_used_codes(self) -> None:
+        user = self.create_user()
+        used = self.recovery_code_repository.create(user.uuid, b"u" * 32, 30)
+        active = self.recovery_code_repository.create(user.uuid, b"a" * 32, 30)
+        self.assertTrue(self.recovery_code_repository.consume(used.uuid, 40))
+
+        self.assertEqual(self.recovery_code_repository.delete_inactive_before(40), 1)
+        self.assertIsNone(self.recovery_code_repository.get(used.uuid))
+        self.assertIsNotNone(self.recovery_code_repository.get(active.uuid))
+
 
 if __name__ == "__main__":
     import unittest

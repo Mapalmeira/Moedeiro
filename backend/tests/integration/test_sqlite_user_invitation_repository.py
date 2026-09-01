@@ -54,6 +54,29 @@ class SqliteUserInvitationRepositoryTest(RegistryRepositoryTestCase):
 
         self.assertCountEqual([invitation.uuid for invitation in invitations], [consumed.uuid, revoked.uuid, active.uuid])
 
+    def test_delete_inactive_before_removes_only_eligible_invitations(self) -> None:
+        old = self.create_invitation(b"a" * 32)
+        recent = self.create_invitation(b"b" * 32)
+        active = self.create_invitation(b"c" * 32)
+        self.invitation_repository.revoke(old.uuid, 40)
+        self.invitation_repository.revoke(recent.uuid, 41)
+
+        self.assertEqual(self.invitation_repository.delete_inactive_before(40), 1)
+        self.assertIsNone(self.invitation_repository.get(old.uuid))
+        self.assertIsNotNone(self.invitation_repository.get(recent.uuid))
+        self.assertIsNotNone(self.invitation_repository.get(active.uuid))
+
+    def test_delete_inactive_before_removes_expired_and_consumed_invitations(self) -> None:
+        expired = self.invitation_repository.create(b"e" * 32, 10, 40)
+        consumed = self.invitation_repository.create(b"c" * 32, 10, 100)
+        active = self.invitation_repository.create(b"a" * 32, 10, 100)
+        self.assertTrue(self.invitation_repository.consume(consumed.uuid, 40))
+
+        self.assertEqual(self.invitation_repository.delete_inactive_before(40), 2)
+        self.assertIsNone(self.invitation_repository.get(expired.uuid))
+        self.assertIsNone(self.invitation_repository.get(consumed.uuid))
+        self.assertIsNotNone(self.invitation_repository.get(active.uuid))
+
     def test_secret_hash_is_unique(self) -> None:
         self.create_invitation(b"s" * 32)
 

@@ -67,6 +67,30 @@ class SqliteAuthSessionRepositoryTest(RegistryRepositoryTestCase):
         self.assertEqual(stored_second.revoked_at, 50)
         self.assertIsNone(stored_other.revoked_at)
 
+    def test_delete_inactive_before_removes_only_eligible_sessions(self) -> None:
+        user = self.create_user()
+        old = self.session_repository.create(user.uuid, b"a" * 32, 30, 100, 100)
+        recent = self.session_repository.create(user.uuid, b"b" * 32, 30, 100, 100)
+        active = self.session_repository.create(user.uuid, b"c" * 32, 30, 100, 100)
+        self.session_repository.revoke(old.uuid, 40)
+        self.session_repository.revoke(recent.uuid, 41)
+
+        self.assertEqual(self.session_repository.delete_inactive_before(40), 1)
+        self.assertIsNone(self.session_repository.get(old.uuid))
+        self.assertIsNotNone(self.session_repository.get(recent.uuid))
+        self.assertIsNotNone(self.session_repository.get(active.uuid))
+
+    def test_delete_inactive_before_removes_expired_and_inactive_sessions(self) -> None:
+        user = self.create_user()
+        expired = self.session_repository.create(user.uuid, b"e" * 32, 30, 40, 100)
+        inactive = self.session_repository.create(user.uuid, b"i" * 32, 30, 100, 10)
+        active = self.session_repository.create(user.uuid, b"a" * 32, 30, 100, 100)
+
+        self.assertEqual(self.session_repository.delete_inactive_before(40), 2)
+        self.assertIsNone(self.session_repository.get(expired.uuid))
+        self.assertIsNone(self.session_repository.get(inactive.uuid))
+        self.assertIsNotNone(self.session_repository.get(active.uuid))
+
     def test_token_hash_is_unique(self) -> None:
         user = self.create_user()
         self.session_repository.create(user.uuid, b"t" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)

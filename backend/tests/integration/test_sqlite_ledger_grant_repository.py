@@ -65,6 +65,19 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
         self.assertCountEqual([grant.uuid for grant in self.grant_repository.list_by_user(first_user.uuid)], [first.uuid, second.uuid])
         self.assertCountEqual([grant.uuid for grant in self.grant_repository.list_by_ledger(first_ledger.uuid)], [first.uuid, third.uuid])
 
+    def test_delete_inactive_before_removes_only_eligible_grants(self) -> None:
+        user = self.create_user()
+        old = self.create_grant(user, self.create_ledger())
+        recent = self.create_grant(user, self.create_ledger())
+        active = self.create_grant(user, self.create_ledger())
+        self.grant_repository.revoke(old.uuid, 40)
+        self.grant_repository.revoke(recent.uuid, 41)
+
+        self.assertEqual(self.grant_repository.delete_inactive_before(40), 1)
+        self.assertIsNone(self.grant_repository.get(old.uuid))
+        self.assertIsNotNone(self.grant_repository.get(recent.uuid))
+        self.assertIsNotNone(self.grant_repository.get(active.uuid))
+
 
 if __name__ == "__main__":
     import unittest

@@ -29,6 +29,16 @@ class SqliteMfaMethodRepositoryTest(RegistryRepositoryTestCase):
         assert confirmed is not None
         self.assertEqual(confirmed.confirmed_at, 40)
 
+    def test_delete_unconfirmed_before_removes_only_pending_methods_at_the_cutoff(self) -> None:
+        old = self.mfa_repository.create(self.create_user().uuid, "TOTP", b"old", 40)
+        recent = self.mfa_repository.create(self.create_user().uuid, "TOTP", b"recent", 41)
+        confirmed = self.mfa_repository.create(self.create_user().uuid, "TOTP", b"confirmed", 30, 31)
+
+        self.assertEqual(self.mfa_repository.delete_unconfirmed_before(40), 1)
+        self.assertIsNone(self.mfa_repository.get(old.uuid))
+        self.assertIsNotNone(self.mfa_repository.get(recent.uuid))
+        self.assertIsNotNone(self.mfa_repository.get(confirmed.uuid))
+
     def test_create_requires_an_existing_user(self) -> None:
         with self.assertRaises(sqlite3.IntegrityError):
             self.mfa_repository.create(uuid4(), "TOTP", b"encrypted-secret", 30)
