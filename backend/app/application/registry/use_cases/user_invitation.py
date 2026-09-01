@@ -1,18 +1,16 @@
-import base64
 import hashlib
-import secrets
 from collections.abc import Callable
 from uuid import UUID
 
 from app.application.registry.unit_of_work import RegistryUnitOfWork
-from app.domain.registry.model.crockford_code import CROCKFORD_TRANSLATION
+from app.domain.registry.model.crockford_code import generate_crockford_code
 from app.domain.registry.model.user_invitation import DEFAULT_EXPIRATION_TIMEOUT_SECONDS, InvitationCode, UserInvitation
 
 
 def create_user_invitation(unit_of_work_factory: Callable[[], RegistryUnitOfWork], created_at: int, expiration_seconds: int = DEFAULT_EXPIRATION_TIMEOUT_SECONDS) -> InvitationCode:
     if expiration_seconds <= 0:
         raise ValueError("expiration_seconds must be positive")
-    code = base64.b32encode(secrets.token_bytes(10)).decode("ascii").translate(CROCKFORD_TRANSLATION)
+    code = generate_crockford_code()
     secret_hash = hashlib.sha256(code.encode("ascii")).digest()
     with unit_of_work_factory() as unit_of_work:
         unit_of_work.user_invitation_repository.create(secret_hash, created_at, created_at + expiration_seconds)

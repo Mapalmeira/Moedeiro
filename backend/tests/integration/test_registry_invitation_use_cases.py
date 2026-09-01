@@ -24,7 +24,7 @@ class RegistryInvitationUseCasesTest(unittest.TestCase):
     def open_registry(self) -> SqliteRegistryUnitOfWork:
         return SqliteRegistryUnitOfWork(self.database)
 
-    @patch("app.application.registry.use_cases.user_invitation.secrets.token_bytes", return_value=bytes(range(10)))
+    @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(10)))
     def test_create_generates_80_bit_crockford_code_and_persists_only_its_hash(self, token_bytes) -> None:
         code = create_user_invitation(self.open_registry, 100)
 
@@ -43,7 +43,7 @@ class RegistryInvitationUseCasesTest(unittest.TestCase):
                     create_user_invitation(self.open_registry, 100, expiration_seconds)
 
     def test_get_returns_only_an_invitation_active_at_the_timestamp(self) -> None:
-        with patch("app.application.registry.use_cases.user_invitation.secrets.token_bytes", return_value=b"a" * 10):
+        with patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=b"a" * 10):
             code = create_user_invitation(self.open_registry, 100, 100)
         with self.open_registry() as unit_of_work:
             invitation = unit_of_work.user_invitation_repository.get_by_secret_hash(hashlib.sha256(code.encode("ascii")).digest())

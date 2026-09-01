@@ -80,7 +80,7 @@ class PasswordUseCasesTest(unittest.TestCase):
         self.assertIsNone(auth_sessions[0].revoked_at)
         update_password.assert_called_once()
 
-    @patch("app.application.registry.use_cases.password.secrets.token_bytes", return_value=bytes(range(10)))
+    @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(10)))
     def test_create_recovery_code_returns_a_crockford_code_and_persists_only_its_hash(self, token_bytes) -> None:
         code = create_recovery_code(self.open_registry, self.user.uuid, 20)
 

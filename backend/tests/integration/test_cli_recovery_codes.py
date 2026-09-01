@@ -34,7 +34,7 @@ class RecoveryCodeCliTest(unittest.TestCase):
         self.temporary_directory.cleanup()
 
     @patch("app.cli.time.time", return_value=100)
-    @patch("app.application.registry.use_cases.password.secrets.token_bytes", return_value=bytes(range(10)))
+    @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(10)))
     def test_create_prints_a_relative_recovery_link_and_persists_the_code(self, token_bytes, current_time) -> None:
         output = StringIO()
 

@@ -1,6 +1,4 @@
-import base64
 import hashlib
-import secrets
 from collections.abc import Callable
 from uuid import UUID
 
@@ -9,7 +7,7 @@ from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.totp_authenticator import TotpAuthenticator
 from app.application.registry.unit_of_work import RegistryUnitOfWork
 from app.application.registry.use_cases.totp import verify_totp
-from app.domain.registry.model.crockford_code import CROCKFORD_TRANSLATION, CrockfordCode
+from app.domain.registry.model.crockford_code import CrockfordCode, generate_crockford_code
 from app.domain.registry.model.recovery_code import RecoveryCode
 from app.domain.registry.model.totp import TotpCode
 from app.domain.registry.model.user import Password, User
@@ -29,7 +27,7 @@ def change_password(unit_of_work_factory: Callable[[], RegistryUnitOfWork], pass
 
 
 def create_recovery_code(unit_of_work_factory: Callable[[], RegistryUnitOfWork], user_uuid: UUID, timestamp: int) -> CrockfordCode:
-    code = base64.b32encode(secrets.token_bytes(10)).decode("ascii").translate(CROCKFORD_TRANSLATION)
+    code = generate_crockford_code()
     with unit_of_work_factory() as unit_of_work:
         if unit_of_work.user_repository.get(user_uuid) is None:
             raise UserNotFoundError

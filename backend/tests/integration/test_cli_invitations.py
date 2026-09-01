@@ -30,7 +30,7 @@ class InvitationCliTest(unittest.TestCase):
         self.temporary_directory.cleanup()
 
     @patch("app.cli.time.time", return_value=100)
-    @patch("app.application.registry.use_cases.user_invitation.secrets.token_bytes", return_value=bytes(range(10)))
+    @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(10)))
     def test_create_prints_relative_registration_link_and_persists_one_hour_expiration(self, token_bytes, current_time) -> None:
         output = StringIO()
 
