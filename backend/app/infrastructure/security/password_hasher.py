@@ -1,7 +1,7 @@
 from argon2 import PasswordHasher as PasswordHasherImplementation
 from argon2.exceptions import VerificationError
 
-from app.application.services.password_hasher import PasswordHasher
+from app.application.registry.password_hasher import PasswordHasher
 
 
 class Argon2PasswordHasher(PasswordHasher):

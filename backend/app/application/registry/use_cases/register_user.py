@@ -2,8 +2,8 @@ from collections.abc import Callable
 from uuid import UUID
 
 from app.application.registry.exceptions import InvitationNotAvailableError, UserNameUnavailableError
+from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.unit_of_work import RegistryUnitOfWork
-from app.application.services.password_hasher import PasswordHasher
 from app.domain.registry.model.user import User, normalize_user_name
 
 

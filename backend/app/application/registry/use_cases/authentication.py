@@ -3,8 +3,8 @@ import secrets
 from collections.abc import Callable
 
 from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError
+from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.unit_of_work import RegistryUnitOfWork
-from app.application.services.password_hasher import PasswordHasher
 from app.domain.registry.model.auth_session import DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS
 from app.domain.registry.model.remember_session import DEFAULT_EXPIRATION_TIMEOUT_SECONDS
 from app.domain.registry.model.user import User, normalize_user_name
