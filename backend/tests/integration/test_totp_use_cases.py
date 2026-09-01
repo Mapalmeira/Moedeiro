@@ -2,12 +2,14 @@ import hashlib
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, InvalidTotpSetupError, TotpAlreadyEnabledError, TotpNotEnabledError
 from app.application.registry.use_cases.authentication import login
 from app.application.registry.use_cases.password import change_password
 from app.application.registry.use_cases.totp import RECOVERY_CODE_COUNT, disable_totp, enable_totp, start_totp_setup
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
+from app.infrastructure.persistence.sqlite.registry.repository.mfa_method import SqliteMfaMethodRepository
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
 from tests.fakes import FakePasswordHasher, FakeTotpAuthenticator
 
@@ -44,6 +46,7 @@ class TotpUseCasesTest(unittest.TestCase):
             stored_codes = unit_of_work.recovery_code_repository.list_by_user(self.user.uuid)
         assert method is not None
         self.assertEqual(method.secret_encrypted, b"FAKESECRET")
+        self.assertEqual(method.confirmed_at, 20)
         self.assertEqual(len(recovery_codes), RECOVERY_CODE_COUNT)
         self.assertEqual(len(set(recovery_codes)), RECOVERY_CODE_COUNT)
         self.assertEqual(len(stored_codes), RECOVERY_CODE_COUNT)
@@ -56,6 +59,20 @@ class TotpUseCasesTest(unittest.TestCase):
         self.enable()
         with self.assertRaises(TotpAlreadyEnabledError):
             start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 21)
+
+    def test_starting_again_replaces_a_pending_setup_without_enabling_totp(self) -> None:
+        start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
+        with self.open_registry() as unit_of_work:
+            first = unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid)
+        start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 21)
+        with self.open_registry() as unit_of_work:
+            second = unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid)
+        assert first is not None
+        assert second is not None
+        self.assertNotEqual(second.uuid, first.uuid)
+        self.assertIsNone(second.confirmed_at)
+        session_token, _ = login(self.open_registry, self.password_hasher, "Alice", "current password", False, 22, totp_authenticator=self.totp_authenticator)
+        self.assertIsInstance(session_token, str)
 
     def test_enable_rejects_missing_setups_and_invalid_codes_without_confirming_totp(self) -> None:
         with self.assertRaises(InvalidTotpSetupError):
@@ -70,6 +87,21 @@ class TotpUseCasesTest(unittest.TestCase):
             self.assertEqual(unit_of_work.recovery_code_repository.list_by_user(self.user.uuid), [])
         assert method is not None
         self.assertIsNone(method.confirmed_at)
+
+    @patch.object(SqliteMfaMethodRepository, "confirm", return_value=False)
+    def test_enable_leaves_a_pending_setup_when_confirmation_loses_its_compare_and_set(self, confirm) -> None:
+        start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
+
+        with self.assertRaises(InvalidTotpSetupError):
+            enable_totp(self.open_registry, self.totp_authenticator, self.user, "123456", 21)
+
+        with self.open_registry() as unit_of_work:
+            method = unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid)
+            recovery_codes = unit_of_work.recovery_code_repository.list_by_user(self.user.uuid)
+        assert method is not None
+        self.assertIsNone(method.confirmed_at)
+        self.assertEqual(recovery_codes, [])
+        confirm.assert_called_once()
 
     def test_login_and_password_change_require_totp_after_it_is_enabled(self) -> None:
         self.enable()

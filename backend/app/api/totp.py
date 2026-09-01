@@ -9,6 +9,8 @@ from app.application.registry.exceptions import InvalidCurrentPasswordError, Inv
 from app.application.registry.use_cases.totp import disable_totp, enable_totp, start_totp_setup
 from app.domain.registry.model.user import User
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
+from app.infrastructure.security.rate_limiter import RateLimitExceededError, RateLimiter
+from app.settings import Settings
 
 
 router = APIRouter(prefix="/api/totp", tags=["totp"])
@@ -16,6 +18,7 @@ router = APIRouter(prefix="/api/totp", tags=["totp"])
 
 @router.post("/setup", response_model=StartTotpSetupResponse)
 def start_setup(payload: StartTotpSetupRequest, request: Request, user: Annotated[User, Depends(require_authenticated_user)]) -> StartTotpSetupResponse:
+    _check_rate_limit(request, _settings(request).totp_setup_ip_rate_limit, "totp-setup-ip", _client_ip(request))
     semaphore = request.app.state.password_hash_semaphore
     if not semaphore.acquire(blocking=False):
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Password hashing capacity exhausted", headers={"Retry-After": "1"})
@@ -69,3 +72,22 @@ def disable(payload: DisableTotpRequest, request: Request, response: Response, u
 
 def _databases(request: Request) -> SqliteDatabases:
     return request.app.state.databases
+
+
+def _check_rate_limit(request: Request, rate: str, namespace: str, key: str) -> None:
+    try:
+        _rate_limiter(request).check(rate, namespace, key)
+    except RateLimitExceededError as error:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Rate limit exceeded", headers={"Retry-After": str(error.retry_after)}) from error
+
+
+def _client_ip(request: Request) -> str:
+    return "unknown" if request.client is None else request.client.host
+
+
+def _settings(request: Request) -> Settings:
+    return request.app.state.settings
+
+
+def _rate_limiter(request: Request) -> RateLimiter:
+    return request.app.state.rate_limiter

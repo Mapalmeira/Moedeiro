@@ -4,14 +4,14 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from app.application.registry.exceptions import InvalidCurrentPasswordError, RecoveryCodeNotAvailableError, UserNotFoundError
+from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, RecoveryCodeNotAvailableError, UserNotFoundError
 from app.application.registry.use_cases.password import change_password, create_recovery_code, get_available_recovery_code, reset_password
 from app.domain.registry.model.auth_session import DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS
 from app.domain.registry.model.remember_session import DEFAULT_EXPIRATION_TIMEOUT_SECONDS
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.repository.user import SqliteUserRepository
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
-from tests.fakes import FakePasswordHasher
+from tests.fakes import FakePasswordHasher, FakeTotpAuthenticator
 
 
 SCHEMA_PATH = Path(__file__).resolve().parents[2] / "app/infrastructure/persistence/sqlite/registry/schema/registry_schema.sql"
@@ -22,6 +22,7 @@ class PasswordUseCasesTest(unittest.TestCase):
         self.temporary_directory = TemporaryDirectory()
         self.database = SqliteDatabase.initialize(Path(self.temporary_directory.name) / "registry.sqlite", SCHEMA_PATH)
         self.password_hasher = FakePasswordHasher()
+        self.totp_authenticator = FakeTotpAuthenticator()
         with self.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", self.password_hasher.hash("current password"), 10)
             unit_of_work.commit()
@@ -66,6 +67,22 @@ class PasswordUseCasesTest(unittest.TestCase):
         assert user is not None
         self.assertEqual(user.password_hash, "$argon2id$test$current password")
         self.assertEqual(self.password_hasher.passwords, [])
+        self.assertIsNone(auth_sessions[0].revoked_at)
+
+    def test_change_password_requires_totp_without_mutating_the_account(self) -> None:
+        with self.open_registry() as unit_of_work:
+            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 10)
+            unit_of_work.commit()
+        self.create_sessions()
+
+        with self.assertRaises(InvalidTotpCodeError):
+            change_password(self.open_registry, self.password_hasher, self.user, "current password", "replacement password", 20, self.totp_authenticator, "000000")
+
+        with self.open_registry() as unit_of_work:
+            user = unit_of_work.user_repository.get(self.user.uuid)
+            auth_sessions = unit_of_work.auth_session_repository.list_by_user(self.user.uuid)
+        assert user is not None
+        self.assertEqual(user.password_hash, "$argon2id$test$current password")
         self.assertIsNone(auth_sessions[0].revoked_at)
 
     @patch.object(SqliteUserRepository, "update_password", return_value=False)
