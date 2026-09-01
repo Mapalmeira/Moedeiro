@@ -3,6 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
+from uuid import uuid4
 
 from app.application.registry.exceptions import InvitationNotAvailableError, UserNameUnavailableError
 from app.application.registry.use_cases.register_user import register_user
@@ -29,17 +30,17 @@ class RegisterUserUseCaseTest(unittest.TestCase):
     def open_registry(self) -> SqliteRegistryUnitOfWork:
         return SqliteRegistryUnitOfWork(self.database)
 
-    def create_invitation(self):
-        return create_user_invitation(self.open_registry, 100, 100)
-
-    def get_invitation(self, code: str) -> UserInvitation | None:
+    def create_invitation(self) -> UserInvitation:
+        code = create_user_invitation(self.open_registry, 100, 100)
         with self.open_registry() as unit_of_work:
-            return unit_of_work.user_invitation_repository.get_by_secret_hash(hashlib.sha256(code.encode("ascii")).digest())
+            invitation = unit_of_work.user_invitation_repository.get_by_secret_hash(hashlib.sha256(code.encode("ascii")).digest())
+        assert invitation is not None
+        return invitation
 
     def test_register_consumes_invitation_and_creates_user(self) -> None:
-        code = self.create_invitation()
+        invitation = self.create_invitation()
 
-        user = register_user(self.open_registry, self.password_hasher, code, "Alice", "correct horse battery", 150)
+        user = register_user(self.open_registry, self.password_hasher, invitation.uuid, "Alice", "correct horse battery", 150)
 
         self.assertEqual(user.name, "Alice")
         self.assertEqual(user.normalized_name, "alice")
@@ -48,78 +49,74 @@ class RegisterUserUseCaseTest(unittest.TestCase):
         self.assertEqual(user.password_changed_at, 150)
         self.assertEqual(self.password_hasher.passwords, ["correct horse battery"])
         with self.open_registry() as unit_of_work:
-            invitation = unit_of_work.user_invitation_repository.get_by_secret_hash(hashlib.sha256(code.encode("ascii")).digest())
+            stored_invitation = unit_of_work.user_invitation_repository.get(invitation.uuid)
             sessions = unit_of_work.auth_session_repository.list_by_user(user.uuid)
-        assert invitation is not None
-        self.assertEqual(invitation.consumed_at, 150)
+        assert stored_invitation is not None
+        self.assertEqual(stored_invitation.consumed_at, 150)
         self.assertEqual(sessions, [])
 
     def test_consume_rejects_an_invalid_invitation(self) -> None:
         with self.assertRaises(InvitationNotAvailableError):
-            register_user(self.open_registry, self.password_hasher, "0" * 16, "Alice", "correct horse battery", 150)
+            register_user(self.open_registry, self.password_hasher, uuid4(), "Alice", "correct horse battery", 150)
 
         self.assertEqual(self.password_hasher.passwords, ["correct horse battery"])
 
     def test_consume_rejects_invitation_before_creation_and_at_expiration(self) -> None:
-        code = self.create_invitation()
+        invitation = self.create_invitation()
 
         for timestamp in (99, 200):
             with self.subTest(timestamp=timestamp):
                 with self.assertRaises(InvitationNotAvailableError):
-                    register_user(self.open_registry, self.password_hasher, code, f"Alice {timestamp}", "correct horse battery", timestamp)
+                    register_user(self.open_registry, self.password_hasher, invitation.uuid, f"Alice {timestamp}", "correct horse battery", timestamp)
 
-        invitation = self.get_invitation(code)
-        assert invitation is not None
-        self.assertIsNone(invitation.consumed_at)
         with self.open_registry() as unit_of_work:
+            stored_invitation = unit_of_work.user_invitation_repository.get(invitation.uuid)
             self.assertEqual(unit_of_work.user_repository.list_all(), [])
+        assert stored_invitation is not None
+        self.assertIsNone(stored_invitation.consumed_at)
 
     def test_consume_rejects_a_revoked_invitation(self) -> None:
-        code = self.create_invitation()
-        invitation = self.get_invitation(code)
-        assert invitation is not None
+        invitation = self.create_invitation()
         self.assertTrue(revoke_user_invitation(self.open_registry, invitation.uuid, 120))
 
         with self.assertRaises(InvitationNotAvailableError):
-            register_user(self.open_registry, self.password_hasher, code, "Alice", "correct horse battery", 150)
+            register_user(self.open_registry, self.password_hasher, invitation.uuid, "Alice", "correct horse battery", 150)
 
         with self.open_registry() as unit_of_work:
             self.assertEqual(unit_of_work.user_repository.list_all(), [])
 
     def test_consumed_invitation_cannot_create_a_second_user(self) -> None:
-        code = self.create_invitation()
-        register_user(self.open_registry, self.password_hasher, code, "Alice", "correct horse battery", 150)
+        invitation = self.create_invitation()
+        register_user(self.open_registry, self.password_hasher, invitation.uuid, "Alice", "correct horse battery", 150)
 
         with self.assertRaises(InvitationNotAvailableError):
-            register_user(self.open_registry, self.password_hasher, code, "Bob", "another valid password", 160)
+            register_user(self.open_registry, self.password_hasher, invitation.uuid, "Bob", "another valid password", 160)
 
         with self.open_registry() as unit_of_work:
             users = unit_of_work.user_repository.list_all()
         self.assertEqual([user.name for user in users], ["Alice"])
 
     def test_password_hashing_failure_does_not_consume_invitation(self) -> None:
-        code = self.create_invitation()
+        invitation = self.create_invitation()
 
         with patch.object(self.password_hasher, "hash", side_effect=RuntimeError("hashing failed")):
             with self.assertRaisesRegex(RuntimeError, "hashing failed"):
-                register_user(self.open_registry, self.password_hasher, code, "Alice", "correct horse battery", 150)
+                register_user(self.open_registry, self.password_hasher, invitation.uuid, "Alice", "correct horse battery", 150)
 
-        invitation = self.get_invitation(code)
-        assert invitation is not None
-        self.assertIsNone(invitation.consumed_at)
         with self.open_registry() as unit_of_work:
+            stored_invitation = unit_of_work.user_invitation_repository.get(invitation.uuid)
             self.assertEqual(unit_of_work.user_repository.list_all(), [])
+        assert stored_invitation is not None
+        self.assertIsNone(stored_invitation.consumed_at)
 
     def test_existing_name_does_not_consume_invitation(self) -> None:
-        first_code = self.create_invitation()
-        register_user(self.open_registry, self.password_hasher, first_code, "Alice", "correct horse battery", 150)
-        second_code = self.create_invitation()
-        second_invitation = self.get_invitation(second_code)
-        assert second_invitation is not None
+        first_invitation = self.create_invitation()
+        register_user(self.open_registry, self.password_hasher, first_invitation.uuid, "Alice", "correct horse battery", 150)
+        second_invitation = self.create_invitation()
         self.password_hasher.passwords.clear()
 
         with self.assertRaises(UserNameUnavailableError):
-            register_user(self.open_registry, self.password_hasher, second_code, "  ＡLICE  ", "another valid password", 150)
+            register_user(self.open_registry, self.password_hasher, second_invitation.uuid, "  ＡLICE  ", "another valid password", 150)
 
         self.assertEqual(self.password_hasher.passwords, ["another valid password"])
         with self.open_registry() as unit_of_work:
@@ -129,12 +126,10 @@ class RegisterUserUseCaseTest(unittest.TestCase):
 
     @patch.object(SqliteUserRepository, "create", side_effect=RuntimeError("creation failed"))
     def test_user_creation_failure_rolls_back_invitation_consumption(self, create) -> None:
-        code = self.create_invitation()
-        invitation = self.get_invitation(code)
-        assert invitation is not None
+        invitation = self.create_invitation()
 
         with self.assertRaisesRegex(RuntimeError, "creation failed"):
-            register_user(self.open_registry, self.password_hasher, code, "Alice", "another valid password", 150)
+            register_user(self.open_registry, self.password_hasher, invitation.uuid, "Alice", "another valid password", 150)
 
         with self.open_registry() as unit_of_work:
             stored_invitation = unit_of_work.user_invitation_repository.get(invitation.uuid)
