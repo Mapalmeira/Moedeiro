@@ -23,6 +23,10 @@ class SqliteMfaMethodRepository(MfaMethodRepository):
         row = self.connection.execute(f"SELECT {self._columns} FROM mfa_method WHERE uuid = ?", (uuid.bytes,)).fetchone()
         return None if row is None else self._to_model(row)
 
+    def get_totp_by_user(self, user_uuid: UUID) -> MfaMethod | None:
+        row = self.connection.execute(f"SELECT {self._columns} FROM mfa_method WHERE user_uuid = ? AND type = 'TOTP'", (user_uuid.bytes,)).fetchone()
+        return None if row is None else self._to_model(row)
+
     def delete(self, uuid: UUID) -> None:
         self.connection.execute("DELETE FROM mfa_method WHERE uuid = ?", (uuid.bytes,))
 

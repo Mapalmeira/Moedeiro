@@ -14,6 +14,10 @@ class MfaMethodRepository(ABC):
         pass
 
     @abstractmethod
+    def get_totp_by_user(self, user_uuid: UUID) -> MfaMethod | None:
+        pass
+
+    @abstractmethod
     def delete(self, uuid: UUID) -> None:
         pass
 
