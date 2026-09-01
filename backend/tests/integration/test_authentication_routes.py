@@ -8,7 +8,7 @@ from app.api.authentication import login_user, logout_user, refresh, validate_se
 from app.api.schema.authentication import LoginRequest
 from app.factory import create_app
 from app.settings import Settings
-from tests.fakes import FakePasswordHasher, FakeRateLimiter
+from tests.fakes import FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -30,7 +30,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
         )
         self.password_hasher = FakePasswordHasher()
         self.rate_limiter = FakeRateLimiter()
-        self.application = create_app(settings, self.password_hasher, self.rate_limiter)
+        self.application = create_app(settings, self.password_hasher, self.rate_limiter, FakeTotpAuthenticator())
         with self.application.state.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", self.password_hasher.hash("correct password"), 10)
             unit_of_work.commit()
