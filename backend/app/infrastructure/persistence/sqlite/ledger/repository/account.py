@@ -1,6 +1,7 @@
 import sqlite3
 from uuid import UUID, uuid4
 
+from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.account import Account
 from app.domain.ledger.repository.account import AccountRepository
 
@@ -14,7 +15,7 @@ class SqliteAccountRepository(AccountRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, name: str, note: str | None, currency_uuid: UUID, icon: str, color_code: bytes) -> Account:
+    def create(self, name: str, note: str | None, currency_uuid: UUID, icon: Icon, color_code: RgbColorCode) -> Account:
         account = Account(uuid=uuid4(), name=name, note=note, currency_uuid=currency_uuid, icon=icon, color_code=color_code)
         self.connection.execute(
             "INSERT INTO account(uuid, account_name, note, currency_uuid, icon, color_code) VALUES (?, ?, ?, ?, ?, ?)",
@@ -49,7 +50,7 @@ class SqliteAccountRepository(AccountRepository):
             (account.note, account.uuid.bytes),
         )
 
-    def update_icon(self, uuid: UUID, value: str) -> None:
+    def update_icon(self, uuid: UUID, value: Icon) -> None:
         account = self._updated_model(uuid, icon=value)
         if account is None:
             return
@@ -58,7 +59,7 @@ class SqliteAccountRepository(AccountRepository):
             (account.icon, account.uuid.bytes),
         )
 
-    def update_color_code(self, uuid: UUID, value: bytes) -> None:
+    def update_color_code(self, uuid: UUID, value: RgbColorCode) -> None:
         account = self._updated_model(uuid, color_code=value)
         if account is None:
             return

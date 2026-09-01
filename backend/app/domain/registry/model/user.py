@@ -2,15 +2,22 @@ from typing import Annotated, Self
 from unicodedata import normalize
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
-
-
-UserName = Annotated[str, Field(min_length=1, max_length=50)]
-NormalizedUserName = Annotated[str, Field(min_length=1)]
+from pydantic import AfterValidator, BaseModel, Field, model_validator
 
 
 def normalize_user_name(value: str) -> str:
     return normalize("NFKC", value.strip()).casefold()
+
+
+def validate_user_name(value: str) -> str:
+    if not normalize_user_name(value):
+        raise ValueError("name must contain a non-whitespace character")
+    return value
+
+
+UserName = Annotated[str, Field(min_length=1, max_length=50), AfterValidator(validate_user_name)]
+NormalizedUserName = Annotated[str, Field(min_length=1)]
+Password = Annotated[str, Field(min_length=12, max_length=128)]
 
 
 class User(BaseModel):

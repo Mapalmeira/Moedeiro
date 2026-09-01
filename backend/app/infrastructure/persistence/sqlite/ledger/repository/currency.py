@@ -1,6 +1,7 @@
 import sqlite3
 from uuid import UUID, uuid4
 
+from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.currency import Currency
 from app.domain.ledger.repository.currency import CurrencyRepository
 
@@ -16,7 +17,7 @@ class SqliteCurrencyRepository(CurrencyRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, name: str, prefix: str | None, suffix: str | None, decimal_places: int, icon: str, color_code: bytes) -> Currency:
+    def create(self, name: str, prefix: str | None, suffix: str | None, decimal_places: int, icon: Icon, color_code: RgbColorCode) -> Currency:
         currency = Currency(uuid=uuid4(), name=name, prefix=prefix, suffix=suffix, decimal_places=decimal_places, icon=icon, color_code=color_code)
         self.connection.execute(
             "INSERT INTO currency(uuid, currency_name, prefix, suffix, decimal_places, icon, color_code) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -60,7 +61,7 @@ class SqliteCurrencyRepository(CurrencyRepository):
             (currency.suffix, currency.uuid.bytes),
         )
 
-    def update_icon(self, uuid: UUID, value: str) -> None:
+    def update_icon(self, uuid: UUID, value: Icon) -> None:
         currency = self._updated_model(uuid, icon=value)
         if currency is None:
             return
@@ -69,7 +70,7 @@ class SqliteCurrencyRepository(CurrencyRepository):
             (currency.icon, currency.uuid.bytes),
         )
 
-    def update_color_code(self, uuid: UUID, value: bytes) -> None:
+    def update_color_code(self, uuid: UUID, value: RgbColorCode) -> None:
         currency = self._updated_model(uuid, color_code=value)
         if currency is None:
             return

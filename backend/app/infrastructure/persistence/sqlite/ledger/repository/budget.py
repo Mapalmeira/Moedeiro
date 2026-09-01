@@ -1,6 +1,7 @@
 import sqlite3
 from uuid import UUID, uuid4
 
+from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.account import Account
 from app.domain.ledger.model.budget import Budget
 from app.domain.ledger.repository.budget import BudgetRepository
@@ -18,7 +19,7 @@ class SqliteBudgetRepository(BudgetRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, category_uuid: UUID, currency_uuid: UUID, from_timestamp: int, to_timestamp: int, name: str, description: str, amount: int, icon: str, color_code: bytes) -> Budget:
+    def create(self, category_uuid: UUID, currency_uuid: UUID, from_timestamp: int, to_timestamp: int, name: str, description: str, amount: int, icon: Icon, color_code: RgbColorCode) -> Budget:
         budget = Budget(
             uuid=uuid4(),
             category_uuid=category_uuid,
@@ -109,7 +110,7 @@ class SqliteBudgetRepository(BudgetRepository):
             (budget.category_uuid.bytes, budget.uuid.bytes),
         )
 
-    def update_icon(self, uuid: UUID, value: str) -> None:
+    def update_icon(self, uuid: UUID, value: Icon) -> None:
         budget = self._updated_model(uuid, icon=value)
         if budget is None:
             return
@@ -118,7 +119,7 @@ class SqliteBudgetRepository(BudgetRepository):
             (budget.icon, budget.uuid.bytes),
         )
 
-    def update_color_code(self, uuid: UUID, value: bytes) -> None:
+    def update_color_code(self, uuid: UUID, value: RgbColorCode) -> None:
         budget = self._updated_model(uuid, color_code=value)
         if budget is None:
             return

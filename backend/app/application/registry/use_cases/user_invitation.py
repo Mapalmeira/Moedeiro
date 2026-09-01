@@ -5,12 +5,12 @@ from collections.abc import Callable
 from uuid import UUID
 
 from app.application.registry.unit_of_work import RegistryUnitOfWork
-from app.domain.registry.model.user_invitation import DEFAULT_EXPIRATION_TIMEOUT_SECONDS, UserInvitation
+from app.domain.registry.model.user_invitation import DEFAULT_EXPIRATION_TIMEOUT_SECONDS, InvitationCode, UserInvitation
 
 
 _CROCKFORD_TRANSLATION = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", "0123456789ABCDEFGHJKMNPQRSTVWXYZ")
 
-def create_user_invitation(unit_of_work_factory: Callable[[], RegistryUnitOfWork], created_at: int, expiration_seconds: int = DEFAULT_EXPIRATION_TIMEOUT_SECONDS) -> str:
+def create_user_invitation(unit_of_work_factory: Callable[[], RegistryUnitOfWork], created_at: int, expiration_seconds: int = DEFAULT_EXPIRATION_TIMEOUT_SECONDS) -> InvitationCode:
     if expiration_seconds <= 0:
         raise ValueError("expiration_seconds must be positive")
     code = base64.b32encode(secrets.token_bytes(10)).decode("ascii").translate(_CROCKFORD_TRANSLATION)
@@ -21,7 +21,7 @@ def create_user_invitation(unit_of_work_factory: Callable[[], RegistryUnitOfWork
     return code
 
 
-def get_available_user_invitation(unit_of_work_factory: Callable[[], RegistryUnitOfWork], code: str, timestamp: int) -> UserInvitation | None:
+def get_available_user_invitation(unit_of_work_factory: Callable[[], RegistryUnitOfWork], code: InvitationCode, timestamp: int) -> UserInvitation | None:
     secret_hash = hashlib.sha256(code.encode("ascii")).digest()
     with unit_of_work_factory() as unit_of_work:
         invitation = unit_of_work.user_invitation_repository.get_by_secret_hash(secret_hash)

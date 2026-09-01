@@ -15,7 +15,7 @@ class SqliteUserRepository(UserRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, name: str, password_hash: str, created_at: int) -> User:
+    def create(self, name: UserName, password_hash: str, created_at: int) -> User:
         user = User(uuid=uuid4(), name=name, normalized_name=normalize_user_name(name), password_hash=password_hash, created_at=created_at, password_changed_at=created_at)
         self.connection.execute(
             "INSERT INTO user_account(uuid, name, normalized_name, password_hash, created_at, password_changed_at) VALUES (?, ?, ?, ?, ?, ?)",
@@ -27,12 +27,12 @@ class SqliteUserRepository(UserRepository):
         row = self.connection.execute(f"SELECT {self._columns} FROM user_account WHERE uuid = ?", (uuid.bytes,)).fetchone()
         return None if row is None else self._to_model(row)
 
-    def get_by_normalized_name(self, normalized_name: str) -> User | None:
+    def get_by_normalized_name(self, normalized_name: NormalizedUserName) -> User | None:
         value = self._normalized_name_adapter.validate_python(normalized_name)
         row = self.connection.execute(f"SELECT {self._columns} FROM user_account WHERE normalized_name = ?", (value,)).fetchone()
         return None if row is None else self._to_model(row)
 
-    def update_name(self, uuid: UUID, value: str) -> None:
+    def update_name(self, uuid: UUID, value: UserName) -> None:
         name = self._name_adapter.validate_python(value)
         normalized_name = self._normalized_name_adapter.validate_python(normalize_user_name(name))
         self.connection.execute("UPDATE user_account SET name = ?, normalized_name = ? WHERE uuid = ?", (name, normalized_name, uuid.bytes))

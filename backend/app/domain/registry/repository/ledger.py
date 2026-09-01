@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.registry.model.ledger import Ledger
+from app.domain.appearance import Icon, RgbColorCode
+from app.domain.registry.model.ledger import Ledger, LedgerName
 
 
 class LedgerRepository(ABC):
     @abstractmethod
-    def create(self, name: str, path: str, icon: str, color_code: bytes) -> Ledger:
+    def create(self, name: LedgerName, path: str, icon: Icon, color_code: RgbColorCode) -> Ledger:
         pass
 
     @abstractmethod
@@ -22,15 +23,15 @@ class LedgerRepository(ABC):
         pass
 
     @abstractmethod
-    def update_name(self, uuid: UUID, value: str) -> None:
+    def update_name(self, uuid: UUID, value: LedgerName) -> None:
         pass
 
     @abstractmethod
-    def update_icon(self, uuid: UUID, value: str) -> None:
+    def update_icon(self, uuid: UUID, value: Icon) -> None:
         pass
 
     @abstractmethod
-    def update_color_code(self, uuid: UUID, value: bytes) -> None:
+    def update_color_code(self, uuid: UUID, value: RgbColorCode) -> None:
         pass
 
     @abstractmethod

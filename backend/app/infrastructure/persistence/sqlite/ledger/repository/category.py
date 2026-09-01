@@ -18,7 +18,7 @@ class SqliteCategoryRepository(CategoryRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, name: str, icon: str, color_code: bytes, parent_uuid: UUID | None) -> Category:
+    def create(self, name: CategoryName, icon: Icon, color_code: RgbColorCode, parent_uuid: UUID | None) -> Category:
         category = Category(uuid=uuid4(), name=name, icon=icon, color_code=color_code, parent_uuid=parent_uuid)
         self.connection.execute(
             "INSERT INTO category(uuid, category_name, icon, color_code, parent_uuid) VALUES (?, ?, ?, ?, ?)",
@@ -35,21 +35,21 @@ class SqliteCategoryRepository(CategoryRepository):
             return None
         return self._to_model(row)
 
-    def update_name(self, uuid: UUID, value: str) -> None:
+    def update_name(self, uuid: UUID, value: CategoryName) -> None:
         name = self._name_adapter.validate_python(value)
         self.connection.execute(
             "UPDATE category SET category_name = ? WHERE uuid = ?",
             (name, uuid.bytes),
         )
 
-    def update_icon(self, uuid: UUID, value: str) -> None:
+    def update_icon(self, uuid: UUID, value: Icon) -> None:
         icon = self._icon_adapter.validate_python(value)
         self.connection.execute(
             "UPDATE category SET icon = ? WHERE uuid = ?",
             (icon, uuid.bytes),
         )
 
-    def update_color_code(self, uuid: UUID, value: bytes) -> None:
+    def update_color_code(self, uuid: UUID, value: RgbColorCode) -> None:
         color_code = self._color_code_adapter.validate_python(value)
         self.connection.execute(
             "UPDATE category SET color_code = ? WHERE uuid = ?",

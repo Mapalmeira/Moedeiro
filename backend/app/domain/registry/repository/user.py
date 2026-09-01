@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.registry.model.user import User
+from app.domain.registry.model.user import NormalizedUserName, User, UserName
 
 
 class UserRepository(ABC):
     @abstractmethod
-    def create(self, name: str, password_hash: str, created_at: int) -> User:
+    def create(self, name: UserName, password_hash: str, created_at: int) -> User:
         pass
 
     @abstractmethod
@@ -14,11 +14,11 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
-    def get_by_normalized_name(self, normalized_name: str) -> User | None:
+    def get_by_normalized_name(self, normalized_name: NormalizedUserName) -> User | None:
         pass
 
     @abstractmethod
-    def update_name(self, uuid: UUID, value: str) -> None:
+    def update_name(self, uuid: UUID, value: UserName) -> None:
         pass
 
     @abstractmethod

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
+from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.account import Account
 from app.domain.ledger.model.budget import Budget
 
@@ -16,8 +17,8 @@ class BudgetRepository(ABC):
         name: str,
         description: str,
         amount: int,
-        icon: str,
-        color_code: bytes,
+        icon: Icon,
+        color_code: RgbColorCode,
     ) -> Budget:
         pass
 
@@ -51,11 +52,11 @@ class BudgetRepository(ABC):
         pass
 
     @abstractmethod
-    def update_icon(self, uuid: UUID, value: str) -> None:
+    def update_icon(self, uuid: UUID, value: Icon) -> None:
         pass
 
     @abstractmethod
-    def update_color_code(self, uuid: UUID, value: bytes) -> None:
+    def update_color_code(self, uuid: UUID, value: RgbColorCode) -> None:
         pass
 
     @abstractmethod

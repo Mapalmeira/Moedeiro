@@ -1,10 +1,11 @@
-from typing import Self
+from typing import Annotated, Self
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
 
 
 DEFAULT_EXPIRATION_TIMEOUT_SECONDS = 60 * 60
+InvitationCode = Annotated[str, Field(min_length=16, max_length=16, pattern=r"^[0-9ABCDEFGHJKMNPQRSTVWXYZ]{16}$")]
 
 
 class UserInvitation(BaseModel):

@@ -16,7 +16,7 @@ class SqliteLedgerRepository(LedgerRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, name: str, path: str, icon: str, color_code: bytes) -> Ledger:
+    def create(self, name: LedgerName, path: str, icon: Icon, color_code: RgbColorCode) -> Ledger:
         ledger = Ledger(uuid=uuid4(), name=name, path=path, icon=icon, color_code=color_code)
         self.connection.execute(
             "INSERT INTO ledger(uuid, name, path, icon, color_code) VALUES (?, ?, ?, ?, ?)",
@@ -48,21 +48,21 @@ class SqliteLedgerRepository(LedgerRepository):
             (value, uuid.bytes),
         )
 
-    def update_name(self, uuid: UUID, value: str) -> None:
+    def update_name(self, uuid: UUID, value: LedgerName) -> None:
         name = self._name_adapter.validate_python(value)
         self.connection.execute(
             "UPDATE ledger SET name = ? WHERE uuid = ?",
             (name, uuid.bytes),
         )
 
-    def update_icon(self, uuid: UUID, value: str) -> None:
+    def update_icon(self, uuid: UUID, value: Icon) -> None:
         icon = self._icon_adapter.validate_python(value)
         self.connection.execute(
             "UPDATE ledger SET icon = ? WHERE uuid = ?",
             (icon, uuid.bytes),
         )
 
-    def update_color_code(self, uuid: UUID, value: bytes) -> None:
+    def update_color_code(self, uuid: UUID, value: RgbColorCode) -> None:
         color_code = self._color_code_adapter.validate_python(value)
         self.connection.execute(
             "UPDATE ledger SET color_code = ? WHERE uuid = ?",

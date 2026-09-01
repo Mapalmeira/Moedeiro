@@ -7,14 +7,14 @@ from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.unit_of_work import RegistryUnitOfWork
 from app.domain.registry.model.auth_session import DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS
 from app.domain.registry.model.remember_session import DEFAULT_EXPIRATION_TIMEOUT_SECONDS
-from app.domain.registry.model.user import User, normalize_user_name
+from app.domain.registry.model.user import Password, User, UserName, normalize_user_name
 
 
 def login(
     unit_of_work_factory: Callable[[], RegistryUnitOfWork],
     password_hasher: PasswordHasher,
-    name: str,
-    password: str,
+    name: UserName,
+    password: Password,
     remember: bool,
     timestamp: int,
     current_session_token: str | None = None,
@@ -104,4 +104,4 @@ def _revoke_presented_sessions(unit_of_work: RegistryUnitOfWork, session_token: 
 
 
 def _token_hash(token: str) -> bytes:
-    return hashlib.sha256(token.encode("ascii")).digest()
+    return hashlib.sha256(token.encode()).digest()
