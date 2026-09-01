@@ -12,3 +12,15 @@ class InvalidCredentialsError(Exception):
 
 class InvalidSessionError(Exception):
     pass
+
+
+class InvalidCurrentPasswordError(Exception):
+    pass
+
+
+class RecoveryCodeNotAvailableError(Exception):
+    pass
+
+
+class UserNotFoundError(Exception):
+    pass
