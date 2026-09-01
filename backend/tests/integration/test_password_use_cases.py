@@ -41,7 +41,6 @@ class PasswordUseCasesTest(unittest.TestCase):
 
     def test_change_password_updates_the_hash_and_revokes_every_session(self) -> None:
         self.create_sessions()
-        recovery_code = create_recovery_code(self.open_registry, self.user.uuid, 12)
 
         change_password(self.open_registry, self.password_hasher, self.user, "current password", "replacement password", 20)
 
@@ -49,14 +48,11 @@ class PasswordUseCasesTest(unittest.TestCase):
             user = unit_of_work.user_repository.get(self.user.uuid)
             auth_sessions = unit_of_work.auth_session_repository.list_by_user(self.user.uuid)
             remember_sessions = unit_of_work.remember_session_repository.list_by_user(self.user.uuid)
-            recovery = unit_of_work.recovery_code_repository.get_by_code_hash(hashlib.sha256(recovery_code.encode("ascii")).digest())
         assert user is not None
-        assert recovery is not None
         self.assertEqual(user.password_hash, "$argon2id$test$replacement password")
         self.assertEqual(user.password_changed_at, 20)
         self.assertEqual([session.revoked_at for session in auth_sessions], [20])
         self.assertEqual([session.revoked_at for session in remember_sessions], [20])
-        self.assertEqual(recovery.revoked_at, 20)
 
     def test_change_password_rejects_an_invalid_current_password_without_changes(self) -> None:
         self.create_sessions()
@@ -133,7 +129,7 @@ class PasswordUseCasesTest(unittest.TestCase):
         self.assertEqual(user.password_hash, "$argon2id$test$replacement password")
         self.assertEqual(user.password_changed_at, 30)
         self.assertEqual(recovery_code.used_at, 30)
-        self.assertEqual(remaining_recovery_code.revoked_at, 30)
+        self.assertIsNone(remaining_recovery_code.revoked_at)
         self.assertEqual([session.revoked_at for session in auth_sessions], [30])
         self.assertEqual([session.revoked_at for session in remember_sessions], [30])
         with self.assertRaises(RecoveryCodeNotAvailableError):

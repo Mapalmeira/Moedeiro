@@ -3,6 +3,7 @@ from threading import BoundedSemaphore
 from fastapi import FastAPI
 
 from app.api.authentication import router as authentication_router
+from app.api.password import router as password_router
 from app.api.registration import router as registration_router
 from app.application.registry.password_hasher import PasswordHasher
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
@@ -27,6 +28,7 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
     application.state.password_hash_semaphore = BoundedSemaphore(selected_settings.password_hash_concurrency)
     application.state.rate_limiter = RateLimiter() if rate_limiter is None else rate_limiter
     application.include_router(authentication_router)
+    application.include_router(password_router)
     application.include_router(registration_router)
     return application
 

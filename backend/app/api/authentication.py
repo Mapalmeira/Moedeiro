@@ -7,6 +7,7 @@ from app.application.registry.exceptions import InvalidCredentialsError, Invalid
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.use_cases.authentication import authenticate_session, login, logout, refresh_session
 from app.domain.registry.model.remember_session import DEFAULT_EXPIRATION_TIMEOUT_SECONDS
+from app.domain.registry.model.user import User
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
 from app.infrastructure.security.rate_limiter import RateLimitExceededError, RateLimiter
 from app.settings import Settings
@@ -52,14 +53,7 @@ def login_user(payload: LoginRequest, request: Request, response: Response) -> N
 
 @router.get("/session", status_code=status.HTTP_204_NO_CONTENT)
 def validate_session(request: Request) -> None:
-    token = request.cookies.get(_SESSION_COOKIE)
-    if token is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
-
-    try:
-        authenticate_session(_databases(request).open_registry, token, int(time.time()))
-    except InvalidSessionError as error:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from error
+    require_authenticated_user(request)
 
 
 @router.post("/refresh", status_code=status.HTTP_204_NO_CONTENT)
@@ -83,6 +77,20 @@ def logout_user(request: Request, response: Response) -> None:
         request.cookies.get(_REMEMBER_COOKIE),
         int(time.time()),
     )
+    clear_authentication_cookies(response)
+
+
+def require_authenticated_user(request: Request) -> User:
+    token = request.cookies.get(_SESSION_COOKIE)
+    if token is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
+    try:
+        return authenticate_session(_databases(request).open_registry, token, int(time.time()))
+    except InvalidSessionError as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from error
+
+
+def clear_authentication_cookies(response: Response) -> None:
     _delete_cookie(response, _SESSION_COOKIE, _SESSION_COOKIE_PATH)
     _delete_cookie(response, _REMEMBER_COOKIE, _REMEMBER_COOKIE_PATH)
 

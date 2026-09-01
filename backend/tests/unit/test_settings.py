@@ -35,6 +35,7 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.registration_validate_ip_rate_limit, "5/hour")
         self.assertEqual(settings.registration_create_ip_rate_limit, "5/hour")
         self.assertEqual(settings.login_ip_rate_limit, "5/minute")
+        self.assertEqual(settings.password_recovery_ip_rate_limit, "5/hour")
         self.assertEqual(settings.password_hash_concurrency, 2)
 
     def test_reads_security_limits_from_the_environment(self) -> None:
@@ -43,6 +44,7 @@ class SettingsTest(unittest.TestCase):
             "REGISTRATION_VALIDATE_IP_RATE_LIMIT": "3/minute",
             "REGISTRATION_CREATE_IP_RATE_LIMIT": "2/hour",
             "LOGIN_IP_RATE_LIMIT": "4/minute",
+            "PASSWORD_RECOVERY_IP_RATE_LIMIT": "2/hour",
             "PASSWORD_HASH_CONCURRENCY": "1",
         }
 
@@ -51,6 +53,7 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.registration_validate_ip_rate_limit, "3/minute")
         self.assertEqual(settings.registration_create_ip_rate_limit, "2/hour")
         self.assertEqual(settings.login_ip_rate_limit, "4/minute")
+        self.assertEqual(settings.password_recovery_ip_rate_limit, "2/hour")
         self.assertEqual(settings.password_hash_concurrency, 1)
 
     def test_rejects_invalid_security_limits(self) -> None:
@@ -59,6 +62,7 @@ class SettingsTest(unittest.TestCase):
             ("REGISTRATION_VALIDATE_IP_RATE_LIMIT", "0/minute"),
             ("REGISTRATION_CREATE_IP_RATE_LIMIT", ""),
             ("LOGIN_IP_RATE_LIMIT", "0/minute"),
+            ("PASSWORD_RECOVERY_IP_RATE_LIMIT", "invalid"),
             ("PASSWORD_HASH_CONCURRENCY", "0"),
         )
 
