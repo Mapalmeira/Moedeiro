@@ -4,11 +4,11 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.schema.registration import RegisterUserRequest, ValidateInvitationRequest
 from app.application.registry.exceptions import InvitationNotAvailableError, UserNameUnavailableError
+from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.use_cases.register_user import register_user
 from app.application.registry.use_cases.user_invitation import get_available_user_invitation
-from app.application.services.password_hasher import PasswordHasher
-from app.application.services.rate_limiter import RateLimitExceededError, RateLimiter
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
+from app.infrastructure.security.rate_limiter import RateLimitExceededError, RateLimiter
 from app.settings import Settings
 
 
