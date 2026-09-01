@@ -29,7 +29,7 @@ class RegistrationRoutesTest(unittest.TestCase):
             ledger_schema_path=LEDGER_SCHEMA_PATH,
             registry_db_path=directory / "registry/registry.sqlite",
             ledger_dbs_dir=directory / "ledgers",
-            registration_validate_rate_limit="7/minute",
+            registration_validate_ip_rate_limit="7/minute",
             registration_create_ip_rate_limit="4/hour",
             password_hash_concurrency=3,
         )

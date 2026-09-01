@@ -32,28 +32,28 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.ledger_schema_path, self.ledger_schema_path)
         self.assertEqual(settings.registry_db_path, self.directory / "registry/registry.sqlite")
         self.assertEqual(settings.ledger_dbs_dir, self.directory / "ledgers")
-        self.assertEqual(settings.registration_validate_rate_limit, "5/minute")
+        self.assertEqual(settings.registration_validate_ip_rate_limit, "5/minute")
         self.assertEqual(settings.registration_create_ip_rate_limit, "5/hour")
         self.assertEqual(settings.password_hash_concurrency, 2)
 
     def test_reads_security_limits_from_the_environment(self) -> None:
         environment = {
             **self.environment,
-            "REGISTRATION_VALIDATE_RATE_LIMIT": "3/minute",
+            "REGISTRATION_VALIDATE_IP_RATE_LIMIT": "3/minute",
             "REGISTRATION_CREATE_IP_RATE_LIMIT": "2/hour",
             "PASSWORD_HASH_CONCURRENCY": "1",
         }
 
         settings = Settings.from_environment(environment)
 
-        self.assertEqual(settings.registration_validate_rate_limit, "3/minute")
+        self.assertEqual(settings.registration_validate_ip_rate_limit, "3/minute")
         self.assertEqual(settings.registration_create_ip_rate_limit, "2/hour")
         self.assertEqual(settings.password_hash_concurrency, 1)
 
     def test_rejects_invalid_security_limits(self) -> None:
         invalid_values = (
-            ("REGISTRATION_VALIDATE_RATE_LIMIT", "invalid"),
-            ("REGISTRATION_VALIDATE_RATE_LIMIT", "0/minute"),
+            ("REGISTRATION_VALIDATE_IP_RATE_LIMIT", "invalid"),
+            ("REGISTRATION_VALIDATE_IP_RATE_LIMIT", "0/minute"),
             ("REGISTRATION_CREATE_IP_RATE_LIMIT", ""),
             ("PASSWORD_HASH_CONCURRENCY", "0"),
         )

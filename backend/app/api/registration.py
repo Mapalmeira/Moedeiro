@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/registration", tags=["registration"])
 
 @router.post("/validate", status_code=status.HTTP_204_NO_CONTENT)
 def validate_invitation(payload: ValidateInvitationRequest, request: Request) -> None:
-    _check_rate_limit(request, _settings(request).registration_validate_rate_limit, "registration-validate-ip", _client_ip(request))
+    _check_rate_limit(request, _settings(request).registration_validate_ip_rate_limit, "registration-validate-ip", _client_ip(request))
     invitation = get_available_user_invitation(_databases(request).open_registry, payload.invitation_code, int(time.time()))
     if invitation is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not available")
