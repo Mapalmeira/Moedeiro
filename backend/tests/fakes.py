@@ -33,13 +33,6 @@ class FakeTotpAuthenticator:
     def create_secret(self) -> str:
         return self.secret
 
-    def create_setup_token(self, user_uuid, secret: str, timestamp: int) -> str:
-        return f"{user_uuid}:{secret}:{timestamp}"
-
-    def get_setup_secret(self, setup_token: str, user_uuid, timestamp: int) -> str | None:
-        expected_prefix = f"{user_uuid}:{self.secret}:"
-        return self.secret if setup_token.startswith(expected_prefix) else None
-
     def provisioning_uri(self, secret: str, user_name: str) -> str:
         return f"otpauth://totp/Moedeiro:{user_name}?secret={secret}"
 

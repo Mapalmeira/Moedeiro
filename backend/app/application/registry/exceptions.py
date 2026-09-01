@@ -24,3 +24,19 @@ class RecoveryCodeNotAvailableError(Exception):
 
 class UserNotFoundError(Exception):
     pass
+
+
+class TotpAlreadyEnabledError(Exception):
+    pass
+
+
+class TotpNotEnabledError(Exception):
+    pass
+
+
+class InvalidTotpCodeError(Exception):
+    pass
+
+
+class InvalidTotpSetupError(Exception):
+    pass
