@@ -1,0 +1,120 @@
+from contextlib import redirect_stdout
+import hashlib
+from io import StringIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import unittest
+from unittest.mock import patch
+
+from app.cli import main
+from app.infrastructure.persistence.sqlite.database import SqliteDatabase
+from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
+from app.settings import Settings
+from tests.fakes import FakePasswordHasher
+
+
+ROOT = Path(__file__).resolve().parents[2]
+REGISTRY_SCHEMA_PATH = ROOT / "app/infrastructure/persistence/sqlite/registry/schema/registry_schema.sql"
+LEDGER_SCHEMA_PATH = ROOT / "app/infrastructure/persistence/sqlite/ledger/schema/ledger_schema.sql"
+
+
+class UserDeletionCliTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary_directory = TemporaryDirectory()
+        directory = Path(self.temporary_directory.name)
+        self.settings = Settings(
+            registry_schema_path=REGISTRY_SCHEMA_PATH,
+            ledger_schema_path=LEDGER_SCHEMA_PATH,
+            registry_db_path=directory / "registry/registry.sqlite",
+            ledger_dbs_dir=directory / "ledgers",
+        )
+        self.databases = SqliteDatabases(self.settings.registry_db_path, self.settings.registry_schema_path, self.settings.ledger_dbs_dir, self.settings.ledger_schema_path)
+        self.databases.initialize()
+        with self.databases.open_registry() as unit_of_work:
+            self.user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 10)
+            self.owned_ledger = unit_of_work.ledger_repository.create("Owned", "owned.sqlite", "BookOpen", b"\x80\x80\x80")
+            self.revoked_ledger = unit_of_work.ledger_repository.create("Revoked", "revoked.sqlite", "BookOpen", b"\x80\x80\x80")
+            unit_of_work.ledger_grant_repository.create(self.user.uuid, self.owned_ledger.uuid, "OWNER", 10)
+            revoked_grant = unit_of_work.ledger_grant_repository.create(self.user.uuid, self.revoked_ledger.uuid, "OWNER", 10)
+            unit_of_work.ledger_grant_repository.revoke(revoked_grant.uuid, 20)
+            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"encrypted", 10, 10)
+            unit_of_work.recovery_code_repository.create(self.user.uuid, b"c" * 32, 10)
+            unit_of_work.user_preferences_repository.save(self.user.uuid, "YYYY-MM-DD", "HH:mm", "1,234.56", "DARK", "UTC")
+            unit_of_work.auth_session_repository.create(self.user.uuid, b"s" * 32, 10, 100, 10)
+            unit_of_work.remember_session_repository.create(self.user.uuid, b"r" * 32, 10, 100)
+            unit_of_work.commit()
+        SqliteDatabase.initialize(self.databases.ledger_dbs_dir / self.owned_ledger.path, LEDGER_SCHEMA_PATH)
+        SqliteDatabase.initialize(self.databases.ledger_dbs_dir / self.revoked_ledger.path, LEDGER_SCHEMA_PATH)
+
+    def tearDown(self) -> None:
+        self.temporary_directory.cleanup()
+
+    def test_deletes_the_user_dependencies_and_active_owned_ledger_database(self) -> None:
+        output = StringIO()
+
+        with redirect_stdout(output):
+            exit_code = main(["user", "delete", str(self.user.uuid)], self.settings)
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(output.getvalue(), f"Deleted user {self.user.uuid} and 1 owned ledgers\n")
+        self.assertFalse((self.databases.ledger_dbs_dir / self.owned_ledger.path).exists())
+        self.assertTrue((self.databases.ledger_dbs_dir / self.revoked_ledger.path).exists())
+        with self.databases.open_registry() as unit_of_work:
+            self.assertIsNone(unit_of_work.user_repository.get(self.user.uuid))
+            self.assertIsNone(unit_of_work.ledger_repository.get(self.owned_ledger.uuid))
+            self.assertIsNotNone(unit_of_work.ledger_repository.get(self.revoked_ledger.uuid))
+            self.assertEqual(unit_of_work.ledger_grant_repository.list_by_user(self.user.uuid), [])
+            self.assertEqual(unit_of_work.mfa_method_repository.list_by_user(self.user.uuid), [])
+            self.assertEqual(unit_of_work.recovery_code_repository.list_by_user(self.user.uuid), [])
+            self.assertIsNone(unit_of_work.user_preferences_repository.get(self.user.uuid))
+            self.assertEqual(unit_of_work.auth_session_repository.list_by_user(self.user.uuid), [])
+            self.assertEqual(unit_of_work.remember_session_repository.list_by_user(self.user.uuid), [])
+
+    def test_reports_a_missing_user_without_touching_ledgers(self) -> None:
+        from uuid import uuid4
+
+        output = StringIO()
+        with redirect_stdout(output):
+            exit_code = main(["user", "delete", str(uuid4())], self.settings)
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(output.getvalue(), "User not found\n")
+        self.assertTrue((self.databases.ledger_dbs_dir / self.owned_ledger.path).is_file())
+
+    @patch("app.cli.time.time", return_value=100)
+    @patch("app.cli.Argon2PasswordHasher")
+    @patch("app.cli.getpass.getpass", side_effect=["correct password", "correct password"])
+    def test_create_then_list_are_convenient_admin_operations(self, get_password, password_hasher_class, current_time) -> None:
+        password_hasher = FakePasswordHasher()
+        password_hasher_class.return_value = password_hasher
+        output = StringIO()
+
+        with redirect_stdout(output):
+            self.assertEqual(main(["user", "create", "Bob"], self.settings), 0)
+
+        with self.databases.open_registry() as unit_of_work:
+            user = unit_of_work.user_repository.get_by_normalized_name("bob")
+        assert user is not None
+        self.assertEqual(output.getvalue(), f"Created user {user.uuid}\n")
+        self.assertEqual(password_hasher.passwords, ["correct password"])
+        output = StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(main(["user", "list"], self.settings), 0)
+        self.assertIn(f"{user.uuid}\tBob\t100\n", output.getvalue())
+
+    @patch("app.cli.time.time", return_value=100)
+    @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(10)))
+    def test_recover_password_emits_a_link_without_exposing_recovery_code_administration(self, token_bytes, current_time) -> None:
+        output = StringIO()
+
+        with redirect_stdout(output):
+            self.assertEqual(main(["user", "recover-password", str(self.user.uuid)], self.settings), 0)
+
+        self.assertEqual(output.getvalue(), "/recover#code=000G40R40M30E209\n")
+        with self.databases.open_registry() as unit_of_work:
+            recovery_code = unit_of_work.recovery_code_repository.get_by_code_hash(hashlib.sha256("000G40R40M30E209".encode("ascii")).digest())
+        self.assertIsNotNone(recovery_code)
+
+
+if __name__ == "__main__":
+    unittest.main()
