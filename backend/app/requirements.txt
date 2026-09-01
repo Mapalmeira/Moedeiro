@@ -1,3 +1,5 @@
+argon2-cffi
 fastapi
+limits
 pydantic
 uvicorn
