@@ -10,6 +10,7 @@ services:
       LOGIN_IP_RATE_LIMIT: ${LOGIN_IP_RATE_LIMIT:-5/minute}
       PASSWORD_RECOVERY_IP_RATE_LIMIT: ${PASSWORD_RECOVERY_IP_RATE_LIMIT:-5/hour}
       PASSWORD_HASH_CONCURRENCY: ${PASSWORD_HASH_CONCURRENCY:-2}
+      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:?TOTP_ENCRYPTION_KEY must be defined}
     volumes:
       - registry_data:/data/registry
       - ledger_data:/data/ledgers
