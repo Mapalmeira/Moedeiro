@@ -1,8 +1,9 @@
 import hashlib
+import hmac
 import secrets
 from collections.abc import Callable
 
-from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError
+from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError, UserNotFoundError
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.totp_authenticator import TotpAuthenticator
 from app.application.registry.unit_of_work import RegistryUnitOfWork
@@ -24,14 +25,19 @@ def login(
     current_remember_token: str | None = None,
     totp_authenticator: TotpAuthenticator | None = None,
     totp_code: TotpCode | None = None,
-) -> tuple[str, str | None]:
+) -> tuple[str, str | None] | None:
     with unit_of_work_factory() as unit_of_work:
         user = unit_of_work.user_repository.get_by_normalized_name(normalize_user_name(name))
-        if user is None or not password_hasher.verify(user.password_hash, password):
-            raise InvalidCredentialsError
+        if user is None:
+            raise UserNotFoundError
+        if not password_hasher.verify(user.password_hash, password):
+            recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(user.uuid)
+            if recovery_code is None or recovery_code.created_at > timestamp or not hmac.compare_digest(recovery_code.code_hash, hashlib.sha256(password.encode()).digest()):
+                raise InvalidCredentialsError
+            return None
         verify_totp(unit_of_work, totp_authenticator, user.uuid, totp_code, timestamp)
 
-        _revoke_presented_sessions(unit_of_work, current_session_token, current_remember_token, timestamp)
+        _delete_presented_sessions(unit_of_work, current_session_token, current_remember_token)
 
         session_token = secrets.token_urlsafe(32)
         unit_of_work.auth_session_repository.create(
@@ -92,21 +98,21 @@ def refresh_session(unit_of_work_factory: Callable[[], RegistryUnitOfWork], reme
     return session_token, new_remember_token
 
 
-def logout(unit_of_work_factory: Callable[[], RegistryUnitOfWork], session_token: str | None, remember_token: str | None, timestamp: int) -> None:
+def logout(unit_of_work_factory: Callable[[], RegistryUnitOfWork], session_token: str | None, remember_token: str | None) -> None:
     with unit_of_work_factory() as unit_of_work:
-        _revoke_presented_sessions(unit_of_work, session_token, remember_token, timestamp)
+        _delete_presented_sessions(unit_of_work, session_token, remember_token)
         unit_of_work.commit()
 
 
-def _revoke_presented_sessions(unit_of_work: RegistryUnitOfWork, session_token: str | None, remember_token: str | None, timestamp: int) -> None:
+def _delete_presented_sessions(unit_of_work: RegistryUnitOfWork, session_token: str | None, remember_token: str | None) -> None:
     if session_token is not None:
         session = unit_of_work.auth_session_repository.get_by_token_hash(_token_hash(session_token))
         if session is not None:
-            unit_of_work.auth_session_repository.revoke(session.uuid, timestamp)
+            unit_of_work.auth_session_repository.delete(session.uuid)
     if remember_token is not None:
         remember_session = unit_of_work.remember_session_repository.get_by_token_hash(_token_hash(remember_token))
         if remember_session is not None:
-            unit_of_work.remember_session_repository.revoke(remember_session.uuid, timestamp)
+            unit_of_work.remember_session_repository.delete(remember_session.uuid)
 
 
 def _token_hash(token: str) -> bytes:
