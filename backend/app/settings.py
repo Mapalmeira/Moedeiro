@@ -14,14 +14,14 @@ class Settings(BaseModel):
     ledger_schema_path: FilePath
     registry_db_path: Path
     ledger_dbs_dir: Path
-    registration_create_ip_rate_limit: str = Field(default="5/hour", min_length=1)
-    login_attempts_rate_limit: str = Field(default="5/minute", min_length=1)
-    password_recovery_attempts_rate_limit: str = Field(default="5/hour", min_length=1)
-    totp_setup_ip_rate_limit: str = Field(default="5/hour", min_length=1)
+    registration_ip_attempts_rate_limit: str = Field(default="5/hour", min_length=1)
+    login_ip_attempts_rate_limit: str = Field(default="5/minute", min_length=1)
+    password_recovery_ip_attempts_rate_limit: str = Field(default="5/hour", min_length=1)
+    totp_setup_ip_attempts_rate_limit: str = Field(default="5/hour", min_length=1)
     password_hash_concurrency: int = Field(default=2, gt=0)
     totp_encryption_key: str | None = None
 
-    @field_validator("registration_create_ip_rate_limit", "login_attempts_rate_limit", "password_recovery_attempts_rate_limit", "totp_setup_ip_rate_limit")
+    @field_validator("registration_ip_attempts_rate_limit", "login_ip_attempts_rate_limit", "password_recovery_ip_attempts_rate_limit", "totp_setup_ip_attempts_rate_limit")
     @classmethod
     def validate_rate_limit(cls, value: str) -> str:
         if parse(value).amount <= 0:
@@ -52,10 +52,10 @@ class Settings(BaseModel):
                 raise ValueError(f"{variable_name} must be defined")
             values[field_name] = value
         optional_variable_names = {
-            "registration_create_ip_rate_limit": "REGISTRATION_CREATE_IP_RATE_LIMIT",
-            "login_attempts_rate_limit": "LOGIN_ATTEMPTS_RATE_LIMIT",
-            "password_recovery_attempts_rate_limit": "PASSWORD_RECOVERY_ATTEMPTS_RATE_LIMIT",
-            "totp_setup_ip_rate_limit": "TOTP_SETUP_IP_RATE_LIMIT",
+            "registration_ip_attempts_rate_limit": "REGISTRATION_IP_ATTEMPTS_RATE_LIMIT",
+            "login_ip_attempts_rate_limit": "LOGIN_IP_ATTEMPTS_RATE_LIMIT",
+            "password_recovery_ip_attempts_rate_limit": "PASSWORD_RECOVERY_IP_ATTEMPTS_RATE_LIMIT",
+            "totp_setup_ip_attempts_rate_limit": "TOTP_SETUP_IP_ATTEMPTS_RATE_LIMIT",
             "password_hash_concurrency": "PASSWORD_HASH_CONCURRENCY",
             "totp_encryption_key": "TOTP_ENCRYPTION_KEY",
         }

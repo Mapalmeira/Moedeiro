@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/totp", tags=["totp"])
 
 @router.post("/setup", response_model=StartTotpSetupResponse)
 def start_setup(payload: StartTotpSetupRequest, request: Request, user: Annotated[User, Depends(require_authenticated_user)]) -> StartTotpSetupResponse:
-    _check_rate_limit(request, _settings(request).totp_setup_ip_rate_limit, "totp-setup-ip", _client_ip(request))
+    _check_rate_limit(request, _settings(request).totp_setup_ip_attempts_rate_limit, "totp-setup-ip-attempts", _client_ip(request))
     semaphore = request.app.state.password_hash_semaphore
     if not semaphore.acquire(blocking=False):
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Password hashing capacity exhausted", headers={"Retry-After": "1"})

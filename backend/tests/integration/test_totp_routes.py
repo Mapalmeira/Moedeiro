@@ -29,7 +29,7 @@ class TotpRoutesTest(unittest.TestCase):
             ledger_schema_path=LEDGER_SCHEMA_PATH,
             registry_db_path=directory / "registry/registry.sqlite",
             ledger_dbs_dir=directory / "ledgers",
-            totp_setup_ip_rate_limit="2/hour",
+            totp_setup_ip_attempts_rate_limit="2/hour",
         )
         self.password_hasher = FakePasswordHasher()
         self.totp_authenticator = FakeTotpAuthenticator()
@@ -58,7 +58,7 @@ class TotpRoutesTest(unittest.TestCase):
 
         self.assertIn("otpauth://totp/Moedeiro:Alice", setup.provisioning_uri)
         self.assertIsNone(result)
-        self.assertEqual(self.rate_limiter.checks, [("2/hour", "totp-setup-ip", "192.0.2.1")])
+        self.assertEqual(self.rate_limiter.checks, [("2/hour", "totp-setup-ip-attempts", "192.0.2.1")])
         with self.application.state.databases.open_registry() as unit_of_work:
             self.assertIsNotNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))
             self.assertEqual(unit_of_work.recovery_code_repository.list_by_user(self.user.uuid), [])
@@ -75,7 +75,7 @@ class TotpRoutesTest(unittest.TestCase):
     def test_setup_rate_limit_precedes_password_verification(self) -> None:
         request = self.request()
         user = require_authenticated_user(request)
-        self.rate_limiter.rejected_namespace = "totp-setup-ip"
+        self.rate_limiter.rejected_namespace = "totp-setup-ip-attempts"
 
         with self.assertRaises(HTTPException) as raised:
             start_setup(StartTotpSetupRequest(current_password="current password"), request, user)

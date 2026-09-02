@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/registration", tags=["registration"])
 
 @router.post("", status_code=status.HTTP_204_NO_CONTENT)
 def create_user(payload: RegisterUserRequest, request: Request) -> None:
-    _check_rate_limit(request, _settings(request).registration_create_ip_rate_limit, "registration-create-ip", _client_ip(request))
+    _check_rate_limit(request, _settings(request).registration_ip_attempts_rate_limit, "registration-ip-attempts", _client_ip(request))
     timestamp = int(time.time())
     invitation = get_available_user_invitation(_databases(request).open_registry, payload.invitation_code, timestamp)
     if invitation is None:

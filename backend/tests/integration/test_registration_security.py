@@ -27,7 +27,7 @@ class RegistrationSecurityTest(unittest.TestCase):
             ledger_schema_path=LEDGER_SCHEMA_PATH,
             registry_db_path=directory / "registry/registry.sqlite",
             ledger_dbs_dir=directory / "ledgers",
-            registration_create_ip_rate_limit="2/hour",
+            registration_ip_attempts_rate_limit="2/hour",
         )
         self.application = create_app(settings, totp_authenticator=FakeTotpAuthenticator())
 

@@ -29,7 +29,7 @@ class RegistrationRoutesTest(unittest.TestCase):
             ledger_schema_path=LEDGER_SCHEMA_PATH,
             registry_db_path=directory / "registry/registry.sqlite",
             ledger_dbs_dir=directory / "ledgers",
-            registration_create_ip_rate_limit="4/hour",
+            registration_ip_attempts_rate_limit="4/hour",
             password_hash_concurrency=3,
         )
         self.password_hasher = FakePasswordHasher()
@@ -67,7 +67,7 @@ class RegistrationRoutesTest(unittest.TestCase):
 
         create_user(self.registration(code), self.request)
 
-        self.assertEqual(self.rate_limiter.checks, [("4/hour", "registration-create-ip", "192.0.2.1")])
+        self.assertEqual(self.rate_limiter.checks, [("4/hour", "registration-ip-attempts", "192.0.2.1")])
 
     def test_register_is_exposed_as_no_content(self) -> None:
         responses = self.application.openapi()["paths"]["/api/registration"]["post"]["responses"]
@@ -93,7 +93,7 @@ class RegistrationRoutesTest(unittest.TestCase):
 
     def test_rate_limit_rejects_registration_before_password_hashing(self) -> None:
         code = self.create_invitation()
-        self.rate_limiter.rejected_namespace = "registration-create-ip"
+        self.rate_limiter.rejected_namespace = "registration-ip-attempts"
 
         with self.assertRaises(HTTPException) as raised:
             create_user(self.registration(code), self.request)
@@ -107,7 +107,7 @@ class RegistrationRoutesTest(unittest.TestCase):
             create_user(self.registration("0" * 16), self.request)
 
         self.assertEqual(raised.exception.status_code, 404)
-        self.assertEqual([check[1] for check in self.rate_limiter.checks], ["registration-create-ip"])
+        self.assertEqual([check[1] for check in self.rate_limiter.checks], ["registration-ip-attempts"])
         self.assertEqual(self.password_hasher.passwords, [])
 
     def test_existing_name_returns_conflict_without_consuming_second_invitation(self) -> None:

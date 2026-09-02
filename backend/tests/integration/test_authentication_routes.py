@@ -25,7 +25,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
             ledger_schema_path=LEDGER_SCHEMA_PATH,
             registry_db_path=directory / "registry/registry.sqlite",
             ledger_dbs_dir=directory / "ledgers",
-            login_attempts_rate_limit="3/minute",
+            login_ip_attempts_rate_limit="3/minute",
             password_hash_concurrency=2,
         )
         self.password_hasher = FakePasswordHasher()
@@ -70,7 +70,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
         self.assertIn("Max-Age=2592000", remember_header)
         self.assertIn("Path=/api/authentication", remember_header)
         self.assertNotIn("Domain=", "".join(headers))
-        self.assertEqual(self.rate_limiter.checks, [("3/minute", "login-attempts", "192.0.2.1")])
+        self.assertEqual(self.rate_limiter.checks, [("3/minute", "login-ip-attempts", "192.0.2.1")])
 
     def test_login_without_remember_expires_any_client_remember_cookie(self) -> None:
         remembered_response = Response(status_code=204)
@@ -121,7 +121,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
         self.assertEqual(raised.exception.detail, "Invalid credentials")
 
     def test_login_rate_limit_is_checked_before_password_verification(self) -> None:
-        self.rate_limiter.rejected_namespace = "login-attempts"
+        self.rate_limiter.rejected_namespace = "login-ip-attempts"
 
         with self.assertRaises(HTTPException) as raised:
             login_user(LoginRequest(name="Alice", password="correct password"), self.request(), Response())

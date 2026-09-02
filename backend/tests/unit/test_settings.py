@@ -32,36 +32,36 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.ledger_schema_path, self.ledger_schema_path)
         self.assertEqual(settings.registry_db_path, self.directory / "registry/registry.sqlite")
         self.assertEqual(settings.ledger_dbs_dir, self.directory / "ledgers")
-        self.assertEqual(settings.registration_create_ip_rate_limit, "5/hour")
-        self.assertEqual(settings.login_attempts_rate_limit, "5/minute")
-        self.assertEqual(settings.password_recovery_attempts_rate_limit, "5/hour")
-        self.assertEqual(settings.totp_setup_ip_rate_limit, "5/hour")
+        self.assertEqual(settings.registration_ip_attempts_rate_limit, "5/hour")
+        self.assertEqual(settings.login_ip_attempts_rate_limit, "5/minute")
+        self.assertEqual(settings.password_recovery_ip_attempts_rate_limit, "5/hour")
+        self.assertEqual(settings.totp_setup_ip_attempts_rate_limit, "5/hour")
         self.assertEqual(settings.password_hash_concurrency, 2)
 
     def test_reads_security_limits_from_the_environment(self) -> None:
         environment = {
             **self.environment,
-            "REGISTRATION_CREATE_IP_RATE_LIMIT": "2/hour",
-            "LOGIN_ATTEMPTS_RATE_LIMIT": "4/minute",
-            "PASSWORD_RECOVERY_ATTEMPTS_RATE_LIMIT": "2/hour",
-            "TOTP_SETUP_IP_RATE_LIMIT": "3/hour",
+            "REGISTRATION_IP_ATTEMPTS_RATE_LIMIT": "2/hour",
+            "LOGIN_IP_ATTEMPTS_RATE_LIMIT": "4/minute",
+            "PASSWORD_RECOVERY_IP_ATTEMPTS_RATE_LIMIT": "2/hour",
+            "TOTP_SETUP_IP_ATTEMPTS_RATE_LIMIT": "3/hour",
             "PASSWORD_HASH_CONCURRENCY": "1",
         }
 
         settings = Settings.from_environment(environment)
 
-        self.assertEqual(settings.registration_create_ip_rate_limit, "2/hour")
-        self.assertEqual(settings.login_attempts_rate_limit, "4/minute")
-        self.assertEqual(settings.password_recovery_attempts_rate_limit, "2/hour")
-        self.assertEqual(settings.totp_setup_ip_rate_limit, "3/hour")
+        self.assertEqual(settings.registration_ip_attempts_rate_limit, "2/hour")
+        self.assertEqual(settings.login_ip_attempts_rate_limit, "4/minute")
+        self.assertEqual(settings.password_recovery_ip_attempts_rate_limit, "2/hour")
+        self.assertEqual(settings.totp_setup_ip_attempts_rate_limit, "3/hour")
         self.assertEqual(settings.password_hash_concurrency, 1)
 
     def test_rejects_invalid_security_limits(self) -> None:
         invalid_values = (
-            ("REGISTRATION_CREATE_IP_RATE_LIMIT", ""),
-            ("LOGIN_ATTEMPTS_RATE_LIMIT", "0/minute"),
-            ("PASSWORD_RECOVERY_ATTEMPTS_RATE_LIMIT", "invalid"),
-            ("TOTP_SETUP_IP_RATE_LIMIT", "0/minute"),
+            ("REGISTRATION_IP_ATTEMPTS_RATE_LIMIT", ""),
+            ("LOGIN_IP_ATTEMPTS_RATE_LIMIT", "0/minute"),
+            ("PASSWORD_RECOVERY_IP_ATTEMPTS_RATE_LIMIT", "invalid"),
+            ("TOTP_SETUP_IP_ATTEMPTS_RATE_LIMIT", "0/minute"),
             ("PASSWORD_HASH_CONCURRENCY", "0"),
         )
 
