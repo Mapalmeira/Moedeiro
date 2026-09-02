@@ -7,7 +7,7 @@ from tests.integration.registry_repository_test_case import RegistryRepositoryTe
 
 class SqliteUserRepositoryTest(RegistryRepositoryTestCase):
     def test_create_derives_normalized_name_and_initial_password_timestamp(self) -> None:
-        user = self.user_repository.create("  ＡLICE  ", "$argon2id$encoded", 20)
+        user = self.user_repository.create("Alice", "$argon2id$encoded", 20)
 
         self.assertEqual(user.normalized_name, "alice")
         self.assertEqual(user.password_changed_at, 20)
@@ -18,17 +18,17 @@ class SqliteUserRepositoryTest(RegistryRepositoryTestCase):
         self.create_user("Alice")
 
         with self.assertRaises(sqlite3.IntegrityError):
-            self.user_repository.create("  ＡLICE ", "$argon2id$other", 20)
+            self.user_repository.create("ALICE", "$argon2id$other", 20)
 
     def test_update_name_changes_display_and_normalized_name_together(self) -> None:
         user = self.create_user("Alice")
 
-        self.user_repository.update_name(user.uuid, "  BÓB  ")
+        self.user_repository.update_name(user.uuid, "Bob")
 
         updated = self.user_repository.get(user.uuid)
         assert updated is not None
-        self.assertEqual(updated.name, "  BÓB  ")
-        self.assertEqual(updated.normalized_name, "bób")
+        self.assertEqual(updated.name, "Bob")
+        self.assertEqual(updated.normalized_name, "bob")
 
     def test_update_password_changes_hash_and_timestamp_together(self) -> None:
         user = self.create_user("Alice")

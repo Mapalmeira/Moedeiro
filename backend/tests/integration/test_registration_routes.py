@@ -117,7 +117,7 @@ class RegistrationRoutesTest(unittest.TestCase):
             second_invitation = unit_of_work.user_invitation_repository.get_by_secret_hash(hashlib.sha256(second_code.encode("ascii")).digest())
         assert second_invitation is not None
         create_user(self.registration(first_code), self.request)
-        payload = RegisterUserRequest(invitation_code=second_code, name="ＡLICE", password="another valid password")
+        payload = RegisterUserRequest(invitation_code=second_code, name="ALICE", password="another valid password")
 
         with self.assertRaises(HTTPException) as raised:
             create_user(payload, self.request)

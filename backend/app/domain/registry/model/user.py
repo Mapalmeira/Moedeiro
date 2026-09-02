@@ -1,3 +1,4 @@
+import re
 from typing import Annotated, Self
 from unicodedata import normalize
 from uuid import UUID
@@ -12,6 +13,8 @@ def normalize_user_name(value: str) -> str:
 def validate_user_name(value: str) -> str:
     if not normalize_user_name(value):
         raise ValueError("name must contain a non-whitespace character")
+    if re.fullmatch(r"[A-Za-z0-9._~-]+", value) is None:
+        raise ValueError("name must contain only URI-safe ASCII characters")
     return value
 
 

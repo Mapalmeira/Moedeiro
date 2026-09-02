@@ -116,7 +116,7 @@ class RegisterUserUseCaseTest(unittest.TestCase):
         self.password_hasher.passwords.clear()
 
         with self.assertRaises(UserNameUnavailableError):
-            register_user(self.open_registry, self.password_hasher, second_invitation.uuid, "  ＡLICE  ", "another valid password", 150)
+            register_user(self.open_registry, self.password_hasher, second_invitation.uuid, "ALICE", "another valid password", 150)
 
         self.assertEqual(self.password_hasher.passwords, ["another valid password"])
         with self.open_registry() as unit_of_work:

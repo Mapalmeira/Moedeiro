@@ -32,7 +32,7 @@ class AuthenticationUseCasesTest(unittest.TestCase):
         return SqliteRegistryUnitOfWork(self.database)
 
     def test_login_accepts_normalized_name_and_creates_short_and_remember_sessions(self) -> None:
-        result = login(self.open_registry, self.password_hasher, " ＡLICE ", "correct password", True, 20)
+        result = login(self.open_registry, self.password_hasher, "ALICE", "correct password", True, 20)
         assert result is not None
         session_token, remember_token = result
 

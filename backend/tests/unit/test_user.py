@@ -8,7 +8,7 @@ from app.domain.registry.model.user import Password, User, UserName, normalize_u
 
 class UserTest(unittest.TestCase):
     def create_user(self, **changes) -> User:
-        values = {"uuid": uuid4(), "name": "ÁLICE", "normalized_name": "álice", "password_hash": "$argon2id$encoded", "created_at": 10, "password_changed_at": 10}
+        values = {"uuid": uuid4(), "name": "ALICE", "normalized_name": "alice", "password_hash": "$argon2id$encoded", "created_at": 10, "password_changed_at": 10}
         values.update(changes)
         return User(**values)
 
@@ -18,11 +18,11 @@ class UserTest(unittest.TestCase):
     def test_accepts_a_name_and_matching_normalized_name(self) -> None:
         user = self.create_user()
 
-        self.assertEqual(user.normalized_name, "álice")
+        self.assertEqual(user.normalized_name, "alice")
 
     def test_rejects_a_normalized_name_that_does_not_match(self) -> None:
         with self.assertRaises(ValidationError):
-            self.create_user(normalized_name="alice")
+            self.create_user(normalized_name="bob")
 
     def test_enforces_user_name_limits(self) -> None:
         invalid_values = ({"name": "", "normalized_name": ""}, {"name": "   ", "normalized_name": ""}, {"name": "x" * 51, "normalized_name": "x" * 51})
@@ -43,6 +43,12 @@ class UserTest(unittest.TestCase):
     def test_user_name_type_rejects_blank_normalized_content(self) -> None:
         with self.assertRaises(ValidationError):
             TypeAdapter(UserName).validate_python("   ")
+
+    def test_user_name_type_rejects_characters_unsafe_for_provisioning_uris(self) -> None:
+        for value in ("alice bob", "álîce", "alice@example.com", "alice?admin=true"):
+            with self.subTest(value=value):
+                with self.assertRaises(ValidationError):
+                    TypeAdapter(UserName).validate_python(value)
 
     def test_password_change_cannot_precede_creation(self) -> None:
         with self.assertRaises(ValidationError):
