@@ -30,7 +30,7 @@ class PasswordRoutesTest(unittest.TestCase):
             ledger_schema_path=LEDGER_SCHEMA_PATH,
             registry_db_path=directory / "registry/registry.sqlite",
             ledger_dbs_dir=directory / "ledgers",
-            password_recovery_ip_rate_limit="3/hour",
+            password_recovery_attempts_rate_limit="3/hour",
             password_hash_concurrency=2,
         )
         self.password_hasher = FakePasswordHasher()
@@ -126,7 +126,7 @@ class PasswordRoutesTest(unittest.TestCase):
         recover_password(ResetPasswordRequest(name="Alice", recovery_code=code, new_password="replacement password"), self.request(), response)
 
         self.assertEqual(sum("Max-Age=0" in header for header in self.cookie_headers(response)), 2)
-        self.assertEqual(self.rate_limiter.checks, [("3/hour", "password-recovery-ip", "192.0.2.1")])
+        self.assertEqual(self.rate_limiter.checks, [("3/hour", "password-recovery-attempts", "192.0.2.1")])
         with self.application.state.databases.open_registry() as unit_of_work:
             user = unit_of_work.user_repository.get(self.user.uuid)
             codes = unit_of_work.recovery_code_repository.list_by_user(self.user.uuid)
@@ -149,7 +149,7 @@ class PasswordRoutesTest(unittest.TestCase):
 
     def test_recovery_rate_limit_precedes_lookup_and_hashing(self) -> None:
         code = create_recovery_code(self.application.state.databases.open_registry, self.user.uuid, 20)
-        self.rate_limiter.rejected_namespace = "password-recovery-ip"
+        self.rate_limiter.rejected_namespace = "password-recovery-attempts"
 
         with self.assertRaises(HTTPException) as raised:
             recover_password(ResetPasswordRequest(name="Alice", recovery_code=code, new_password="replacement password"), self.request(), Response())

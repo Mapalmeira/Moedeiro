@@ -50,7 +50,7 @@ def change_current_password(payload: ChangePasswordRequest, request: Request, re
 
 @router.post("/recovery", status_code=status.HTTP_204_NO_CONTENT)
 def recover_password(payload: ResetPasswordRequest, request: Request, response: Response) -> None:
-    _check_rate_limit(request, _settings(request).password_recovery_ip_rate_limit, "password-recovery-ip", _client_ip(request))
+    _check_rate_limit(request, _settings(request).password_recovery_attempts_rate_limit, "password-recovery-attempts", _client_ip(request))
     timestamp = int(time.time())
     semaphore = request.app.state.password_hash_semaphore
     if not semaphore.acquire(blocking=False):

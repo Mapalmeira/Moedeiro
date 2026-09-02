@@ -23,7 +23,7 @@ _REMEMBER_COOKIE_PATH = "/api/authentication"
 
 @router.post("/login", status_code=status.HTTP_204_NO_CONTENT)
 def login_user(payload: LoginRequest, request: Request, response: Response) -> None:
-    _check_rate_limit(request, _settings(request).login_ip_rate_limit, "login-ip", _client_ip(request))
+    _check_rate_limit(request, _settings(request).login_attempts_rate_limit, "login-attempts", _client_ip(request))
     semaphore = request.app.state.password_hash_semaphore
 
     if not semaphore.acquire(blocking=False):

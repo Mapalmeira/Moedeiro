@@ -29,6 +29,8 @@ class FakeTotpAuthenticator:
     def __init__(self):
         self.secret = "FAKESECRET"
         self.valid_code = "123456"
+        self._counter = 0
+        self.fixed_counter: int | None = None
 
     def create_secret(self) -> str:
         return self.secret
@@ -42,5 +44,10 @@ class FakeTotpAuthenticator:
     def decrypt_secret(self, encrypted_secret: bytes) -> str:
         return encrypted_secret.decode("ascii")
 
-    def verify(self, secret: str, code: str, timestamp: int) -> bool:
-        return secret == self.secret and code == self.valid_code
+    def verify(self, secret: str, code: str, timestamp: int) -> int | None:
+        if secret != self.secret or code != self.valid_code:
+            return None
+        if self.fixed_counter is not None:
+            return self.fixed_counter
+        self._counter += 1
+        return self._counter
