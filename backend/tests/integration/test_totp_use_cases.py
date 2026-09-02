@@ -114,13 +114,22 @@ class TotpUseCasesTest(unittest.TestCase):
 
         with self.assertRaises(TotpRequiredError):
             change_password(self.open_registry, self.password_hasher, self.user, "current password", "replacement password", 31, self.totp_authenticator)
-        change_password(self.open_registry, self.password_hasher, self.user, "current password", "replacement password", 31, self.totp_authenticator, "123456")
+        change_password(self.open_registry, self.password_hasher, self.user, "current password", "replacement password", 60, self.totp_authenticator, "123456")
+
+    def test_rejects_reusing_a_totp_counter(self) -> None:
+        self.enable()
+        self.totp_authenticator.fixed_counter = 7
+
+        login(self.open_registry, self.password_hasher, "Alice", "current password", False, 30, totp_authenticator=self.totp_authenticator, totp_code="123456")
+
+        with self.assertRaises(InvalidTotpCodeError):
+            login(self.open_registry, self.password_hasher, "Alice", "current password", False, 31, totp_authenticator=self.totp_authenticator, totp_code="123456")
 
     def test_user_can_disable_totp_with_the_current_password_and_totp_code(self) -> None:
         self.enable()
         login(self.open_registry, self.password_hasher, "Alice", "current password", True, 30, totp_authenticator=self.totp_authenticator, totp_code="123456")
 
-        disable_totp(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", "123456", 31)
+        disable_totp(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", "123456", 60)
 
         with self.open_registry() as unit_of_work:
             self.assertIsNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))

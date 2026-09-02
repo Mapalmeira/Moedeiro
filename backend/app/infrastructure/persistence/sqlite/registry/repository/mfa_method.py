@@ -6,16 +6,16 @@ from app.domain.registry.repository.mfa_method import MfaMethodRepository
 
 
 class SqliteMfaMethodRepository(MfaMethodRepository):
-    _columns = "uuid, user_uuid, type, secret_encrypted, created_at, confirmed_at"
+    _columns = "uuid, user_uuid, type, secret_encrypted, created_at, confirmed_at, last_used_counter"
 
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, user_uuid: UUID, type: MfaMethodType, secret_encrypted: bytes, created_at: int, confirmed_at: int | None = None) -> MfaMethod:
-        method = MfaMethod(uuid=uuid4(), user_uuid=user_uuid, type=type, secret_encrypted=secret_encrypted, created_at=created_at, confirmed_at=confirmed_at)
+    def create(self, user_uuid: UUID, type: MfaMethodType, secret_encrypted: bytes, created_at: int, confirmed_at: int | None = None, last_used_counter: int | None = None) -> MfaMethod:
+        method = MfaMethod(uuid=uuid4(), user_uuid=user_uuid, type=type, secret_encrypted=secret_encrypted, created_at=created_at, confirmed_at=confirmed_at, last_used_counter=last_used_counter)
         self.connection.execute(
-            "INSERT INTO mfa_method(uuid, user_uuid, type, secret_encrypted, created_at, confirmed_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (method.uuid.bytes, method.user_uuid.bytes, method.type, method.secret_encrypted, method.created_at, method.confirmed_at),
+            "INSERT INTO mfa_method(uuid, user_uuid, type, secret_encrypted, created_at, confirmed_at, last_used_counter) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (method.uuid.bytes, method.user_uuid.bytes, method.type, method.secret_encrypted, method.created_at, method.confirmed_at, method.last_used_counter),
         )
         return method
 
@@ -27,8 +27,15 @@ class SqliteMfaMethodRepository(MfaMethodRepository):
         row = self.connection.execute(f"SELECT {self._columns} FROM mfa_method WHERE user_uuid = ? AND type = 'TOTP'", (user_uuid.bytes,)).fetchone()
         return None if row is None else self._to_model(row)
 
-    def confirm(self, uuid: UUID, confirmed_at: int) -> bool:
-        cursor = self.connection.execute("UPDATE mfa_method SET confirmed_at = ? WHERE uuid = ? AND confirmed_at IS NULL AND created_at <= ?", (confirmed_at, uuid.bytes, confirmed_at))
+    def confirm(self, uuid: UUID, confirmed_at: int, last_used_counter: int) -> bool:
+        cursor = self.connection.execute("UPDATE mfa_method SET confirmed_at = ?, last_used_counter = ? WHERE uuid = ? AND confirmed_at IS NULL AND created_at <= ?", (confirmed_at, last_used_counter, uuid.bytes, confirmed_at))
+        return cursor.rowcount == 1
+
+    def use_totp_counter(self, uuid: UUID, counter: int) -> bool:
+        cursor = self.connection.execute(
+            "UPDATE mfa_method SET last_used_counter = ? WHERE uuid = ? AND confirmed_at IS NOT NULL AND (last_used_counter IS NULL OR last_used_counter < ?)",
+            (counter, uuid.bytes, counter),
+        )
         return cursor.rowcount == 1
 
     def delete_unconfirmed_before(self, timestamp: int) -> int:

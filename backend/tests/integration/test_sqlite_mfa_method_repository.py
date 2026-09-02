@@ -23,11 +23,19 @@ class SqliteMfaMethodRepositoryTest(RegistryRepositoryTestCase):
     def test_confirm_activates_a_pending_method_only_once(self) -> None:
         method = self.mfa_repository.create(self.create_user().uuid, "TOTP", b"encrypted-secret", 30)
 
-        self.assertTrue(self.mfa_repository.confirm(method.uuid, 40))
-        self.assertFalse(self.mfa_repository.confirm(method.uuid, 50))
+        self.assertTrue(self.mfa_repository.confirm(method.uuid, 40, 1))
+        self.assertFalse(self.mfa_repository.confirm(method.uuid, 50, 2))
         confirmed = self.mfa_repository.get(method.uuid)
         assert confirmed is not None
         self.assertEqual(confirmed.confirmed_at, 40)
+        self.assertEqual(confirmed.last_used_counter, 1)
+
+    def test_use_totp_counter_accepts_only_a_later_counter(self) -> None:
+        method = self.mfa_repository.create(self.create_user().uuid, "TOTP", b"encrypted-secret", 30, 40, 1)
+
+        self.assertTrue(self.mfa_repository.use_totp_counter(method.uuid, 2))
+        self.assertFalse(self.mfa_repository.use_totp_counter(method.uuid, 2))
+        self.assertFalse(self.mfa_repository.use_totp_counter(method.uuid, 1))
 
     def test_delete_unconfirmed_before_removes_only_pending_methods_at_the_cutoff(self) -> None:
         old = self.mfa_repository.create(self.create_user().uuid, "TOTP", b"old", 40)

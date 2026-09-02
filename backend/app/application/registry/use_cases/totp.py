@@ -31,9 +31,10 @@ def confirm_totp_setup(unit_of_work_factory: Callable[[], RegistryUnitOfWork], t
             raise InvalidTotpSetupError
         if method.confirmed_at is not None:
             raise TotpAlreadyEnabledError
-        if not totp_authenticator.verify(totp_authenticator.decrypt_secret(method.secret_encrypted), code, timestamp):
+        counter = totp_authenticator.verify(totp_authenticator.decrypt_secret(method.secret_encrypted), code, timestamp)
+        if counter is None:
             raise InvalidTotpCodeError
-        if not unit_of_work.mfa_method_repository.confirm(method.uuid, timestamp):
+        if not unit_of_work.mfa_method_repository.confirm(method.uuid, timestamp, counter):
             raise InvalidTotpSetupError
         unit_of_work.commit()
 
@@ -58,5 +59,8 @@ def verify_totp(unit_of_work: RegistryUnitOfWork, totp_authenticator: TotpAuthen
         return
     if code is None:
         raise TotpRequiredError
-    if totp_authenticator is None or not totp_authenticator.verify(totp_authenticator.decrypt_secret(method.secret_encrypted), code, timestamp):
+    if totp_authenticator is None:
+        raise InvalidTotpCodeError
+    counter = totp_authenticator.verify(totp_authenticator.decrypt_secret(method.secret_encrypted), code, timestamp)
+    if counter is None or not unit_of_work.mfa_method_repository.use_totp_counter(method.uuid, counter):
         raise InvalidTotpCodeError

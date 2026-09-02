@@ -16,8 +16,8 @@ class FernetTotpAuthenticatorTest(unittest.TestCase):
 
         self.assertNotEqual(encrypted_secret, secret.encode("ascii"))
         self.assertEqual(self.authenticator.decrypt_secret(encrypted_secret), secret)
-        self.assertTrue(self.authenticator.verify(secret, "287082", 59))
-        self.assertFalse(self.authenticator.verify(secret, "000000", 59))
+        self.assertEqual(self.authenticator.verify(secret, "287082", 59), 1)
+        self.assertIsNone(self.authenticator.verify(secret, "000000", 59))
 
     def test_creates_a_base32_secret_and_provisioning_uri(self) -> None:
         secret = self.authenticator.create_secret()

@@ -28,11 +28,11 @@ class FernetTotpAuthenticator(TotpAuthenticator):
     def decrypt_secret(self, encrypted_secret: bytes) -> str:
         return self._fernet.decrypt(encrypted_secret).decode("ascii")
 
-    def verify(self, secret: str, code: TotpCode, timestamp: int) -> bool:
+    def verify(self, secret: str, code: TotpCode, timestamp: int) -> int | None:
         for counter in range((timestamp // 30) - 1, (timestamp // 30) + 2):
             if counter >= 0 and hmac.compare_digest(self._code(secret, counter), code):
-                return True
-        return False
+                return counter
+        return None
 
     @staticmethod
     def _code(secret: str, counter: int) -> str:

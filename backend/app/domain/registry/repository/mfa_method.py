@@ -6,7 +6,7 @@ from app.domain.registry.model.mfa_method import MfaMethod, MfaMethodType
 
 class MfaMethodRepository(ABC):
     @abstractmethod
-    def create(self, user_uuid: UUID, type: MfaMethodType, secret_encrypted: bytes, created_at: int, confirmed_at: int | None = None) -> MfaMethod:
+    def create(self, user_uuid: UUID, type: MfaMethodType, secret_encrypted: bytes, created_at: int, confirmed_at: int | None = None, last_used_counter: int | None = None) -> MfaMethod:
         pass
 
     @abstractmethod
@@ -18,7 +18,11 @@ class MfaMethodRepository(ABC):
         pass
 
     @abstractmethod
-    def confirm(self, uuid: UUID, confirmed_at: int) -> bool:
+    def confirm(self, uuid: UUID, confirmed_at: int, last_used_counter: int) -> bool:
+        pass
+
+    @abstractmethod
+    def use_totp_counter(self, uuid: UUID, counter: int) -> bool:
         pass
 
     @abstractmethod

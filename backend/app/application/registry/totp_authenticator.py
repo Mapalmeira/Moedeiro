@@ -15,5 +15,5 @@ class TotpAuthenticator(Protocol):
     def decrypt_secret(self, encrypted_secret: bytes) -> str:
         pass
 
-    def verify(self, secret: str, code: TotpCode, timestamp: int) -> bool:
+    def verify(self, secret: str, code: TotpCode, timestamp: int) -> int | None:
         pass
