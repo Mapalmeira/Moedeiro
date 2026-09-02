@@ -22,11 +22,11 @@ class RememberSessionRepository(ABC):
         pass
 
     @abstractmethod
-    def revoke(self, uuid: UUID, revoked_at: int) -> None:
+    def delete(self, uuid: UUID) -> None:
         pass
 
     @abstractmethod
-    def revoke_by_user(self, user_uuid: UUID, revoked_at: int) -> None:
+    def delete_by_user(self, user_uuid: UUID) -> None:
         pass
 
     @abstractmethod

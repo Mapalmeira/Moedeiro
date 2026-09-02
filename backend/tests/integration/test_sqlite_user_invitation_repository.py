@@ -32,39 +32,26 @@ class SqliteUserInvitationRepositoryTest(RegistryRepositoryTestCase):
         self.assertFalse(self.invitation_repository.consume(invitation.uuid, 9))
         self.assertFalse(self.invitation_repository.consume(invitation.uuid, 100))
 
-    def test_revoke_prevents_consumption_and_preserves_first_timestamp(self) -> None:
+    def test_delete_removes_only_an_unused_invitation(self) -> None:
         invitation = self.create_invitation()
 
-        self.invitation_repository.revoke(invitation.uuid, 30)
-        self.invitation_repository.revoke(invitation.uuid, 40)
+        self.assertTrue(self.invitation_repository.delete(invitation.uuid))
+        self.assertFalse(self.invitation_repository.delete(invitation.uuid))
+        self.assertIsNone(self.invitation_repository.get(invitation.uuid))
 
-        revoked = self.invitation_repository.get(invitation.uuid)
-        assert revoked is not None
-        self.assertEqual(revoked.revoked_at, 30)
-        self.assertFalse(self.invitation_repository.consume(invitation.uuid, 50))
+        consumed = self.create_invitation(b"c" * 32)
+        self.assertTrue(self.invitation_repository.consume(consumed.uuid, 20))
+        self.assertFalse(self.invitation_repository.delete(consumed.uuid))
+        self.assertIsNotNone(self.invitation_repository.get(consumed.uuid))
 
-    def test_list_all_returns_consumed_revoked_and_active_invitations(self) -> None:
+    def test_list_all_returns_consumed_and_active_invitations(self) -> None:
         consumed = self.create_invitation(b"a" * 32)
-        revoked = self.create_invitation(b"b" * 32)
         active = self.create_invitation(b"c" * 32)
         self.invitation_repository.consume(consumed.uuid, 20)
-        self.invitation_repository.revoke(revoked.uuid, 20)
 
         invitations = self.invitation_repository.list_all()
 
-        self.assertCountEqual([invitation.uuid for invitation in invitations], [consumed.uuid, revoked.uuid, active.uuid])
-
-    def test_delete_inactive_before_removes_only_eligible_invitations(self) -> None:
-        old = self.create_invitation(b"a" * 32)
-        recent = self.create_invitation(b"b" * 32)
-        active = self.create_invitation(b"c" * 32)
-        self.invitation_repository.revoke(old.uuid, 40)
-        self.invitation_repository.revoke(recent.uuid, 41)
-
-        self.assertEqual(self.invitation_repository.delete_inactive_before(40), 1)
-        self.assertIsNone(self.invitation_repository.get(old.uuid))
-        self.assertIsNotNone(self.invitation_repository.get(recent.uuid))
-        self.assertIsNotNone(self.invitation_repository.get(active.uuid))
+        self.assertCountEqual([invitation.uuid for invitation in invitations], [consumed.uuid, active.uuid])
 
     def test_delete_inactive_before_removes_expired_and_consumed_invitations(self) -> None:
         expired = self.invitation_repository.create(b"e" * 32, 10, 40)

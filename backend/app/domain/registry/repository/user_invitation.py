@@ -22,7 +22,7 @@ class UserInvitationRepository(ABC):
         pass
 
     @abstractmethod
-    def revoke(self, uuid: UUID, revoked_at: int) -> None:
+    def delete(self, uuid: UUID) -> bool:
         pass
 
     @abstractmethod

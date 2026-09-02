@@ -6,7 +6,7 @@ from app.domain.registry.repository.remember_session import RememberSessionRepos
 
 
 class SqliteRememberSessionRepository(RememberSessionRepository):
-    _columns = "uuid, user_uuid, token_hash, created_at, expires_at, last_used_at, revoked_at"
+    _columns = "uuid, user_uuid, token_hash, created_at, expires_at, last_used_at"
 
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
@@ -14,8 +14,8 @@ class SqliteRememberSessionRepository(RememberSessionRepository):
     def create(self, user_uuid: UUID, token_hash: bytes, created_at: int, expires_at: int) -> RememberSession:
         session = RememberSession(uuid=uuid4(), user_uuid=user_uuid, token_hash=token_hash, created_at=created_at, expires_at=expires_at)
         self.connection.execute(
-            "INSERT INTO remember_session(uuid, user_uuid, token_hash, created_at, expires_at, last_used_at, revoked_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (session.uuid.bytes, session.user_uuid.bytes, session.token_hash, session.created_at, session.expires_at, session.last_used_at, session.revoked_at),
+            "INSERT INTO remember_session(uuid, user_uuid, token_hash, created_at, expires_at, last_used_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (session.uuid.bytes, session.user_uuid.bytes, session.token_hash, session.created_at, session.expires_at, session.last_used_at),
         )
         return session
 
@@ -29,19 +29,19 @@ class SqliteRememberSessionRepository(RememberSessionRepository):
 
     def rotate(self, uuid: UUID, expected_token_hash: bytes, new_token_hash: bytes, last_used_at: int) -> bool:
         cursor = self.connection.execute(
-            "UPDATE remember_session SET token_hash = ?, last_used_at = ? WHERE uuid = ? AND token_hash = ? AND revoked_at IS NULL AND created_at <= ? AND expires_at > ? AND COALESCE(last_used_at, created_at) <= ?",
+            "UPDATE remember_session SET token_hash = ?, last_used_at = ? WHERE uuid = ? AND token_hash = ? AND created_at <= ? AND expires_at > ? AND COALESCE(last_used_at, created_at) <= ?",
             (new_token_hash, last_used_at, uuid.bytes, expected_token_hash, last_used_at, last_used_at, last_used_at),
         )
         return cursor.rowcount == 1
 
-    def revoke(self, uuid: UUID, revoked_at: int) -> None:
-        self.connection.execute("UPDATE remember_session SET revoked_at = ? WHERE uuid = ? AND revoked_at IS NULL", (revoked_at, uuid.bytes))
+    def delete(self, uuid: UUID) -> None:
+        self.connection.execute("DELETE FROM remember_session WHERE uuid = ?", (uuid.bytes,))
 
-    def revoke_by_user(self, user_uuid: UUID, revoked_at: int) -> None:
-        self.connection.execute("UPDATE remember_session SET revoked_at = ? WHERE user_uuid = ? AND revoked_at IS NULL", (revoked_at, user_uuid.bytes))
+    def delete_by_user(self, user_uuid: UUID) -> None:
+        self.connection.execute("DELETE FROM remember_session WHERE user_uuid = ?", (user_uuid.bytes,))
 
     def delete_inactive_before(self, timestamp: int) -> int:
-        cursor = self.connection.execute("DELETE FROM remember_session WHERE revoked_at <= ? OR expires_at <= ?", (timestamp, timestamp))
+        cursor = self.connection.execute("DELETE FROM remember_session WHERE expires_at <= ?", (timestamp,))
         return cursor.rowcount
 
     def list_by_user(self, user_uuid: UUID) -> list[RememberSession]:

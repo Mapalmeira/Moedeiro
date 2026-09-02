@@ -14,7 +14,6 @@ class RememberSession(BaseModel):
     created_at: int = Field(ge=0)
     expires_at: int = Field(ge=0)
     last_used_at: int | None = Field(default=None, ge=0)
-    revoked_at: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
     def validate_state(self) -> Self:
@@ -24,6 +23,4 @@ class RememberSession(BaseModel):
             raise ValueError("last_used_at must not precede created_at")
         if self.last_used_at is not None and self.last_used_at >= self.expires_at:
             raise ValueError("last_used_at must precede expires_at")
-        if self.revoked_at is not None and self.revoked_at < self.created_at:
-            raise ValueError("revoked_at must not precede created_at")
         return self

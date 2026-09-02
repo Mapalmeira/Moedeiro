@@ -20,17 +20,14 @@ class AuthSessionTest(unittest.TestCase):
         self.assertEqual(session.expires_at, 10 + 12 * 60 * 60)
         self.assertEqual(session.inactivity_timeout_seconds, 30 * 60)
         self.assertIsNone(session.last_activity_at)
-        self.assertIsNone(session.revoked_at)
 
     def test_defines_timeouts_in_code(self) -> None:
         self.assertEqual(DEFAULT_INACTIVITY_TIMEOUT_SECONDS, 30 * 60)
         self.assertEqual(DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, 12 * 60 * 60)
 
-    def test_activity_and_revocation_cannot_precede_creation(self) -> None:
-        for field in ("last_activity_at", "revoked_at"):
-            with self.subTest(field=field):
-                with self.assertRaises(ValidationError):
-                    self.create_session(**{field: 9})
+    def test_activity_cannot_precede_creation(self) -> None:
+        with self.assertRaises(ValidationError):
+            self.create_session(last_activity_at=9)
 
     def test_expiration_and_inactivity_timeout_must_be_valid(self) -> None:
         for changes in ({"expires_at": 10}, {"inactivity_timeout_seconds": 0}, {"last_activity_at": 10 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS}):

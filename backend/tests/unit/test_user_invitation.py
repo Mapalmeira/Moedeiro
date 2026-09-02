@@ -17,25 +17,18 @@ class UserInvitationTest(unittest.TestCase):
 
         self.assertEqual(invitation.expires_at, 10 + DEFAULT_EXPIRATION_TIMEOUT_SECONDS)
         self.assertIsNone(invitation.consumed_at)
-        self.assertIsNone(invitation.revoked_at)
 
     def test_expiration_must_follow_creation(self) -> None:
         with self.assertRaises(ValidationError):
             self.create_invitation(expires_at=10)
 
     def test_state_timestamps_cannot_precede_creation(self) -> None:
-        for field in ("consumed_at", "revoked_at"):
-            with self.subTest(field=field):
-                with self.assertRaises(ValidationError):
-                    self.create_invitation(**{field: 9})
+        with self.assertRaises(ValidationError):
+            self.create_invitation(consumed_at=9)
 
     def test_consumption_must_precede_expiration(self) -> None:
         with self.assertRaises(ValidationError):
             self.create_invitation(expires_at=20, consumed_at=20)
-
-    def test_cannot_be_consumed_and_revoked(self) -> None:
-        with self.assertRaises(ValidationError):
-            self.create_invitation(consumed_at=11, revoked_at=12)
 
     def test_invitation_code_uses_the_crockford_alphabet_and_fixed_length(self) -> None:
         adapter = TypeAdapter(InvitationCode)

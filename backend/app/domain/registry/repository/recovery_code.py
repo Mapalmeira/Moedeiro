@@ -14,7 +14,7 @@ class RecoveryCodeRepository(ABC):
         pass
 
     @abstractmethod
-    def get_by_code_hash(self, code_hash: bytes) -> RecoveryCode | None:
+    def get_active_by_user(self, user_uuid: UUID) -> RecoveryCode | None:
         pass
 
     @abstractmethod
@@ -22,7 +22,7 @@ class RecoveryCodeRepository(ABC):
         pass
 
     @abstractmethod
-    def revoke(self, uuid: UUID, revoked_at: int) -> None:
+    def delete_active_by_user(self, user_uuid: UUID) -> int:
         pass
 
     @abstractmethod

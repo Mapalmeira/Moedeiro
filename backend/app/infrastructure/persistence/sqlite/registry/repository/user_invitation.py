@@ -6,7 +6,7 @@ from app.domain.registry.repository.user_invitation import UserInvitationReposit
 
 
 class SqliteUserInvitationRepository(UserInvitationRepository):
-    _columns = "uuid, secret_hash, created_at, expires_at, consumed_at, revoked_at"
+    _columns = "uuid, secret_hash, created_at, expires_at, consumed_at"
 
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
@@ -14,8 +14,8 @@ class SqliteUserInvitationRepository(UserInvitationRepository):
     def create(self, secret_hash: bytes, created_at: int, expires_at: int) -> UserInvitation:
         invitation = UserInvitation(uuid=uuid4(), secret_hash=secret_hash, created_at=created_at, expires_at=expires_at)
         self.connection.execute(
-            "INSERT INTO user_invitation(uuid, secret_hash, created_at, expires_at, consumed_at, revoked_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (invitation.uuid.bytes, invitation.secret_hash, invitation.created_at, invitation.expires_at, invitation.consumed_at, invitation.revoked_at),
+            "INSERT INTO user_invitation(uuid, secret_hash, created_at, expires_at, consumed_at) VALUES (?, ?, ?, ?, ?)",
+            (invitation.uuid.bytes, invitation.secret_hash, invitation.created_at, invitation.expires_at, invitation.consumed_at),
         )
         return invitation
 
@@ -29,19 +29,17 @@ class SqliteUserInvitationRepository(UserInvitationRepository):
 
     def consume(self, uuid: UUID, consumed_at: int) -> bool:
         cursor = self.connection.execute(
-            "UPDATE user_invitation SET consumed_at = ? WHERE uuid = ? AND consumed_at IS NULL AND revoked_at IS NULL AND created_at <= ? AND expires_at > ?",
+            "UPDATE user_invitation SET consumed_at = ? WHERE uuid = ? AND consumed_at IS NULL AND created_at <= ? AND expires_at > ?",
             (consumed_at, uuid.bytes, consumed_at, consumed_at),
         )
         return cursor.rowcount == 1
 
-    def revoke(self, uuid: UUID, revoked_at: int) -> None:
-        self.connection.execute(
-            "UPDATE user_invitation SET revoked_at = ? WHERE uuid = ? AND consumed_at IS NULL AND revoked_at IS NULL",
-            (revoked_at, uuid.bytes),
-        )
+    def delete(self, uuid: UUID) -> bool:
+        cursor = self.connection.execute("DELETE FROM user_invitation WHERE uuid = ? AND consumed_at IS NULL", (uuid.bytes,))
+        return cursor.rowcount == 1
 
     def delete_inactive_before(self, timestamp: int) -> int:
-        cursor = self.connection.execute("DELETE FROM user_invitation WHERE revoked_at <= ? OR consumed_at <= ? OR expires_at <= ?", (timestamp, timestamp, timestamp))
+        cursor = self.connection.execute("DELETE FROM user_invitation WHERE consumed_at <= ? OR expires_at <= ?", (timestamp, timestamp))
         return cursor.rowcount
 
     def list_all(self) -> list[UserInvitation]:

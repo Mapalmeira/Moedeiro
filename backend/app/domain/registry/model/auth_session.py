@@ -16,7 +16,6 @@ class AuthSession(BaseModel):
     expires_at: int = Field(ge=0)
     inactivity_timeout_seconds: int = Field(gt=0)
     last_activity_at: int | None = Field(default=None, ge=0)
-    revoked_at: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
     def validate_state(self) -> Self:
@@ -26,6 +25,4 @@ class AuthSession(BaseModel):
             raise ValueError("last_activity_at must not precede created_at")
         if self.last_activity_at is not None and self.last_activity_at >= self.expires_at:
             raise ValueError("last_activity_at must precede expires_at")
-        if self.revoked_at is not None and self.revoked_at < self.created_at:
-            raise ValueError("revoked_at must not precede created_at")
         return self

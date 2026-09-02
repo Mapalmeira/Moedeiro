@@ -42,48 +42,24 @@ class SqliteRememberSessionRepositoryTest(RegistryRepositoryTestCase):
         self.assertEqual(self.remember_session_repository.get_by_token_hash(b"o" * 32), session)
         self.assertIsNone(self.remember_session_repository.get_by_token_hash(b"n" * 32))
 
-    def test_rotate_rejects_expired_and_revoked_sessions(self) -> None:
-        user = self.create_user()
-        expired = self.remember_session_repository.create(user.uuid, b"e" * 32, 30, 40)
-        revoked = self.remember_session_repository.create(user.uuid, b"r" * 32, 30, 130)
-        self.remember_session_repository.revoke(revoked.uuid, 35)
+    def test_rotate_rejects_an_expired_session(self) -> None:
+        expired = self.remember_session_repository.create(self.create_user().uuid, b"e" * 32, 30, 40)
 
         self.assertFalse(self.remember_session_repository.rotate(expired.uuid, b"e" * 32, b"x" * 32, 40))
-        self.assertFalse(self.remember_session_repository.rotate(revoked.uuid, b"r" * 32, b"y" * 32, 40))
 
-    def test_revoke_by_user_preserves_existing_revocation_and_excludes_other_user(self) -> None:
+    def test_delete_by_user_excludes_other_users_sessions(self) -> None:
         user = self.create_user()
         first = self.remember_session_repository.create(user.uuid, b"a" * 32, 30, 30 + DEFAULT_EXPIRATION_TIMEOUT_SECONDS)
         second = self.remember_session_repository.create(user.uuid, b"b" * 32, 30, 30 + DEFAULT_EXPIRATION_TIMEOUT_SECONDS)
         other = self.remember_session_repository.create(self.create_user().uuid, b"c" * 32, 30, 30 + DEFAULT_EXPIRATION_TIMEOUT_SECONDS)
-        self.remember_session_repository.revoke(first.uuid, 35)
-
-        self.remember_session_repository.revoke_by_user(user.uuid, 40)
+        self.remember_session_repository.delete_by_user(user.uuid)
 
         sessions = self.remember_session_repository.list_by_user(user.uuid)
-        self.assertCountEqual([session.uuid for session in sessions], [first.uuid, second.uuid])
-        stored_first = self.remember_session_repository.get(first.uuid)
-        stored_second = self.remember_session_repository.get(second.uuid)
+        self.assertEqual(sessions, [])
+        self.assertIsNone(self.remember_session_repository.get(first.uuid))
+        self.assertIsNone(self.remember_session_repository.get(second.uuid))
         stored_other = self.remember_session_repository.get(other.uuid)
-        assert stored_first is not None
-        assert stored_second is not None
         assert stored_other is not None
-        self.assertEqual(stored_first.revoked_at, 35)
-        self.assertEqual(stored_second.revoked_at, 40)
-        self.assertIsNone(stored_other.revoked_at)
-
-    def test_delete_inactive_before_removes_only_eligible_sessions(self) -> None:
-        user = self.create_user()
-        old = self.remember_session_repository.create(user.uuid, b"a" * 32, 30, 100)
-        recent = self.remember_session_repository.create(user.uuid, b"b" * 32, 30, 100)
-        active = self.remember_session_repository.create(user.uuid, b"c" * 32, 30, 100)
-        self.remember_session_repository.revoke(old.uuid, 40)
-        self.remember_session_repository.revoke(recent.uuid, 41)
-
-        self.assertEqual(self.remember_session_repository.delete_inactive_before(40), 1)
-        self.assertIsNone(self.remember_session_repository.get(old.uuid))
-        self.assertIsNotNone(self.remember_session_repository.get(recent.uuid))
-        self.assertIsNotNone(self.remember_session_repository.get(active.uuid))
 
     def test_delete_inactive_before_removes_expired_sessions(self) -> None:
         user = self.create_user()

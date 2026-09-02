@@ -17,17 +17,14 @@ class RememberSessionTest(unittest.TestCase):
 
         self.assertEqual(session.expires_at, 10 + 30 * 24 * 60 * 60)
         self.assertIsNone(session.last_used_at)
-        self.assertIsNone(session.revoked_at)
 
     def test_expiration_must_follow_creation(self) -> None:
         with self.assertRaises(ValidationError):
             self.create_session(expires_at=10)
 
-    def test_state_timestamps_cannot_precede_creation(self) -> None:
-        for field in ("last_used_at", "revoked_at"):
-            with self.subTest(field=field):
-                with self.assertRaises(ValidationError):
-                    self.create_session(**{field: 9})
+    def test_last_use_cannot_precede_creation(self) -> None:
+        with self.assertRaises(ValidationError):
+            self.create_session(last_used_at=9)
 
     def test_last_use_must_precede_expiration(self) -> None:
         with self.assertRaises(ValidationError):

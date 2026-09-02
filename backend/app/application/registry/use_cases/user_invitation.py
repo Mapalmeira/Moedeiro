@@ -22,17 +22,18 @@ def get_available_user_invitation(unit_of_work_factory: Callable[[], RegistryUni
     secret_hash = hashlib.sha256(code.encode("ascii")).digest()
     with unit_of_work_factory() as unit_of_work:
         invitation = unit_of_work.user_invitation_repository.get_by_secret_hash(secret_hash)
-    if invitation is None or invitation.created_at > timestamp or invitation.expires_at <= timestamp or invitation.consumed_at is not None or invitation.revoked_at is not None:
+    if invitation is None or invitation.created_at > timestamp or invitation.expires_at <= timestamp or invitation.consumed_at is not None:
         return None
     return invitation
 
 
-def revoke_user_invitation(unit_of_work_factory: Callable[[], RegistryUnitOfWork], invitation_uuid: UUID, revoked_at: int) -> bool:
+def revoke_user_invitation(unit_of_work_factory: Callable[[], RegistryUnitOfWork], invitation_uuid: UUID) -> bool:
     with unit_of_work_factory() as unit_of_work:
         invitation = unit_of_work.user_invitation_repository.get(invitation_uuid)
-        if invitation is None or invitation.consumed_at is not None or invitation.revoked_at is not None:
+        if invitation is None or invitation.consumed_at is not None:
             return False
-        unit_of_work.user_invitation_repository.revoke(invitation_uuid, revoked_at)
+        if not unit_of_work.user_invitation_repository.delete(invitation_uuid):
+            return False
         unit_of_work.commit()
     return True
 
