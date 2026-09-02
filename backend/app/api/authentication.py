@@ -3,7 +3,7 @@ import time
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from app.api.schema.authentication import LoginRequest
-from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError, InvalidTotpCodeError
+from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError, InvalidTotpCodeError, TotpRequiredError, UserNotFoundError
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.use_cases.authentication import authenticate_session, login, logout, refresh_session
 from app.domain.registry.model.remember_session import DEFAULT_EXPIRATION_TIMEOUT_SECONDS
@@ -41,7 +41,9 @@ def login_user(payload: LoginRequest, request: Request, response: Response) -> N
             _totp_authenticator(request),
             payload.totp_code,
         )
-    except (InvalidCredentialsError, InvalidTotpCodeError) as error:
+    except TotpRequiredError as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="TOTP required") from error
+    except (UserNotFoundError, InvalidTotpCodeError, InvalidCredentialsError) as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from error
     finally:
         semaphore.release()
@@ -77,7 +79,6 @@ def logout_user(request: Request, response: Response) -> None:
         _databases(request).open_registry,
         request.cookies.get(_SESSION_COOKIE),
         request.cookies.get(_REMEMBER_COOKIE),
-        int(time.time()),
     )
     clear_authentication_cookies(response)
 
