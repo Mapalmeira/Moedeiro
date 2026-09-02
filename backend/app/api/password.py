@@ -4,10 +4,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from app.api.authentication import clear_authentication_cookies, require_authenticated_user
-from app.api.schema.password import ChangePasswordRequest, ResetPasswordRequest, ValidateRecoveryCodeRequest
-from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, RecoveryCodeNotAvailableError
+from app.api.schema.password import ChangePasswordRequest, ResetPasswordRequest
+from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, PasswordUpdateConflictError, RecoveryCodeNotAvailableError, TotpRequiredError, UserNotFoundError
 from app.application.registry.password_hasher import PasswordHasher
-from app.application.registry.use_cases.password import change_password, get_available_recovery_code, reset_password
+from app.application.registry.use_cases.password import change_password, recover_password as recover_password_use_case
 from app.domain.registry.model.user import User
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
 from app.infrastructure.security.rate_limiter import RateLimitExceededError, RateLimiter
@@ -33,39 +33,47 @@ def change_current_password(payload: ChangePasswordRequest, request: Request, re
             _totp_authenticator(request),
             payload.totp_code,
         )
-    except (InvalidCurrentPasswordError, InvalidTotpCodeError) as error:
+    except TotpRequiredError as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="TOTP required") from error
+    except InvalidTotpCodeError as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid TOTP code") from error
+    except InvalidCurrentPasswordError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid current password") from error
+    except UserNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from error
+    except PasswordUpdateConflictError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Password update conflict") from error
     finally:
         semaphore.release()
     clear_authentication_cookies(response)
-
-
-@router.post("/recovery/validate", status_code=status.HTTP_204_NO_CONTENT)
-def validate_recovery_code(payload: ValidateRecoveryCodeRequest, request: Request) -> None:
-    _check_rate_limit(request, _settings(request).password_recovery_ip_rate_limit, "password-recovery-ip", _client_ip(request))
-    if get_available_recovery_code(_databases(request).open_registry, payload.recovery_code, int(time.time())) is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recovery code not available")
 
 
 @router.post("/recovery", status_code=status.HTTP_204_NO_CONTENT)
 def recover_password(payload: ResetPasswordRequest, request: Request, response: Response) -> None:
     _check_rate_limit(request, _settings(request).password_recovery_ip_rate_limit, "password-recovery-ip", _client_ip(request))
     timestamp = int(time.time())
-    if get_available_recovery_code(_databases(request).open_registry, payload.recovery_code, timestamp) is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recovery code not available")
     semaphore = request.app.state.password_hash_semaphore
     if not semaphore.acquire(blocking=False):
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Password hashing capacity exhausted", headers={"Retry-After": "1"})
     try:
-        reset_password(
+        recover_password_use_case(
             _databases(request).open_registry,
             _password_hasher(request),
+            _totp_authenticator(request),
+            payload.name,
             payload.recovery_code,
             payload.new_password,
+            payload.totp_code,
             timestamp,
         )
-    except RecoveryCodeNotAvailableError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recovery code not available") from error
+    except TotpRequiredError as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="TOTP required") from error
+    except InvalidTotpCodeError as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid TOTP code") from error
+    except (UserNotFoundError, RecoveryCodeNotAvailableError) as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from error
+    except PasswordUpdateConflictError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Password update conflict") from error
     finally:
         semaphore.release()
     clear_authentication_cookies(response)
