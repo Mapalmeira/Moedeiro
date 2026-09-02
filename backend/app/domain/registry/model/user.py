@@ -20,7 +20,7 @@ def validate_user_name(value: str) -> str:
 
 UserName = Annotated[str, Field(min_length=1, max_length=50), AfterValidator(validate_user_name)]
 NormalizedUserName = Annotated[str, Field(min_length=1)]
-Password = Annotated[str, Field(min_length=12, max_length=128)]
+Password = Annotated[str, Field(min_length=8, max_length=128)]
 
 
 class User(BaseModel):

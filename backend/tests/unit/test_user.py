@@ -34,8 +34,8 @@ class UserTest(unittest.TestCase):
     def test_password_enforces_the_shared_input_limits(self) -> None:
         adapter = TypeAdapter(Password)
 
-        self.assertEqual(adapter.validate_python("x" * 12), "x" * 12)
-        for value in ("x" * 11, "x" * 129):
+        self.assertEqual(adapter.validate_python("x" * 8), "x" * 8)
+        for value in ("x" * 7, "x" * 129):
             with self.subTest(length=len(value)):
                 with self.assertRaises(ValidationError):
                     adapter.validate_python(value)
