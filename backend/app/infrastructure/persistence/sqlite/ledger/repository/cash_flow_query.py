@@ -4,7 +4,6 @@ from uuid import UUID
 from app.domain.ledger.model.cash_flow import CashFlow
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 from app.domain.ledger.repository.cash_flow_query import CashFlowQueryRepository
-from app.infrastructure.persistence.sqlite.ledger.repository._financial_event_filter import build_financial_event_filter
 
 
 class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
@@ -76,8 +75,12 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
 
     @staticmethod
     def _filtered_events(filters: FinancialEventFilter) -> tuple[str, list[bytes | str | int]]:
-        where_clause, parameters = build_financial_event_filter(filters)
-        return where_clause + " AND event.type <> ?", [*parameters, "ACCOUNT_TRANSFER"]
+        clauses = ["event.occurred_at >= ?", "event.occurred_at < ?", "event.type <> ?"]
+        parameters: list[bytes | str | int] = [filters.from_timestamp, filters.to_timestamp, "ACCOUNT_TRANSFER"]
+        if filters.event_type is not None:
+            clauses.append("event.type = ?")
+            parameters.append(filters.event_type)
+        return "WHERE " + " AND ".join(clauses), parameters
 
     @staticmethod
     def _movement_filter(filters: FinancialEventFilter) -> tuple[str, list[bytes]]:

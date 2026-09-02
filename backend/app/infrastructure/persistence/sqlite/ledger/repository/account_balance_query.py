@@ -25,31 +25,24 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
         self._validate_point_parameters(point_count, point_interval)
         self._ensure_account_exists(account_uuid)
         to_timestamp = from_timestamp + point_count * point_interval
-        opening_row = self.connection.execute(
+        rows = self.connection.execute(
             """
-            SELECT COALESCE(SUM(movement.value), 0) AS balance
-            FROM financial_movement AS movement
-            JOIN financial_event AS event ON event.uuid = movement.financial_event_uuid
-            WHERE movement.account_uuid = ? AND event.occurred_at < ?
-            """,
-            (account_uuid.bytes, from_timestamp),
-        ).fetchone()
-        change_rows = self.connection.execute(
-            f"""
             SELECT
-                ? + ((event.occurred_at - ?) / ?) * ? AS point_start,
-                SUM(movement.value) AS balance_change
+                CASE
+                    WHEN event.occurred_at < ? THEN NULL
+                    ELSE ? + ((event.occurred_at - ?) / ?) * ?
+                END AS point_start,
+                SUM(movement.value) AS value
             FROM financial_movement AS movement
             JOIN financial_event AS event ON event.uuid = movement.financial_event_uuid
             WHERE movement.account_uuid = ?
-              AND event.occurred_at >= ?
               AND event.occurred_at < ?
             GROUP BY point_start
             """,
-            (from_timestamp, from_timestamp, point_interval, point_interval, account_uuid.bytes, from_timestamp, to_timestamp),
+            (from_timestamp, from_timestamp, from_timestamp, point_interval, point_interval, account_uuid.bytes, to_timestamp),
         ).fetchall()
-        changes = {row["point_start"]: row["balance_change"] for row in change_rows}
-        balance = opening_row["balance"]
+        changes = {row["point_start"]: row["value"] for row in rows if row["point_start"] is not None}
+        balance = next((row["value"] for row in rows if row["point_start"] is None), 0)
         points: list[int] = []
         for point_start in range(from_timestamp, to_timestamp, point_interval):
             balance += changes.get(point_start, 0)

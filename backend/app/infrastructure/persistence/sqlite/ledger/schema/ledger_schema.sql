@@ -119,19 +119,31 @@ CREATE TABLE budget_accounts (
 ) STRICT;
 
 CREATE INDEX category_name_idx
-ON category(category_name);
+ON category(category_name, uuid);
 
 CREATE INDEX category_parent_idx
 ON category(parent_uuid);
 
 CREATE INDEX financial_event_occurred_at_idx
-ON financial_event(occurred_at);
+ON financial_event(occurred_at, uuid);
+
+CREATE INDEX financial_event_type_occurred_at_idx
+ON financial_event(type, occurred_at, uuid);
 
 CREATE INDEX financial_movement_financial_event_idx
-ON financial_movement(financial_event_uuid);
+ON financial_movement(financial_event_uuid, category_uuid);
 
 CREATE INDEX financial_movement_account_event_idx
 ON financial_movement(account_uuid, financial_event_uuid);
 
 CREATE INDEX financial_movement_category_event_idx
 ON financial_movement(category_uuid, financial_event_uuid);
+
+CREATE INDEX account_currency_idx
+ON account(currency_uuid, uuid);
+
+CREATE INDEX budget_to_from_idx
+ON budget(to_timestamp, from_timestamp);
+
+CREATE INDEX budget_accounts_account_idx
+ON budget_accounts(account_uuid, currency_uuid);

@@ -27,9 +27,13 @@ class SqliteLedgerIndexesTest(unittest.TestCase):
             "category_name_idx",
             "category_parent_idx",
             "financial_event_occurred_at_idx",
+            "financial_event_type_occurred_at_idx",
             "financial_movement_financial_event_idx",
             "financial_movement_account_event_idx",
             "financial_movement_category_event_idx",
+            "account_currency_idx",
+            "budget_to_from_idx",
+            "budget_accounts_account_idx",
         }
         rows = self.connection.execute(
             "SELECT name FROM sqlite_schema WHERE type = 'index' AND name NOT LIKE 'sqlite_autoindex_%'"
@@ -60,6 +64,52 @@ class SqliteLedgerIndexesTest(unittest.TestCase):
         details = " ".join(row["detail"] for row in rows)
 
         self.assertIn("category_parent_idx", details)
+
+    def test_event_type_and_period_filter_uses_composite_index(self) -> None:
+        rows = self.connection.execute(
+            "EXPLAIN QUERY PLAN SELECT uuid FROM financial_event WHERE type = ? AND occurred_at >= ? AND occurred_at < ? ORDER BY occurred_at, uuid",
+            ("TRANSACTION", 10, 20),
+        ).fetchall()
+        details = " ".join(row["detail"] for row in rows)
+
+        self.assertIn("financial_event_type_occurred_at_idx", details)
+        self.assertNotIn("USE TEMP B-TREE FOR ORDER BY", details)
+
+    def test_event_category_filter_uses_both_columns_of_a_composite_index(self) -> None:
+        rows = self.connection.execute(
+            "EXPLAIN QUERY PLAN SELECT uuid FROM financial_movement WHERE financial_event_uuid = ? AND category_uuid = ?",
+            (b"event", b"category"),
+        ).fetchall()
+        details = " ".join(row["detail"] for row in rows)
+
+        self.assertTrue(
+            "financial_movement_financial_event_idx" in details
+            or "financial_movement_category_event_idx" in details
+        )
+        self.assertIn("financial_event_uuid=?", details)
+        self.assertIn("category_uuid=?", details)
+
+    def test_category_order_uses_index_without_temporary_sort(self) -> None:
+        rows = self.connection.execute(
+            "EXPLAIN QUERY PLAN SELECT uuid FROM category ORDER BY category_name, uuid"
+        ).fetchall()
+        details = " ".join(row["detail"] for row in rows)
+
+        self.assertIn("category_name_idx", details)
+        self.assertNotIn("USE TEMP B-TREE FOR ORDER BY", details)
+
+    def test_budget_period_and_currency_queries_use_declared_indexes(self) -> None:
+        queries = (
+            ("SELECT uuid FROM budget WHERE from_timestamp <= ? AND to_timestamp > ?", (10, 10), "budget_to_from_idx"),
+            ("SELECT uuid FROM account WHERE currency_uuid = ?", (b"currency",), "account_currency_idx"),
+            ("SELECT budget_uuid FROM budget_accounts WHERE account_uuid = ?", (b"account",), "budget_accounts_account_idx"),
+        )
+        for query, parameters, index_name in queries:
+            with self.subTest(index_name=index_name):
+                rows = self.connection.execute(f"EXPLAIN QUERY PLAN {query}", parameters).fetchall()
+                details = " ".join(row["detail"] for row in rows)
+
+                self.assertIn(index_name, details)
 
 
 if __name__ == "__main__":

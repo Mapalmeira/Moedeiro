@@ -96,6 +96,17 @@ class SqliteBudgetStatusQueryRepositoryTest(LedgerRepositoryTestCase):
 
         self.assertEqual([status.budget_uuid for status in statuses], [active.uuid])
 
+    def test_list_statuses_aggregates_overlapping_budgets_independently(self) -> None:
+        other_budget = self.create_budget("Other account budget", self.currency, self.category)
+        self.budget_repository.add_account(other_budget.uuid, self.other_account.uuid)
+        self.add_movement("First account", 10, -30, account=self.account)
+        self.add_movement("Other account", 10, -40, account=self.other_account)
+
+        statuses = {status.budget_uuid: status for status in self.repository.list_statuses(15)}
+
+        self.assertEqual(statuses[self.budget.uuid].spent_amount, 30)
+        self.assertEqual(statuses[other_budget.uuid].spent_amount, 40)
+
     def test_budget_without_accounts_includes_every_account_in_its_currency(self) -> None:
         """Absent account selectors make the budget apply to its complete currency."""
         empty_budget = self.create_budget("Empty", self.currency, self.category)
