@@ -22,8 +22,6 @@ def change_password(unit_of_work_factory: Callable[[], RegistryUnitOfWork], pass
         verify_totp(unit_of_work, totp_authenticator, user.uuid, totp_code, timestamp)
         new_password_hash = password_hasher.hash(new_password)
         if not unit_of_work.user_repository.update_password(user.uuid, user.password_hash, new_password_hash, timestamp):
-            if unit_of_work.user_repository.get(user.uuid) is None:
-                raise UserNotFoundError
             raise PasswordUpdateConflictError
         _delete_user_sessions(unit_of_work, user.uuid)
         unit_of_work.commit()
