@@ -4,9 +4,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from app.api.authentication import clear_authentication_cookies, require_authenticated_user
-from app.api.schema.totp import DisableTotpRequest, EnableTotpRequest, EnableTotpResponse, StartTotpSetupRequest, StartTotpSetupResponse
+from app.api.schema.totp import ConfirmTotpRequest, DisableTotpRequest, StartTotpSetupRequest, StartTotpSetupResponse
 from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, InvalidTotpSetupError, TotpAlreadyEnabledError, TotpNotEnabledError
-from app.application.registry.use_cases.totp import disable_totp, enable_totp, start_totp_setup
+from app.application.registry.use_cases.totp import confirm_totp_setup, disable_totp, start_totp_setup
 from app.domain.registry.model.user import User
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
 from app.infrastructure.security.rate_limiter import RateLimitExceededError, RateLimiter
@@ -40,10 +40,10 @@ def start_setup(payload: StartTotpSetupRequest, request: Request, user: Annotate
     return StartTotpSetupResponse(provisioning_uri=provisioning_uri)
 
 
-@router.post("/enable", response_model=EnableTotpResponse)
-def confirm_setup(payload: EnableTotpRequest, request: Request, user: Annotated[User, Depends(require_authenticated_user)]) -> EnableTotpResponse:
+@router.post("/confirm", status_code=status.HTTP_204_NO_CONTENT)
+def confirm_setup(payload: ConfirmTotpRequest, request: Request, user: Annotated[User, Depends(require_authenticated_user)]) -> None:
     try:
-        recovery_codes = enable_totp(
+        confirm_totp_setup(
             _databases(request).open_registry,
             request.app.state.totp_authenticator,
             user,
@@ -56,17 +56,29 @@ def confirm_setup(payload: EnableTotpRequest, request: Request, user: Annotated[
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid TOTP code") from error
     except TotpAlreadyEnabledError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="TOTP already enabled") from error
-    return EnableTotpResponse(recovery_codes=recovery_codes)
 
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
-def disable(payload: DisableTotpRequest, request: Request, response: Response, user: Annotated[User, Depends(require_authenticated_user)]) -> None:
+def remove_totp(payload: DisableTotpRequest, request: Request, response: Response, user: Annotated[User, Depends(require_authenticated_user)]) -> None:
+    semaphore = request.app.state.password_hash_semaphore
+    if not semaphore.acquire(blocking=False):
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Password hashing capacity exhausted", headers={"Retry-After": "1"})
     try:
-        disable_totp(_databases(request).open_registry, request.app.state.totp_authenticator, user, payload.code, int(time.time()))
-    except InvalidTotpCodeError as error:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid TOTP code") from error
+        disable_totp(
+            _databases(request).open_registry,
+            request.app.state.password_hasher,
+            request.app.state.totp_authenticator,
+            user,
+            payload.current_password,
+            payload.code,
+            int(time.time()),
+        )
+    except (InvalidCurrentPasswordError, InvalidTotpCodeError) as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from error
     except TotpNotEnabledError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="TOTP not enabled") from error
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="TOTP not enabled") from error
+    finally:
+        semaphore.release()
     clear_authentication_cookies(response)
 
 

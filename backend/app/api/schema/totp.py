@@ -12,7 +12,7 @@ class StartTotpSetupResponse(BaseModel):
     provisioning_uri: str
 
 
-class EnableTotpRequest(BaseModel):
+class ConfirmTotpRequest(BaseModel):
     code: TotpCode
 
 
