@@ -10,6 +10,7 @@ from app.application.registry.use_cases.mfa import disable_mfa
 from app.application.registry.use_cases.password import create_recovery_code
 from app.application.registry.use_cases.user import create_user, delete_user, list_users
 from app.application.registry.use_cases.user_invitation import create_user_invitation, list_user_invitations, revoke_user_invitation
+from app.domain.registry.model.recovery_code import DEFAULT_EXPIRATION_TIMEOUT_SECONDS as DEFAULT_RECOVERY_CODE_EXPIRATION_TIMEOUT_SECONDS
 from app.domain.registry.model.user_invitation import DEFAULT_EXPIRATION_TIMEOUT_SECONDS, UserInvitation
 from app.infrastructure.security.password_hasher import Argon2PasswordHasher
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
@@ -64,6 +65,7 @@ def _add_user_actions(parser: argparse.ArgumentParser) -> None:
     actions.add_parser("list")
     recover_password = actions.add_parser("recover-password")
     recover_password.add_argument("uuid", type=UUID)
+    recover_password.add_argument("--expiration-seconds", type=_positive_int, default=DEFAULT_RECOVERY_CODE_EXPIRATION_TIMEOUT_SECONDS)
     disable_mfa = actions.add_parser("disable-mfa")
     disable_mfa.add_argument("uuid", type=UUID)
     delete = actions.add_parser("delete")
@@ -100,9 +102,9 @@ def _revoke_invitation(databases: SqliteDatabases, invitation_uuid: UUID) -> int
     return 0
 
 
-def _create_recovery_code(databases: SqliteDatabases, timestamp: int, user_uuid: UUID) -> int:
+def _create_recovery_code(databases: SqliteDatabases, timestamp: int, user_uuid: UUID, expiration_seconds: int) -> int:
     try:
-        code = create_recovery_code(databases.open_registry, user_uuid, timestamp)
+        code = create_recovery_code(databases.open_registry, user_uuid, timestamp, expiration_seconds)
     except UserNotFoundError:
         print("User not found")
         return 1
@@ -122,7 +124,7 @@ def _handle_user(arguments: argparse.Namespace, databases: SqliteDatabases) -> i
     if arguments.action == "list":
         return _list_users(databases)
     if arguments.action == "recover-password":
-        return _create_recovery_code(databases, int(time.time()), arguments.uuid)
+        return _create_recovery_code(databases, int(time.time()), arguments.uuid, arguments.expiration_seconds)
     if arguments.action == "disable-mfa":
         return _disable_mfa(databases, arguments.uuid)
     if arguments.action == "delete":

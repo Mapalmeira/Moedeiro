@@ -107,28 +107,29 @@ class PasswordUseCasesTest(unittest.TestCase):
             self.assertEqual(len(unit_of_work.auth_session_repository.list_by_user(self.user.uuid)), 1)
         update_password.assert_called_once()
 
-    @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(20)))
-    def test_create_recovery_code_returns_160_random_bits_and_persists_only_the_hash(self, token_bytes) -> None:
+    @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(10)))
+    def test_create_recovery_code_returns_80_random_bits_and_persists_only_the_hash(self, token_bytes) -> None:
         code = create_recovery_code(self.open_registry, self.user.uuid, 20)
 
         with self.open_registry() as unit_of_work:
-            recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid)
+            recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid, 20)
         assert recovery_code is not None
-        self.assertEqual(len(code), 32)
+        self.assertEqual(len(code), 16)
         self.assertEqual(recovery_code.code_hash, hashlib.sha256(code.encode("ascii")).digest())
         self.assertEqual(recovery_code.created_at, 20)
-        token_bytes.assert_called_once_with(20)
+        self.assertEqual(recovery_code.expires_at, 3_620)
+        token_bytes.assert_called_once_with(10)
 
     def test_create_recovery_code_replaces_the_previous_active_code(self) -> None:
         create_recovery_code(self.open_registry, self.user.uuid, 20)
         with self.open_registry() as unit_of_work:
-            first = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid)
+            first = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid, 20)
         assert first is not None
 
         create_recovery_code(self.open_registry, self.user.uuid, 21)
 
         with self.open_registry() as unit_of_work:
-            second = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid)
+            second = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid, 21)
             all_codes = unit_of_work.recovery_code_repository.list_by_user(self.user.uuid)
         assert second is not None
         self.assertNotEqual(second.uuid, first.uuid)
@@ -137,7 +138,7 @@ class PasswordUseCasesTest(unittest.TestCase):
     def test_create_recovery_code_preserves_used_history(self) -> None:
         create_recovery_code(self.open_registry, self.user.uuid, 20)
         with self.open_registry() as unit_of_work:
-            first = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid)
+            first = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid, 20)
             assert first is not None
             unit_of_work.recovery_code_repository.consume(first.uuid, 21)
             unit_of_work.commit()
@@ -152,6 +153,18 @@ class PasswordUseCasesTest(unittest.TestCase):
     def test_create_recovery_code_rejects_an_unknown_user(self) -> None:
         with self.assertRaises(UserNotFoundError):
             create_recovery_code(self.open_registry, uuid4(), 20)
+
+    def test_create_recovery_code_rejects_a_nonpositive_expiration(self) -> None:
+        for expiration_seconds in (0, -1):
+            with self.subTest(expiration_seconds=expiration_seconds):
+                with self.assertRaises(ValueError):
+                    create_recovery_code(self.open_registry, self.user.uuid, 20, expiration_seconds)
+
+    def test_recover_password_rejects_an_expired_code(self) -> None:
+        code = create_recovery_code(self.open_registry, self.user.uuid, 20, 10)
+
+        with self.assertRaises(RecoveryCodeNotAvailableError):
+            recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", None, 30)
 
     def test_recover_password_consumes_the_code_and_deletes_every_session(self) -> None:
         code = create_recovery_code(self.open_registry, self.user.uuid, 20)
@@ -190,7 +203,7 @@ class PasswordUseCasesTest(unittest.TestCase):
         with self.assertRaises(UserNotFoundError):
             recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Unknown", code, "replacement password", None, 30)
         with self.assertRaises(RecoveryCodeNotAvailableError):
-            recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", "0" * 32, "replacement password", None, 30)
+            recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", "0" * 16, "replacement password", None, 30)
 
         self.assertEqual(self.password_hasher.passwords, [])
 
@@ -202,7 +215,7 @@ class PasswordUseCasesTest(unittest.TestCase):
             recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", None, 30)
 
         with self.open_registry() as unit_of_work:
-            recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid)
+            recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid, 30)
         self.assertIsNotNone(recovery_code)
         update_password.assert_called_once()
 

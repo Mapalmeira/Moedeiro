@@ -1,4 +1,5 @@
 import asyncio
+import time
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import time
@@ -121,7 +122,7 @@ class PasswordRoutesTest(unittest.TestCase):
         self.assertEqual(raised.exception.status_code, 503)
 
     def test_recovery_resets_password_consumes_the_code_and_clears_cookies(self) -> None:
-        code = create_recovery_code(self.application.state.databases.open_registry, self.user.uuid, 20)
+        code = create_recovery_code(self.application.state.databases.open_registry, self.user.uuid, int(time.time()))
         response = Response(status_code=204)
 
         asyncio.run(recover_password(ResetPasswordRequest(name="Alice", recovery_code=code, new_password="replacement password"), self.request(), response))
@@ -136,11 +137,11 @@ class PasswordRoutesTest(unittest.TestCase):
         self.assertIsNotNone(codes[0].used_at)
 
     def test_recovery_returns_one_opaque_error_for_unknown_user_wrong_and_consumed_codes(self) -> None:
-        code = create_recovery_code(self.application.state.databases.open_registry, self.user.uuid, 20)
+        code = create_recovery_code(self.application.state.databases.open_registry, self.user.uuid, int(time.time()))
         asyncio.run(recover_password(ResetPasswordRequest(name="Alice", recovery_code=code, new_password="replacement password"), self.request(), Response()))
         self.password_hasher.passwords.clear()
 
-        for name, candidate in (("Unknown", code), ("Alice", "0" * 32), ("Alice", code)):
+        for name, candidate in (("Unknown", code), ("Alice", "0" * 16), ("Alice", code)):
             with self.subTest(name=name, candidate=candidate):
                 with self.assertRaises(HTTPException) as raised:
                     asyncio.run(recover_password(ResetPasswordRequest(name=name, recovery_code=candidate, new_password="another password"), self.request(), Response()))

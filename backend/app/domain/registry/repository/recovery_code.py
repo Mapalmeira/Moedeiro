@@ -6,7 +6,7 @@ from app.domain.registry.model.recovery_code import RecoveryCode
 
 class RecoveryCodeRepository(ABC):
     @abstractmethod
-    def create(self, user_uuid: UUID, code_hash: bytes, created_at: int) -> RecoveryCode:
+    def create(self, user_uuid: UUID, code_hash: bytes, created_at: int, expires_at: int) -> RecoveryCode:
         pass
 
     @abstractmethod
@@ -14,7 +14,7 @@ class RecoveryCodeRepository(ABC):
         pass
 
     @abstractmethod
-    def get_active_by_user(self, user_uuid: UUID) -> RecoveryCode | None:
+    def get_active_by_user(self, user_uuid: UUID, timestamp: int) -> RecoveryCode | None:
         pass
 
     @abstractmethod

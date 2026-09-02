@@ -53,7 +53,8 @@ CREATE TABLE recovery_code (
     user_uuid BLOB NOT NULL,
     code_hash BLOB NOT NULL UNIQUE,
     created_at INTEGER NOT NULL CHECK (created_at >= 0),
-    used_at INTEGER CHECK (used_at IS NULL OR used_at >= created_at),
+    expires_at INTEGER NOT NULL CHECK (expires_at > created_at),
+    used_at INTEGER CHECK (used_at IS NULL OR (used_at >= created_at AND used_at < expires_at)),
 
     FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE
 ) STRICT;
@@ -99,6 +100,7 @@ CREATE INDEX ledger_grant_revoked_idx ON ledger_grant(revoked_at) WHERE revoked_
 CREATE INDEX recovery_code_user_idx ON recovery_code(user_uuid);
 CREATE UNIQUE INDEX recovery_code_active_user_idx ON recovery_code(user_uuid) WHERE used_at IS NULL;
 CREATE INDEX recovery_code_used_idx ON recovery_code(used_at) WHERE used_at IS NOT NULL;
+CREATE INDEX recovery_code_expires_idx ON recovery_code(expires_at);
 CREATE INDEX auth_session_user_idx ON auth_session(user_uuid);
 CREATE INDEX auth_session_expires_idx ON auth_session(expires_at);
 CREATE INDEX auth_session_inactive_idx ON auth_session(COALESCE(last_activity_at, created_at) + inactivity_timeout_seconds);

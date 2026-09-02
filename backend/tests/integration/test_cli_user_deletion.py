@@ -1,5 +1,6 @@
 from contextlib import redirect_stdout
 import hashlib
+import time
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -38,7 +39,7 @@ class UserDeletionCliTest(unittest.TestCase):
             revoked_grant = unit_of_work.ledger_grant_repository.create(self.user.uuid, self.revoked_ledger.uuid, "OWNER", 10)
             unit_of_work.ledger_grant_repository.revoke(revoked_grant.uuid, 20)
             unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"encrypted", 10, 10)
-            unit_of_work.recovery_code_repository.create(self.user.uuid, b"c" * 32, 10)
+            unit_of_work.recovery_code_repository.create(self.user.uuid, b"c" * 32, 10, 110)
             unit_of_work.user_preferences_repository.save(self.user.uuid, "YYYY-MM-DD", "HH:mm", "1,234.56", "DARK", "UTC")
             unit_of_work.auth_session_repository.create(self.user.uuid, b"s" * 32, 10, 100, 10)
             unit_of_work.remember_session_repository.create(self.user.uuid, b"r" * 32, 10, 100)
@@ -103,7 +104,7 @@ class UserDeletionCliTest(unittest.TestCase):
         self.assertIn(f"{user.uuid}\tBob\t100\n", output.getvalue())
 
     @patch("app.cli.time.time", return_value=100)
-    @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(20)))
+    @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(10)))
     def test_recover_password_emits_a_link_without_exposing_recovery_code_administration(self, token_bytes, current_time) -> None:
         output = StringIO()
 
@@ -113,11 +114,23 @@ class UserDeletionCliTest(unittest.TestCase):
         link = output.getvalue().strip()
         self.assertTrue(link.startswith("/recover#code="))
         code = link.removeprefix("/recover#code=")
-        self.assertEqual(len(code), 32)
+        self.assertEqual(len(code), 16)
         with self.databases.open_registry() as unit_of_work:
-            recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid)
+            recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid, 20)
         assert recovery_code is not None
         self.assertEqual(recovery_code.code_hash, hashlib.sha256(code.encode("ascii")).digest())
+        self.assertEqual(recovery_code.expires_at, current_time.return_value + 3_600)
+
+    def test_recover_password_accepts_a_custom_expiration(self) -> None:
+        output = StringIO()
+
+        with redirect_stdout(output):
+            self.assertEqual(main(["user", "recover-password", str(self.user.uuid), "--expiration-seconds", "120"], self.settings), 0)
+
+        with self.databases.open_registry() as unit_of_work:
+            recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid, int(time.time()))
+        assert recovery_code is not None
+        self.assertEqual(recovery_code.expires_at - recovery_code.created_at, 120)
 
     def test_disable_mfa_removes_methods_and_sessions_but_preserves_recovery_code(self) -> None:
         output = StringIO()
@@ -130,7 +143,7 @@ class UserDeletionCliTest(unittest.TestCase):
             self.assertEqual(unit_of_work.mfa_method_repository.list_by_user(self.user.uuid), [])
             self.assertEqual(unit_of_work.auth_session_repository.list_by_user(self.user.uuid), [])
             self.assertEqual(unit_of_work.remember_session_repository.list_by_user(self.user.uuid), [])
-            self.assertIsNotNone(unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid))
+            self.assertIsNotNone(unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid, 20))
 
 
 if __name__ == "__main__":

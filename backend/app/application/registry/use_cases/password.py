@@ -9,7 +9,7 @@ from app.application.registry.totp_authenticator import TotpAuthenticator
 from app.application.registry.unit_of_work import RegistryUnitOfWork
 from app.application.registry.use_cases.totp import verify_totp
 from app.domain.registry.model.crockford_code import generate_crockford_code
-from app.domain.registry.model.recovery_code import RecoveryCodeValue
+from app.domain.registry.model.recovery_code import DEFAULT_EXPIRATION_TIMEOUT_SECONDS, RecoveryCodeValue
 from app.domain.registry.model.totp import TotpCode
 from app.domain.registry.model.user import Password, User, UserName, normalize_user_name
 
@@ -29,13 +29,15 @@ def change_password(unit_of_work_factory: Callable[[], RegistryUnitOfWork], pass
         unit_of_work.commit()
 
 
-def create_recovery_code(unit_of_work_factory: Callable[[], RegistryUnitOfWork], user_uuid: UUID, timestamp: int) -> RecoveryCodeValue:
-    code = generate_crockford_code(20)
+def create_recovery_code(unit_of_work_factory: Callable[[], RegistryUnitOfWork], user_uuid: UUID, timestamp: int, expiration_seconds: int = DEFAULT_EXPIRATION_TIMEOUT_SECONDS) -> RecoveryCodeValue:
+    if expiration_seconds <= 0:
+        raise ValueError("expiration_seconds must be positive")
+    code = generate_crockford_code(10)
     with unit_of_work_factory() as unit_of_work:
         if unit_of_work.user_repository.get(user_uuid) is None:
             raise UserNotFoundError
         unit_of_work.recovery_code_repository.delete_active_by_user(user_uuid)
-        unit_of_work.recovery_code_repository.create(user_uuid, _code_hash(code), timestamp)
+        unit_of_work.recovery_code_repository.create(user_uuid, _code_hash(code), timestamp, timestamp + expiration_seconds)
         unit_of_work.commit()
     return code
 
@@ -45,8 +47,8 @@ def recover_password(unit_of_work_factory: Callable[[], RegistryUnitOfWork], pas
         user = unit_of_work.user_repository.get_by_normalized_name(normalize_user_name(name))
         if user is None:
             raise UserNotFoundError
-        recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(user.uuid)
-        if recovery_code is None or recovery_code.created_at > timestamp or not hmac.compare_digest(recovery_code.code_hash, _code_hash(code)):
+        recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(user.uuid, timestamp)
+        if recovery_code is None or not hmac.compare_digest(recovery_code.code_hash, _code_hash(code)):
             raise RecoveryCodeNotAvailableError
         verify_totp(unit_of_work, totp_authenticator, user.uuid, totp_code, timestamp)
         new_password_hash = password_hasher.hash(new_password)

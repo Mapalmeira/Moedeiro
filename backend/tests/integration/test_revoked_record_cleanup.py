@@ -54,7 +54,7 @@ class InactiveRecordCleanupTest(unittest.TestCase):
             expired_invitation = unit_of_work.user_invitation_repository.create(b"e" * 32, 1, cutoff)
             consumed_invitation = unit_of_work.user_invitation_repository.create(b"c" * 32, 1, timestamp)
             unit_of_work.user_invitation_repository.consume(consumed_invitation.uuid, cutoff)
-            used_code = unit_of_work.recovery_code_repository.create(user.uuid, b"u" * 32, 1)
+            used_code = unit_of_work.recovery_code_repository.create(user.uuid, b"u" * 32, 1, timestamp)
             unit_of_work.recovery_code_repository.consume(used_code.uuid, cutoff)
             expired_session = unit_of_work.auth_session_repository.create(user.uuid, b"s" * 32, 1, cutoff, 1)
             inactive_session = unit_of_work.auth_session_repository.create(user.uuid, b"i" * 32, 1, timestamp, 1)
