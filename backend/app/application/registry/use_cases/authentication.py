@@ -1,5 +1,4 @@
 import hashlib
-import hmac
 import secrets
 from collections.abc import Callable
 
@@ -25,16 +24,13 @@ def login(
     current_remember_token: str | None = None,
     totp_authenticator: TotpAuthenticator | None = None,
     totp_code: TotpCode | None = None,
-) -> tuple[str, str | None] | None:
+) -> tuple[str, str | None]:
     with unit_of_work_factory() as unit_of_work:
         user = unit_of_work.user_repository.get_by_normalized_name(normalize_user_name(name))
         if user is None:
             raise UserNotFoundError
         if not password_hasher.verify(user.password_hash, password):
-            recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(user.uuid)
-            if recovery_code is None or recovery_code.created_at > timestamp or not hmac.compare_digest(recovery_code.code_hash, hashlib.sha256(password.encode()).digest()):
-                raise InvalidCredentialsError
-            return None
+            raise InvalidCredentialsError
         verify_totp(unit_of_work, totp_authenticator, user.uuid, totp_code, timestamp)
 
         _delete_presented_sessions(unit_of_work, current_session_token, current_remember_token)
