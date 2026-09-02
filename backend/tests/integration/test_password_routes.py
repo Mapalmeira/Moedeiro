@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import time
@@ -13,7 +14,7 @@ from app.application.registry.use_cases.authentication import login
 from app.application.registry.use_cases.password import create_recovery_code
 from app.factory import create_app
 from app.settings import Settings
-from tests.fakes import FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator
+from tests.fakes import FakeCredentialOperationExecutor, FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -35,7 +36,7 @@ class PasswordRoutesTest(unittest.TestCase):
         )
         self.password_hasher = FakePasswordHasher()
         self.rate_limiter = FakeRateLimiter()
-        self.application = create_app(settings, self.password_hasher, self.rate_limiter, FakeTotpAuthenticator())
+        self.application = create_app(settings, self.password_hasher, self.rate_limiter, FakeTotpAuthenticator(), FakeCredentialOperationExecutor())
         with self.application.state.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", self.password_hasher.hash("current password"), 10)
             unit_of_work.commit()
@@ -75,7 +76,7 @@ class PasswordRoutesTest(unittest.TestCase):
         request = self.session_request()
         response = Response(status_code=204)
 
-        change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password"), request, response, require_authenticated_user(request))
+        asyncio.run(change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password"), request, response, require_authenticated_user(request)))
 
         self.assertEqual(sum("Max-Age=0" in header for header in self.cookie_headers(response)), 2)
         with self.application.state.databases.open_registry() as unit_of_work:
@@ -90,17 +91,17 @@ class PasswordRoutesTest(unittest.TestCase):
         self.enable_totp()
 
         with self.assertRaises(HTTPException) as raised:
-            change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password"), request, Response(), require_authenticated_user(request))
+            asyncio.run(change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password"), request, Response(), require_authenticated_user(request)))
         self.assertEqual(raised.exception.detail, "TOTP required")
 
-        change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password", totp_code="123456"), request, Response(), require_authenticated_user(request))
+        asyncio.run(change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password", totp_code="123456"), request, Response(), require_authenticated_user(request)))
 
     def test_change_rejects_an_invalid_current_password_without_clearing_cookies(self) -> None:
         request = self.session_request()
         response = Response(status_code=204)
 
         with self.assertRaises(HTTPException) as raised:
-            change_current_password(ChangePasswordRequest(current_password="incorrect password", new_password="replacement password"), request, response, require_authenticated_user(request))
+            asyncio.run(change_current_password(ChangePasswordRequest(current_password="incorrect password", new_password="replacement password"), request, response, require_authenticated_user(request)))
 
         self.assertEqual(raised.exception.status_code, 401)
         self.assertEqual(self.cookie_headers(response), [])
@@ -112,7 +113,7 @@ class PasswordRoutesTest(unittest.TestCase):
             self.assertTrue(semaphore.acquire(blocking=False))
         try:
             with self.assertRaises(HTTPException) as raised:
-                change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password"), request, Response(), require_authenticated_user(request))
+                asyncio.run(change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password"), request, Response(), require_authenticated_user(request)))
         finally:
             for _ in range(self.application.state.settings.password_hash_concurrency):
                 semaphore.release()
@@ -123,7 +124,7 @@ class PasswordRoutesTest(unittest.TestCase):
         code = create_recovery_code(self.application.state.databases.open_registry, self.user.uuid, 20)
         response = Response(status_code=204)
 
-        recover_password(ResetPasswordRequest(name="Alice", recovery_code=code, new_password="replacement password"), self.request(), response)
+        asyncio.run(recover_password(ResetPasswordRequest(name="Alice", recovery_code=code, new_password="replacement password"), self.request(), response))
 
         self.assertEqual(sum("Max-Age=0" in header for header in self.cookie_headers(response)), 2)
         self.assertEqual(self.rate_limiter.checks, [("3/hour", "password-recovery-ip-attempts", "192.0.2.1")])
@@ -136,13 +137,13 @@ class PasswordRoutesTest(unittest.TestCase):
 
     def test_recovery_returns_one_opaque_error_for_unknown_user_wrong_and_consumed_codes(self) -> None:
         code = create_recovery_code(self.application.state.databases.open_registry, self.user.uuid, 20)
-        recover_password(ResetPasswordRequest(name="Alice", recovery_code=code, new_password="replacement password"), self.request(), Response())
+        asyncio.run(recover_password(ResetPasswordRequest(name="Alice", recovery_code=code, new_password="replacement password"), self.request(), Response()))
         self.password_hasher.passwords.clear()
 
         for name, candidate in (("Unknown", code), ("Alice", "0" * 32), ("Alice", code)):
             with self.subTest(name=name, candidate=candidate):
                 with self.assertRaises(HTTPException) as raised:
-                    recover_password(ResetPasswordRequest(name=name, recovery_code=candidate, new_password="another password"), self.request(), Response())
+                    asyncio.run(recover_password(ResetPasswordRequest(name=name, recovery_code=candidate, new_password="another password"), self.request(), Response()))
                 self.assertEqual(raised.exception.status_code, 401)
                 self.assertEqual(raised.exception.detail, "Invalid credentials")
         self.assertEqual(self.password_hasher.passwords, [])
@@ -152,7 +153,7 @@ class PasswordRoutesTest(unittest.TestCase):
         self.rate_limiter.rejected_namespace = "password-recovery-ip-attempts"
 
         with self.assertRaises(HTTPException) as raised:
-            recover_password(ResetPasswordRequest(name="Alice", recovery_code=code, new_password="replacement password"), self.request(), Response())
+            asyncio.run(recover_password(ResetPasswordRequest(name="Alice", recovery_code=code, new_password="replacement password"), self.request(), Response()))
 
         self.assertEqual(raised.exception.status_code, 429)
         self.assertEqual(self.password_hasher.passwords, [])

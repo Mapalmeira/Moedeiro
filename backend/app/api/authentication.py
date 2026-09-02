@@ -1,8 +1,10 @@
 import time
+from functools import partial
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from app.api.schema.authentication import LoginRequest
+from app.api.credential_operation import execute_credential_operation
 from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError, InvalidTotpCodeError, TotpRequiredError, UserNotFoundError
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.use_cases.authentication import authenticate_session, login, logout, refresh_session
@@ -22,32 +24,29 @@ _REMEMBER_COOKIE_PATH = "/api/authentication"
 
 
 @router.post("/login", status_code=status.HTTP_204_NO_CONTENT)
-def login_user(payload: LoginRequest, request: Request, response: Response) -> None:
+async def login_user(payload: LoginRequest, request: Request, response: Response) -> None:
     _check_rate_limit(request, _settings(request).login_ip_attempts_rate_limit, "login-ip-attempts", _client_ip(request))
-    semaphore = request.app.state.password_hash_semaphore
-
-    if not semaphore.acquire(blocking=False):
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Password hashing capacity exhausted", headers={"Retry-After": "1"})
     try:
-        session_token, remember_token = login(
-            _databases(request).open_registry,
-            _password_hasher(request),
-            payload.name,
-            payload.password,
-            payload.remember,
-            int(time.time()),
-            request.cookies.get(_SESSION_COOKIE),
-            request.cookies.get(_REMEMBER_COOKIE),
-            _totp_authenticator(request),
-            payload.totp_code,
+        session_token, remember_token = await execute_credential_operation(
+            request,
+            partial(
+                login,
+                _databases(request).open_registry,
+                _password_hasher(request),
+                payload.name,
+                payload.password,
+                payload.remember,
+                int(time.time()),
+                request.cookies.get(_SESSION_COOKIE),
+                request.cookies.get(_REMEMBER_COOKIE),
+                _totp_authenticator(request),
+                payload.totp_code,
+            ),
         )
     except TotpRequiredError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="TOTP required") from error
     except (UserNotFoundError, InvalidTotpCodeError, InvalidCredentialsError) as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from error
-    finally:
-        semaphore.release()
-
     _set_session_cookie(response, session_token)
     if remember_token is None:
         _delete_cookie(response, _REMEMBER_COOKIE, _REMEMBER_COOKIE_PATH)

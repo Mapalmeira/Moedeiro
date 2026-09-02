@@ -1,9 +1,11 @@
 import time
+from functools import partial
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from app.api.authentication import clear_authentication_cookies, require_authenticated_user
+from app.api.credential_operation import execute_credential_operation
 from app.api.schema.password import ChangePasswordRequest, ResetPasswordRequest
 from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, PasswordUpdateConflictError, RecoveryCodeNotAvailableError, TotpRequiredError, UserNotFoundError
 from app.application.registry.password_hasher import PasswordHasher
@@ -18,20 +20,21 @@ router = APIRouter(prefix="/api/password", tags=["password"])
 
 
 @router.post("/change", status_code=status.HTTP_204_NO_CONTENT)
-def change_current_password(payload: ChangePasswordRequest, request: Request, response: Response, user: Annotated[User, Depends(require_authenticated_user)]) -> None:
-    semaphore = request.app.state.password_hash_semaphore
-    if not semaphore.acquire(blocking=False):
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Password hashing capacity exhausted", headers={"Retry-After": "1"})
+async def change_current_password(payload: ChangePasswordRequest, request: Request, response: Response, user: Annotated[User, Depends(require_authenticated_user)]) -> None:
     try:
-        change_password(
-            _databases(request).open_registry,
-            _password_hasher(request),
-            user,
-            payload.current_password,
-            payload.new_password,
-            int(time.time()),
-            _totp_authenticator(request),
-            payload.totp_code,
+        await execute_credential_operation(
+            request,
+            partial(
+                change_password,
+                _databases(request).open_registry,
+                _password_hasher(request),
+                user,
+                payload.current_password,
+                payload.new_password,
+                int(time.time()),
+                _totp_authenticator(request),
+                payload.totp_code,
+            ),
         )
     except TotpRequiredError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="TOTP required") from error
@@ -43,28 +46,27 @@ def change_current_password(payload: ChangePasswordRequest, request: Request, re
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from error
     except PasswordUpdateConflictError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Password update conflict") from error
-    finally:
-        semaphore.release()
     clear_authentication_cookies(response)
 
 
 @router.post("/recovery", status_code=status.HTTP_204_NO_CONTENT)
-def recover_password(payload: ResetPasswordRequest, request: Request, response: Response) -> None:
+async def recover_password(payload: ResetPasswordRequest, request: Request, response: Response) -> None:
     _check_rate_limit(request, _settings(request).password_recovery_ip_attempts_rate_limit, "password-recovery-ip-attempts", _client_ip(request))
     timestamp = int(time.time())
-    semaphore = request.app.state.password_hash_semaphore
-    if not semaphore.acquire(blocking=False):
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Password hashing capacity exhausted", headers={"Retry-After": "1"})
     try:
-        recover_password_use_case(
-            _databases(request).open_registry,
-            _password_hasher(request),
-            _totp_authenticator(request),
-            payload.name,
-            payload.recovery_code,
-            payload.new_password,
-            payload.totp_code,
-            timestamp,
+        await execute_credential_operation(
+            request,
+            partial(
+                recover_password_use_case,
+                _databases(request).open_registry,
+                _password_hasher(request),
+                _totp_authenticator(request),
+                payload.name,
+                payload.recovery_code,
+                payload.new_password,
+                payload.totp_code,
+                timestamp,
+            ),
         )
     except TotpRequiredError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="TOTP required") from error
@@ -74,8 +76,6 @@ def recover_password(payload: ResetPasswordRequest, request: Request, response: 
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from error
     except PasswordUpdateConflictError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Password update conflict") from error
-    finally:
-        semaphore.release()
     clear_authentication_cookies(response)
 
 

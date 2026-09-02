@@ -18,6 +18,8 @@ class Settings(BaseModel):
     login_ip_attempts_rate_limit: str = Field(default="5/minute", min_length=1)
     password_recovery_ip_attempts_rate_limit: str = Field(default="5/hour", min_length=1)
     totp_setup_ip_attempts_rate_limit: str = Field(default="5/hour", min_length=1)
+    sync_route_concurrency: int = Field(default=40, gt=0)
+    credential_operation_concurrency: int = Field(default=8, gt=0)
     password_hash_concurrency: int = Field(default=2, gt=0)
     totp_encryption_key: str | None = None
 
@@ -56,6 +58,8 @@ class Settings(BaseModel):
             "login_ip_attempts_rate_limit": "LOGIN_IP_ATTEMPTS_RATE_LIMIT",
             "password_recovery_ip_attempts_rate_limit": "PASSWORD_RECOVERY_IP_ATTEMPTS_RATE_LIMIT",
             "totp_setup_ip_attempts_rate_limit": "TOTP_SETUP_IP_ATTEMPTS_RATE_LIMIT",
+            "sync_route_concurrency": "SYNC_ROUTE_CONCURRENCY",
+            "credential_operation_concurrency": "CREDENTIAL_OPERATION_CONCURRENCY",
             "password_hash_concurrency": "PASSWORD_HASH_CONCURRENCY",
             "totp_encryption_key": "TOTP_ENCRYPTION_KEY",
         }

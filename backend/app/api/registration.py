@@ -3,6 +3,7 @@ import time
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.schema.registration import RegisterUserRequest
+from app.api.credential_operation import execute_credential_operation
 from app.application.registry.exceptions import InvitationNotAvailableError, UserNameUnavailableError
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.use_cases.register_user import register_user
@@ -16,16 +17,14 @@ router = APIRouter(prefix="/api/registration", tags=["registration"])
 
 
 @router.post("", status_code=status.HTTP_204_NO_CONTENT)
-def create_user(payload: RegisterUserRequest, request: Request) -> None:
+async def create_user(payload: RegisterUserRequest, request: Request) -> None:
     _check_rate_limit(request, _settings(request).registration_ip_attempts_rate_limit, "registration-ip-attempts", _client_ip(request))
     timestamp = int(time.time())
-    invitation = get_available_user_invitation(_databases(request).open_registry, payload.invitation_code, timestamp)
-    if invitation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not available")
-    semaphore = request.app.state.password_hash_semaphore
-    if not semaphore.acquire(blocking=False):
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Password hashing capacity exhausted", headers={"Retry-After": "1"})
-    try:
+
+    def operation() -> None:
+        invitation = get_available_user_invitation(_databases(request).open_registry, payload.invitation_code, timestamp)
+        if invitation is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not available")
         register_user(
             _databases(request).open_registry,
             _password_hasher(request),
@@ -34,12 +33,13 @@ def create_user(payload: RegisterUserRequest, request: Request) -> None:
             payload.password,
             timestamp,
         )
+
+    try:
+        await execute_credential_operation(request, operation)
     except InvitationNotAvailableError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not available") from error
     except UserNameUnavailableError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User name not available") from error
-    finally:
-        semaphore.release()
 
 
 def _check_rate_limit(request: Request, rate: str, namespace: str, key: str) -> None:

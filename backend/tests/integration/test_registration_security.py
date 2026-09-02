@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import time
@@ -10,7 +11,7 @@ from app.api.schema.registration import RegisterUserRequest
 from app.application.registry.use_cases.user_invitation import create_user_invitation
 from app.factory import create_app
 from app.settings import Settings
-from tests.fakes import FakeTotpAuthenticator
+from tests.fakes import FakeCredentialOperationExecutor, FakeTotpAuthenticator
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,7 +30,7 @@ class RegistrationSecurityTest(unittest.TestCase):
             ledger_dbs_dir=directory / "ledgers",
             registration_ip_attempts_rate_limit="2/hour",
         )
-        self.application = create_app(settings, totp_authenticator=FakeTotpAuthenticator())
+        self.application = create_app(settings, totp_authenticator=FakeTotpAuthenticator(), credential_operation_executor=FakeCredentialOperationExecutor())
 
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()
@@ -49,15 +50,15 @@ class RegistrationSecurityTest(unittest.TestCase):
 
         for _ in range(2):
             with self.assertRaises(HTTPException) as unavailable:
-                create_user(payload, self.request())
+                asyncio.run(create_user(payload, self.request()))
             self.assertEqual(unavailable.exception.status_code, 404)
         with self.assertRaises(HTTPException) as raised:
-            create_user(payload, self.request())
+            asyncio.run(create_user(payload, self.request()))
 
         self.assertEqual(raised.exception.status_code, 429)
         self.assertGreaterEqual(int(raised.exception.headers["Retry-After"]), 1)
         with self.assertRaises(HTTPException) as other_ip:
-            create_user(payload, self.request("198.51.100.1"))
+            asyncio.run(create_user(payload, self.request("198.51.100.1")))
         self.assertEqual(other_ip.exception.status_code, 404)
         with self.application.state.databases.open_registry() as unit_of_work:
             self.assertEqual(unit_of_work.user_repository.list_all(), [])
@@ -65,7 +66,7 @@ class RegistrationSecurityTest(unittest.TestCase):
     def test_registration_stores_a_hash_that_verifies_only_the_original_password(self) -> None:
         code = self.create_invitation()
 
-        create_user(self.registration(code, "Alice"), self.request())
+        asyncio.run(create_user(self.registration(code, "Alice"), self.request()))
 
         with self.application.state.databases.open_registry() as unit_of_work:
             user = unit_of_work.user_repository.get_by_normalized_name("alice")
@@ -77,8 +78,8 @@ class RegistrationSecurityTest(unittest.TestCase):
         self.assertEqual(sessions, [])
 
     def test_equal_passwords_are_stored_as_different_hashes(self) -> None:
-        create_user(self.registration(self.create_invitation(), "Alice"), self.request())
-        create_user(self.registration(self.create_invitation(), "Bob"), self.request())
+        asyncio.run(create_user(self.registration(self.create_invitation(), "Alice"), self.request()))
+        asyncio.run(create_user(self.registration(self.create_invitation(), "Bob"), self.request()))
 
         with self.application.state.databases.open_registry() as unit_of_work:
             alice = unit_of_work.user_repository.get_by_normalized_name("alice")
@@ -91,10 +92,10 @@ class RegistrationSecurityTest(unittest.TestCase):
 
     def test_consumed_invitation_cannot_register_another_user(self) -> None:
         code = self.create_invitation()
-        create_user(self.registration(code, "Alice"), self.request())
+        asyncio.run(create_user(self.registration(code, "Alice"), self.request()))
 
         with self.assertRaises(HTTPException) as raised:
-            create_user(self.registration(code, "Bob"), self.request())
+            asyncio.run(create_user(self.registration(code, "Bob"), self.request()))
 
         self.assertEqual(raised.exception.status_code, 404)
         with self.application.state.databases.open_registry() as unit_of_work:

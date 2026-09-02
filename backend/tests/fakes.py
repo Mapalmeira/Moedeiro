@@ -1,3 +1,18 @@
+class FakeCredentialOperationExecutor:
+    def __init__(self):
+        self.reject = False
+
+    async def run(self, operation):
+        if self.reject:
+            from app.infrastructure.credential_operation_executor import CredentialOperationCapacityExceededError
+
+            raise CredentialOperationCapacityExceededError
+        return operation()
+
+    def shutdown(self) -> None:
+        pass
+
+
 class FakePasswordHasher:
     def __init__(self):
         self.passwords: list[str] = []

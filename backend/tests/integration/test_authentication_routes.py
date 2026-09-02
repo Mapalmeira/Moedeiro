@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -8,7 +9,7 @@ from app.api.authentication import login_user, logout_user, refresh, validate_se
 from app.api.schema.authentication import LoginRequest
 from app.factory import create_app
 from app.settings import Settings
-from tests.fakes import FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator
+from tests.fakes import FakeCredentialOperationExecutor, FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -30,7 +31,8 @@ class AuthenticationRoutesTest(unittest.TestCase):
         )
         self.password_hasher = FakePasswordHasher()
         self.rate_limiter = FakeRateLimiter()
-        self.application = create_app(settings, self.password_hasher, self.rate_limiter, FakeTotpAuthenticator())
+        self.credential_operation_executor = FakeCredentialOperationExecutor()
+        self.application = create_app(settings, self.password_hasher, self.rate_limiter, FakeTotpAuthenticator(), self.credential_operation_executor)
         with self.application.state.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", self.password_hasher.hash("correct password"), 10)
             unit_of_work.commit()
@@ -57,7 +59,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
     def test_login_sets_a_nonpersistent_short_cookie_and_a_30_day_remember_cookie(self) -> None:
         response = Response(status_code=204)
 
-        login_user(LoginRequest(name="Alice", password="correct password", remember=True), self.request(), response)
+        asyncio.run(login_user(LoginRequest(name="Alice", password="correct password", remember=True), self.request(), response))
 
         headers = self.cookie_headers(response)
         session_header = next(header for header in headers if header.startswith("moedeiro_session="))
@@ -74,13 +76,13 @@ class AuthenticationRoutesTest(unittest.TestCase):
 
     def test_login_without_remember_expires_any_client_remember_cookie(self) -> None:
         remembered_response = Response(status_code=204)
-        login_user(LoginRequest(name="Alice", password="correct password", remember=True), self.request(), remembered_response)
+        asyncio.run(login_user(LoginRequest(name="Alice", password="correct password", remember=True), self.request(), remembered_response))
         remembered_headers = self.cookie_headers(remembered_response)
         old_session = self.cookie_value(remembered_headers, "moedeiro_session")
         old_remember = self.cookie_value(remembered_headers, "moedeiro_remember")
         response = Response(status_code=204)
 
-        login_user(LoginRequest(name="Alice", password="correct password"), self.request({"moedeiro_session": old_session, "moedeiro_remember": old_remember}), response)
+        asyncio.run(login_user(LoginRequest(name="Alice", password="correct password"), self.request({"moedeiro_session": old_session, "moedeiro_remember": old_remember}), response))
 
         remember_header = next(header for header in self.cookie_headers(response) if header.startswith("moedeiro_remember="))
         self.assertIn("Max-Age=0", remember_header)
@@ -92,7 +94,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
         for name, password in (("Unknown", "correct password"), ("Alice", "wrong password")):
             with self.subTest(name=name, password=password):
                 with self.assertRaises(HTTPException) as raised:
-                    login_user(LoginRequest(name=name, password=password), self.request(), Response())
+                    asyncio.run(login_user(LoginRequest(name=name, password=password), self.request(), Response()))
                 self.assertEqual(raised.exception.status_code, 401)
                 self.assertEqual(raised.exception.detail, "Invalid credentials")
 
@@ -102,11 +104,11 @@ class AuthenticationRoutesTest(unittest.TestCase):
             unit_of_work.commit()
 
         with self.assertRaises(HTTPException) as raised:
-            login_user(LoginRequest(name="Alice", password="correct password"), self.request(), Response())
+            asyncio.run(login_user(LoginRequest(name="Alice", password="correct password"), self.request(), Response()))
         self.assertEqual(raised.exception.detail, "TOTP required")
 
         response = Response(status_code=204)
-        login_user(LoginRequest(name="Alice", password="correct password", totp_code="123456"), self.request(), response)
+        asyncio.run(login_user(LoginRequest(name="Alice", password="correct password", totp_code="123456"), self.request(), response))
         self.assertTrue(any(header.startswith("moedeiro_session=") for header in self.cookie_headers(response)))
 
     def test_login_does_not_distinguish_an_invalid_totp_from_other_invalid_credentials(self) -> None:
@@ -115,7 +117,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
             unit_of_work.commit()
 
         with self.assertRaises(HTTPException) as raised:
-            login_user(LoginRequest(name="Alice", password="correct password", totp_code="000000"), self.request(), Response())
+            asyncio.run(login_user(LoginRequest(name="Alice", password="correct password", totp_code="000000"), self.request(), Response()))
 
         self.assertEqual(raised.exception.status_code, 401)
         self.assertEqual(raised.exception.detail, "Invalid credentials")
@@ -124,7 +126,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
         self.rate_limiter.rejected_namespace = "login-ip-attempts"
 
         with self.assertRaises(HTTPException) as raised:
-            login_user(LoginRequest(name="Alice", password="correct password"), self.request(), Response())
+            asyncio.run(login_user(LoginRequest(name="Alice", password="correct password"), self.request(), Response()))
 
         self.assertEqual(raised.exception.status_code, 429)
         self.assertEqual(raised.exception.headers, {"Retry-After": "17"})
@@ -136,7 +138,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
             self.assertTrue(semaphore.acquire(blocking=False))
         try:
             with self.assertRaises(HTTPException) as raised:
-                login_user(LoginRequest(name="Alice", password="correct password"), self.request(), Response())
+                asyncio.run(login_user(LoginRequest(name="Alice", password="correct password"), self.request(), Response()))
         finally:
             for _ in range(self.application.state.settings.password_hash_concurrency):
                 semaphore.release()
@@ -144,9 +146,19 @@ class AuthenticationRoutesTest(unittest.TestCase):
         self.assertEqual(raised.exception.status_code, 503)
         self.assertEqual(self.password_hasher.verifications, [])
 
+    def test_login_rejects_without_using_shared_work_when_credential_capacity_is_exhausted(self) -> None:
+        self.credential_operation_executor.reject = True
+
+        with self.assertRaises(HTTPException) as raised:
+            asyncio.run(login_user(LoginRequest(name="Alice", password="correct password"), self.request(), Response()))
+
+        self.assertEqual(raised.exception.status_code, 503)
+        self.assertEqual(raised.exception.detail, "Credential operation capacity exhausted")
+        self.assertEqual(self.password_hasher.verifications, [])
+
     def test_session_validation_accepts_the_short_cookie_and_records_activity(self) -> None:
         login_response = Response(status_code=204)
-        login_user(LoginRequest(name="Alice", password="correct password"), self.request(), login_response)
+        asyncio.run(login_user(LoginRequest(name="Alice", password="correct password"), self.request(), login_response))
         token = self.cookie_value(self.cookie_headers(login_response), "moedeiro_session")
 
         result = validate_session(self.request({"moedeiro_session": token}))
@@ -158,7 +170,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
 
     def test_refresh_rotates_the_remember_cookie_and_issues_a_new_short_cookie(self) -> None:
         login_response = Response(status_code=204)
-        login_user(LoginRequest(name="Alice", password="correct password", remember=True), self.request(), login_response)
+        asyncio.run(login_user(LoginRequest(name="Alice", password="correct password", remember=True), self.request(), login_response))
         login_headers = self.cookie_headers(login_response)
         old_remember = self.cookie_value(login_headers, "moedeiro_remember")
 
@@ -175,7 +187,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
 
     def test_logout_revokes_both_sessions_and_clears_both_cookies(self) -> None:
         login_response = Response(status_code=204)
-        login_user(LoginRequest(name="Alice", password="correct password", remember=True), self.request(), login_response)
+        asyncio.run(login_user(LoginRequest(name="Alice", password="correct password", remember=True), self.request(), login_response))
         login_headers = self.cookie_headers(login_response)
         session_token = self.cookie_value(login_headers, "moedeiro_session")
         remember_token = self.cookie_value(login_headers, "moedeiro_remember")

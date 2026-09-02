@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import time
@@ -12,7 +13,7 @@ from app.application.registry.exceptions import TotpRequiredError
 from app.application.registry.use_cases.authentication import login
 from app.factory import create_app
 from app.settings import Settings
-from tests.fakes import FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator
+from tests.fakes import FakeCredentialOperationExecutor, FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -34,7 +35,7 @@ class TotpRoutesTest(unittest.TestCase):
         self.password_hasher = FakePasswordHasher()
         self.totp_authenticator = FakeTotpAuthenticator()
         self.rate_limiter = FakeRateLimiter()
-        self.application = create_app(settings, self.password_hasher, self.rate_limiter, self.totp_authenticator)
+        self.application = create_app(settings, self.password_hasher, self.rate_limiter, self.totp_authenticator, FakeCredentialOperationExecutor())
         with self.application.state.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", self.password_hasher.hash("current password"), 10)
             unit_of_work.commit()
@@ -53,7 +54,7 @@ class TotpRoutesTest(unittest.TestCase):
         request = self.request()
         user = require_authenticated_user(request)
 
-        setup = start_setup(StartTotpSetupRequest(current_password="current password"), request, user)
+        setup = asyncio.run(start_setup(StartTotpSetupRequest(current_password="current password"), request, user))
         result = confirm_setup(ConfirmTotpRequest(code="123456"), request, user)
 
         self.assertIn("otpauth://totp/Moedeiro:Alice", setup.provisioning_uri)
@@ -66,7 +67,7 @@ class TotpRoutesTest(unittest.TestCase):
     def test_enabled_totp_requires_a_code_to_login(self) -> None:
         request = self.request()
         user = require_authenticated_user(request)
-        start_setup(StartTotpSetupRequest(current_password="current password"), request, user)
+        asyncio.run(start_setup(StartTotpSetupRequest(current_password="current password"), request, user))
         confirm_setup(ConfirmTotpRequest(code="123456"), request, user)
 
         with self.assertRaises(TotpRequiredError):
@@ -78,7 +79,7 @@ class TotpRoutesTest(unittest.TestCase):
         self.rate_limiter.rejected_namespace = "totp-setup-ip-attempts"
 
         with self.assertRaises(HTTPException) as raised:
-            start_setup(StartTotpSetupRequest(current_password="current password"), request, user)
+            asyncio.run(start_setup(StartTotpSetupRequest(current_password="current password"), request, user))
 
         self.assertEqual(raised.exception.status_code, 429)
         self.assertEqual(self.password_hasher.verifications, [("$argon2id$test$current password", "current password")])
@@ -86,12 +87,12 @@ class TotpRoutesTest(unittest.TestCase):
     def test_authenticated_user_can_disable_totp_and_existing_sessions(self) -> None:
         setup_request = self.request()
         user = require_authenticated_user(setup_request)
-        start_setup(StartTotpSetupRequest(current_password="current password"), setup_request, user)
+        asyncio.run(start_setup(StartTotpSetupRequest(current_password="current password"), setup_request, user))
         confirm_setup(ConfirmTotpRequest(code="123456"), setup_request, user)
         request = self.request("123456")
         response = Response(status_code=204)
 
-        remove_totp(DisableTotpRequest(current_password="current password", code="123456"), request, response, user)
+        asyncio.run(remove_totp(DisableTotpRequest(current_password="current password", code="123456"), request, response, user))
 
         with self.application.state.databases.open_registry() as unit_of_work:
             self.assertIsNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))
@@ -101,14 +102,14 @@ class TotpRoutesTest(unittest.TestCase):
     def test_totp_disable_returns_one_generic_error_for_an_invalid_password_or_code(self) -> None:
         setup_request = self.request()
         user = require_authenticated_user(setup_request)
-        start_setup(StartTotpSetupRequest(current_password="current password"), setup_request, user)
+        asyncio.run(start_setup(StartTotpSetupRequest(current_password="current password"), setup_request, user))
         confirm_setup(ConfirmTotpRequest(code="123456"), setup_request, user)
         request = self.request("123456")
 
         for current_password, code in (("wrong password", "123456"), ("current password", "000000")):
             with self.subTest(current_password=current_password, code=code):
                 with self.assertRaises(HTTPException) as raised:
-                    remove_totp(DisableTotpRequest(current_password=current_password, code=code), request, Response(), user)
+                    asyncio.run(remove_totp(DisableTotpRequest(current_password=current_password, code=code), request, Response(), user))
                 self.assertEqual(raised.exception.status_code, 401)
                 self.assertEqual(raised.exception.detail, "Invalid credentials")
 

@@ -1,5 +1,6 @@
 import hashlib
 import time
+import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -12,7 +13,7 @@ from app.api.schema.registration import RegisterUserRequest
 from app.application.registry.use_cases.user_invitation import create_user_invitation
 from app.factory import create_app
 from app.settings import Settings
-from tests.fakes import FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator
+from tests.fakes import FakeCredentialOperationExecutor, FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -34,7 +35,7 @@ class RegistrationRoutesTest(unittest.TestCase):
         )
         self.password_hasher = FakePasswordHasher()
         self.rate_limiter = FakeRateLimiter()
-        self.application = create_app(settings, self.password_hasher, self.rate_limiter, FakeTotpAuthenticator())
+        self.application = create_app(settings, self.password_hasher, self.rate_limiter, FakeTotpAuthenticator(), FakeCredentialOperationExecutor())
         self.request = Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": []})
 
     def tearDown(self) -> None:
@@ -52,7 +53,7 @@ class RegistrationRoutesTest(unittest.TestCase):
     def test_register_creates_user_without_starting_a_session(self) -> None:
         code = self.create_invitation()
 
-        result = create_user(self.registration(code), self.request)
+        result = asyncio.run(create_user(self.registration(code), self.request))
 
         self.assertIsNone(result)
         with self.application.state.databases.open_registry() as unit_of_work:
@@ -65,7 +66,7 @@ class RegistrationRoutesTest(unittest.TestCase):
     def test_register_applies_the_ip_limit(self) -> None:
         code = self.create_invitation()
 
-        create_user(self.registration(code), self.request)
+        asyncio.run(create_user(self.registration(code), self.request))
 
         self.assertEqual(self.rate_limiter.checks, [("4/hour", "registration-ip-attempts", "192.0.2.1")])
 
@@ -82,7 +83,7 @@ class RegistrationRoutesTest(unittest.TestCase):
             self.assertTrue(semaphore.acquire(blocking=False))
         try:
             with self.assertRaises(HTTPException) as raised:
-                create_user(self.registration(code), self.request)
+                asyncio.run(create_user(self.registration(code), self.request))
         finally:
             for _ in range(self.application.state.settings.password_hash_concurrency):
                 semaphore.release()
@@ -96,7 +97,7 @@ class RegistrationRoutesTest(unittest.TestCase):
         self.rate_limiter.rejected_namespace = "registration-ip-attempts"
 
         with self.assertRaises(HTTPException) as raised:
-            create_user(self.registration(code), self.request)
+            asyncio.run(create_user(self.registration(code), self.request))
 
         self.assertEqual(raised.exception.status_code, 429)
         self.assertEqual(raised.exception.headers, {"Retry-After": "17"})
@@ -104,7 +105,7 @@ class RegistrationRoutesTest(unittest.TestCase):
 
     def test_invalid_invitation_does_not_hash_the_password(self) -> None:
         with self.assertRaises(HTTPException) as raised:
-            create_user(self.registration("0" * 16), self.request)
+            asyncio.run(create_user(self.registration("0" * 16), self.request))
 
         self.assertEqual(raised.exception.status_code, 404)
         self.assertEqual([check[1] for check in self.rate_limiter.checks], ["registration-ip-attempts"])
@@ -116,11 +117,11 @@ class RegistrationRoutesTest(unittest.TestCase):
         with self.application.state.databases.open_registry() as unit_of_work:
             second_invitation = unit_of_work.user_invitation_repository.get_by_secret_hash(hashlib.sha256(second_code.encode("ascii")).digest())
         assert second_invitation is not None
-        create_user(self.registration(first_code), self.request)
+        asyncio.run(create_user(self.registration(first_code), self.request))
         payload = RegisterUserRequest(invitation_code=second_code, name="ALICE", password="another valid password")
 
         with self.assertRaises(HTTPException) as raised:
-            create_user(payload, self.request)
+            asyncio.run(create_user(payload, self.request))
 
         self.assertEqual(raised.exception.status_code, 409)
         with self.application.state.databases.open_registry() as unit_of_work:

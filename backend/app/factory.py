@@ -1,5 +1,8 @@
+from contextlib import asynccontextmanager
 from threading import BoundedSemaphore
+from typing import AsyncGenerator
 
+from anyio.to_thread import current_default_thread_limiter
 from fastapi import FastAPI
 
 from app.api.authentication import router as authentication_router
@@ -8,12 +11,14 @@ from app.api.registration import router as registration_router
 from app.api.totp import router as totp_router
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.totp_authenticator import TotpAuthenticator
+from app.infrastructure.credential_operation_executor import CredentialOperationExecutor
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
+from app.infrastructure.security.concurrent_password_hasher import ConcurrentPasswordHasher
 from app.infrastructure.security.rate_limiter import RateLimiter
 from app.settings import Settings
 
 
-def create_app(settings: Settings | None = None, password_hasher: PasswordHasher | None = None, rate_limiter: RateLimiter | None = None, totp_authenticator: TotpAuthenticator | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, password_hasher: PasswordHasher | None = None, rate_limiter: RateLimiter | None = None, totp_authenticator: TotpAuthenticator | None = None, credential_operation_executor: CredentialOperationExecutor | None = None) -> FastAPI:
     selected_settings = Settings.from_environment() if settings is None else settings
     databases = SqliteDatabases(
         selected_settings.registry_db_path,
@@ -23,18 +28,30 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
     )
     databases.initialize()
 
-    application = FastAPI(title="Moedeiro")
+    application = FastAPI(title="Moedeiro", lifespan=_lifespan)
     application.state.settings = selected_settings
     application.state.databases = databases
-    application.state.password_hasher = _create_password_hasher() if password_hasher is None else password_hasher
+    password_hash_semaphore = BoundedSemaphore(selected_settings.password_hash_concurrency)
+    selected_password_hasher = _create_password_hasher() if password_hasher is None else password_hasher
+    application.state.password_hasher = ConcurrentPasswordHasher(selected_password_hasher, password_hash_semaphore)
     application.state.totp_authenticator = _create_totp_authenticator(selected_settings) if totp_authenticator is None else totp_authenticator
-    application.state.password_hash_semaphore = BoundedSemaphore(selected_settings.password_hash_concurrency)
+    application.state.password_hash_semaphore = password_hash_semaphore
+    application.state.credential_operation_executor = CredentialOperationExecutor(selected_settings.credential_operation_concurrency) if credential_operation_executor is None else credential_operation_executor
     application.state.rate_limiter = RateLimiter() if rate_limiter is None else rate_limiter
     application.include_router(authentication_router)
     application.include_router(password_router)
     application.include_router(registration_router)
     application.include_router(totp_router)
     return application
+
+
+@asynccontextmanager
+async def _lifespan(application: FastAPI) -> AsyncGenerator[None]:
+    current_default_thread_limiter().total_tokens = application.state.settings.sync_route_concurrency
+    try:
+        yield
+    finally:
+        application.state.credential_operation_executor.shutdown()
 
 
 def _create_password_hasher() -> PasswordHasher:
