@@ -125,7 +125,7 @@ class TotpUseCasesTest(unittest.TestCase):
         with self.assertRaises(InvalidTotpCodeError):
             login(self.open_registry, self.password_hasher, "Alice", "current password", False, 31, totp_authenticator=self.totp_authenticator, totp_code="123456")
 
-    def test_user_can_disable_totp_with_the_current_password_and_totp_code(self) -> None:
+    def test_user_can_disable_totp_with_the_current_password_and_totp_code_without_ending_sessions(self) -> None:
         self.enable()
         login(self.open_registry, self.password_hasher, "Alice", "current password", True, 30, totp_authenticator=self.totp_authenticator, totp_code="123456")
 
@@ -133,8 +133,8 @@ class TotpUseCasesTest(unittest.TestCase):
 
         with self.open_registry() as unit_of_work:
             self.assertIsNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))
-            self.assertEqual(unit_of_work.auth_session_repository.list_by_user(self.user.uuid), [])
-            self.assertEqual(unit_of_work.remember_session_repository.list_by_user(self.user.uuid), [])
+            self.assertEqual(len(unit_of_work.auth_session_repository.list_by_user(self.user.uuid)), 1)
+            self.assertEqual(len(unit_of_work.remember_session_repository.list_by_user(self.user.uuid)), 1)
 
     def test_user_mfa_disable_rejects_invalid_credentials_and_missing_totp(self) -> None:
         with self.assertRaises(TotpNotEnabledError):

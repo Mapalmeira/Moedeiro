@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 import time
 import unittest
 
-from fastapi import HTTPException, Request, Response
+from fastapi import HTTPException, Request
 
 from app.api.authentication import require_authenticated_user
 from app.api.schema.totp import ConfirmTotpRequest, DisableTotpRequest, StartTotpSetupRequest
@@ -84,20 +84,19 @@ class TotpRoutesTest(unittest.TestCase):
         self.assertEqual(raised.exception.status_code, 429)
         self.assertEqual(self.password_hasher.verifications, [("$argon2id$test$current password", "current password")])
 
-    def test_authenticated_user_can_disable_totp_and_existing_sessions(self) -> None:
+    def test_authenticated_user_can_disable_totp_without_ending_the_current_session(self) -> None:
         setup_request = self.request()
         user = require_authenticated_user(setup_request)
         asyncio.run(start_setup(StartTotpSetupRequest(current_password="current password"), setup_request, user))
         confirm_setup(ConfirmTotpRequest(code="123456"), setup_request, user)
         request = self.request("123456")
-        response = Response(status_code=204)
-
-        asyncio.run(remove_totp(DisableTotpRequest(current_password="current password", code="123456"), request, response, user))
+        with self.application.state.databases.open_registry() as unit_of_work:
+            session_count = len(unit_of_work.auth_session_repository.list_by_user(self.user.uuid))
+        asyncio.run(remove_totp(DisableTotpRequest(current_password="current password", code="123456"), request, user))
 
         with self.application.state.databases.open_registry() as unit_of_work:
             self.assertIsNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))
-            self.assertEqual(unit_of_work.auth_session_repository.list_by_user(self.user.uuid), [])
-        self.assertTrue(any(name == b"set-cookie" and b"moedeiro_session=" in value and b"Max-Age=0" in value for name, value in response.raw_headers))
+            self.assertEqual(len(unit_of_work.auth_session_repository.list_by_user(self.user.uuid)), session_count)
 
     def test_totp_disable_returns_one_generic_error_for_an_invalid_password_or_code(self) -> None:
         setup_request = self.request()
@@ -109,7 +108,7 @@ class TotpRoutesTest(unittest.TestCase):
         for current_password, code in (("wrong password", "123456"), ("current password", "000000")):
             with self.subTest(current_password=current_password, code=code):
                 with self.assertRaises(HTTPException) as raised:
-                    asyncio.run(remove_totp(DisableTotpRequest(current_password=current_password, code=code), request, Response(), user))
+                    asyncio.run(remove_totp(DisableTotpRequest(current_password=current_password, code=code), request, user))
                 self.assertEqual(raised.exception.status_code, 401)
                 self.assertEqual(raised.exception.detail, "Invalid credentials")
 

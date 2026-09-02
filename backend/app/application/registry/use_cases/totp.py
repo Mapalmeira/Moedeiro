@@ -48,8 +48,6 @@ def disable_totp(unit_of_work_factory: Callable[[], RegistryUnitOfWork], passwor
             raise TotpNotEnabledError
         verify_totp(unit_of_work, totp_authenticator, user.uuid, code, timestamp)
         unit_of_work.mfa_method_repository.delete(method.uuid)
-        unit_of_work.auth_session_repository.delete_by_user(user.uuid)
-        unit_of_work.remember_session_repository.delete_by_user(user.uuid)
         unit_of_work.commit()
 
 

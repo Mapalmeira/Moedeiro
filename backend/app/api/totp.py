@@ -2,9 +2,9 @@ import time
 from functools import partial
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from app.api.authentication import clear_authentication_cookies, require_authenticated_user
+from app.api.authentication import require_authenticated_user
 from app.api.credential_operation import execute_credential_operation
 from app.api.schema.totp import ConfirmTotpRequest, DisableTotpRequest, StartTotpSetupRequest, StartTotpSetupResponse
 from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, InvalidTotpSetupError, TotpAlreadyEnabledError, TotpNotEnabledError
@@ -60,7 +60,7 @@ def confirm_setup(payload: ConfirmTotpRequest, request: Request, user: Annotated
 
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
-async def remove_totp(payload: DisableTotpRequest, request: Request, response: Response, user: Annotated[User, Depends(require_authenticated_user)]) -> None:
+async def remove_totp(payload: DisableTotpRequest, request: Request, user: Annotated[User, Depends(require_authenticated_user)]) -> None:
     try:
         await execute_credential_operation(
             request,
@@ -79,7 +79,6 @@ async def remove_totp(payload: DisableTotpRequest, request: Request, response: R
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from error
     except TotpNotEnabledError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="TOTP not enabled") from error
-    clear_authentication_cookies(response)
 
 
 def _databases(request: Request) -> SqliteDatabases:
