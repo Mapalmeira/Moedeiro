@@ -10,11 +10,19 @@ class InvalidCredentialsError(Exception):
     pass
 
 
+class TotpRequiredError(Exception):
+    pass
+
+
 class InvalidSessionError(Exception):
     pass
 
 
 class InvalidCurrentPasswordError(Exception):
+    pass
+
+
+class PasswordUpdateConflictError(Exception):
     pass
 
 

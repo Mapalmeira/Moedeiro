@@ -16,9 +16,6 @@ class EnableTotpRequest(BaseModel):
     code: TotpCode
 
 
-class EnableTotpResponse(BaseModel):
-    recovery_codes: list[str]
-
-
 class DisableTotpRequest(BaseModel):
+    current_password: Password
     code: TotpCode
