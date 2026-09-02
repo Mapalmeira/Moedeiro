@@ -40,7 +40,7 @@ def create_recovery_code(unit_of_work_factory: Callable[[], RegistryUnitOfWork],
     return code
 
 
-def reset_password(unit_of_work_factory: Callable[[], RegistryUnitOfWork], password_hasher: PasswordHasher, totp_authenticator: TotpAuthenticator, name: UserName, code: RecoveryCodeValue, new_password: Password, totp_code: TotpCode | None, timestamp: int) -> None:
+def recover_password(unit_of_work_factory: Callable[[], RegistryUnitOfWork], password_hasher: PasswordHasher, totp_authenticator: TotpAuthenticator, name: UserName, code: RecoveryCodeValue, new_password: Password, totp_code: TotpCode | None, timestamp: int) -> None:
     with unit_of_work_factory() as unit_of_work:
         user = unit_of_work.user_repository.get_by_normalized_name(normalize_user_name(name))
         if user is None:
