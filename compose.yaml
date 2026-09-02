@@ -5,7 +5,6 @@ services:
       dockerfile: backend/app/Containerfile
     image: moedeiro-backend:latest
     environment:
-      REGISTRATION_VALIDATE_IP_RATE_LIMIT: ${REGISTRATION_VALIDATE_IP_RATE_LIMIT:-5/hour}
       REGISTRATION_CREATE_IP_RATE_LIMIT: ${REGISTRATION_CREATE_IP_RATE_LIMIT:-5/hour}
       LOGIN_IP_RATE_LIMIT: ${LOGIN_IP_RATE_LIMIT:-5/minute}
       PASSWORD_RECOVERY_IP_RATE_LIMIT: ${PASSWORD_RECOVERY_IP_RATE_LIMIT:-5/hour}
