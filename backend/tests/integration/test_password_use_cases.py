@@ -3,9 +3,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
+from uuid import uuid4
 
-from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, RecoveryCodeNotAvailableError, UserNotFoundError
-from app.application.registry.use_cases.password import change_password, create_recovery_code, get_available_recovery_code, reset_password
+from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, PasswordUpdateConflictError, RecoveryCodeNotAvailableError, TotpRequiredError, UserNotFoundError
+from app.application.registry.use_cases.password import change_password, create_recovery_code, create_recovery_code_for_user, reset_password
 from app.domain.registry.model.auth_session import DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS
 from app.domain.registry.model.remember_session import DEFAULT_EXPIRATION_TIMEOUT_SECONDS
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
@@ -40,7 +41,12 @@ class PasswordUseCasesTest(unittest.TestCase):
             unit_of_work.remember_session_repository.create(self.user.uuid, b"r" * 32, 11, 11 + DEFAULT_EXPIRATION_TIMEOUT_SECONDS)
             unit_of_work.commit()
 
-    def test_change_password_updates_the_hash_and_revokes_every_session(self) -> None:
+    def enable_totp(self) -> None:
+        with self.open_registry() as unit_of_work:
+            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 10)
+            unit_of_work.commit()
+
+    def test_change_password_updates_the_hash_and_deletes_every_session(self) -> None:
         self.create_sessions()
 
         change_password(self.open_registry, self.password_hasher, self.user, "current password", "replacement password", 20)
@@ -52,8 +58,8 @@ class PasswordUseCasesTest(unittest.TestCase):
         assert user is not None
         self.assertEqual(user.password_hash, "$argon2id$test$replacement password")
         self.assertEqual(user.password_changed_at, 20)
-        self.assertEqual([session.revoked_at for session in auth_sessions], [20])
-        self.assertEqual([session.revoked_at for session in remember_sessions], [20])
+        self.assertEqual(auth_sessions, [])
+        self.assertEqual(remember_sessions, [])
 
     def test_change_password_rejects_an_invalid_current_password_without_changes(self) -> None:
         self.create_sessions()
@@ -67,102 +73,149 @@ class PasswordUseCasesTest(unittest.TestCase):
         assert user is not None
         self.assertEqual(user.password_hash, "$argon2id$test$current password")
         self.assertEqual(self.password_hasher.passwords, [])
-        self.assertIsNone(auth_sessions[0].revoked_at)
+        self.assertEqual(len(auth_sessions), 1)
 
-    def test_change_password_requires_totp_without_mutating_the_account(self) -> None:
+    def test_change_password_reports_when_the_authenticated_user_no_longer_exists(self) -> None:
         with self.open_registry() as unit_of_work:
-            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 10)
+            unit_of_work.user_repository.delete(self.user.uuid)
             unit_of_work.commit()
-        self.create_sessions()
 
+        with self.assertRaises(UserNotFoundError):
+            change_password(self.open_registry, self.password_hasher, self.user, "current password", "replacement password", 20)
+
+    def test_change_password_distinguishes_missing_and_invalid_totp(self) -> None:
+        self.enable_totp()
+
+        with self.assertRaises(TotpRequiredError):
+            change_password(self.open_registry, self.password_hasher, self.user, "current password", "replacement password", 20, self.totp_authenticator)
         with self.assertRaises(InvalidTotpCodeError):
             change_password(self.open_registry, self.password_hasher, self.user, "current password", "replacement password", 20, self.totp_authenticator, "000000")
 
         with self.open_registry() as unit_of_work:
             user = unit_of_work.user_repository.get(self.user.uuid)
-            auth_sessions = unit_of_work.auth_session_repository.list_by_user(self.user.uuid)
         assert user is not None
         self.assertEqual(user.password_hash, "$argon2id$test$current password")
-        self.assertIsNone(auth_sessions[0].revoked_at)
 
     @patch.object(SqliteUserRepository, "update_password", return_value=False)
-    def test_change_password_rolls_back_session_revocation_when_the_compare_and_set_fails(self, update_password) -> None:
+    def test_change_password_rolls_back_session_deletion_when_compare_and_set_fails(self, update_password) -> None:
         self.create_sessions()
 
-        with self.assertRaises(InvalidCurrentPasswordError):
+        with self.assertRaises(PasswordUpdateConflictError):
             change_password(self.open_registry, self.password_hasher, self.user, "current password", "replacement password", 20)
 
         with self.open_registry() as unit_of_work:
-            auth_sessions = unit_of_work.auth_session_repository.list_by_user(self.user.uuid)
-        self.assertIsNone(auth_sessions[0].revoked_at)
+            self.assertEqual(len(unit_of_work.auth_session_repository.list_by_user(self.user.uuid)), 1)
         update_password.assert_called_once()
 
-    @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(10)))
-    def test_create_recovery_code_returns_a_crockford_code_and_persists_only_its_hash(self, token_bytes) -> None:
+    @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(20)))
+    def test_create_recovery_code_returns_160_random_bits_and_persists_only_the_hash(self, token_bytes) -> None:
         code = create_recovery_code(self.open_registry, self.user.uuid, 20)
 
         with self.open_registry() as unit_of_work:
-            recovery_code = unit_of_work.recovery_code_repository.get_by_code_hash(hashlib.sha256(code.encode("ascii")).digest())
-        self.assertEqual(code, "000G40R40M30E209")
+            recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid)
         assert recovery_code is not None
-        self.assertEqual(recovery_code.user_uuid, self.user.uuid)
+        self.assertEqual(len(code), 32)
+        self.assertEqual(recovery_code.code_hash, hashlib.sha256(code.encode("ascii")).digest())
         self.assertEqual(recovery_code.created_at, 20)
-        self.assertIsNone(recovery_code.used_at)
+        token_bytes.assert_called_once_with(20)
+
+    def test_create_recovery_code_replaces_the_previous_active_code(self) -> None:
+        create_recovery_code(self.open_registry, self.user.uuid, 20)
+        with self.open_registry() as unit_of_work:
+            first = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid)
+        assert first is not None
+
+        create_recovery_code(self.open_registry, self.user.uuid, 21)
+
+        with self.open_registry() as unit_of_work:
+            second = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid)
+            all_codes = unit_of_work.recovery_code_repository.list_by_user(self.user.uuid)
+        assert second is not None
+        self.assertNotEqual(second.uuid, first.uuid)
+        self.assertEqual(all_codes, [second])
+
+    def test_create_recovery_code_preserves_used_history(self) -> None:
+        create_recovery_code(self.open_registry, self.user.uuid, 20)
+        with self.open_registry() as unit_of_work:
+            first = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid)
+            assert first is not None
+            unit_of_work.recovery_code_repository.consume(first.uuid, 21)
+            unit_of_work.commit()
+
+        create_recovery_code(self.open_registry, self.user.uuid, 22)
+
+        with self.open_registry() as unit_of_work:
+            codes = unit_of_work.recovery_code_repository.list_by_user(self.user.uuid)
+        self.assertEqual(len(codes), 2)
+        self.assertEqual(next(code for code in codes if code.uuid == first.uuid).used_at, 21)
 
     def test_create_recovery_code_rejects_an_unknown_user(self) -> None:
-        from uuid import uuid4
-
         with self.assertRaises(UserNotFoundError):
             create_recovery_code(self.open_registry, uuid4(), 20)
 
-    def test_available_recovery_code_rejects_future_used_and_revoked_codes(self) -> None:
-        code = create_recovery_code(self.open_registry, self.user.uuid, 20)
+    def test_authenticated_recovery_code_generation_requires_password_and_totp(self) -> None:
+        self.enable_totp()
 
-        self.assertIsNone(get_available_recovery_code(self.open_registry, code, 19))
-        available = get_available_recovery_code(self.open_registry, code, 20)
-        self.assertIsNotNone(available)
-        assert available is not None
-        with self.open_registry() as unit_of_work:
-            unit_of_work.recovery_code_repository.revoke(available.uuid, 21)
-            unit_of_work.commit()
-        self.assertIsNone(get_available_recovery_code(self.open_registry, code, 22))
+        with self.assertRaises(InvalidCurrentPasswordError):
+            create_recovery_code_for_user(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "wrong password", None, 20)
+        with self.assertRaises(TotpRequiredError):
+            create_recovery_code_for_user(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", None, 20)
 
-    def test_reset_password_consumes_the_code_and_revokes_every_session(self) -> None:
+        code = create_recovery_code_for_user(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", "123456", 20)
+
+        self.assertEqual(len(code), 32)
+
+    def test_reset_password_consumes_the_code_and_deletes_every_session(self) -> None:
         code = create_recovery_code(self.open_registry, self.user.uuid, 20)
-        remaining_code = create_recovery_code(self.open_registry, self.user.uuid, 21)
         self.create_sessions()
 
-        reset_password(self.open_registry, self.password_hasher, code, "replacement password", 30)
+        reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", None, 30)
 
         with self.open_registry() as unit_of_work:
             user = unit_of_work.user_repository.get(self.user.uuid)
-            recovery_code = unit_of_work.recovery_code_repository.get_by_code_hash(hashlib.sha256(code.encode("ascii")).digest())
-            remaining_recovery_code = unit_of_work.recovery_code_repository.get_by_code_hash(hashlib.sha256(remaining_code.encode("ascii")).digest())
+            codes = unit_of_work.recovery_code_repository.list_by_user(self.user.uuid)
             auth_sessions = unit_of_work.auth_session_repository.list_by_user(self.user.uuid)
             remember_sessions = unit_of_work.remember_session_repository.list_by_user(self.user.uuid)
         assert user is not None
-        assert recovery_code is not None
-        assert remaining_recovery_code is not None
         self.assertEqual(user.password_hash, "$argon2id$test$replacement password")
-        self.assertEqual(user.password_changed_at, 30)
-        self.assertEqual(recovery_code.used_at, 30)
-        self.assertIsNone(remaining_recovery_code.revoked_at)
-        self.assertEqual([session.revoked_at for session in auth_sessions], [30])
-        self.assertEqual([session.revoked_at for session in remember_sessions], [30])
+        self.assertEqual(codes[0].used_at, 30)
+        self.assertEqual(auth_sessions, [])
+        self.assertEqual(remember_sessions, [])
         with self.assertRaises(RecoveryCodeNotAvailableError):
-            reset_password(self.open_registry, self.password_hasher, code, "another password", 31)
+            reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "another password", None, 31)
+
+    def test_reset_password_requires_totp_when_enabled(self) -> None:
+        code = create_recovery_code(self.open_registry, self.user.uuid, 20)
+        self.enable_totp()
+
+        with self.assertRaises(TotpRequiredError):
+            reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", None, 30)
+        with self.assertRaises(InvalidTotpCodeError):
+            reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", "000000", 30)
+
+        reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", "123456", 30)
+
+    def test_reset_password_distinguishes_an_unknown_user_from_an_unavailable_code(self) -> None:
+        code = create_recovery_code(self.open_registry, self.user.uuid, 20)
+        self.password_hasher.passwords.clear()
+
+        with self.assertRaises(UserNotFoundError):
+            reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Unknown", code, "replacement password", None, 30)
+        with self.assertRaises(RecoveryCodeNotAvailableError):
+            reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", "0" * 32, "replacement password", None, 30)
+
+        self.assertEqual(self.password_hasher.passwords, [])
 
     @patch.object(SqliteUserRepository, "update_password", return_value=False)
-    def test_reset_password_rolls_back_code_consumption_when_the_password_update_fails(self, update_password) -> None:
+    def test_reset_password_rolls_back_code_consumption_when_password_update_fails(self, update_password) -> None:
         code = create_recovery_code(self.open_registry, self.user.uuid, 20)
 
-        with self.assertRaises(RecoveryCodeNotAvailableError):
-            reset_password(self.open_registry, self.password_hasher, code, "replacement password", 30)
+        with self.assertRaises(PasswordUpdateConflictError):
+            reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", None, 30)
 
         with self.open_registry() as unit_of_work:
-            recovery_code = unit_of_work.recovery_code_repository.get_by_code_hash(hashlib.sha256(code.encode("ascii")).digest())
-        assert recovery_code is not None
-        self.assertIsNone(recovery_code.used_at)
+            recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid)
+        self.assertIsNotNone(recovery_code)
         update_password.assert_called_once()
 
 
