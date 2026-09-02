@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/password", tags=["password"])
 
 
 @router.post("/change", status_code=status.HTTP_204_NO_CONTENT)
-async def change_current_password(payload: ChangePasswordRequest, request: Request, response: Response, user: Annotated[User, Depends(require_authenticated_user)]) -> None:
+async def change_current_password(payload: ChangePasswordRequest, request: Request, user: Annotated[User, Depends(require_authenticated_user)]) -> None:
     try:
         await execute_credential_operation(
             request,
@@ -46,9 +46,6 @@ async def change_current_password(payload: ChangePasswordRequest, request: Reque
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from error
     except PasswordUpdateConflictError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Password update conflict") from error
-    clear_authentication_cookies(response)
-
-
 @router.post("/recovery", status_code=status.HTTP_204_NO_CONTENT)
 async def recover_password(payload: ResetPasswordRequest, request: Request, response: Response) -> None:
     _check_rate_limit(request, _settings(request).password_recovery_ip_attempts_rate_limit, "password-recovery-ip-attempts", _client_ip(request))

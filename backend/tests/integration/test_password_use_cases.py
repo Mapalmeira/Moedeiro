@@ -46,7 +46,7 @@ class PasswordUseCasesTest(unittest.TestCase):
             unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 10)
             unit_of_work.commit()
 
-    def test_change_password_updates_the_hash_and_deletes_every_session(self) -> None:
+    def test_change_password_updates_the_hash_without_ending_sessions(self) -> None:
         self.create_sessions()
 
         change_password(self.open_registry, self.password_hasher, self.user, "current password", "replacement password", 20)
@@ -58,8 +58,8 @@ class PasswordUseCasesTest(unittest.TestCase):
         assert user is not None
         self.assertEqual(user.password_hash, "$argon2id$test$replacement password")
         self.assertEqual(user.password_changed_at, 20)
-        self.assertEqual(auth_sessions, [])
-        self.assertEqual(remember_sessions, [])
+        self.assertEqual(len(auth_sessions), 1)
+        self.assertEqual(len(remember_sessions), 1)
 
     def test_change_password_rejects_an_invalid_current_password_without_changes(self) -> None:
         self.create_sessions()
@@ -97,7 +97,7 @@ class PasswordUseCasesTest(unittest.TestCase):
         self.assertEqual(user.password_hash, "$argon2id$test$current password")
 
     @patch.object(SqliteUserRepository, "update_password", return_value=False)
-    def test_change_password_rolls_back_session_deletion_when_compare_and_set_fails(self, update_password) -> None:
+    def test_change_password_leaves_sessions_unchanged_when_compare_and_set_fails(self, update_password) -> None:
         self.create_sessions()
 
         with self.assertRaises(PasswordUpdateConflictError):
