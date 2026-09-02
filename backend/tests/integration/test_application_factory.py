@@ -40,7 +40,7 @@ class ApplicationFactoryTest(unittest.TestCase):
             self.assertFalse(application.state.password_hash_semaphore.acquire(blocking=False))
             for _ in range(settings.password_hash_concurrency):
                 application.state.password_hash_semaphore.release()
-            self.assertTrue({"/api/authentication/login", "/api/authentication/logout", "/api/password/change", "/api/password/recovery", "/api/registration", "/api/registration/validate"}.issubset(application.openapi()["paths"]))
+            self.assertTrue({"/api/authentication/login", "/api/authentication/logout", "/api/password/change", "/api/password/recovery", "/api/registration"}.issubset(application.openapi()["paths"]))
             self.assertTrue(settings.registry_db_path.is_file())
             self.assertTrue(settings.ledger_dbs_dir.is_dir())
 

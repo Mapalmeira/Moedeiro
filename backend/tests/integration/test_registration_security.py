@@ -5,8 +5,8 @@ import unittest
 
 from fastapi import HTTPException, Request
 
-from app.api.registration import create_user, validate_invitation
-from app.api.schema.registration import RegisterUserRequest, ValidateInvitationRequest
+from app.api.registration import create_user
+from app.api.schema.registration import RegisterUserRequest
 from app.application.registry.use_cases.user_invitation import create_user_invitation
 from app.factory import create_app
 from app.settings import Settings
@@ -27,7 +27,6 @@ class RegistrationSecurityTest(unittest.TestCase):
             ledger_schema_path=LEDGER_SCHEMA_PATH,
             registry_db_path=directory / "registry/registry.sqlite",
             ledger_dbs_dir=directory / "ledgers",
-            registration_validate_ip_rate_limit="2/minute",
             registration_create_ip_rate_limit="2/hour",
         )
         self.application = create_app(settings, totp_authenticator=FakeTotpAuthenticator())
@@ -44,22 +43,6 @@ class RegistrationSecurityTest(unittest.TestCase):
     @staticmethod
     def registration(code: str, name: str, password: str = "correct horse battery") -> RegisterUserRequest:
         return RegisterUserRequest(invitation_code=code, name=name, password=password)
-
-    def test_invalid_validation_attempts_exhaust_only_their_ip_limit(self) -> None:
-        payload = ValidateInvitationRequest(invitation_code="0" * 16)
-
-        for _ in range(2):
-            with self.assertRaises(HTTPException) as unavailable:
-                validate_invitation(payload, self.request())
-            self.assertEqual(unavailable.exception.status_code, 404)
-        with self.assertRaises(HTTPException) as raised:
-            validate_invitation(payload, self.request())
-
-        self.assertEqual(raised.exception.status_code, 429)
-        self.assertGreaterEqual(int(raised.exception.headers["Retry-After"]), 1)
-        with self.assertRaises(HTTPException) as other_ip:
-            validate_invitation(payload, self.request("198.51.100.1"))
-        self.assertEqual(other_ip.exception.status_code, 404)
 
     def test_invalid_registration_attempts_exhaust_only_their_ip_limit(self) -> None:
         payload = self.registration("0" * 16, "Alice")
@@ -78,18 +61,6 @@ class RegistrationSecurityTest(unittest.TestCase):
         self.assertEqual(other_ip.exception.status_code, 404)
         with self.application.state.databases.open_registry() as unit_of_work:
             self.assertEqual(unit_of_work.user_repository.list_all(), [])
-
-    def test_validation_does_not_consume_the_invitation_or_registration_limit(self) -> None:
-        code = self.create_invitation()
-        payload = ValidateInvitationRequest(invitation_code=code)
-
-        validate_invitation(payload, self.request())
-        validate_invitation(payload, self.request())
-        create_user(self.registration(code, "Alice"), self.request())
-
-        with self.application.state.databases.open_registry() as unit_of_work:
-            user = unit_of_work.user_repository.get_by_normalized_name("alice")
-        self.assertIsNotNone(user)
 
     def test_registration_stores_a_hash_that_verifies_only_the_original_password(self) -> None:
         code = self.create_invitation()

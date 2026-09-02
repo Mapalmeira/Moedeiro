@@ -2,7 +2,7 @@ import time
 
 from fastapi import APIRouter, HTTPException, Request, status
 
-from app.api.schema.registration import RegisterUserRequest, ValidateInvitationRequest
+from app.api.schema.registration import RegisterUserRequest
 from app.application.registry.exceptions import InvitationNotAvailableError, UserNameUnavailableError
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.use_cases.register_user import register_user
@@ -13,14 +13,6 @@ from app.settings import Settings
 
 
 router = APIRouter(prefix="/api/registration", tags=["registration"])
-
-
-@router.post("/validate", status_code=status.HTTP_204_NO_CONTENT)
-def validate_invitation(payload: ValidateInvitationRequest, request: Request) -> None:
-    _check_rate_limit(request, _settings(request).registration_validate_ip_rate_limit, "registration-validate-ip", _client_ip(request))
-    invitation = get_available_user_invitation(_databases(request).open_registry, payload.invitation_code, int(time.time()))
-    if invitation is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invitation not available")
 
 
 @router.post("", status_code=status.HTTP_204_NO_CONTENT)

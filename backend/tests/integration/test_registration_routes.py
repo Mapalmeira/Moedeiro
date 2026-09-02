@@ -7,8 +7,8 @@ import unittest
 from fastapi import HTTPException, Request
 from pydantic import ValidationError
 
-from app.api.registration import create_user, validate_invitation
-from app.api.schema.registration import RegisterUserRequest, ValidateInvitationRequest
+from app.api.registration import create_user
+from app.api.schema.registration import RegisterUserRequest
 from app.application.registry.use_cases.user_invitation import create_user_invitation
 from app.factory import create_app
 from app.settings import Settings
@@ -29,7 +29,6 @@ class RegistrationRoutesTest(unittest.TestCase):
             ledger_schema_path=LEDGER_SCHEMA_PATH,
             registry_db_path=directory / "registry/registry.sqlite",
             ledger_dbs_dir=directory / "ledgers",
-            registration_validate_ip_rate_limit="7/minute",
             registration_create_ip_rate_limit="4/hour",
             password_hash_concurrency=3,
         )
@@ -44,30 +43,9 @@ class RegistrationRoutesTest(unittest.TestCase):
     def create_invitation(self):
         return create_user_invitation(self.application.state.databases.open_registry, int(time.time()), 3600)
 
-    def test_validate_accepts_an_available_invitation_without_a_response_body(self) -> None:
-        code = self.create_invitation()
-
-        result = validate_invitation(ValidateInvitationRequest(invitation_code=code), self.request)
-
-        self.assertIsNone(result)
-        self.assertEqual(self.rate_limiter.checks, [("7/minute", "registration-validate-ip", "192.0.2.1")])
-
-    def test_validate_is_exposed_as_no_content(self) -> None:
-        responses = self.application.openapi()["paths"]["/api/registration/validate"]["post"]["responses"]
-
-        self.assertIn("204", responses)
-        self.assertNotIn("content", responses["204"])
-
-    def test_validate_does_not_reveal_the_state_of_an_unavailable_invitation(self) -> None:
-        with self.assertRaises(HTTPException) as raised:
-            validate_invitation(ValidateInvitationRequest(invitation_code="0" * 16), self.request)
-
-        self.assertEqual(raised.exception.status_code, 404)
-        self.assertEqual(raised.exception.detail, "Invitation not available")
-
     def test_request_models_reject_malformed_code_and_blank_name(self) -> None:
         with self.assertRaises(ValidationError):
-            ValidateInvitationRequest(invitation_code="short")
+            RegisterUserRequest(invitation_code="short", name="Alice", password="correct horse battery")
         with self.assertRaises(ValidationError):
             RegisterUserRequest(invitation_code="0" * 16, name="   ", password="correct horse battery")
 
