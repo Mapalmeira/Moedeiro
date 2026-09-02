@@ -6,6 +6,7 @@ from uuid import UUID
 
 from app.application.registry.exceptions import UserNameUnavailableError, UserNotFoundError
 from app.application.registry.use_cases.cleanup import remove_inactive_records
+from app.application.registry.use_cases.mfa import disable_mfa
 from app.application.registry.use_cases.password import create_recovery_code
 from app.application.registry.use_cases.user import create_user, delete_user, list_users
 from app.application.registry.use_cases.user_invitation import create_user_invitation, list_user_invitations, revoke_user_invitation
@@ -63,6 +64,8 @@ def _add_user_actions(parser: argparse.ArgumentParser) -> None:
     actions.add_parser("list")
     recover_password = actions.add_parser("recover-password")
     recover_password.add_argument("uuid", type=UUID)
+    disable_mfa = actions.add_parser("disable-mfa")
+    disable_mfa.add_argument("uuid", type=UUID)
     delete = actions.add_parser("delete")
     delete.add_argument("uuid", type=UUID)
 
@@ -73,7 +76,7 @@ def _handle_invitation(arguments: argparse.Namespace, databases: SqliteDatabases
     if arguments.action == "list":
         return _list_invitations(databases, timestamp)
     if arguments.action == "revoke":
-        return _revoke_invitation(databases, timestamp, arguments.uuid)
+        return _revoke_invitation(databases, arguments.uuid)
     raise ValueError(f"Unsupported invitation action: {arguments.action}")
 
 
@@ -89,8 +92,8 @@ def _list_invitations(databases: SqliteDatabases, timestamp: int) -> int:
     return 0
 
 
-def _revoke_invitation(databases: SqliteDatabases, timestamp: int, invitation_uuid: UUID) -> int:
-    if not revoke_user_invitation(databases.open_registry, invitation_uuid, timestamp):
+def _revoke_invitation(databases: SqliteDatabases, invitation_uuid: UUID) -> int:
+    if not revoke_user_invitation(databases.open_registry, invitation_uuid):
         print("Invitation not available")
         return 1
     print(f"Revoked invitation {invitation_uuid}")
@@ -120,6 +123,8 @@ def _handle_user(arguments: argparse.Namespace, databases: SqliteDatabases) -> i
         return _list_users(databases)
     if arguments.action == "recover-password":
         return _create_recovery_code(databases, int(time.time()), arguments.uuid)
+    if arguments.action == "disable-mfa":
+        return _disable_mfa(databases, arguments.uuid)
     if arguments.action == "delete":
         return _delete_user(databases, arguments.uuid)
     raise ValueError(f"Unsupported user action: {arguments.action}")
@@ -157,11 +162,22 @@ def _delete_user(databases: SqliteDatabases, user_uuid: UUID) -> int:
     return 0
 
 
+def _disable_mfa(databases: SqliteDatabases, user_uuid: UUID) -> int:
+    try:
+        disabled_count = disable_mfa(databases.open_registry, user_uuid)
+    except UserNotFoundError:
+        print("User not found")
+        return 1
+    if disabled_count == 0:
+        print("MFA not enabled")
+        return 1
+    print(f"Disabled MFA for user {user_uuid}")
+    return 0
+
+
 def _status(invitation: UserInvitation, timestamp: int) -> str:
     if invitation.consumed_at is not None:
         return "CONSUMED"
-    if invitation.revoked_at is not None:
-        return "REVOKED"
     if invitation.expires_at <= timestamp:
         return "EXPIRED"
     return "ACTIVE"

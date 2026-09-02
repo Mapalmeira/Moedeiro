@@ -103,17 +103,34 @@ class UserDeletionCliTest(unittest.TestCase):
         self.assertIn(f"{user.uuid}\tBob\t100\n", output.getvalue())
 
     @patch("app.cli.time.time", return_value=100)
-    @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(10)))
+    @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(20)))
     def test_recover_password_emits_a_link_without_exposing_recovery_code_administration(self, token_bytes, current_time) -> None:
         output = StringIO()
 
         with redirect_stdout(output):
             self.assertEqual(main(["user", "recover-password", str(self.user.uuid)], self.settings), 0)
 
-        self.assertEqual(output.getvalue(), "/recover#code=000G40R40M30E209\n")
+        link = output.getvalue().strip()
+        self.assertTrue(link.startswith("/recover#code="))
+        code = link.removeprefix("/recover#code=")
+        self.assertEqual(len(code), 32)
         with self.databases.open_registry() as unit_of_work:
-            recovery_code = unit_of_work.recovery_code_repository.get_by_code_hash(hashlib.sha256("000G40R40M30E209".encode("ascii")).digest())
-        self.assertIsNotNone(recovery_code)
+            recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid)
+        assert recovery_code is not None
+        self.assertEqual(recovery_code.code_hash, hashlib.sha256(code.encode("ascii")).digest())
+
+    def test_disable_mfa_removes_methods_and_sessions_but_preserves_recovery_code(self) -> None:
+        output = StringIO()
+
+        with redirect_stdout(output):
+            self.assertEqual(main(["user", "disable-mfa", str(self.user.uuid)], self.settings), 0)
+
+        self.assertEqual(output.getvalue(), f"Disabled MFA for user {self.user.uuid}\n")
+        with self.databases.open_registry() as unit_of_work:
+            self.assertEqual(unit_of_work.mfa_method_repository.list_by_user(self.user.uuid), [])
+            self.assertEqual(unit_of_work.auth_session_repository.list_by_user(self.user.uuid), [])
+            self.assertEqual(unit_of_work.remember_session_repository.list_by_user(self.user.uuid), [])
+            self.assertIsNotNone(unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid))
 
 
 if __name__ == "__main__":

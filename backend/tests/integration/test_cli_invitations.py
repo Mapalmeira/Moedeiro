@@ -47,7 +47,7 @@ class InvitationCliTest(unittest.TestCase):
         self.assertEqual(invitations[0].expires_at, 3700)
 
     @patch("app.cli.time.time", return_value=100)
-    def test_list_and_revoke_expose_invitation_state(self, current_time) -> None:
+    def test_list_and_revoke_remove_the_invitation(self, current_time) -> None:
         with redirect_stdout(StringIO()):
             main(["invitation", "create", "--expiration-seconds", "120"], self.settings)
         databases = self.create_databases()
@@ -64,10 +64,10 @@ class InvitationCliTest(unittest.TestCase):
             self.assertEqual(main(["invitation", "revoke", str(invitation.uuid)], self.settings), 0)
         self.assertEqual(revoke_output.getvalue(), f"Revoked invitation {invitation.uuid}\n")
 
-        revoked_output = StringIO()
-        with redirect_stdout(revoked_output):
+        remaining_output = StringIO()
+        with redirect_stdout(remaining_output):
             self.assertEqual(main(["invitation", "list"], self.settings), 0)
-        self.assertEqual(revoked_output.getvalue(), f"{invitation.uuid}\tREVOKED\t100\t220\n")
+        self.assertEqual(remaining_output.getvalue(), "")
 
     def create_databases(self) -> SqliteDatabases:
         databases = SqliteDatabases(self.settings.registry_db_path, self.settings.registry_schema_path, self.settings.ledger_dbs_dir, self.settings.ledger_schema_path)
