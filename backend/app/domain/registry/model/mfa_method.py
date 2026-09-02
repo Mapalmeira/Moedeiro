@@ -14,6 +14,7 @@ class MfaMethod(BaseModel):
     secret_encrypted: bytes
     created_at: int = Field(ge=0)
     confirmed_at: int | None = Field(default=None, ge=0)
+    last_used_counter: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
     def validate_state(self) -> Self:
