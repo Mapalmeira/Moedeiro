@@ -7,8 +7,8 @@ SECONDS_PER_DAY = 86_400
 
 
 def remove_inactive_records(unit_of_work_factory: Callable[[], RegistryUnitOfWork], timestamp: int, retention_days: int) -> int:
-    if retention_days <= 0:
-        raise ValueError("retention_days must be positive")
+    if retention_days < 0:
+        raise ValueError("retention_days must not be negative")
     cutoff_timestamp = timestamp - retention_days * SECONDS_PER_DAY
     with unit_of_work_factory() as unit_of_work:
         deleted_count = sum(

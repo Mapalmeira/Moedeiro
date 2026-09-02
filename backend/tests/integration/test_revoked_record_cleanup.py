@@ -41,9 +41,21 @@ class InactiveRecordCleanupTest(unittest.TestCase):
             self.assertIsNone(unit_of_work.ledger_grant_repository.get(old_grant.uuid))
             self.assertIsNotNone(unit_of_work.ledger_grant_repository.get(recent_grant.uuid))
 
-    def test_rejects_a_nonpositive_retention_period(self) -> None:
+    def test_rejects_a_negative_retention_period(self) -> None:
         with self.assertRaises(ValueError):
-            remove_inactive_records(self.open_registry, 100, 0)
+            remove_inactive_records(self.open_registry, 100, -1)
+
+    def test_zero_day_retention_removes_all_inactive_records_now(self) -> None:
+        with self.open_registry() as unit_of_work:
+            user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 1)
+            ledger = unit_of_work.ledger_repository.create("Ledger", "ledger.sqlite", "BookOpen", b"\x80\x80\x80")
+            grant = unit_of_work.ledger_grant_repository.create(user.uuid, ledger.uuid, "OWNER", 1)
+            unit_of_work.ledger_grant_repository.revoke(grant.uuid, 100)
+            unit_of_work.commit()
+
+        self.assertEqual(remove_inactive_records(self.open_registry, 100, 0), 1)
+        with self.open_registry() as unit_of_work:
+            self.assertIsNone(unit_of_work.ledger_grant_repository.get(grant.uuid))
 
     def test_removes_expired_consumed_used_and_unconfirmed_records(self) -> None:
         timestamp = 100 * SECONDS_PER_DAY

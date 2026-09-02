@@ -43,7 +43,7 @@ def _create_parser() -> argparse.ArgumentParser:
     invitation = resources.add_parser("invitation")
     _add_invitation_actions(invitation)
     cleanup = resources.add_parser("cleanup")
-    cleanup.add_argument("--days", type=_positive_int, required=True)
+    cleanup.add_argument("--days", type=_nonnegative_int, required=True)
     user = resources.add_parser("user")
     _add_user_actions(user)
     return parser
@@ -189,6 +189,13 @@ def _positive_int(value: str) -> int:
     parsed = int(value)
     if parsed <= 0:
         raise argparse.ArgumentTypeError("value must be positive")
+    return parsed
+
+
+def _nonnegative_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("value must not be negative")
     return parsed
 
 
