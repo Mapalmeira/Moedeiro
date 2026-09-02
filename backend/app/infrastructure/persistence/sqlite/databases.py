@@ -26,6 +26,7 @@ class SqliteDatabases:
                 self.registry_database.path,
                 self.registry_schema_path,
             )
+        self.registry_database.enable_wal()
 
     def get_ledger_path(self, ledger_uuid: UUID) -> Path:
         return self.ledger_dbs_dir / f"{ledger_uuid}.sqlite"

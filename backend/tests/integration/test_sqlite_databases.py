@@ -39,6 +39,12 @@ class SqliteDatabasesTest(unittest.TestCase):
         with self.databases.open_registry() as unit_of_work:
             self.assertEqual(unit_of_work.ledger_repository.list_all(), [])
 
+        connection = sqlite3.connect(self.registry_db_path)
+        try:
+            self.assertEqual(connection.execute("PRAGMA journal_mode").fetchone()[0], "wal")
+        finally:
+            connection.close()
+
     def test_initialize_preserves_an_existing_registry(self) -> None:
         self.databases.initialize()
         with self.databases.open_registry() as unit_of_work:
@@ -49,6 +55,17 @@ class SqliteDatabasesTest(unittest.TestCase):
 
         with self.databases.open_registry() as unit_of_work:
             self.assertEqual(unit_of_work.ledger_repository.get(ledger.uuid), ledger)
+
+    def test_initialize_enables_wal_for_an_existing_registry(self) -> None:
+        SqliteDatabase.initialize(self.registry_db_path, REGISTRY_SCHEMA_PATH)
+
+        self.databases.initialize()
+
+        connection = sqlite3.connect(self.registry_db_path)
+        try:
+            self.assertEqual(connection.execute("PRAGMA journal_mode").fetchone()[0], "wal")
+        finally:
+            connection.close()
 
     def test_database_initialization_removes_the_file_when_the_schema_fails(self) -> None:
         database_path = self.directory / "failed.sqlite"

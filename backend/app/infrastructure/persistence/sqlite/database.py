@@ -17,6 +17,15 @@ class SqliteDatabase:
             raise
         return connection
 
+    def enable_wal(self) -> None:
+        connection = self.get_connection()
+        try:
+            mode = connection.execute("PRAGMA journal_mode = WAL").fetchone()[0]
+            if mode.lower() != "wal":
+                raise RuntimeError(f"SQLite did not enable WAL mode: {mode}")
+        finally:
+            connection.close()
+
     @classmethod
     def initialize(cls, path: Path, schema_path: Path) -> Self:
         database = cls(path)
