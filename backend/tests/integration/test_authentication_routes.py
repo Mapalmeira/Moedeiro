@@ -86,7 +86,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
         self.assertIn("Max-Age=0", remember_header)
         with self.application.state.databases.open_registry() as unit_of_work:
             remember_sessions = unit_of_work.remember_session_repository.list_by_user(self.user.uuid)
-        self.assertIsNotNone(remember_sessions[0].revoked_at)
+        self.assertEqual(remember_sessions, [])
 
     def test_login_returns_one_generic_error_for_unknown_user_and_wrong_password(self) -> None:
         for name, password in (("Unknown", "correct password"), ("Alice", "wrong password")):
@@ -95,6 +95,30 @@ class AuthenticationRoutesTest(unittest.TestCase):
                     login_user(LoginRequest(name=name, password=password), self.request(), Response())
                 self.assertEqual(raised.exception.status_code, 401)
                 self.assertEqual(raised.exception.detail, "Invalid credentials")
+
+    def test_login_requests_totp_then_accepts_the_same_credentials_with_the_code(self) -> None:
+        with self.application.state.databases.open_registry() as unit_of_work:
+            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 10)
+            unit_of_work.commit()
+
+        with self.assertRaises(HTTPException) as raised:
+            login_user(LoginRequest(name="Alice", password="correct password"), self.request(), Response())
+        self.assertEqual(raised.exception.detail, "TOTP required")
+
+        response = Response(status_code=204)
+        login_user(LoginRequest(name="Alice", password="correct password", totp_code="123456"), self.request(), response)
+        self.assertTrue(any(header.startswith("moedeiro_session=") for header in self.cookie_headers(response)))
+
+    def test_login_does_not_distinguish_an_invalid_totp_from_other_invalid_credentials(self) -> None:
+        with self.application.state.databases.open_registry() as unit_of_work:
+            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 10)
+            unit_of_work.commit()
+
+        with self.assertRaises(HTTPException) as raised:
+            login_user(LoginRequest(name="Alice", password="correct password", totp_code="000000"), self.request(), Response())
+
+        self.assertEqual(raised.exception.status_code, 401)
+        self.assertEqual(raised.exception.detail, "Invalid credentials")
 
     def test_login_rate_limit_is_checked_before_password_verification(self) -> None:
         self.rate_limiter.rejected_namespace = "login-ip"

@@ -21,12 +21,12 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         self.grant_uuid = uuid4().bytes
         self.auth_session_uuid = uuid4().bytes
         self.remember_session_uuid = uuid4().bytes
-        self.connection.execute("INSERT INTO user_invitation VALUES (?, ?, 10, 3610, NULL, NULL)", (self.invitation_uuid, b"i" * 32))
+        self.connection.execute("INSERT INTO user_invitation VALUES (?, ?, 10, 3610, NULL)", (self.invitation_uuid, b"i" * 32))
         self.connection.execute("INSERT INTO user_account VALUES (?, 'Alice', 'alice', '$argon2id$encoded', 20, 20)", (self.user_uuid,))
         self.connection.execute("INSERT INTO ledger VALUES (?, 'Main ledger', 'ledger.sqlite', 'BookOpen', ?)", (self.ledger_uuid, b"\x80\x80\x80"))
         self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'OWNER', 30, NULL)", (self.grant_uuid, self.user_uuid, self.ledger_uuid))
-        self.connection.execute("INSERT INTO auth_session VALUES (?, ?, ?, 40, 43240, 1800, NULL, NULL)", (self.auth_session_uuid, self.user_uuid, b"s" * 32))
-        self.connection.execute("INSERT INTO remember_session VALUES (?, ?, ?, 40, 2592040, NULL, NULL)", (self.remember_session_uuid, self.user_uuid, b"r" * 32))
+        self.connection.execute("INSERT INTO auth_session VALUES (?, ?, ?, 40, 43240, 1800, NULL)", (self.auth_session_uuid, self.user_uuid, b"s" * 32))
+        self.connection.execute("INSERT INTO remember_session VALUES (?, ?, ?, 40, 2592040, NULL)", (self.remember_session_uuid, self.user_uuid, b"r" * 32))
 
     def tearDown(self) -> None:
         self.connection.close()
@@ -97,17 +97,16 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 40, NULL)", (uuid4().bytes, self.user_uuid, b"second"))
 
-    def test_enforces_recovery_code_terminal_state_and_timestamps(self) -> None:
+    def test_enforces_recovery_code_usage_timestamp_and_one_active_code(self) -> None:
         code_uuid = uuid4().bytes
-        self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, NULL, NULL)", (code_uuid, self.user_uuid, b"c" * 32))
+        self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, NULL)", (code_uuid, self.user_uuid, b"c" * 32))
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute("UPDATE recovery_code SET used_at = 29 WHERE uuid = ?", (code_uuid,))
         with self.assertRaises(sqlite3.IntegrityError):
-            self.connection.execute("UPDATE recovery_code SET revoked_at = 29 WHERE uuid = ?", (code_uuid,))
+            self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 31, NULL)", (uuid4().bytes, self.user_uuid, b"d" * 32))
 
         self.connection.execute("UPDATE recovery_code SET used_at = 40 WHERE uuid = ?", (code_uuid,))
-        with self.assertRaises(sqlite3.IntegrityError):
-            self.connection.execute("UPDATE recovery_code SET revoked_at = 50 WHERE uuid = ?", (code_uuid,))
+        self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 41, NULL)", (uuid4().bytes, self.user_uuid, b"d" * 32))
 
     def test_enforces_user_preference_limits(self) -> None:
         self.connection.execute("INSERT INTO user_preferences VALUES (?, 'DD/MM/YYYY', 'HH:mm', 'pt-BR', 'DARK', 'UTC')", (self.user_uuid,))
@@ -132,12 +131,6 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute("UPDATE auth_session SET inactivity_timeout_seconds = 0")
 
-    def test_invitation_cannot_be_consumed_and_revoked(self) -> None:
-        self.connection.execute("UPDATE user_invitation SET consumed_at = 20")
-
-        with self.assertRaises(sqlite3.IntegrityError):
-            self.connection.execute("UPDATE user_invitation SET revoked_at = 21")
-
     def test_invitation_and_remember_session_use_must_precede_expiration(self) -> None:
         invalid_updates = (
             ("user_invitation", "consumed_at", 3610),
@@ -152,7 +145,7 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         mfa_uuid = uuid4().bytes
         recovery_uuid = uuid4().bytes
         self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, NULL)", (mfa_uuid, self.user_uuid, b"encrypted"))
-        self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, NULL, NULL)", (recovery_uuid, self.user_uuid, b"c" * 32))
+        self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, NULL)", (recovery_uuid, self.user_uuid, b"c" * 32))
         self.connection.execute("INSERT INTO user_preferences VALUES (?, NULL, NULL, NULL, 'DARK', 'UTC')", (self.user_uuid,))
 
         self.connection.execute("DELETE FROM user_account WHERE uuid = ?", (self.user_uuid,))

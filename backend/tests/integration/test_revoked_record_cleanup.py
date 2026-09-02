@@ -21,48 +21,25 @@ class InactiveRecordCleanupTest(unittest.TestCase):
     def open_registry(self) -> SqliteRegistryUnitOfWork:
         return SqliteRegistryUnitOfWork(self.database)
 
-    def test_removes_only_records_revoked_on_or_before_the_retention_cutoff(self) -> None:
+    def test_removes_only_grants_revoked_on_or_before_the_retention_cutoff(self) -> None:
         timestamp = 100 * SECONDS_PER_DAY
         cutoff = timestamp - 30 * SECONDS_PER_DAY
         with self.open_registry() as unit_of_work:
             user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 1)
             ledger = unit_of_work.ledger_repository.create("Ledger", "ledger.sqlite", "BookOpen", b"\x80\x80\x80")
             recent_ledger = unit_of_work.ledger_repository.create("Recent Ledger", "recent-ledger.sqlite", "BookOpen", b"\x80\x80\x80")
-            old_invitation = unit_of_work.user_invitation_repository.create(b"i" * 32, 1, timestamp)
-            recent_invitation = unit_of_work.user_invitation_repository.create(b"j" * 32, 1, timestamp)
             old_grant = unit_of_work.ledger_grant_repository.create(user.uuid, ledger.uuid, "OWNER", 1)
             recent_grant = unit_of_work.ledger_grant_repository.create(user.uuid, recent_ledger.uuid, "OWNER", cutoff + 1)
-            old_code = unit_of_work.recovery_code_repository.create(user.uuid, b"c" * 32, 1)
-            recent_code = unit_of_work.recovery_code_repository.create(user.uuid, b"d" * 32, 1)
-            old_session = unit_of_work.auth_session_repository.create(user.uuid, b"s" * 32, cutoff, timestamp, timestamp)
-            recent_session = unit_of_work.auth_session_repository.create(user.uuid, b"t" * 32, cutoff + 1, timestamp, timestamp)
-            old_remember_session = unit_of_work.remember_session_repository.create(user.uuid, b"r" * 32, 1, timestamp)
-            recent_remember_session = unit_of_work.remember_session_repository.create(user.uuid, b"q" * 32, 1, timestamp)
-            for repository, old_record, recent_record in (
-                (unit_of_work.user_invitation_repository, old_invitation, recent_invitation),
-                (unit_of_work.ledger_grant_repository, old_grant, recent_grant),
-                (unit_of_work.recovery_code_repository, old_code, recent_code),
-                (unit_of_work.auth_session_repository, old_session, recent_session),
-                (unit_of_work.remember_session_repository, old_remember_session, recent_remember_session),
-            ):
-                repository.revoke(old_record.uuid, cutoff)
-                repository.revoke(recent_record.uuid, cutoff + 1)
+            unit_of_work.ledger_grant_repository.revoke(old_grant.uuid, cutoff)
+            unit_of_work.ledger_grant_repository.revoke(recent_grant.uuid, cutoff + 1)
             unit_of_work.commit()
 
         deleted_count = remove_inactive_records(self.open_registry, timestamp, 30)
 
-        self.assertEqual(deleted_count, 5)
+        self.assertEqual(deleted_count, 1)
         with self.open_registry() as unit_of_work:
-            for repository, old_record, recent_record in (
-                (unit_of_work.user_invitation_repository, old_invitation, recent_invitation),
-                (unit_of_work.ledger_grant_repository, old_grant, recent_grant),
-                (unit_of_work.recovery_code_repository, old_code, recent_code),
-                (unit_of_work.auth_session_repository, old_session, recent_session),
-                (unit_of_work.remember_session_repository, old_remember_session, recent_remember_session),
-            ):
-                with self.subTest(repository=type(repository).__name__):
-                    self.assertIsNone(repository.get(old_record.uuid))
-                    self.assertIsNotNone(repository.get(recent_record.uuid))
+            self.assertIsNone(unit_of_work.ledger_grant_repository.get(old_grant.uuid))
+            self.assertIsNotNone(unit_of_work.ledger_grant_repository.get(recent_grant.uuid))
 
     def test_rejects_a_nonpositive_retention_period(self) -> None:
         with self.assertRaises(ValueError):

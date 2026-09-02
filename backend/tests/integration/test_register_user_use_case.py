@@ -75,9 +75,9 @@ class RegisterUserUseCaseTest(unittest.TestCase):
         assert stored_invitation is not None
         self.assertIsNone(stored_invitation.consumed_at)
 
-    def test_consume_rejects_a_revoked_invitation(self) -> None:
+    def test_consume_rejects_a_deleted_invitation(self) -> None:
         invitation = self.create_invitation()
-        self.assertTrue(revoke_user_invitation(self.open_registry, invitation.uuid, 120))
+        self.assertTrue(revoke_user_invitation(self.open_registry, invitation.uuid))
 
         with self.assertRaises(InvitationNotAvailableError):
             register_user(self.open_registry, self.password_hasher, invitation.uuid, "Alice", "correct horse battery", 150)

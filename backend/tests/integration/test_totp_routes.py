@@ -6,9 +6,9 @@ import unittest
 from fastapi import HTTPException, Request, Response
 
 from app.api.authentication import require_authenticated_user
-from app.api.schema.totp import DisableTotpRequest, EnableTotpRequest, StartTotpSetupRequest
-from app.api.totp import confirm_setup, disable, start_setup
-from app.application.registry.exceptions import InvalidTotpCodeError
+from app.api.schema.totp import ConfirmTotpRequest, DisableTotpRequest, StartTotpSetupRequest
+from app.api.totp import confirm_setup, remove_totp, start_setup
+from app.application.registry.exceptions import TotpRequiredError
 from app.application.registry.use_cases.authentication import login
 from app.factory import create_app
 from app.settings import Settings
@@ -44,45 +44,33 @@ class TotpRoutesTest(unittest.TestCase):
         self.temporary_directory.cleanup()
 
     def request(self, totp_code: str | None = None) -> Request:
-        token, _ = login(self.application.state.databases.open_registry, self.password_hasher, "Alice", "current password", False, int(time.time()), totp_authenticator=self.totp_authenticator, totp_code=totp_code)
+        result = login(self.application.state.databases.open_registry, self.password_hasher, "Alice", "current password", False, int(time.time()), totp_authenticator=self.totp_authenticator, totp_code=totp_code)
+        assert result is not None
+        token, _ = result
         return Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": [(b"cookie", f"moedeiro_session={token}".encode("ascii"))]})
 
-    def test_setup_then_enable_returns_recovery_codes_and_enables_totp(self) -> None:
+    def test_setup_then_enable_confirms_totp_without_creating_recovery_codes(self) -> None:
         request = self.request()
         user = require_authenticated_user(request)
 
         setup = start_setup(StartTotpSetupRequest(current_password="current password"), request, user)
-        result = confirm_setup(EnableTotpRequest(code="123456"), request, user)
+        result = confirm_setup(ConfirmTotpRequest(code="123456"), request, user)
 
         self.assertIn("otpauth://totp/Moedeiro:Alice", setup.provisioning_uri)
-        self.assertEqual(len(result.recovery_codes), 10)
+        self.assertIsNone(result)
         self.assertEqual(self.rate_limiter.checks, [("2/hour", "totp-setup-ip", "192.0.2.1")])
         with self.application.state.databases.open_registry() as unit_of_work:
             self.assertIsNotNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))
+            self.assertEqual(unit_of_work.recovery_code_repository.list_by_user(self.user.uuid), [])
 
     def test_enabled_totp_requires_a_code_to_login(self) -> None:
         request = self.request()
         user = require_authenticated_user(request)
-        setup = start_setup(StartTotpSetupRequest(current_password="current password"), request, user)
-        confirm_setup(EnableTotpRequest(code="123456"), request, user)
+        start_setup(StartTotpSetupRequest(current_password="current password"), request, user)
+        confirm_setup(ConfirmTotpRequest(code="123456"), request, user)
 
-        with self.assertRaises(InvalidTotpCodeError):
+        with self.assertRaises(TotpRequiredError):
             login(self.application.state.databases.open_registry, self.password_hasher, "Alice", "current password", False, int(time.time()), totp_authenticator=self.totp_authenticator)
-
-    def test_disable_requires_the_current_totp_code(self) -> None:
-        request = self.request()
-        user = require_authenticated_user(request)
-        setup = start_setup(StartTotpSetupRequest(current_password="current password"), request, user)
-        confirm_setup(EnableTotpRequest(code="123456"), request, user)
-        with self.assertRaises(HTTPException) as raised:
-            disable(DisableTotpRequest(code="000000"), request, Response(), user)
-        self.assertEqual(raised.exception.status_code, 401)
-        response = Response()
-        disable(DisableTotpRequest(code="123456"), request, response, user)
-        self.assertEqual(sum(name == b"set-cookie" for name, _ in response.raw_headers), 2)
-
-        with self.application.state.databases.open_registry() as unit_of_work:
-            self.assertIsNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))
 
     def test_setup_rate_limit_precedes_password_verification(self) -> None:
         request = self.request()
@@ -94,6 +82,35 @@ class TotpRoutesTest(unittest.TestCase):
 
         self.assertEqual(raised.exception.status_code, 429)
         self.assertEqual(self.password_hasher.verifications, [("$argon2id$test$current password", "current password")])
+
+    def test_authenticated_user_can_disable_totp_and_existing_sessions(self) -> None:
+        setup_request = self.request()
+        user = require_authenticated_user(setup_request)
+        start_setup(StartTotpSetupRequest(current_password="current password"), setup_request, user)
+        confirm_setup(ConfirmTotpRequest(code="123456"), setup_request, user)
+        request = self.request("123456")
+        response = Response(status_code=204)
+
+        remove_totp(DisableTotpRequest(current_password="current password", code="123456"), request, response, user)
+
+        with self.application.state.databases.open_registry() as unit_of_work:
+            self.assertIsNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))
+            self.assertEqual(unit_of_work.auth_session_repository.list_by_user(self.user.uuid), [])
+        self.assertTrue(any(name == b"set-cookie" and b"moedeiro_session=" in value and b"Max-Age=0" in value for name, value in response.raw_headers))
+
+    def test_totp_disable_returns_one_generic_error_for_an_invalid_password_or_code(self) -> None:
+        setup_request = self.request()
+        user = require_authenticated_user(setup_request)
+        start_setup(StartTotpSetupRequest(current_password="current password"), setup_request, user)
+        confirm_setup(ConfirmTotpRequest(code="123456"), setup_request, user)
+        request = self.request("123456")
+
+        for current_password, code in (("wrong password", "123456"), ("current password", "000000")):
+            with self.subTest(current_password=current_password, code=code):
+                with self.assertRaises(HTTPException) as raised:
+                    remove_totp(DisableTotpRequest(current_password=current_password, code=code), request, Response(), user)
+                self.assertEqual(raised.exception.status_code, 401)
+                self.assertEqual(raised.exception.detail, "Invalid credentials")
 
 
 if __name__ == "__main__":

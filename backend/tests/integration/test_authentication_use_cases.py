@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError
+from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError, UserNotFoundError
 from app.application.registry.use_cases.authentication import authenticate_session, login, logout, refresh_session
 from app.domain.registry.model.auth_session import DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS
 from app.domain.registry.model.remember_session import DEFAULT_EXPIRATION_TIMEOUT_SECONDS
@@ -32,8 +32,11 @@ class AuthenticationUseCasesTest(unittest.TestCase):
         return SqliteRegistryUnitOfWork(self.database)
 
     def test_login_accepts_normalized_name_and_creates_short_and_remember_sessions(self) -> None:
-        session_token, remember_token = login(self.open_registry, self.password_hasher, " ＡLICE ", "correct password", True, 20)
+        result = login(self.open_registry, self.password_hasher, " ＡLICE ", "correct password", True, 20)
+        assert result is not None
+        session_token, remember_token = result
 
+        assert session_token is not None
         assert remember_token is not None
         with self.open_registry() as unit_of_work:
             sessions = unit_of_work.auth_session_repository.list_by_user(self.user.uuid)
@@ -49,7 +52,9 @@ class AuthenticationUseCasesTest(unittest.TestCase):
         self.assertEqual(remember_sessions[0].expires_at, 20 + DEFAULT_EXPIRATION_TIMEOUT_SECONDS)
 
     def test_login_without_remember_creates_only_the_short_session(self) -> None:
-        _, remember_token = login(self.open_registry, self.password_hasher, "Alice", "correct password", False, 20)
+        result = login(self.open_registry, self.password_hasher, "Alice", "correct password", False, 20)
+        assert result is not None
+        _, remember_token = result
 
         with self.open_registry() as unit_of_work:
             sessions = unit_of_work.auth_session_repository.list_by_user(self.user.uuid)
@@ -58,8 +63,10 @@ class AuthenticationUseCasesTest(unittest.TestCase):
         self.assertEqual(len(sessions), 1)
         self.assertEqual(remember_sessions, [])
 
-    def test_new_login_revokes_sessions_presented_by_the_same_client(self) -> None:
-        old_session_token, old_remember_token = login(self.open_registry, self.password_hasher, "Alice", "correct password", True, 20)
+    def test_new_login_deletes_sessions_presented_by_the_same_client(self) -> None:
+        result = login(self.open_registry, self.password_hasher, "Alice", "correct password", True, 20)
+        assert result is not None
+        old_session_token, old_remember_token = result
         assert old_remember_token is not None
 
         login(self.open_registry, self.password_hasher, "Alice", "correct password", False, 30, old_session_token, old_remember_token)
@@ -67,22 +74,23 @@ class AuthenticationUseCasesTest(unittest.TestCase):
         with self.open_registry() as unit_of_work:
             sessions = unit_of_work.auth_session_repository.list_by_user(self.user.uuid)
             remember_sessions = unit_of_work.remember_session_repository.list_by_user(self.user.uuid)
-        self.assertEqual(len(sessions), 2)
-        self.assertCountEqual([session.revoked_at for session in sessions], [30, None])
-        self.assertEqual(remember_sessions[0].revoked_at, 30)
+        self.assertEqual(len(sessions), 1)
+        self.assertEqual(remember_sessions, [])
 
-    def test_login_rejects_unknown_user_and_wrong_password_without_creating_sessions(self) -> None:
-        for name, password in (("Unknown", "correct password"), ("Alice", "wrong password")):
-            with self.subTest(name=name, password=password):
-                with self.assertRaises(InvalidCredentialsError):
-                    login(self.open_registry, self.password_hasher, name, password, True, 20)
+    def test_login_distinguishes_an_unknown_user_from_an_invalid_password_internally(self) -> None:
+        with self.assertRaises(UserNotFoundError):
+            login(self.open_registry, self.password_hasher, "Unknown", "correct password", True, 20)
+        with self.assertRaises(InvalidCredentialsError):
+            login(self.open_registry, self.password_hasher, "Alice", "wrong password", True, 20)
 
         with self.open_registry() as unit_of_work:
             self.assertEqual(unit_of_work.auth_session_repository.list_by_user(self.user.uuid), [])
             self.assertEqual(unit_of_work.remember_session_repository.list_by_user(self.user.uuid), [])
 
     def test_authenticate_returns_the_user_and_records_activity(self) -> None:
-        session_token, _ = login(self.open_registry, self.password_hasher, "Alice", "correct password", False, 20)
+        result = login(self.open_registry, self.password_hasher, "Alice", "correct password", False, 20)
+        assert result is not None
+        session_token, _ = result
 
         user = authenticate_session(self.open_registry, session_token, 30)
 
@@ -92,7 +100,9 @@ class AuthenticationUseCasesTest(unittest.TestCase):
         self.assertEqual(sessions[0].last_activity_at, 30)
 
     def test_authenticate_rejects_unknown_and_inactive_sessions(self) -> None:
-        session_token, _ = login(self.open_registry, self.password_hasher, "Alice", "correct password", False, 20)
+        result = login(self.open_registry, self.password_hasher, "Alice", "correct password", False, 20)
+        assert result is not None
+        session_token, _ = result
 
         with self.assertRaises(InvalidSessionError):
             authenticate_session(self.open_registry, "unknown", 30)
@@ -102,7 +112,9 @@ class AuthenticationUseCasesTest(unittest.TestCase):
             authenticate_session(self.open_registry, session_token, 20 + DEFAULT_INACTIVITY_TIMEOUT_SECONDS)
 
     def test_refresh_rotates_the_remember_token_and_creates_a_new_short_session(self) -> None:
-        _, remember_token = login(self.open_registry, self.password_hasher, "Alice", "correct password", True, 20)
+        result = login(self.open_registry, self.password_hasher, "Alice", "correct password", True, 20)
+        assert result is not None
+        _, remember_token = result
         assert remember_token is not None
 
         session_token, new_remember_token = refresh_session(self.open_registry, remember_token, 30)
@@ -137,23 +149,23 @@ class AuthenticationUseCasesTest(unittest.TestCase):
         with self.assertRaises(InvalidSessionError):
             refresh_session(self.open_registry, "sessão-quebrada", 30)
 
-    def test_logout_revokes_presented_sessions_and_is_idempotent(self) -> None:
-        session_token, remember_token = login(self.open_registry, self.password_hasher, "Alice", "correct password", True, 20)
+    def test_logout_deletes_presented_sessions_and_is_idempotent(self) -> None:
+        result = login(self.open_registry, self.password_hasher, "Alice", "correct password", True, 20)
+        assert result is not None
+        session_token, remember_token = result
         assert remember_token is not None
 
-        logout(self.open_registry, session_token, remember_token, 30)
-        logout(self.open_registry, session_token, remember_token, 31)
+        logout(self.open_registry, session_token, remember_token)
+        logout(self.open_registry, session_token, remember_token)
 
         with self.open_registry() as unit_of_work:
             session = unit_of_work.auth_session_repository.get_by_token_hash(hashlib.sha256(session_token.encode("ascii")).digest())
             remember_session = unit_of_work.remember_session_repository.get_by_token_hash(hashlib.sha256(remember_token.encode("ascii")).digest())
-        assert session is not None
-        assert remember_session is not None
-        self.assertEqual(session.revoked_at, 30)
-        self.assertEqual(remember_session.revoked_at, 30)
+        self.assertIsNone(session)
+        self.assertIsNone(remember_session)
 
     def test_logout_ignores_malformed_tokens(self) -> None:
-        logout(self.open_registry, "sessão-quebrada", "lembrança-quebrada", 30)
+        logout(self.open_registry, "sessão-quebrada", "lembrança-quebrada")
 
 
 if __name__ == "__main__":

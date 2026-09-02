@@ -6,7 +6,7 @@ from unittest.mock import patch
 from uuid import uuid4
 
 from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, PasswordUpdateConflictError, RecoveryCodeNotAvailableError, TotpRequiredError, UserNotFoundError
-from app.application.registry.use_cases.password import change_password, create_recovery_code, create_recovery_code_for_user, reset_password
+from app.application.registry.use_cases.password import change_password, create_recovery_code, recover_password
 from app.domain.registry.model.auth_session import DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS
 from app.domain.registry.model.remember_session import DEFAULT_EXPIRATION_TIMEOUT_SECONDS
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
@@ -153,23 +153,11 @@ class PasswordUseCasesTest(unittest.TestCase):
         with self.assertRaises(UserNotFoundError):
             create_recovery_code(self.open_registry, uuid4(), 20)
 
-    def test_authenticated_recovery_code_generation_requires_password_and_totp(self) -> None:
-        self.enable_totp()
-
-        with self.assertRaises(InvalidCurrentPasswordError):
-            create_recovery_code_for_user(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "wrong password", None, 20)
-        with self.assertRaises(TotpRequiredError):
-            create_recovery_code_for_user(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", None, 20)
-
-        code = create_recovery_code_for_user(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", "123456", 20)
-
-        self.assertEqual(len(code), 32)
-
-    def test_reset_password_consumes_the_code_and_deletes_every_session(self) -> None:
+    def test_recover_password_consumes_the_code_and_deletes_every_session(self) -> None:
         code = create_recovery_code(self.open_registry, self.user.uuid, 20)
         self.create_sessions()
 
-        reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", None, 30)
+        recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", None, 30)
 
         with self.open_registry() as unit_of_work:
             user = unit_of_work.user_repository.get(self.user.uuid)
@@ -182,36 +170,36 @@ class PasswordUseCasesTest(unittest.TestCase):
         self.assertEqual(auth_sessions, [])
         self.assertEqual(remember_sessions, [])
         with self.assertRaises(RecoveryCodeNotAvailableError):
-            reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "another password", None, 31)
+            recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "another password", None, 31)
 
-    def test_reset_password_requires_totp_when_enabled(self) -> None:
+    def test_recover_password_requires_totp_when_enabled(self) -> None:
         code = create_recovery_code(self.open_registry, self.user.uuid, 20)
         self.enable_totp()
 
         with self.assertRaises(TotpRequiredError):
-            reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", None, 30)
+            recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", None, 30)
         with self.assertRaises(InvalidTotpCodeError):
-            reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", "000000", 30)
+            recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", "000000", 30)
 
-        reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", "123456", 30)
+        recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", "123456", 30)
 
-    def test_reset_password_distinguishes_an_unknown_user_from_an_unavailable_code(self) -> None:
+    def test_recover_password_distinguishes_an_unknown_user_from_an_unavailable_code(self) -> None:
         code = create_recovery_code(self.open_registry, self.user.uuid, 20)
         self.password_hasher.passwords.clear()
 
         with self.assertRaises(UserNotFoundError):
-            reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Unknown", code, "replacement password", None, 30)
+            recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Unknown", code, "replacement password", None, 30)
         with self.assertRaises(RecoveryCodeNotAvailableError):
-            reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", "0" * 32, "replacement password", None, 30)
+            recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", "0" * 32, "replacement password", None, 30)
 
         self.assertEqual(self.password_hasher.passwords, [])
 
     @patch.object(SqliteUserRepository, "update_password", return_value=False)
-    def test_reset_password_rolls_back_code_consumption_when_password_update_fails(self, update_password) -> None:
+    def test_recover_password_rolls_back_code_consumption_when_password_update_fails(self, update_password) -> None:
         code = create_recovery_code(self.open_registry, self.user.uuid, 20)
 
         with self.assertRaises(PasswordUpdateConflictError):
-            reset_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", None, 30)
+            recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", None, 30)
 
         with self.open_registry() as unit_of_work:
             recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid)

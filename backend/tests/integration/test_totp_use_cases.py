@@ -1,13 +1,13 @@
-import hashlib
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, InvalidTotpSetupError, TotpAlreadyEnabledError, TotpNotEnabledError
+from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, InvalidTotpSetupError, TotpAlreadyEnabledError, TotpNotEnabledError, TotpRequiredError
 from app.application.registry.use_cases.authentication import login
+from app.application.registry.use_cases.mfa import disable_mfa
 from app.application.registry.use_cases.password import change_password
-from app.application.registry.use_cases.totp import RECOVERY_CODE_COUNT, disable_totp, enable_totp, start_totp_setup
+from app.application.registry.use_cases.totp import confirm_totp_setup, disable_totp, start_totp_setup
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.repository.mfa_method import SqliteMfaMethodRepository
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
@@ -34,12 +34,12 @@ class TotpUseCasesTest(unittest.TestCase):
     def open_registry(self) -> SqliteRegistryUnitOfWork:
         return SqliteRegistryUnitOfWork(self.database)
 
-    def enable(self) -> list[str]:
+    def enable(self) -> None:
         start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
-        return enable_totp(self.open_registry, self.totp_authenticator, self.user, "123456", 20)
+        confirm_totp_setup(self.open_registry, self.totp_authenticator, self.user, "123456", 20)
 
-    def test_enabling_totp_persists_the_encrypted_secret_and_returns_new_recovery_codes(self) -> None:
-        recovery_codes = self.enable()
+    def test_enabling_totp_persists_the_encrypted_secret_without_creating_recovery_codes(self) -> None:
+        self.enable()
 
         with self.open_registry() as unit_of_work:
             method = unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid)
@@ -47,10 +47,7 @@ class TotpUseCasesTest(unittest.TestCase):
         assert method is not None
         self.assertEqual(method.secret_encrypted, b"FAKESECRET")
         self.assertEqual(method.confirmed_at, 20)
-        self.assertEqual(len(recovery_codes), RECOVERY_CODE_COUNT)
-        self.assertEqual(len(set(recovery_codes)), RECOVERY_CODE_COUNT)
-        self.assertEqual(len(stored_codes), RECOVERY_CODE_COUNT)
-        self.assertCountEqual([code.code_hash for code in stored_codes], [hashlib.sha256(code.encode("ascii")).digest() for code in recovery_codes])
+        self.assertEqual(stored_codes, [])
 
     def test_setup_requires_the_current_password_and_can_only_be_enabled_once(self) -> None:
         with self.assertRaises(InvalidCurrentPasswordError):
@@ -71,16 +68,18 @@ class TotpUseCasesTest(unittest.TestCase):
         assert second is not None
         self.assertNotEqual(second.uuid, first.uuid)
         self.assertIsNone(second.confirmed_at)
-        session_token, _ = login(self.open_registry, self.password_hasher, "Alice", "current password", False, 22, totp_authenticator=self.totp_authenticator)
+        result = login(self.open_registry, self.password_hasher, "Alice", "current password", False, 22, totp_authenticator=self.totp_authenticator)
+        assert result is not None
+        session_token, _ = result
         self.assertIsInstance(session_token, str)
 
     def test_enable_rejects_missing_setups_and_invalid_codes_without_confirming_totp(self) -> None:
         with self.assertRaises(InvalidTotpSetupError):
-            enable_totp(self.open_registry, self.totp_authenticator, self.user, "123456", 20)
+            confirm_totp_setup(self.open_registry, self.totp_authenticator, self.user, "123456", 20)
 
         start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
         with self.assertRaises(InvalidTotpCodeError):
-            enable_totp(self.open_registry, self.totp_authenticator, self.user, "000000", 20)
+            confirm_totp_setup(self.open_registry, self.totp_authenticator, self.user, "000000", 20)
 
         with self.open_registry() as unit_of_work:
             method = unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid)
@@ -93,7 +92,7 @@ class TotpUseCasesTest(unittest.TestCase):
         start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
 
         with self.assertRaises(InvalidTotpSetupError):
-            enable_totp(self.open_registry, self.totp_authenticator, self.user, "123456", 21)
+            confirm_totp_setup(self.open_registry, self.totp_authenticator, self.user, "123456", 21)
 
         with self.open_registry() as unit_of_work:
             method = unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid)
@@ -106,26 +105,52 @@ class TotpUseCasesTest(unittest.TestCase):
     def test_login_and_password_change_require_totp_after_it_is_enabled(self) -> None:
         self.enable()
 
-        with self.assertRaises(InvalidTotpCodeError):
+        with self.assertRaises(TotpRequiredError):
             login(self.open_registry, self.password_hasher, "Alice", "current password", False, 30, totp_authenticator=self.totp_authenticator)
-        session_token, _ = login(self.open_registry, self.password_hasher, "Alice", "current password", False, 30, totp_authenticator=self.totp_authenticator, totp_code="123456")
+        result = login(self.open_registry, self.password_hasher, "Alice", "current password", False, 30, totp_authenticator=self.totp_authenticator, totp_code="123456")
+        assert result is not None
+        session_token, _ = result
         self.assertIsInstance(session_token, str)
 
-        with self.assertRaises(InvalidTotpCodeError):
+        with self.assertRaises(TotpRequiredError):
             change_password(self.open_registry, self.password_hasher, self.user, "current password", "replacement password", 31, self.totp_authenticator)
         change_password(self.open_registry, self.password_hasher, self.user, "current password", "replacement password", 31, self.totp_authenticator, "123456")
 
-    def test_disabling_totp_requires_a_valid_totp_code(self) -> None:
+    def test_user_can_disable_totp_with_the_current_password_and_totp_code(self) -> None:
         self.enable()
+        login(self.open_registry, self.password_hasher, "Alice", "current password", True, 30, totp_authenticator=self.totp_authenticator, totp_code="123456")
 
-        with self.assertRaises(InvalidTotpCodeError):
-            disable_totp(self.open_registry, self.totp_authenticator, self.user, "000000", 30)
-        disable_totp(self.open_registry, self.totp_authenticator, self.user, "123456", 30)
+        disable_totp(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", "123456", 31)
 
         with self.open_registry() as unit_of_work:
             self.assertIsNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))
+            self.assertEqual(unit_of_work.auth_session_repository.list_by_user(self.user.uuid), [])
+            self.assertEqual(unit_of_work.remember_session_repository.list_by_user(self.user.uuid), [])
+
+    def test_user_mfa_disable_rejects_invalid_credentials_and_missing_totp(self) -> None:
         with self.assertRaises(TotpNotEnabledError):
-            disable_totp(self.open_registry, self.totp_authenticator, self.user, "123456", 31)
+            disable_totp(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", "123456", 20)
+
+        self.enable()
+        with self.assertRaises(InvalidCurrentPasswordError):
+            disable_totp(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "wrong password", "123456", 21)
+        with self.assertRaises(InvalidTotpCodeError):
+            disable_totp(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", "000000", 21)
+
+        with self.open_registry() as unit_of_work:
+            self.assertIsNotNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))
+
+    def test_admin_mfa_disable_removes_totp_and_sessions(self) -> None:
+        self.enable()
+        login(self.open_registry, self.password_hasher, "Alice", "current password", True, 30, totp_authenticator=self.totp_authenticator, totp_code="123456")
+
+        self.assertEqual(disable_mfa(self.open_registry, self.user.uuid), 1)
+
+        with self.open_registry() as unit_of_work:
+            self.assertIsNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))
+            self.assertEqual(unit_of_work.auth_session_repository.list_by_user(self.user.uuid), [])
+            self.assertEqual(unit_of_work.remember_session_repository.list_by_user(self.user.uuid), [])
+        self.assertEqual(disable_mfa(self.open_registry, self.user.uuid), 0)
 
 
 if __name__ == "__main__":
