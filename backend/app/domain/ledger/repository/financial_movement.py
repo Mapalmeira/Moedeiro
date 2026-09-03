@@ -40,5 +40,5 @@ class FinancialMovementRepository(ABC):
         pass
 
     @abstractmethod
-    def list_all(self) -> list[FinancialMovement]:
+    def list_all(self, sort_key: str, ascending: bool) -> list[FinancialMovement]:
         pass

@@ -6,7 +6,7 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from app.application.ledger.exceptions import CurrencyInUseError, CurrencyNotFoundError
-from app.application.ledger.use_cases.currency import create_currency, delete_currency, get_currency, list_currencies, list_currency_page, update_currency
+from app.application.ledger.use_cases.currency import create_currency, delete_currency, get_currency, list_currency_page, update_currency
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
 
@@ -59,7 +59,7 @@ class CurrencyUseCasesTest(unittest.TestCase):
                 b"\x10\x20\x30",
             )
 
-        self.assertEqual(list_currencies(self.open_ledger), [])
+        self.assertEqual(list_currency_page(self.open_ledger, 1, 200, "name", True), [])
 
     def test_get_raises_for_an_unknown_currency(self) -> None:
         with self.assertRaises(CurrencyNotFoundError):
@@ -70,7 +70,7 @@ class CurrencyUseCasesTest(unittest.TestCase):
         alpha = self.create("Alpha")
         bravo = self.create("Bravo")
 
-        self.assertCountEqual(list_currencies(self.open_ledger), [charlie, alpha, bravo])
+        self.assertEqual(list_currency_page(self.open_ledger, 1, 200, "name", True), [alpha, bravo, charlie])
         self.assertEqual(
             list_currency_page(self.open_ledger, 1, 2, "name", True),
             [alpha, bravo],

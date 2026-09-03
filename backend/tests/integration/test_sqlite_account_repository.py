@@ -72,12 +72,17 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
             self.repository.create(name, None, self.currency.uuid, "WalletCards", b"\x80\x80\x80")
 
         page = self.repository.list_page(2, 1, "name", True)
+        all_accounts = self.repository.list_page(1, 200, "name", False)
 
         self.assertEqual([account.name for account in page], ["Bravo"])
+        self.assertEqual([account.name for account in all_accounts], ["Charlie", "Bravo", "Alpha"])
         for sort_key in ("uuid", "currency_uuid"):
             with self.subTest(sort_key=sort_key):
                 with self.assertRaises(ValueError):
-                    self.repository.list_page(1, 10, sort_key, True)
+                    self.repository.list_page(1, 200, sort_key, True)
+
+        with self.assertRaises(ValueError):
+            self.repository.list_page(1, 201, "name", True)
 
     def test_repository_does_not_commit_its_changes(self) -> None:
         """Rolling back removes the account but preserves committed prerequisites."""
@@ -86,7 +91,7 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
 
         self.connection.rollback()
 
-        self.assertEqual(self.repository.list_all(), [])
+        self.assertEqual(self.repository.list_page(1, 200, "name", True), [])
 
 
 if __name__ == "__main__":

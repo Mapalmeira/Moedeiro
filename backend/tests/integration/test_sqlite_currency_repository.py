@@ -73,10 +73,14 @@ class SqliteCurrencyRepositoryTest(LedgerRepositoryTestCase):
         self.repository.create("Bravo", None, None, 2, "$", b"\x80\x80\x80")
 
         page = self.repository.list_page(1, 2, "name", True)
+        all_currencies = self.repository.list_page(1, 200, "name", False)
 
         self.assertEqual([currency.name for currency in page], ["Alpha", "Bravo"])
+        self.assertEqual([currency.name for currency in all_currencies], ["Charlie", "Bravo", "Alpha"])
         with self.assertRaises(ValueError):
-            self.repository.list_page(1, 10, "uuid", True)
+            self.repository.list_page(1, 200, "uuid", True)
+        with self.assertRaises(ValueError):
+            self.repository.list_page(1, 201, "name", True)
 
     def test_is_in_use_detects_accounts_and_budgets(self) -> None:
         account_currency = self.create_currency("Account currency")
@@ -105,7 +109,7 @@ class SqliteCurrencyRepositoryTest(LedgerRepositoryTestCase):
 
         self.connection.rollback()
 
-        self.assertEqual(self.repository.list_all(), [])
+        self.assertEqual(self.repository.list_page(1, 200, "name", True), [])
 
 
 if __name__ == "__main__":

@@ -68,12 +68,6 @@ class SqliteAccountRepository(AccountRepository):
             (account.color_code, account.uuid.bytes),
         )
 
-    def list_all(self) -> list[Account]:
-        rows = self.connection.execute(
-            "SELECT uuid, account_name AS name, note, currency_uuid, icon, color_code FROM account"
-        ).fetchall()
-        return [self._to_model(row) for row in rows]
-
     def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[Account]:
         self._validate_page(page_number, page_size)
         sort_column = self._get_sort_column(sort_key)
@@ -113,3 +107,5 @@ class SqliteAccountRepository(AccountRepository):
             raise ValueError("page_number must be greater than or equal to 1")
         if page_size < 1:
             raise ValueError("page_size must be greater than or equal to 1")
+        if page_size > 200:
+            raise ValueError("page_size must be less than or equal to 200")

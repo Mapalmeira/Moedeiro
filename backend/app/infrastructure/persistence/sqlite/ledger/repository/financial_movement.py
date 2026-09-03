@@ -6,6 +6,11 @@ from app.domain.ledger.repository.financial_movement import FinancialMovementRep
 
 
 class SqliteFinancialMovementRepository(FinancialMovementRepository):
+    _SORT_COLUMNS = {
+        "value": "value",
+        "item_name": "item_name",
+    }
+
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
@@ -79,11 +84,20 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
         ).fetchall()
         return [self._to_model(row) for row in rows]
 
-    def list_all(self) -> list[FinancialMovement]:
+    def list_all(self, sort_key: str, ascending: bool) -> list[FinancialMovement]:
+        sort_column = self._sort_column(sort_key)
+        direction = "ASC" if ascending else "DESC"
         rows = self.connection.execute(
-            "SELECT uuid, financial_event_uuid, account_uuid, category_uuid, value, item_name FROM financial_movement"
+            f"SELECT uuid, financial_event_uuid, account_uuid, category_uuid, value, item_name FROM financial_movement ORDER BY {sort_column} {direction}, uuid ASC"
         ).fetchall()
         return [self._to_model(row) for row in rows]
+
+    @classmethod
+    def _sort_column(cls, sort_key: str) -> str:
+        try:
+            return cls._SORT_COLUMNS[sort_key]
+        except KeyError as error:
+            raise ValueError(f"Unsupported financial movement sort key: {sort_key}") from error
 
     @staticmethod
     def _validation_model(uuid: UUID, value: int = 1, item_name: str | None = None, category_uuid: UUID | None = None) -> FinancialMovement:

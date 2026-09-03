@@ -50,14 +50,16 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         with self.assertRaises(ValidationError):
             self.repository.update_description(event.uuid, "x" * 301)
 
-    def test_list_all_returns_every_event_without_promising_order(self) -> None:
-        """list_all has no filter and returns the complete collection."""
-        self.repository.create(10, "First", "TRANSACTION")
-        self.repository.create(20, "Second", "ACCOUNT_TRANSFER")
+    def test_list_page_orders_every_matching_event_by_timestamp(self) -> None:
+        first = self.repository.create(10, "First", "TRANSACTION")
+        second = self.repository.create(20, "Second", "ACCOUNT_TRANSFER")
+        filters = FinancialEventFilter(from_timestamp=0, to_timestamp=30)
 
-        events = self.repository.list_all()
+        ascending = self.repository.list_page(1, 200, True, filters)
+        descending = self.repository.list_page(1, 200, False, filters)
 
-        self.assertCountEqual([event.description for event in events], ["First", "Second"])
+        self.assertEqual(ascending, [first, second])
+        self.assertEqual(descending, [second, first])
 
     def test_repository_does_not_commit_its_changes(self) -> None:
         """Transaction ownership remains with the unit of work."""
@@ -65,7 +67,7 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
 
         self.connection.rollback()
 
-        self.assertEqual(self.repository.list_all(), [])
+        self.assertEqual(self.repository.list_page(1, 200, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100)), [])
 
     def test_list_filtered_applies_half_open_timestamp_interval(self) -> None:
         """The lower timestamp is inclusive and the upper timestamp is exclusive."""
@@ -73,7 +75,7 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         expected = self.create_event("Inside", occurred_at=20)
         self.create_event("Upper bound", occurred_at=30)
 
-        events = self.repository.list_filtered(FinancialEventFilter(from_timestamp=20, to_timestamp=30))
+        events = self.repository.list_filtered(FinancialEventFilter(from_timestamp=20, to_timestamp=30), True)
 
         self.assertEqual(events, [expected])
 
@@ -94,7 +96,8 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
                 to_timestamp=100,
                 category_uuid=second_category.uuid,
                 event_type="SHOPPING_LIST",
-            )
+            ),
+            True,
         )
 
         self.assertEqual([listed_event.uuid for listed_event in events], [event.uuid])
@@ -122,7 +125,8 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
                 to_timestamp=100,
                 account_uuid=selected_account.uuid,
                 category_uuid=selected_category.uuid,
-            )
+            ),
+            True,
         )
 
         self.assertEqual([event.uuid for event in events], [expected.uuid])
@@ -140,7 +144,8 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         movement_repository.create(expected.uuid, account.uuid, grandchild.uuid, -10, None)
 
         events = self.repository.list_filtered(
-            FinancialEventFilter(from_timestamp=0, to_timestamp=100, category_uuid=parent.uuid)
+            FinancialEventFilter(from_timestamp=0, to_timestamp=100, category_uuid=parent.uuid),
+            True,
         )
 
         self.assertEqual([event.uuid for event in events], [expected.uuid])
@@ -201,6 +206,10 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         page = self.repository.list_page(1, 10, False, FinancialEventFilter(from_timestamp=0, to_timestamp=100))
 
         self.assertEqual(page, [second, first])
+
+    def test_list_page_rejects_more_than_two_hundred_events(self) -> None:
+        with self.assertRaises(ValueError):
+            self.repository.list_page(1, 201, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100))
 
     def test_list_page_uses_uuid_to_break_timestamp_ties(self) -> None:
         with patch(

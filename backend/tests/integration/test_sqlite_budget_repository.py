@@ -110,12 +110,17 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
             self.create_budget(name, self.currency, self.category)
 
         page = self.repository.list_page(1, 2, "name", True)
+        all_budgets = self.repository.list_page(1, 200, "name", False)
 
         self.assertEqual([budget.name for budget in page], ["Alpha", "Bravo"])
+        self.assertEqual([budget.name for budget in all_budgets], ["Charlie", "Bravo", "Alpha"])
         for sort_key in ("uuid", "category_uuid", "currency_uuid"):
             with self.subTest(sort_key=sort_key):
                 with self.assertRaises(ValueError):
-                    self.repository.list_page(1, 10, sort_key, True)
+                    self.repository.list_page(1, 200, sort_key, True)
+
+        with self.assertRaises(ValueError):
+            self.repository.list_page(1, 201, "name", True)
 
     def test_repository_does_not_commit_its_changes(self) -> None:
         """Rolling back removes the budget but preserves committed prerequisites."""
@@ -124,7 +129,7 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
 
         self.connection.rollback()
 
-        self.assertEqual(self.repository.list_all(), [])
+        self.assertEqual(self.repository.list_page(1, 200, "name", True), [])
 
 
 if __name__ == "__main__":

@@ -72,10 +72,6 @@ class BudgetRepository(ABC):
         pass
 
     @abstractmethod
-    def list_all(self) -> list[Budget]:
-        pass
-
-    @abstractmethod
     def list_page(
         self,
         page_number: int,

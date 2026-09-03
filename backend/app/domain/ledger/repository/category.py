@@ -32,10 +32,6 @@ class CategoryRepository(ABC):
         pass
 
     @abstractmethod
-    def list_all(self) -> list[Category]:
-        pass
-
-    @abstractmethod
     def get_tree(self) -> list[CategoryTreeNode]:
         pass
 

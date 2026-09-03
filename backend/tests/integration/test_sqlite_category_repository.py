@@ -56,7 +56,7 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
 
         self.connection.execute("DELETE FROM category WHERE uuid = ?", (parent.uuid.bytes,))
 
-        self.assertEqual(self.repository.list_all(), [])
+        self.assertEqual(self.repository.list_page(1, 200, "name", True), [])
 
     def test_create_rejects_unknown_parent(self) -> None:
         """The database foreign key rejects an unknown parent UUID."""
@@ -74,7 +74,7 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         with self.assertRaisesRegex(ValueError, "depth must not exceed 5"):
             self.repository.create("Too deep", "Circle", b"\x80\x80\x80", parent.uuid)
 
-        self.assertEqual(len(self.repository.list_all()), 5)
+        self.assertEqual(len(self.repository.list_page(1, 200, "name", True)), 5)
 
     def test_update_parent_rejects_cycles_and_subtrees_that_exceed_the_depth_limit(self) -> None:
         root = self.create_category("Root")
@@ -116,12 +116,17 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
             self.repository.create(name, "Circle", b"\x80\x80\x80", None)
 
         page = self.repository.list_page(1, 2, "name", False)
+        all_categories = self.repository.list_page(1, 200, "name", True)
 
         self.assertEqual([category.name for category in page], ["Charlie", "Bravo"])
+        self.assertEqual([category.name for category in all_categories], ["Alpha", "Bravo", "Charlie"])
         for sort_key in ("uuid", "parent_uuid"):
             with self.subTest(sort_key=sort_key):
                 with self.assertRaises(ValueError):
-                    self.repository.list_page(1, 10, sort_key, True)
+                    self.repository.list_page(1, 200, sort_key, True)
+
+        with self.assertRaises(ValueError):
+            self.repository.list_page(1, 201, "name", True)
 
     def test_get_tree_returns_roots_with_ordered_descendants(self) -> None:
         leisure = self.create_category("Leisure")

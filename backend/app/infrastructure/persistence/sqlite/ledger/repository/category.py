@@ -73,12 +73,6 @@ class SqliteCategoryRepository(CategoryRepository):
             (self._serialize_uuid(parent_uuid), uuid.bytes),
         )
 
-    def list_all(self) -> list[Category]:
-        rows = self.connection.execute(
-            "SELECT uuid, category_name AS name, icon, color_code, parent_uuid FROM category"
-        ).fetchall()
-        return [self._to_model(row) for row in rows]
-
     def get_tree(self) -> list[CategoryTreeNode]:
         rows = self.connection.execute(
             """
@@ -176,3 +170,5 @@ class SqliteCategoryRepository(CategoryRepository):
             raise ValueError("page_number must be greater than or equal to 1")
         if page_size < 1:
             raise ValueError("page_size must be greater than or equal to 1")
+        if page_size > 200:
+            raise ValueError("page_size must be less than or equal to 200")

@@ -85,6 +85,16 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
 
         self.assertEqual(movements, [first])
 
+    def test_list_all_orders_by_public_fields_and_rejects_uuid_sorting(self) -> None:
+        self.create_movement(-100, "Lunch")
+        self.create_movement(50, "Refund")
+
+        movements = self.repository.list_all("value", False)
+
+        self.assertEqual([movement.value for movement in movements], [50, -100])
+        with self.assertRaises(ValueError):
+            self.repository.list_all("uuid", True)
+
     def test_repository_does_not_commit_its_changes(self) -> None:
         """Rolling back removes the movement but preserves committed relations."""
         self.connection.commit()
@@ -92,7 +102,7 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
 
         self.connection.rollback()
 
-        self.assertEqual(self.repository.list_all(), [])
+        self.assertEqual(self.repository.list_all("value", True), [])
 
 
 if __name__ == "__main__":

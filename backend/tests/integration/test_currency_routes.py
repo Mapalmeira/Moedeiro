@@ -6,7 +6,7 @@ from uuid import uuid4
 from fastapi import HTTPException, Request
 from pydantic import ValidationError
 
-from app.api.currency import create_ledger_currency, delete_ledger_currency, get_ledger_currency, list_ledger_currencies, list_ledger_currency_page, update_ledger_currency
+from app.api.currency import create_ledger_currency, delete_ledger_currency, get_ledger_currency, list_ledger_currencies, update_ledger_currency
 from app.api.ledger import create_owned_ledger
 from app.api.schema.currency import CreateCurrencyRequest, UpdateCurrencyRequest
 from app.api.schema.ledger import CreateLedgerRequest
@@ -78,8 +78,8 @@ class CurrencyRoutesTest(unittest.TestCase):
         alpha = self.create_currency("Alpha")
         bravo = self.create_currency("Bravo")
 
-        all_currencies = list_ledger_currencies(self.ledger.uuid, self.request, self.user, "name", False)
-        page = list_ledger_currency_page(self.ledger.uuid, self.request, self.user, 2, 1, "name", True)
+        all_currencies = list_ledger_currencies(self.ledger.uuid, self.request, self.user, 1, 200, "name", False)
+        page = list_ledger_currencies(self.ledger.uuid, self.request, self.user, 2, 1, "name", True)
 
         self.assertEqual(all_currencies, [charlie, bravo, alpha])
         self.assertEqual(page, [bravo])
@@ -124,7 +124,7 @@ class CurrencyRoutesTest(unittest.TestCase):
         currency = self.create_currency()
 
         operations = (
-            lambda: list_ledger_currencies(self.ledger.uuid, self.request, self.other_user, "name", True),
+            lambda: list_ledger_currencies(self.ledger.uuid, self.request, self.other_user, 1, 200, "name", True),
             lambda: get_ledger_currency(self.ledger.uuid, currency.uuid, self.request, self.other_user),
             lambda: update_ledger_currency(
                 self.ledger.uuid,
@@ -173,7 +173,9 @@ class CurrencyRoutesTest(unittest.TestCase):
 
         self.assertIn("201", collection["post"]["responses"])
         self.assertIn("200", collection["get"]["responses"])
-        self.assertIn("200", paths["/api/ledgers/{ledger_uuid}/currencies/page"]["get"]["responses"])
+        self.assertNotIn("/api/ledgers/{ledger_uuid}/currencies/page", paths)
+        page_size = next(parameter for parameter in collection["get"]["parameters"] if parameter["name"] == "page_size")
+        self.assertEqual(page_size["schema"]["maximum"], 200)
         self.assertIn("200", member["get"]["responses"])
         self.assertIn("200", member["put"]["responses"])
         self.assertNotIn("content", member["delete"]["responses"]["204"])

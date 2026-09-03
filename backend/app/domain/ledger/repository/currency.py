@@ -42,10 +42,6 @@ class CurrencyRepository(ABC):
         pass
 
     @abstractmethod
-    def list_all(self) -> list[Currency]:
-        pass
-
-    @abstractmethod
     def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[Currency]:
         pass
 

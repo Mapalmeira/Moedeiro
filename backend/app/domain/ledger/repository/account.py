@@ -38,10 +38,6 @@ class AccountRepository(ABC):
         pass
 
     @abstractmethod
-    def list_all(self) -> list[Account]:
-        pass
-
-    @abstractmethod
     def list_page(
         self,
         page_number: int,

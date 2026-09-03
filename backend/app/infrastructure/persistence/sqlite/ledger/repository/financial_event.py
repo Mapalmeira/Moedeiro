@@ -43,19 +43,15 @@ class SqliteFinancialEventRepository(FinancialEventRepository):
             (event.description, event.uuid.bytes),
         )
 
-    def list_all(self) -> list[FinancialEvent]:
-        rows = self.connection.execute(
-            "SELECT uuid, occurred_at, description, type FROM financial_event"
-        ).fetchall()
-        return self._to_models(rows)
-
-    def list_filtered(self, filters: FinancialEventFilter) -> list[FinancialEvent]:
+    def list_filtered(self, filters: FinancialEventFilter, ascending: bool) -> list[FinancialEvent]:
+        direction = "ASC" if ascending else "DESC"
         where_clause, parameters = build_financial_event_filter(filters)
         rows = self.connection.execute(
             f"""
             SELECT event.uuid, event.occurred_at, event.description, event.type
             FROM financial_event AS event
             {where_clause}
+            ORDER BY event.occurred_at {direction}, event.uuid ASC
             """,
             parameters,
         ).fetchall()
@@ -102,3 +98,5 @@ class SqliteFinancialEventRepository(FinancialEventRepository):
             raise ValueError("page_number must be greater than or equal to 1")
         if page_size < 1:
             raise ValueError("page_size must be greater than or equal to 1")
+        if page_size > 200:
+            raise ValueError("page_size must be less than or equal to 200")

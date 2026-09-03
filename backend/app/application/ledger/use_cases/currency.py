@@ -40,13 +40,6 @@ def get_currency(
         return currency
 
 
-def list_currencies(
-    unit_of_work_factory: Callable[[], LedgerUnitOfWork],
-) -> list[Currency]:
-    with unit_of_work_factory() as unit_of_work:
-        return unit_of_work.currency_repository.list_all()
-
-
 def list_currency_page(
     unit_of_work_factory: Callable[[], LedgerUnitOfWork],
     page_number: int,
