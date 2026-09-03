@@ -1,5 +1,5 @@
 import sqlite3
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from pydantic import TypeAdapter
 
@@ -16,8 +16,8 @@ class SqliteLedgerRepository(LedgerRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, name: LedgerName, path: str, icon: Icon, color_code: RgbColorCode) -> Ledger:
-        ledger = Ledger(uuid=uuid4(), name=name, path=path, icon=icon, color_code=color_code)
+    def create(self, uuid: UUID, name: LedgerName, path: str, icon: Icon, color_code: RgbColorCode) -> Ledger:
+        ledger = Ledger(uuid=uuid, name=name, path=path, icon=icon, color_code=color_code)
         self.connection.execute(
             "INSERT INTO ledger(uuid, name, path, icon, color_code) VALUES (?, ?, ?, ?, ?)",
             (ledger.uuid.bytes, ledger.name, ledger.path, ledger.icon, ledger.color_code),
@@ -78,6 +78,20 @@ class SqliteLedgerRepository(LedgerRepository):
     def list_all(self) -> list[Ledger]:
         rows = self.connection.execute(
             "SELECT uuid, name, path, icon, color_code FROM ledger"
+        ).fetchall()
+        return [self._to_model(row) for row in rows]
+
+    def list_owned_by_user(self, user_uuid: UUID) -> list[Ledger]:
+        rows = self.connection.execute(
+            """
+            SELECT ledger.uuid, ledger.name, ledger.path, ledger.icon, ledger.color_code
+            FROM ledger
+            JOIN ledger_grant ON ledger_grant.ledger_uuid = ledger.uuid
+            WHERE ledger_grant.user_uuid = ?
+              AND ledger_grant.role = 'OWNER'
+              AND ledger_grant.revoked_at IS NULL
+            """,
+            (user_uuid.bytes,),
         ).fetchall()
         return [self._to_model(row) for row in rows]
 
