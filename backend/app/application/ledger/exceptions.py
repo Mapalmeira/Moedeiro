@@ -1,0 +1,2 @@
+class LedgerNotFoundError(Exception):
+    pass
