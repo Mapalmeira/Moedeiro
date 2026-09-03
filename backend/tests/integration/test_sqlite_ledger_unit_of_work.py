@@ -43,7 +43,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
 
     def test_repositories_share_the_unit_of_work_connection(self) -> None:
         """Every ledger repository participates in the same transaction."""
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             account_repository = unit_of_work.account_repository
             account_balance_query_repository = unit_of_work.account_balance_query_repository
             budget_repository = unit_of_work.budget_repository
@@ -84,21 +84,21 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
     def test_commit_persists_changes_after_scope_exit(self) -> None:
         """Only an explicit commit makes changes visible to a later operation."""
         ledger_uuid = uuid4()
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             unit_of_work.ledger_metadata_repository.create(ledger_uuid, 1, 100)
             unit_of_work.commit()
 
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             metadata = unit_of_work.ledger_metadata_repository.get()
             assert metadata is not None
             self.assertEqual(metadata.ledger_uuid, ledger_uuid)
 
     def test_commit_increments_revision_once_for_all_pending_changes(self) -> None:
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 100)
             unit_of_work.commit()
 
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             unit_of_work.currency_repository.create(
                 "Real", "R$", None, 2, "Circle", b"\x80\x80\x80"
             )
@@ -107,89 +107,89 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
             )
             unit_of_work.commit()
 
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             metadata = unit_of_work.ledger_metadata_repository.get()
             assert metadata is not None
             self.assertEqual(metadata.revision, 2)
 
     def test_read_only_commit_does_not_increment_revision(self) -> None:
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 100)
             unit_of_work.commit()
 
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             unit_of_work.commit()
 
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             metadata = unit_of_work.ledger_metadata_repository.get()
             assert metadata is not None
             self.assertEqual(metadata.revision, 1)
 
     def test_second_commit_without_new_changes_does_not_increment_revision(self) -> None:
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 100)
             unit_of_work.commit()
             unit_of_work.commit()
 
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             metadata = unit_of_work.ledger_metadata_repository.get()
             assert metadata is not None
             self.assertEqual(metadata.revision, 1)
 
     def test_commit_after_rollback_without_new_changes_does_not_increment_revision(self) -> None:
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 100)
             unit_of_work.commit()
             unit_of_work.currency_repository.create("Temporary", None, None, 2, "Circle", b"\x80\x80\x80")
             unit_of_work.rollback()
             unit_of_work.commit()
 
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             metadata = unit_of_work.ledger_metadata_repository.get()
             assert metadata is not None
             self.assertEqual(metadata.revision, 1)
             self.assertEqual(unit_of_work.currency_repository.list_page(1, 200, "name", True), [])
 
     def test_rollback_does_not_increment_revision(self) -> None:
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 100)
             unit_of_work.commit()
 
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             unit_of_work.currency_repository.create(
                 "Temporary", None, None, 2, "Circle", b"\x80\x80\x80"
             )
 
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             metadata = unit_of_work.ledger_metadata_repository.get()
             assert metadata is not None
             self.assertEqual(metadata.revision, 1)
 
     def test_exit_without_commit_rolls_back_changes(self) -> None:
         """Leaving the scope discards pending writes."""
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             unit_of_work.currency_repository.create(
                 "Temporary", None, None, 2, "Circle", b"\x80\x80\x80"
             )
 
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             self.assertEqual(unit_of_work.currency_repository.list_page(1, 200, "name", True), [])
 
     def test_exception_rolls_back_and_propagates(self) -> None:
         """An exceptional exit discards pending writes without suppressing the error."""
         with self.assertRaisesRegex(RuntimeError, "expected failure"):
-            with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+            with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
                 unit_of_work.currency_repository.create(
                     "Temporary", None, None, 2, "Circle", b"\x80\x80\x80"
                 )
                 raise RuntimeError("expected failure")
 
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             self.assertEqual(unit_of_work.currency_repository.list_page(1, 200, "name", True), [])
 
     def test_exit_closes_the_owned_connection(self) -> None:
         """The connection cannot be reused after the transactional scope ends."""
-        with SqliteLedgerUnitOfWork(self.database, 200) as unit_of_work:
+        with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             connection = unit_of_work.connection
 
         with self.assertRaises(sqlite3.ProgrammingError):

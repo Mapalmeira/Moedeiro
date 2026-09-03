@@ -5,7 +5,6 @@ from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.account import Account
 from app.domain.ledger.model.budget import Budget
 from app.domain.ledger.repository.budget import BudgetRepository
-from app.pagination import validate_page
 
 
 class SqliteBudgetRepository(BudgetRepository):
@@ -17,9 +16,8 @@ class SqliteBudgetRepository(BudgetRepository):
         "amount": "amount",
     }
 
-    def __init__(self, connection: sqlite3.Connection, max_page_size: int):
+    def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
-        self.max_page_size = max_page_size
 
     def create(self, category_uuid: UUID, currency_uuid: UUID, from_timestamp: int, to_timestamp: int, name: str, description: str, amount: int, icon: Icon, color_code: RgbColorCode) -> Budget:
         budget = Budget(
@@ -158,7 +156,6 @@ class SqliteBudgetRepository(BudgetRepository):
         return [Account.model_validate(dict(row)) for row in rows]
 
     def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[Budget]:
-        validate_page(page_number, page_size, self.max_page_size)
         sort_column = self._get_sort_column(sort_key)
         direction = "ASC" if ascending else "DESC"
         offset = (page_number - 1) * page_size

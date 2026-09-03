@@ -32,7 +32,7 @@ class CleanupCliTest(unittest.TestCase):
 
     @patch("app.cli.time.time", return_value=100 * SECONDS_PER_DAY)
     def test_removes_records_inactive_at_the_retention_cutoff(self, current_time) -> None:
-        databases = SqliteDatabases(self.settings.registry_db_path, self.settings.registry_schema_path, self.settings.ledger_dbs_dir, self.settings.ledger_schema_path, self.settings.max_page_size)
+        databases = SqliteDatabases(self.settings.registry_db_path, self.settings.registry_schema_path, self.settings.ledger_dbs_dir, self.settings.ledger_schema_path)
         databases.initialize()
         with databases.open_registry() as unit_of_work:
             invitation = unit_of_work.user_invitation_repository.create(b"i" * 32, 1, 100 * SECONDS_PER_DAY)
@@ -48,7 +48,7 @@ class CleanupCliTest(unittest.TestCase):
 
     @patch("app.cli.time.time", return_value=100 * SECONDS_PER_DAY)
     def test_zero_days_removes_records_inactive_now(self, current_time) -> None:
-        databases = SqliteDatabases(self.settings.registry_db_path, self.settings.registry_schema_path, self.settings.ledger_dbs_dir, self.settings.ledger_schema_path, self.settings.max_page_size)
+        databases = SqliteDatabases(self.settings.registry_db_path, self.settings.registry_schema_path, self.settings.ledger_dbs_dir, self.settings.ledger_schema_path)
         databases.initialize()
         with databases.open_registry() as unit_of_work:
             invitation = unit_of_work.user_invitation_repository.create(b"i" * 32, 1, 100 * SECONDS_PER_DAY)

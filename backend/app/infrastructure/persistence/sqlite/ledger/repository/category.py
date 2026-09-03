@@ -7,18 +7,15 @@ from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.category import Category, CategoryName, MAX_CATEGORY_DEPTH
 from app.domain.ledger.model.category_tree_node import CategoryTreeNode
 from app.domain.ledger.repository.category import CategoryRepository
-from app.pagination import validate_page
 
 
 class SqliteCategoryRepository(CategoryRepository):
-    _SORT_COLUMNS = {"name": "category_name"}
     _name_adapter = TypeAdapter(CategoryName)
     _icon_adapter = TypeAdapter(Icon)
     _color_code_adapter = TypeAdapter(RgbColorCode)
 
-    def __init__(self, connection: sqlite3.Connection, max_page_size: int):
+    def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
-        self.max_page_size = max_page_size
 
     def create(self, name: CategoryName, icon: Icon, color_code: RgbColorCode, parent_uuid: UUID | None) -> Category:
         category = Category(uuid=uuid4(), name=name, icon=icon, color_code=color_code, parent_uuid=parent_uuid)
@@ -75,14 +72,21 @@ class SqliteCategoryRepository(CategoryRepository):
             (self._serialize_uuid(parent_uuid), uuid.bytes),
         )
 
-    def get_tree(self) -> list[CategoryTreeNode]:
+    def count(self) -> int:
+        return self.connection.execute("SELECT COUNT(*) FROM category").fetchone()[0]
+
+    def get_tree(self, max_size: int) -> list[CategoryTreeNode]:
         rows = self.connection.execute(
             """
             SELECT uuid, category_name AS name, icon, color_code, parent_uuid
             FROM category
             ORDER BY category_name ASC, uuid ASC
-            """
+            LIMIT ?
+            """,
+            (max_size + 1,),
         ).fetchall()
+        if len(rows) > max_size:
+            raise ValueError(f"category tree must not contain more than {max_size} categories")
         categories = [self._to_model(row) for row in rows]
         nodes = {category.uuid: CategoryTreeNode(category=category) for category in categories}
         roots: list[CategoryTreeNode] = []
@@ -96,21 +100,34 @@ class SqliteCategoryRepository(CategoryRepository):
 
         return roots
 
-    def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[Category]:
-        validate_page(page_number, page_size, self.max_page_size)
-        sort_column = self._get_sort_column(sort_key)
-        direction = "ASC" if ascending else "DESC"
-        offset = (page_number - 1) * page_size
-        rows = self.connection.execute(
-            f"""
-            SELECT uuid, category_name AS name, icon, color_code, parent_uuid
-            FROM category
-            ORDER BY {sort_column} {direction}, uuid ASC
-            LIMIT ? OFFSET ?
+    def is_in_use(self, uuid: UUID) -> bool:
+        row = self.connection.execute(
+            """
+            WITH RECURSIVE category_subtree(uuid) AS (
+                SELECT uuid FROM category WHERE uuid = ?
+
+                UNION ALL
+
+                SELECT child.uuid
+                FROM category AS child
+                JOIN category_subtree AS parent ON child.parent_uuid = parent.uuid
+            )
+            SELECT EXISTS(
+                SELECT 1
+                FROM financial_movement
+                WHERE category_uuid IN (SELECT uuid FROM category_subtree)
+            ) OR EXISTS(
+                SELECT 1
+                FROM budget
+                WHERE category_uuid IN (SELECT uuid FROM category_subtree)
+            )
             """,
-            (page_size, offset),
-        ).fetchall()
-        return [self._to_model(row) for row in rows]
+            (uuid.bytes,),
+        ).fetchone()
+        return bool(row[0])
+
+    def delete(self, uuid: UUID) -> None:
+        self.connection.execute("DELETE FROM category WHERE uuid = ?", (uuid.bytes,))
 
     @staticmethod
     def _to_model(row: sqlite3.Row) -> Category:
@@ -158,10 +175,3 @@ class SqliteCategoryRepository(CategoryRepository):
         ).fetchone()
         assert row is not None
         return row["height"]
-
-    @classmethod
-    def _get_sort_column(cls, sort_key: str) -> str:
-        try:
-            return cls._SORT_COLUMNS[sort_key]
-        except KeyError as error:
-            raise ValueError(f"Invalid category sort key: {sort_key}") from error

@@ -18,24 +18,23 @@ from app.infrastructure.persistence.sqlite.ledger.repository.ledger_metadata imp
 
 
 class SqliteLedgerUnitOfWork(LedgerUnitOfWork):
-    def __init__(self, database: SqliteDatabase, max_page_size: int):
+    def __init__(self, database: SqliteDatabase):
         self.database = database
-        self.max_page_size = max_page_size
 
     def __enter__(self) -> Self:
         self.connection: sqlite3.Connection = self.database.get_connection()
         self._transaction_start_total_changes = self.connection.total_changes
 
-        self.account_repository = SqliteAccountRepository(self.connection, self.max_page_size)
+        self.account_repository = SqliteAccountRepository(self.connection)
         self.account_balance_query_repository = SqliteAccountBalanceQueryRepository(self.connection)
-        self.budget_repository = SqliteBudgetRepository(self.connection, self.max_page_size)
+        self.budget_repository = SqliteBudgetRepository(self.connection)
         self.budget_status_query_repository = SqliteBudgetStatusQueryRepository(self.connection)
         self.cash_flow_query_repository = SqliteCashFlowQueryRepository(self.connection)
-        self.category_repository = SqliteCategoryRepository(self.connection, self.max_page_size)
-        self.currency_repository = SqliteCurrencyRepository(self.connection, self.max_page_size)
+        self.category_repository = SqliteCategoryRepository(self.connection)
+        self.currency_repository = SqliteCurrencyRepository(self.connection)
         self.financial_movement_repository = SqliteFinancialMovementRepository(self.connection)
         self.ledger_metadata_repository = SqliteLedgerMetadataRepository(self.connection)
-        self.financial_event_repository = SqliteFinancialEventRepository(self.connection, self.max_page_size)
+        self.financial_event_repository = SqliteFinancialEventRepository(self.connection)
 
         return self
 

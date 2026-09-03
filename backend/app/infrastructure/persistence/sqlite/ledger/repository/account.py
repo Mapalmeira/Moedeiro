@@ -4,7 +4,6 @@ from uuid import UUID, uuid4
 from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.account import Account, AccountName, AccountNote
 from app.domain.ledger.repository.account import AccountRepository
-from app.pagination import validate_page
 
 
 class SqliteAccountRepository(AccountRepository):
@@ -13,9 +12,8 @@ class SqliteAccountRepository(AccountRepository):
         "note": "note",
     }
 
-    def __init__(self, connection: sqlite3.Connection, max_page_size: int):
+    def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
-        self.max_page_size = max_page_size
 
     def create(self, name: AccountName, note: AccountNote | None, currency_uuid: UUID, icon: Icon, color_code: RgbColorCode) -> Account:
         account = Account(uuid=uuid4(), name=name, note=note, currency_uuid=currency_uuid, icon=icon, color_code=color_code)
@@ -80,7 +78,6 @@ class SqliteAccountRepository(AccountRepository):
         )
 
     def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[Account]:
-        validate_page(page_number, page_size, self.max_page_size)
         sort_column = self._get_sort_column(sort_key)
         direction = "ASC" if ascending else "DESC"
         offset = (page_number - 1) * page_size

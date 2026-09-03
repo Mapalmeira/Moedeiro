@@ -12,7 +12,7 @@ from tests.integration.ledger_repository_test_case import LedgerRepositoryTestCa
 class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.repository = SqliteFinancialEventRepository(self.connection, 200)
+        self.repository = SqliteFinancialEventRepository(self.connection)
 
     def test_create_get_and_list_all_preserve_event_fields(self) -> None:
         """Basic reads return generated identity and all supplied event data."""
@@ -206,10 +206,6 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         page = self.repository.list_page(1, 10, False, FinancialEventFilter(from_timestamp=0, to_timestamp=100))
 
         self.assertEqual(page, [second, first])
-
-    def test_list_page_rejects_more_than_two_hundred_events(self) -> None:
-        with self.assertRaises(ValueError):
-            self.repository.list_page(1, 201, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100))
 
     def test_list_page_uses_uuid_to_break_timestamp_ties(self) -> None:
         with patch(

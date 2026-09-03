@@ -6,13 +6,11 @@ from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 from app.domain.ledger.model.financial_movement import FinancialMovement
 from app.domain.ledger.repository.financial_event import FinancialEventRepository
 from app.infrastructure.persistence.sqlite.ledger.repository._financial_event_filter import build_financial_event_filter
-from app.pagination import validate_page
 
 
 class SqliteFinancialEventRepository(FinancialEventRepository):
-    def __init__(self, connection: sqlite3.Connection, max_page_size: int):
+    def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
-        self.max_page_size = max_page_size
 
     def create(self, occurred_at: int, description: str, type: FinancialEventType) -> FinancialEvent:
         event = FinancialEvent(uuid=uuid4(), occurred_at=occurred_at, description=description, type=type, movements=[])
@@ -60,7 +58,6 @@ class SqliteFinancialEventRepository(FinancialEventRepository):
         return self._to_models(rows)
 
     def list_page(self, page_number: int, page_size: int, ascending: bool, filters: FinancialEventFilter) -> list[FinancialEvent]:
-        validate_page(page_number, page_size, self.max_page_size)
         direction = "ASC" if ascending else "DESC"
         offset = (page_number - 1) * page_size
         where_clause, parameters = build_financial_event_filter(filters)

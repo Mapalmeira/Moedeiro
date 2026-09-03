@@ -32,15 +32,17 @@ class CategoryRepository(ABC):
         pass
 
     @abstractmethod
-    def get_tree(self) -> list[CategoryTreeNode]:
+    def count(self) -> int:
         pass
 
     @abstractmethod
-    def list_page(
-        self,
-        page_number: int,
-        page_size: int,
-        sort_key: str,
-        ascending: bool,
-    ) -> list[Category]:
+    def get_tree(self, max_size: int) -> list[CategoryTreeNode]:
+        pass
+
+    @abstractmethod
+    def is_in_use(self, uuid: UUID) -> bool:
+        pass
+
+    @abstractmethod
+    def delete(self, uuid: UUID) -> None:
         pass

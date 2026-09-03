@@ -6,13 +6,14 @@ from pydantic import ValidationError
 
 from app.domain.ledger.model.category_tree_node import CategoryTreeNode
 from app.infrastructure.persistence.sqlite.ledger.repository.category import SqliteCategoryRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.financial_movement import SqliteFinancialMovementRepository
 from tests.integration.ledger_repository_test_case import LedgerRepositoryTestCase
 
 
 class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.repository = SqliteCategoryRepository(self.connection, 200)
+        self.repository = SqliteCategoryRepository(self.connection)
 
     def test_create_get_and_update_parent(self) -> None:
         """A category can acquire and clear an existing parent."""
@@ -52,11 +53,28 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
     def test_deleting_parent_cascades_to_children(self) -> None:
         """The schema relation applies its configured parent cascade."""
         parent = self.create_category("Parent")
-        self.repository.create("Child", "Circle", b"\x80\x80\x80", parent.uuid)
+        child = self.repository.create("Child", "Circle", b"\x80\x80\x80", parent.uuid)
 
-        self.connection.execute("DELETE FROM category WHERE uuid = ?", (parent.uuid.bytes,))
+        self.repository.delete(parent.uuid)
 
-        self.assertEqual(self.repository.list_page(1, 200, "name", True), [])
+        self.assertIsNone(self.repository.get(parent.uuid))
+        self.assertIsNone(self.repository.get(child.uuid))
+
+    def test_is_in_use_considers_movements_and_budgets_in_the_whole_subtree(self) -> None:
+        movement_parent = self.create_category("Movement parent")
+        movement_child = self.create_category("Movement child", movement_parent)
+        budget_parent = self.create_category("Budget parent")
+        budget_child = self.create_category("Budget child", budget_parent)
+        unused = self.create_category("Unused")
+        currency = self.create_currency()
+        account = self.create_account(currency=currency)
+        event = self.create_event()
+        SqliteFinancialMovementRepository(self.connection).create(event.uuid, account.uuid, movement_child.uuid, -100, None)
+        self.create_budget(currency=currency, category=budget_child)
+
+        self.assertTrue(self.repository.is_in_use(movement_parent.uuid))
+        self.assertTrue(self.repository.is_in_use(budget_parent.uuid))
+        self.assertFalse(self.repository.is_in_use(unused.uuid))
 
     def test_create_rejects_unknown_parent(self) -> None:
         """The database foreign key rejects an unknown parent UUID."""
@@ -74,7 +92,7 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         with self.assertRaisesRegex(ValueError, "depth must not exceed 5"):
             self.repository.create("Too deep", "Circle", b"\x80\x80\x80", parent.uuid)
 
-        self.assertEqual(len(self.repository.list_page(1, 200, "name", True)), 5)
+        self.assertEqual(self._count(self.repository.get_tree(1000)), 5)
 
     def test_update_parent_rejects_cycles_and_subtrees_that_exceed_the_depth_limit(self) -> None:
         root = self.create_category("Root")
@@ -110,23 +128,13 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         assert stored_child is not None
         self.assertEqual(stored_child.parent_uuid, fourth.uuid)
 
-    def test_list_page_orders_and_rejects_identity_sorting(self) -> None:
-        """Category pagination exposes name but not entity or parent UUID."""
-        for name in ("Charlie", "Alpha", "Bravo"):
-            self.repository.create(name, "Circle", b"\x80\x80\x80", None)
+    def test_count_and_tree_read_limit_are_applied(self) -> None:
+        self.repository.create("First", "Circle", b"\x80\x80\x80", None)
+        self.repository.create("Second", "Circle", b"\x80\x80\x80", None)
 
-        page = self.repository.list_page(1, 2, "name", False)
-        all_categories = self.repository.list_page(1, 200, "name", True)
-
-        self.assertEqual([category.name for category in page], ["Charlie", "Bravo"])
-        self.assertEqual([category.name for category in all_categories], ["Alpha", "Bravo", "Charlie"])
-        for sort_key in ("uuid", "parent_uuid"):
-            with self.subTest(sort_key=sort_key):
-                with self.assertRaises(ValueError):
-                    self.repository.list_page(1, 200, sort_key, True)
-
-        with self.assertRaises(ValueError):
-            self.repository.list_page(1, 201, "name", True)
+        self.assertEqual(self.repository.count(), 2)
+        with self.assertRaisesRegex(ValueError, "more than 1 categories"):
+            self.repository.get_tree(1)
 
     def test_get_tree_returns_roots_with_ordered_descendants(self) -> None:
         leisure = self.create_category("Leisure")
@@ -135,7 +143,7 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         groceries = self.create_category("Groceries", food)
         self.create_category("Bakeries", groceries)
 
-        tree = self.repository.get_tree()
+        tree = self.repository.get_tree(1000)
 
         self.assertEqual(self._names(tree), [("Food", [("Groceries", [("Bakeries", [])]), ("Restaurants", [])]), ("Leisure", [])])
         self.assertEqual(tree[0].category, food)
@@ -144,11 +152,15 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(tree[0].children[1].category, restaurants)
 
     def test_get_tree_returns_no_nodes_when_there_are_no_categories(self) -> None:
-        self.assertEqual(self.repository.get_tree(), [])
+        self.assertEqual(self.repository.get_tree(1000), [])
 
     @classmethod
     def _names(cls, nodes: list[CategoryTreeNode]) -> list[tuple[str, list]]:
         return [(node.category.name, cls._names(node.children)) for node in nodes]
+
+    @classmethod
+    def _count(cls, nodes: list[CategoryTreeNode]) -> int:
+        return sum(1 + cls._count(node.children) for node in nodes)
 
 
 if __name__ == "__main__":

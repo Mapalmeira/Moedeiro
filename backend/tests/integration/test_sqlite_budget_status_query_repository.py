@@ -13,7 +13,7 @@ class SqliteBudgetStatusQueryRepositoryTest(LedgerRepositoryTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.repository = SqliteBudgetStatusQueryRepository(self.connection)
-        self.budget_repository = SqliteBudgetRepository(self.connection, 200)
+        self.budget_repository = SqliteBudgetRepository(self.connection)
         self.movement_repository = SqliteFinancialMovementRepository(self.connection)
         self.currency = self.create_currency()
         self.category = self.create_category()

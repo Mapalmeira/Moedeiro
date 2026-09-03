@@ -22,7 +22,6 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
             REGISTRY_SCHEMA_PATH,
             directory / "ledgers",
             LEDGER_SCHEMA_PATH,
-            200,
         )
         self.databases.initialize()
         with self.databases.open_registry() as unit_of_work:

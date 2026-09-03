@@ -12,7 +12,7 @@ from tests.integration.ledger_repository_test_case import LedgerRepositoryTestCa
 class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.repository = SqliteBudgetRepository(self.connection, 200)
+        self.repository = SqliteBudgetRepository(self.connection)
         self.currency = self.create_currency()
         self.category = self.create_category()
 
@@ -118,9 +118,6 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
             with self.subTest(sort_key=sort_key):
                 with self.assertRaises(ValueError):
                     self.repository.list_page(1, 200, sort_key, True)
-
-        with self.assertRaises(ValueError):
-            self.repository.list_page(1, 201, "name", True)
 
     def test_repository_does_not_commit_its_changes(self) -> None:
         """Rolling back removes the budget but preserves committed prerequisites."""

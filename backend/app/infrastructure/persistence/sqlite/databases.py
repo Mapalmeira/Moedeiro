@@ -14,13 +14,11 @@ class SqliteDatabases:
         registry_schema_path: Path,
         ledger_dbs_dir: Path,
         ledger_schema_path: Path,
-        max_page_size: int,
     ):
         self.registry_database = SqliteDatabase(registry_db_path)
         self.registry_schema_path = registry_schema_path
         self.ledger_dbs_dir = ledger_dbs_dir
         self.ledger_schema_path = ledger_schema_path
-        self.max_page_size = max_page_size
 
     def initialize(self) -> None:
         self.ledger_dbs_dir.mkdir(parents=True, exist_ok=True)
@@ -60,7 +58,7 @@ class SqliteDatabases:
         try:
             database = SqliteDatabase.initialize(path, self.ledger_schema_path)
             database_initialized = True
-            with SqliteLedgerUnitOfWork(database, self.max_page_size) as unit_of_work:
+            with SqliteLedgerUnitOfWork(database) as unit_of_work:
                 unit_of_work.ledger_metadata_repository.create(ledger_uuid, schema_version, created_at)
                 unit_of_work.commit()
         except Exception:
@@ -82,4 +80,4 @@ class SqliteDatabases:
             raise ValueError("ledger database must be directly inside LEDGER_DBS_DIR")
         if not ledger_path.is_file():
             raise FileNotFoundError(ledger_path)
-        return SqliteLedgerUnitOfWork(SqliteDatabase(ledger_path), self.max_page_size)
+        return SqliteLedgerUnitOfWork(SqliteDatabase(ledger_path))
