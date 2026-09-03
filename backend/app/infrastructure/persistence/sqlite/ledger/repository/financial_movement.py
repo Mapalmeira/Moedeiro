@@ -73,6 +73,13 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
             (movement.category_uuid.bytes, movement.uuid.bytes),
         )
 
+    def update_account(self, uuid: UUID, account_uuid: UUID) -> None:
+        movement = self._validation_model(uuid, account_uuid=account_uuid)
+        self.connection.execute(
+            "UPDATE financial_movement SET account_uuid = ? WHERE uuid = ?",
+            (movement.account_uuid.bytes, movement.uuid.bytes),
+        )
+
     def list_by_financial_event(self, financial_event_uuid: UUID) -> list[FinancialMovement]:
         rows = self.connection.execute(
             """
@@ -92,6 +99,9 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
         ).fetchall()
         return [self._to_model(row) for row in rows]
 
+    def delete(self, uuid: UUID) -> None:
+        self.connection.execute("DELETE FROM financial_movement WHERE uuid = ?", (uuid.bytes,))
+
     @classmethod
     def _sort_column(cls, sort_key: str) -> str:
         try:
@@ -100,11 +110,11 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
             raise ValueError(f"Unsupported financial movement sort key: {sort_key}") from error
 
     @staticmethod
-    def _validation_model(uuid: UUID, value: int = 1, item_name: str | None = None, category_uuid: UUID | None = None) -> FinancialMovement:
+    def _validation_model(uuid: UUID, value: int = 1, item_name: str | None = None, category_uuid: UUID | None = None, account_uuid: UUID | None = None) -> FinancialMovement:
         return FinancialMovement(
             uuid=uuid,
             financial_event_uuid=uuid,
-            account_uuid=uuid,
+            account_uuid=account_uuid or uuid,
             category_uuid=category_uuid or uuid,
             value=value,
             item_name=item_name,

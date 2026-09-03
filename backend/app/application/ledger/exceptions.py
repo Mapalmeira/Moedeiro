@@ -28,3 +28,19 @@ class CategoryNotFoundError(Exception):
 
 class CategoryInUseError(Exception):
     pass
+
+
+class FinancialEventNotFoundError(Exception):
+    pass
+
+
+class FinancialEventTypeMismatchError(Exception):
+    pass
+
+
+class InvalidFinancialEventStructureError(Exception):
+    pass
+
+
+class FinancialMovementNotFoundError(Exception):
+    pass

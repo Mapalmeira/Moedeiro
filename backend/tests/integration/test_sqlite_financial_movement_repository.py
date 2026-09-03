@@ -43,22 +43,29 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.repository.create(event_uuid, account_uuid, category_uuid, -100, None)
 
-    def test_updates_value_item_name_and_category_but_not_account(self) -> None:
-        """Mutable fields change while event and account relations remain fixed."""
+    def test_updates_value_item_name_category_and_account(self) -> None:
         movement = self.create_movement()
         other_category = self.create_category("Dining")
+        other_account = self.create_account("Savings", currency=self.currency)
 
         self.repository.update_value(movement.uuid, -150)
         self.repository.update_item_name(movement.uuid, None)
         self.repository.update_category(movement.uuid, other_category.uuid)
+        self.repository.update_account(movement.uuid, other_account.uuid)
 
         updated = self.repository.get(movement.uuid)
         assert updated is not None
         self.assertEqual(updated.value, -150)
         self.assertIsNone(updated.item_name)
         self.assertEqual(updated.category_uuid, other_category.uuid)
-        self.assertEqual(updated.account_uuid, self.account.uuid)
+        self.assertEqual(updated.account_uuid, other_account.uuid)
         self.assertEqual(updated.financial_event_uuid, self.event.uuid)
+
+    def test_update_account_requires_an_existing_account(self) -> None:
+        movement = self.create_movement()
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.repository.update_account(movement.uuid, uuid4())
 
     def test_update_item_name_validates_model_limit(self) -> None:
         """Movement item names are validated before executing an update."""
@@ -94,6 +101,15 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual([movement.value for movement in movements], [50, -100])
         with self.assertRaises(ValueError):
             self.repository.list_all("uuid", True)
+
+    def test_delete_removes_only_the_selected_movement(self) -> None:
+        selected = self.create_movement(-100, "Lunch")
+        remaining = self.create_movement(-50, "Coffee")
+
+        self.repository.delete(selected.uuid)
+
+        self.assertIsNone(self.repository.get(selected.uuid))
+        self.assertEqual(self.repository.get(remaining.uuid), remaining)
 
     def test_repository_does_not_commit_its_changes(self) -> None:
         """Rolling back removes the movement but preserves committed relations."""

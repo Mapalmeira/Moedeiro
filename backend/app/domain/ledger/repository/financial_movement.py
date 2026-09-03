@@ -33,6 +33,10 @@ class FinancialMovementRepository(ABC):
         pass
 
     @abstractmethod
+    def update_account(self, uuid: UUID, account_uuid: UUID) -> None:
+        pass
+
+    @abstractmethod
     def list_by_financial_event(
         self,
         financial_event_uuid: UUID,
@@ -41,4 +45,8 @@ class FinancialMovementRepository(ABC):
 
     @abstractmethod
     def list_all(self, sort_key: str, ascending: bool) -> list[FinancialMovement]:
+        pass
+
+    @abstractmethod
+    def delete(self, uuid: UUID) -> None:
         pass

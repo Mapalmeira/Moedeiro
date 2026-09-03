@@ -28,6 +28,19 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         """An absent event is represented by None."""
         self.assertIsNone(self.repository.get(uuid4()))
 
+    def test_delete_cascades_to_the_event_movements(self) -> None:
+        currency = self.create_currency()
+        account = self.create_account(currency=currency)
+        category = self.create_category()
+        event = self.create_event()
+        movement_repository = SqliteFinancialMovementRepository(self.connection)
+        movement = movement_repository.create(event.uuid, account.uuid, category.uuid, -10, None)
+
+        self.repository.delete(event.uuid)
+
+        self.assertIsNone(self.repository.get(event.uuid))
+        self.assertIsNone(movement_repository.get(movement.uuid))
+
     def test_updates_timestamp_and_description_without_changing_type(self) -> None:
         """Event updates preserve identity and event type."""
         event = self.create_event(type="SHOPPING_LIST")

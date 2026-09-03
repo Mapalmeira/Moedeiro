@@ -1,6 +1,10 @@
+from typing import Annotated
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
+
+
+FinancialMovementItemName = Annotated[str, Field(max_length=50)]
 
 
 class FinancialMovement(BaseModel):
@@ -9,7 +13,7 @@ class FinancialMovement(BaseModel):
     account_uuid: UUID
     category_uuid: UUID
     value: int
-    item_name: str | None = Field(default=None, max_length=50)
+    item_name: FinancialMovementItemName | None = None
 
     @field_validator("value")
     @classmethod

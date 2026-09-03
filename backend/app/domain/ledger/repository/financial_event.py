@@ -40,3 +40,7 @@ class FinancialEventRepository(ABC):
         filters: FinancialEventFilter,
     ) -> list[FinancialEvent]:
         pass
+
+    @abstractmethod
+    def delete(self, uuid: UUID) -> None:
+        pass

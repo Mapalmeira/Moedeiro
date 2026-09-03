@@ -83,6 +83,7 @@ class SqliteFinancialEventRepository(FinancialEventRepository):
             SELECT uuid, financial_event_uuid, account_uuid, category_uuid, value, item_name
             FROM financial_movement
             WHERE financial_event_uuid IN ({placeholders})
+            ORDER BY financial_event_uuid ASC, uuid ASC
             """,
             [row["uuid"] for row in rows],
         ).fetchall()
@@ -90,3 +91,6 @@ class SqliteFinancialEventRepository(FinancialEventRepository):
             movement = FinancialMovement.model_validate(dict(movement_row))
             events[movement.financial_event_uuid.bytes]["movements"].append(movement)
         return [FinancialEvent.model_validate(events[row["uuid"]]) for row in rows]
+
+    def delete(self, uuid: UUID) -> None:
+        self.connection.execute("DELETE FROM financial_event WHERE uuid = ?", (uuid.bytes,))
