@@ -41,7 +41,7 @@ class InvitationCliTest(unittest.TestCase):
         self.assertEqual(output.getvalue(), "/registration#invite=000G40R40M30E209\n")
         databases = self.create_databases()
         with databases.open_registry() as unit_of_work:
-            invitations = unit_of_work.user_invitation_repository.list_all()
+            invitations = unit_of_work.user_invitation_repository.list_all("created_at", True)
         self.assertEqual(len(invitations), 1)
         self.assertEqual(invitations[0].created_at, 100)
         self.assertEqual(invitations[0].expires_at, 3700)
@@ -52,7 +52,7 @@ class InvitationCliTest(unittest.TestCase):
             main(["invitation", "create", "--expiration-seconds", "120"], self.settings)
         databases = self.create_databases()
         with databases.open_registry() as unit_of_work:
-            invitation = unit_of_work.user_invitation_repository.list_all()[0]
+            invitation = unit_of_work.user_invitation_repository.list_all("created_at", True)[0]
 
         active_output = StringIO()
         with redirect_stdout(active_output):

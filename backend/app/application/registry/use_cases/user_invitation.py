@@ -38,6 +38,6 @@ def revoke_user_invitation(unit_of_work_factory: Callable[[], RegistryUnitOfWork
     return True
 
 
-def list_user_invitations(unit_of_work_factory: Callable[[], RegistryUnitOfWork]) -> list[UserInvitation]:
+def list_user_invitations(unit_of_work_factory: Callable[[], RegistryUnitOfWork], sort_key: str, ascending: bool) -> list[UserInvitation]:
     with unit_of_work_factory() as unit_of_work:
-        return unit_of_work.user_invitation_repository.list_all()
+        return unit_of_work.user_invitation_repository.list_all(sort_key, ascending)

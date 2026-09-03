@@ -30,5 +30,5 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
-    def list_all(self) -> list[User]:
+    def list_all(self, sort_key: str, ascending: bool) -> list[User]:
         pass

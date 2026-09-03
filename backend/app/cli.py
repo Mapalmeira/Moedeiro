@@ -89,7 +89,7 @@ def _create_invitation(databases: SqliteDatabases, timestamp: int, expiration_se
 
 
 def _list_invitations(databases: SqliteDatabases, timestamp: int) -> int:
-    for invitation in list_user_invitations(databases.open_registry):
+    for invitation in list_user_invitations(databases.open_registry, "created_at", True):
         print(f"{invitation.uuid}\t{_status(invitation, timestamp)}\t{invitation.created_at}\t{invitation.expires_at}")
     return 0
 
@@ -147,7 +147,7 @@ def _create_user(databases: SqliteDatabases, name: str, timestamp: int) -> int:
 
 
 def _list_users(databases: SqliteDatabases) -> int:
-    for user in list_users(databases.open_registry):
+    for user in list_users(databases.open_registry, "name", True):
         print(f"{user.uuid}\t{user.name}\t{user.created_at}")
     return 0
 

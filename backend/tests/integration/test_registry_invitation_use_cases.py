@@ -64,7 +64,7 @@ class RegistryInvitationUseCasesTest(unittest.TestCase):
         self.assertTrue(revoke_user_invitation(self.open_registry, invitation.uuid))
         self.assertFalse(revoke_user_invitation(self.open_registry, invitation.uuid))
         self.assertIsNone(get_available_user_invitation(self.open_registry, code, 170))
-        self.assertEqual(list_user_invitations(self.open_registry), [])
+        self.assertEqual(list_user_invitations(self.open_registry, "created_at", True), [])
 
     def test_get_rejects_a_consumed_invitation(self) -> None:
         code = create_user_invitation(self.open_registry, 100, 100)
@@ -100,7 +100,7 @@ class RegistryInvitationUseCasesTest(unittest.TestCase):
             self.assertTrue(unit_of_work.user_invitation_repository.consume(consumed.uuid, 150))
             unit_of_work.commit()
 
-        invitations = list_user_invitations(self.open_registry)
+        invitations = list_user_invitations(self.open_registry, "created_at", True)
 
         self.assertEqual(len(invitations), 2)
         by_hash = {invitation.secret_hash: invitation for invitation in invitations}

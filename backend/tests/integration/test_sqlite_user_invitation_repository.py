@@ -44,14 +44,16 @@ class SqliteUserInvitationRepositoryTest(RegistryRepositoryTestCase):
         self.assertFalse(self.invitation_repository.delete(consumed.uuid))
         self.assertIsNotNone(self.invitation_repository.get(consumed.uuid))
 
-    def test_list_all_returns_consumed_and_active_invitations(self) -> None:
-        consumed = self.create_invitation(b"a" * 32)
-        active = self.create_invitation(b"c" * 32)
+    def test_list_all_orders_consumed_and_active_invitations(self) -> None:
+        consumed = self.invitation_repository.create(b"a" * 32, 10, 100)
+        active = self.invitation_repository.create(b"c" * 32, 20, 100)
         self.invitation_repository.consume(consumed.uuid, 20)
 
-        invitations = self.invitation_repository.list_all()
+        invitations = self.invitation_repository.list_all("created_at", False)
 
-        self.assertCountEqual([invitation.uuid for invitation in invitations], [consumed.uuid, active.uuid])
+        self.assertEqual(invitations, [active, consumed.model_copy(update={"consumed_at": 20})])
+        with self.assertRaises(ValueError):
+            self.invitation_repository.list_all("uuid", True)
 
     def test_delete_inactive_before_removes_expired_and_consumed_invitations(self) -> None:
         expired = self.invitation_repository.create(b"e" * 32, 10, 40)

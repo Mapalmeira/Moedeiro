@@ -9,6 +9,10 @@ from app.domain.registry.repository.user import UserRepository
 
 class SqliteUserRepository(UserRepository):
     _columns = "uuid, name, normalized_name, password_hash, created_at, password_changed_at"
+    _SORT_COLUMNS = {
+        "name": "user_account.name",
+        "created_at": "user_account.created_at",
+    }
     _name_adapter = TypeAdapter(UserName)
     _normalized_name_adapter = TypeAdapter(NormalizedUserName)
 
@@ -51,10 +55,19 @@ class SqliteUserRepository(UserRepository):
     def delete(self, uuid: UUID) -> None:
         self.connection.execute("DELETE FROM user_account WHERE uuid = ?", (uuid.bytes,))
 
-    def list_all(self) -> list[User]:
-        rows = self.connection.execute(f"SELECT {self._columns} FROM user_account").fetchall()
+    def list_all(self, sort_key: str, ascending: bool) -> list[User]:
+        sort_column = self._get_sort_column(sort_key)
+        direction = "ASC" if ascending else "DESC"
+        rows = self.connection.execute(f"SELECT {self._columns} FROM user_account ORDER BY {sort_column} {direction}, user_account.uuid ASC").fetchall()
         return [self._to_model(row) for row in rows]
 
     @staticmethod
     def _to_model(row: sqlite3.Row) -> User:
         return User.model_validate(dict(row))
+
+    @classmethod
+    def _get_sort_column(cls, sort_key: str) -> str:
+        try:
+            return cls._SORT_COLUMNS[sort_key]
+        except KeyError as error:
+            raise ValueError(f"Invalid user sort key: {sort_key}") from error

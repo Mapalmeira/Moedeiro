@@ -61,7 +61,7 @@ class RegistrationSecurityTest(unittest.TestCase):
             asyncio.run(create_user(payload, self.request("198.51.100.1")))
         self.assertEqual(other_ip.exception.status_code, 404)
         with self.application.state.databases.open_registry() as unit_of_work:
-            self.assertEqual(unit_of_work.user_repository.list_all(), [])
+            self.assertEqual(unit_of_work.user_repository.list_all("name", True), [])
 
     def test_registration_stores_a_hash_that_verifies_only_the_original_password(self) -> None:
         code = self.create_invitation()
@@ -99,7 +99,7 @@ class RegistrationSecurityTest(unittest.TestCase):
 
         self.assertEqual(raised.exception.status_code, 404)
         with self.application.state.databases.open_registry() as unit_of_work:
-            users = unit_of_work.user_repository.list_all()
+            users = unit_of_work.user_repository.list_all("name", True)
         self.assertEqual([user.name for user in users], ["Alice"])
 
 

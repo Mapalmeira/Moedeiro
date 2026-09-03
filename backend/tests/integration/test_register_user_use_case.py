@@ -71,7 +71,7 @@ class RegisterUserUseCaseTest(unittest.TestCase):
 
         with self.open_registry() as unit_of_work:
             stored_invitation = unit_of_work.user_invitation_repository.get(invitation.uuid)
-            self.assertEqual(unit_of_work.user_repository.list_all(), [])
+            self.assertEqual(unit_of_work.user_repository.list_all("name", True), [])
         assert stored_invitation is not None
         self.assertIsNone(stored_invitation.consumed_at)
 
@@ -83,7 +83,7 @@ class RegisterUserUseCaseTest(unittest.TestCase):
             register_user(self.open_registry, self.password_hasher, invitation.uuid, "Alice", "correct horse battery", 150)
 
         with self.open_registry() as unit_of_work:
-            self.assertEqual(unit_of_work.user_repository.list_all(), [])
+            self.assertEqual(unit_of_work.user_repository.list_all("name", True), [])
 
     def test_consumed_invitation_cannot_create_a_second_user(self) -> None:
         invitation = self.create_invitation()
@@ -93,7 +93,7 @@ class RegisterUserUseCaseTest(unittest.TestCase):
             register_user(self.open_registry, self.password_hasher, invitation.uuid, "Bob", "another valid password", 160)
 
         with self.open_registry() as unit_of_work:
-            users = unit_of_work.user_repository.list_all()
+            users = unit_of_work.user_repository.list_all("name", True)
         self.assertEqual([user.name for user in users], ["Alice"])
 
     def test_password_hashing_failure_does_not_consume_invitation(self) -> None:
@@ -105,7 +105,7 @@ class RegisterUserUseCaseTest(unittest.TestCase):
 
         with self.open_registry() as unit_of_work:
             stored_invitation = unit_of_work.user_invitation_repository.get(invitation.uuid)
-            self.assertEqual(unit_of_work.user_repository.list_all(), [])
+            self.assertEqual(unit_of_work.user_repository.list_all("name", True), [])
         assert stored_invitation is not None
         self.assertIsNone(stored_invitation.consumed_at)
 

@@ -30,5 +30,5 @@ class UserInvitationRepository(ABC):
         pass
 
     @abstractmethod
-    def list_all(self) -> list[UserInvitation]:
+    def list_all(self, sort_key: str, ascending: bool) -> list[UserInvitation]:
         pass

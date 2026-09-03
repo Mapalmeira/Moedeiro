@@ -53,11 +53,16 @@ class SqliteUserRepositoryTest(RegistryRepositoryTestCase):
 
         self.assertEqual(self.user_repository.get(user.uuid), user)
 
-    def test_list_all_returns_every_user(self) -> None:
-        first = self.create_user("Alice")
-        second = self.create_user("Bob")
+    def test_list_all_orders_every_user_and_rejects_uuid_sorting(self) -> None:
+        self.create_user("Alice")
+        self.create_user("Bob")
 
-        self.assertCountEqual([user.uuid for user in self.user_repository.list_all()], [first.uuid, second.uuid])
+        self.assertEqual([user.name for user in self.user_repository.list_all("name", False)], ["Bob", "Alice"])
+        for sort_key in ("uuid", "password_changed_at", "last_accessed"):
+            with self.subTest(sort_key=sort_key):
+                with self.assertRaises(ValueError):
+                    self.user_repository.list_all(sort_key, True)
+
 
 
 if __name__ == "__main__":

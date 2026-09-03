@@ -7,6 +7,11 @@ from app.domain.registry.repository.user_invitation import UserInvitationReposit
 
 class SqliteUserInvitationRepository(UserInvitationRepository):
     _columns = "uuid, secret_hash, created_at, expires_at, consumed_at"
+    _SORT_COLUMNS = {
+        "created_at": "created_at",
+        "expires_at": "expires_at",
+        "consumed_at": "consumed_at",
+    }
 
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
@@ -42,10 +47,19 @@ class SqliteUserInvitationRepository(UserInvitationRepository):
         cursor = self.connection.execute("DELETE FROM user_invitation WHERE consumed_at <= ? OR expires_at <= ?", (timestamp, timestamp))
         return cursor.rowcount
 
-    def list_all(self) -> list[UserInvitation]:
-        rows = self.connection.execute(f"SELECT {self._columns} FROM user_invitation").fetchall()
+    def list_all(self, sort_key: str, ascending: bool) -> list[UserInvitation]:
+        sort_column = self._get_sort_column(sort_key)
+        direction = "ASC" if ascending else "DESC"
+        rows = self.connection.execute(f"SELECT {self._columns} FROM user_invitation ORDER BY {sort_column} {direction}, uuid ASC").fetchall()
         return [self._to_model(row) for row in rows]
 
     @staticmethod
     def _to_model(row: sqlite3.Row) -> UserInvitation:
         return UserInvitation.model_validate(dict(row))
+
+    @classmethod
+    def _get_sort_column(cls, sort_key: str) -> str:
+        try:
+            return cls._SORT_COLUMNS[sort_key]
+        except KeyError as error:
+            raise ValueError(f"Invalid user invitation sort key: {sort_key}") from error

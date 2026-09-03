@@ -24,9 +24,9 @@ def create_user(unit_of_work_factory: Callable[[], RegistryUnitOfWork], password
     return user
 
 
-def list_users(unit_of_work_factory: Callable[[], RegistryUnitOfWork]) -> list[User]:
+def list_users(unit_of_work_factory: Callable[[], RegistryUnitOfWork], sort_key: str, ascending: bool) -> list[User]:
     with unit_of_work_factory() as unit_of_work:
-        return unit_of_work.user_repository.list_all()
+        return unit_of_work.user_repository.list_all(sort_key, ascending)
 
 
 def delete_user(unit_of_work_factory: Callable[[], RegistryUnitOfWork], user_uuid: UUID) -> list[Ledger]:
