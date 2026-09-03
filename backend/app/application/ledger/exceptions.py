@@ -8,3 +8,15 @@ class CurrencyNotFoundError(Exception):
 
 class CurrencyInUseError(Exception):
     pass
+
+
+class AccountNotFoundError(Exception):
+    pass
+
+
+class AccountNameUnavailableError(Exception):
+    pass
+
+
+class AccountInUseError(Exception):
+    pass

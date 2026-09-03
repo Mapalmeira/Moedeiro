@@ -6,6 +6,8 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from app.infrastructure.persistence.sqlite.ledger.repository.account import SqliteAccountRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.budget import SqliteBudgetRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.financial_movement import SqliteFinancialMovementRepository
 from tests.integration.ledger_repository_test_case import LedgerRepositoryTestCase
 
 
@@ -24,6 +26,7 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(account.currency_uuid, self.currency.uuid)
         self.assertEqual(account.icon, "WalletCards")
         self.assertEqual(account.color_code, b"\x80\x80\x80")
+        self.assertEqual(self.repository.get_by_name("Checking"), account)
 
     def test_create_requires_an_existing_currency(self) -> None:
         """The database foreign key rejects an unknown currency."""
@@ -83,6 +86,29 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
 
         with self.assertRaises(ValueError):
             self.repository.list_page(1, 201, "name", True)
+
+    def test_is_in_use_detects_financial_movements_and_budgets(self) -> None:
+        movement_account = self.create_account("Movement", self.currency)
+        budget_account = self.create_account("Budget", self.currency)
+        unused_account = self.create_account("Unused", self.currency)
+        category = self.create_category()
+        event = self.create_event()
+        SqliteFinancialMovementRepository(self.connection).create(event.uuid, movement_account.uuid, category.uuid, -100, None)
+        budget = self.create_budget(currency=self.currency, category=category)
+        SqliteBudgetRepository(self.connection).add_account(budget.uuid, budget_account.uuid)
+
+        self.assertTrue(self.repository.is_in_use(movement_account.uuid))
+        self.assertTrue(self.repository.is_in_use(budget_account.uuid))
+        self.assertFalse(self.repository.is_in_use(unused_account.uuid))
+
+    def test_delete_removes_only_the_selected_account(self) -> None:
+        deleted = self.create_account("Deleted", self.currency)
+        preserved = self.create_account("Preserved", self.currency)
+
+        self.repository.delete(deleted.uuid)
+
+        self.assertIsNone(self.repository.get(deleted.uuid))
+        self.assertEqual(self.repository.get(preserved.uuid), preserved)
 
     def test_repository_does_not_commit_its_changes(self) -> None:
         """Rolling back removes the account but preserves committed prerequisites."""

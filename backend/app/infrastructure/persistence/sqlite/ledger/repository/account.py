@@ -2,7 +2,7 @@ import sqlite3
 from uuid import UUID, uuid4
 
 from app.domain.appearance import Icon, RgbColorCode
-from app.domain.ledger.model.account import Account
+from app.domain.ledger.model.account import Account, AccountName, AccountNote
 from app.domain.ledger.repository.account import AccountRepository
 
 
@@ -15,7 +15,7 @@ class SqliteAccountRepository(AccountRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, name: str, note: str | None, currency_uuid: UUID, icon: Icon, color_code: RgbColorCode) -> Account:
+    def create(self, name: AccountName, note: AccountNote | None, currency_uuid: UUID, icon: Icon, color_code: RgbColorCode) -> Account:
         account = Account(uuid=uuid4(), name=name, note=note, currency_uuid=currency_uuid, icon=icon, color_code=color_code)
         self.connection.execute(
             "INSERT INTO account(uuid, account_name, note, currency_uuid, icon, color_code) VALUES (?, ?, ?, ?, ?, ?)",
@@ -32,7 +32,16 @@ class SqliteAccountRepository(AccountRepository):
             return None
         return self._to_model(row)
 
-    def update_name(self, uuid: UUID, value: str) -> None:
+    def get_by_name(self, name: AccountName) -> Account | None:
+        row = self.connection.execute(
+            "SELECT uuid, account_name AS name, note, currency_uuid, icon, color_code FROM account WHERE account_name = ?",
+            (name,),
+        ).fetchone()
+        if row is None:
+            return None
+        return self._to_model(row)
+
+    def update_name(self, uuid: UUID, value: AccountName) -> None:
         account = self._updated_model(uuid, name=value)
         if account is None:
             return
@@ -41,7 +50,7 @@ class SqliteAccountRepository(AccountRepository):
             (account.name, account.uuid.bytes),
         )
 
-    def update_note(self, uuid: UUID, value: str | None) -> None:
+    def update_note(self, uuid: UUID, value: AccountNote | None) -> None:
         account = self._updated_model(uuid, note=value)
         if account is None:
             return
@@ -83,6 +92,19 @@ class SqliteAccountRepository(AccountRepository):
             (page_size, offset),
         ).fetchall()
         return [self._to_model(row) for row in rows]
+
+    def is_in_use(self, uuid: UUID) -> bool:
+        row = self.connection.execute(
+            """
+            SELECT EXISTS(SELECT 1 FROM financial_movement WHERE account_uuid = ?)
+                OR EXISTS(SELECT 1 FROM budget_accounts WHERE account_uuid = ?)
+            """,
+            (uuid.bytes, uuid.bytes),
+        ).fetchone()
+        return bool(row[0])
+
+    def delete(self, uuid: UUID) -> None:
+        self.connection.execute("DELETE FROM account WHERE uuid = ?", (uuid.bytes,))
 
     @staticmethod
     def _to_model(row: sqlite3.Row) -> Account:

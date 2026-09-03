@@ -2,15 +2,15 @@ from abc import ABC, abstractmethod
 from uuid import UUID
 
 from app.domain.appearance import Icon, RgbColorCode
-from app.domain.ledger.model.account import Account
+from app.domain.ledger.model.account import Account, AccountName, AccountNote
 
 
 class AccountRepository(ABC):
     @abstractmethod
     def create(
         self,
-        name: str,
-        note: str | None,
+        name: AccountName,
+        note: AccountNote | None,
         currency_uuid: UUID,
         icon: Icon,
         color_code: RgbColorCode,
@@ -22,11 +22,15 @@ class AccountRepository(ABC):
         pass
 
     @abstractmethod
-    def update_name(self, uuid: UUID, value: str) -> None:
+    def get_by_name(self, name: AccountName) -> Account | None:
         pass
 
     @abstractmethod
-    def update_note(self, uuid: UUID, value: str | None) -> None:
+    def update_name(self, uuid: UUID, value: AccountName) -> None:
+        pass
+
+    @abstractmethod
+    def update_note(self, uuid: UUID, value: AccountNote | None) -> None:
         pass
 
     @abstractmethod
@@ -45,4 +49,12 @@ class AccountRepository(ABC):
         sort_key: str,
         ascending: bool,
     ) -> list[Account]:
+        pass
+
+    @abstractmethod
+    def is_in_use(self, uuid: UUID) -> bool:
+        pass
+
+    @abstractmethod
+    def delete(self, uuid: UUID) -> None:
         pass
