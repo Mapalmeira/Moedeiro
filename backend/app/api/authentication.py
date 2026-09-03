@@ -1,7 +1,8 @@
 import time
 from functools import partial
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from app.api.schema.authentication import LoginRequest
 from app.api.credential_operation import execute_credential_operation
@@ -90,6 +91,9 @@ def require_authenticated_user(request: Request) -> User:
         return authenticate_session(_databases(request).open_registry, token, int(time.time()))
     except InvalidSessionError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from error
+
+
+AuthenticatedUser = Annotated[User, Depends(require_authenticated_user)]
 
 
 def clear_authentication_cookies(response: Response) -> None:
