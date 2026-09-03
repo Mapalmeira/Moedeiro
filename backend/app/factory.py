@@ -6,6 +6,7 @@ from anyio.to_thread import current_default_thread_limiter
 from fastapi import FastAPI
 
 from app.api.authentication import router as authentication_router
+from app.api.ledger import router as ledger_router
 from app.api.password import router as password_router
 from app.api.registration import router as registration_router
 from app.api.totp import router as totp_router
@@ -39,6 +40,7 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
     application.state.credential_operation_executor = CredentialOperationExecutor(selected_settings.credential_operation_concurrency) if credential_operation_executor is None else credential_operation_executor
     application.state.rate_limiter = RateLimiter() if rate_limiter is None else rate_limiter
     application.include_router(authentication_router)
+    application.include_router(ledger_router)
     application.include_router(password_router)
     application.include_router(registration_router)
     application.include_router(totp_router)
