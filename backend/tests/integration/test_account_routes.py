@@ -6,12 +6,12 @@ from uuid import uuid4
 from fastapi import HTTPException, Request
 from pydantic import ValidationError
 
-from app.api.account import create_ledger_account, delete_ledger_account, get_ledger_account, list_ledger_accounts, update_ledger_account
-from app.api.currency import create_ledger_currency
-from app.api.ledger import create_owned_ledger
-from app.api.schema.account import CreateAccountRequest, UpdateAccountRequest
-from app.api.schema.currency import CreateCurrencyRequest
-from app.api.schema.ledger import CreateLedgerRequest
+from app.api.ledger.routes.account import create_ledger_account, delete_ledger_account, get_ledger_account, list_ledger_accounts, update_ledger_account
+from app.api.ledger.routes.currency import create_ledger_currency
+from app.api.registry.routes.ledger import create_owned_ledger
+from app.api.ledger.schema.account import CreateAccountRequest, UpdateAccountRequest
+from app.api.ledger.schema.currency import CreateCurrencyRequest
+from app.api.registry.schema.ledger import CreateLedgerRequest
 from app.factory import create_app
 from app.settings import Settings
 from tests.fakes import FakeCredentialOperationExecutor, FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator

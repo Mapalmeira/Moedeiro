@@ -5,8 +5,8 @@ import unittest
 
 from fastapi import HTTPException, Request, Response
 
-from app.api.authentication import login_user, logout_user, refresh, validate_session
-from app.api.schema.authentication import LoginRequest
+from app.api.registry.routes.authentication import login_user, logout_user, refresh, validate_session
+from app.api.registry.schema.authentication import LoginRequest
 from app.factory import create_app
 from app.settings import Settings
 from tests.fakes import FakeCredentialOperationExecutor, FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator

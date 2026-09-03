@@ -4,14 +4,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from app.api.authentication import require_authenticated_user
-from app.api.credential_operation import execute_credential_operation
-from app.api.schema.totp import ConfirmTotpRequest, DisableTotpRequest, StartTotpSetupRequest, StartTotpSetupResponse
+from app.api.dependencies.authentication import require_authenticated_user
+from app.api.dependencies.credential_operation import execute_credential_operation
+from app.api.dependencies.rate_limit import check_rate_limit
+from app.api.registry.schema.totp import ConfirmTotpRequest, DisableTotpRequest, StartTotpSetupRequest, StartTotpSetupResponse
 from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, InvalidTotpSetupError, TotpAlreadyEnabledError, TotpNotEnabledError
 from app.application.registry.use_cases.totp import confirm_totp_setup, disable_totp, start_totp_setup
 from app.domain.registry.model.user import User
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
-from app.infrastructure.security.rate_limiter import RateLimitExceededError, RateLimiter
 from app.settings import Settings
 
 
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/totp", tags=["totp"])
 
 @router.post("/setup", response_model=StartTotpSetupResponse)
 async def start_setup(payload: StartTotpSetupRequest, request: Request, user: Annotated[User, Depends(require_authenticated_user)]) -> StartTotpSetupResponse:
-    _check_rate_limit(request, _settings(request).totp_setup_ip_attempts_rate_limit, "totp-setup-ip-attempts", _client_ip(request))
+    check_rate_limit(request, _settings(request).totp_setup_ip_attempts_rate_limit, "totp-setup-ip-attempts")
     try:
         provisioning_uri = await execute_credential_operation(
             request,
@@ -85,20 +85,5 @@ def _databases(request: Request) -> SqliteDatabases:
     return request.app.state.databases
 
 
-def _check_rate_limit(request: Request, rate: str, namespace: str, key: str) -> None:
-    try:
-        _rate_limiter(request).check(rate, namespace, key)
-    except RateLimitExceededError as error:
-        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Rate limit exceeded", headers={"Retry-After": str(error.retry_after)}) from error
-
-
-def _client_ip(request: Request) -> str:
-    return "unknown" if request.client is None else request.client.host
-
-
 def _settings(request: Request) -> Settings:
     return request.app.state.settings
-
-
-def _rate_limiter(request: Request) -> RateLimiter:
-    return request.app.state.rate_limiter

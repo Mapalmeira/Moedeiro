@@ -8,8 +8,8 @@ import unittest
 from fastapi import HTTPException, Request
 from pydantic import ValidationError
 
-from app.api.registration import create_user
-from app.api.schema.registration import RegisterUserRequest
+from app.api.registry.routes.registration import create_user
+from app.api.registry.schema.registration import RegisterUserRequest
 from app.application.registry.use_cases.user_invitation import create_user_invitation
 from app.factory import create_app
 from app.settings import Settings

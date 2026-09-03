@@ -8,9 +8,9 @@ import unittest
 from fastapi import HTTPException, Request, Response
 from pydantic import ValidationError
 
-from app.api.authentication import require_authenticated_user
-from app.api.password import change_current_password, recover_password
-from app.api.schema.password import ChangePasswordRequest, ResetPasswordRequest
+from app.api.dependencies.authentication import require_authenticated_user
+from app.api.registry.routes.password import change_current_password, recover_password
+from app.api.registry.schema.password import ChangePasswordRequest, ResetPasswordRequest
 from app.application.registry.use_cases.authentication import login
 from app.application.registry.use_cases.password import create_recovery_code
 from app.factory import create_app

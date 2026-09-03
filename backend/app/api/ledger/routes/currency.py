@@ -1,18 +1,14 @@
-import time
-from collections.abc import Callable
-from functools import partial
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from app.api.authentication import AuthenticatedUser
-from app.api.pagination import validate_requested_page
-from app.api.schema.currency import CreateCurrencyRequest, CurrencyResponse, CurrencySortKey, UpdateCurrencyRequest
-from app.application.ledger.exceptions import CurrencyInUseError, CurrencyNotFoundError, LedgerNotFoundError
-from app.application.ledger.unit_of_work import LedgerUnitOfWork
+from app.api.dependencies.authentication import AuthenticatedUser
+from app.api.dependencies.ledger import ledger_unit_of_work_factory
+from app.api.dependencies.pagination import validate_requested_page
+from app.api.ledger.schema.currency import CreateCurrencyRequest, CurrencyResponse, CurrencySortKey, UpdateCurrencyRequest
+from app.application.ledger.exceptions import CurrencyInUseError, CurrencyNotFoundError
 from app.application.ledger.use_cases.currency import create_currency, delete_currency, get_currency, list_currency_page, update_currency
-from app.application.ledger.use_cases.ledger import access_owned_ledger
 
 
 router = APIRouter(prefix="/api/ledgers/{ledger_uuid}/currencies", tags=["currencies"])
@@ -26,7 +22,7 @@ def create_ledger_currency(
     user: AuthenticatedUser,
 ) -> CurrencyResponse:
     currency = create_currency(
-        _unit_of_work_factory(request, user.uuid, ledger_uuid),
+        ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
         payload.name,
         payload.prefix,
         payload.suffix,
@@ -49,7 +45,7 @@ def list_ledger_currencies(
 ) -> list[CurrencyResponse]:
     validate_requested_page(request, page_number, page_size)
     currencies = list_currency_page(
-        _unit_of_work_factory(request, user.uuid, ledger_uuid),
+        ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
         page_number,
         page_size,
         sort_key,
@@ -67,7 +63,7 @@ def get_ledger_currency(
 ) -> CurrencyResponse:
     try:
         currency = get_currency(
-            _unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
             currency_uuid,
         )
     except CurrencyNotFoundError as error:
@@ -85,7 +81,7 @@ def update_ledger_currency(
 ) -> CurrencyResponse:
     try:
         currency = update_currency(
-            _unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
             currency_uuid,
             payload.name,
             payload.prefix,
@@ -107,27 +103,10 @@ def delete_ledger_currency(
 ) -> None:
     try:
         delete_currency(
-            _unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
             currency_uuid,
         )
     except CurrencyNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Currency not found") from error
     except CurrencyInUseError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Currency is in use") from error
-
-
-def _unit_of_work_factory(
-    request: Request,
-    user_uuid: UUID,
-    ledger_uuid: UUID,
-) -> Callable[[], LedgerUnitOfWork]:
-    try:
-        ledger = access_owned_ledger(
-            request.app.state.databases.open_registry,
-            user_uuid,
-            ledger_uuid,
-            int(time.time()),
-        )
-    except LedgerNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ledger not found") from error
-    return partial(request.app.state.databases.open_ledger, ledger.path)

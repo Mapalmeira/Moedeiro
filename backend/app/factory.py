@@ -5,15 +5,15 @@ from typing import AsyncGenerator
 from anyio.to_thread import current_default_thread_limiter
 from fastapi import FastAPI
 
-from app.api.account import router as account_router
-from app.api.authentication import router as authentication_router
-from app.api.category import router as category_router
-from app.api.currency import router as currency_router
-from app.api.financial_event import router as financial_event_router
-from app.api.ledger import router as ledger_router
-from app.api.password import router as password_router
-from app.api.registration import router as registration_router
-from app.api.totp import router as totp_router
+from app.api.ledger.routes.account import router as account_router
+from app.api.ledger.routes.category import router as category_router
+from app.api.ledger.routes.currency import router as currency_router
+from app.api.ledger.routes.financial_event import router as financial_event_router
+from app.api.registry.routes.authentication import router as authentication_router
+from app.api.registry.routes.ledger import router as ledger_router
+from app.api.registry.routes.password import router as password_router
+from app.api.registry.routes.registration import router as registration_router
+from app.api.registry.routes.totp import router as totp_router
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.totp_authenticator import TotpAuthenticator
 from app.infrastructure.credential_operation_executor import CredentialOperationExecutor

@@ -6,10 +6,10 @@ from uuid import uuid4
 from fastapi import HTTPException, Request
 from pydantic import ValidationError
 
-from app.api.category import create_ledger_category, delete_ledger_category, get_ledger_category, get_ledger_category_tree, update_ledger_category
-from app.api.ledger import create_owned_ledger
-from app.api.schema.category import CreateCategoryRequest, UpdateCategoryRequest
-from app.api.schema.ledger import CreateLedgerRequest
+from app.api.ledger.routes.category import create_ledger_category, delete_ledger_category, get_ledger_category, get_ledger_category_tree, update_ledger_category
+from app.api.registry.routes.ledger import create_owned_ledger
+from app.api.ledger.schema.category import CreateCategoryRequest, UpdateCategoryRequest
+from app.api.registry.schema.ledger import CreateLedgerRequest
 from app.factory import create_app
 from app.settings import Settings
 from tests.fakes import FakeCredentialOperationExecutor, FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator

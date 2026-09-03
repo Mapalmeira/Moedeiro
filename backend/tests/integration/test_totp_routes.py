@@ -6,9 +6,9 @@ import unittest
 
 from fastapi import HTTPException, Request
 
-from app.api.authentication import require_authenticated_user
-from app.api.schema.totp import ConfirmTotpRequest, DisableTotpRequest, StartTotpSetupRequest
-from app.api.totp import confirm_setup, remove_totp, start_setup
+from app.api.dependencies.authentication import require_authenticated_user
+from app.api.registry.routes.totp import confirm_setup, remove_totp, start_setup
+from app.api.registry.schema.totp import ConfirmTotpRequest, DisableTotpRequest, StartTotpSetupRequest
 from app.application.registry.exceptions import TotpRequiredError
 from app.application.registry.use_cases.authentication import login
 from app.factory import create_app

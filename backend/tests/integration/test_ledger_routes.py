@@ -6,8 +6,8 @@ from uuid import uuid4
 from fastapi import HTTPException, Request
 from pydantic import ValidationError
 
-from app.api.ledger import create_owned_ledger, delete_user_ledger, get_user_ledger, list_user_ledgers, update_user_ledger
-from app.api.schema.ledger import CreateLedgerRequest, UpdateLedgerRequest
+from app.api.registry.routes.ledger import create_owned_ledger, delete_user_ledger, get_user_ledger, list_user_ledgers, update_user_ledger
+from app.api.registry.schema.ledger import CreateLedgerRequest, UpdateLedgerRequest
 from app.factory import create_app
 from app.settings import Settings
 from tests.fakes import FakeCredentialOperationExecutor, FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator

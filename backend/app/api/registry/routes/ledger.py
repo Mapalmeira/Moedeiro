@@ -3,8 +3,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
 
-from app.api.authentication import AuthenticatedUser
-from app.api.schema.ledger import CreateLedgerRequest, LedgerResponse, LedgerSortKey, UpdateLedgerRequest
+from app.api.dependencies.authentication import AuthenticatedUser
+from app.api.registry.schema.ledger import CreateLedgerRequest, LedgerResponse, LedgerSortKey, UpdateLedgerRequest
 from app.application.ledger.exceptions import LedgerNotFoundError
 from app.application.ledger.use_cases.ledger import access_owned_ledger, create_ledger, delete_owned_ledger, list_owned_ledgers, update_owned_ledger
 from app.application.registry.exceptions import UserNotFoundError

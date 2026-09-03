@@ -1,18 +1,14 @@
-import time
-from collections.abc import Callable
-from functools import partial
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from app.api.authentication import AuthenticatedUser
-from app.api.pagination import validate_requested_page
-from app.api.schema.financial_event import AccountTransferFinancialEventRequest, CreateFinancialEventRequest, FinancialEventResponse, ShoppingListFinancialEventRequest, SimpleFinancialEventRequest, UpdateAccountTransferFinancialEventRequest, UpdateFinancialEventRequest, UpdateShoppingListFinancialEventRequest, UpdateSimpleFinancialEventRequest
-from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventStructureError, LedgerNotFoundError
-from app.application.ledger.unit_of_work import LedgerUnitOfWork
+from app.api.dependencies.authentication import AuthenticatedUser
+from app.api.dependencies.ledger import ledger_unit_of_work_factory
+from app.api.dependencies.pagination import validate_requested_page
+from app.api.ledger.schema.financial_event import AccountTransferFinancialEventRequest, CreateFinancialEventRequest, FinancialEventResponse, ShoppingListFinancialEventRequest, SimpleFinancialEventRequest, UpdateAccountTransferFinancialEventRequest, UpdateFinancialEventRequest, UpdateShoppingListFinancialEventRequest, UpdateSimpleFinancialEventRequest
+from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventStructureError
 from app.application.ledger.use_cases.financial_event import create_account_transfer_financial_event, create_shopping_list_financial_event, create_simple_financial_event, delete_financial_event, get_financial_event, list_financial_event_page, update_account_transfer_financial_event, update_shopping_list_financial_event, update_simple_financial_event
-from app.application.ledger.use_cases.ledger import access_owned_ledger
 from app.domain.ledger.model.financial_event import FinancialEventType
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 
@@ -22,7 +18,7 @@ router = APIRouter(prefix="/api/ledgers/{ledger_uuid}/events", tags=["financial 
 
 @router.post("", response_model=FinancialEventResponse, status_code=status.HTTP_201_CREATED)
 def create_ledger_financial_event(ledger_uuid: UUID, payload: CreateFinancialEventRequest, request: Request, user: AuthenticatedUser) -> FinancialEventResponse:
-    unit_of_work_factory = _unit_of_work_factory(request, user.uuid, ledger_uuid)
+    unit_of_work_factory = ledger_unit_of_work_factory(request, user.uuid, ledger_uuid)
     try:
         if isinstance(payload, SimpleFinancialEventRequest):
             event = create_simple_financial_event(unit_of_work_factory, payload.occurred_at, payload.description, payload.account_uuid, payload.category_uuid, payload.value, payload.item_name)
@@ -83,14 +79,14 @@ def list_ledger_financial_events(
         category_uuid=category_uuid,
         event_type=event_type,
     )
-    events = list_financial_event_page(_unit_of_work_factory(request, user.uuid, ledger_uuid), page_number, page_size, ascending, filters)
+    events = list_financial_event_page(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), page_number, page_size, ascending, filters)
     return [FinancialEventResponse.from_event(event) for event in events]
 
 
 @router.get("/{event_uuid}", response_model=FinancialEventResponse)
 def get_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, request: Request, user: AuthenticatedUser) -> FinancialEventResponse:
     try:
-        event = get_financial_event(_unit_of_work_factory(request, user.uuid, ledger_uuid), event_uuid)
+        event = get_financial_event(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), event_uuid)
     except FinancialEventNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Financial event not found") from error
     return FinancialEventResponse.from_event(event)
@@ -98,7 +94,7 @@ def get_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, request: Req
 
 @router.put("/{event_uuid}", response_model=FinancialEventResponse)
 def update_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, payload: UpdateFinancialEventRequest, request: Request, user: AuthenticatedUser) -> FinancialEventResponse:
-    unit_of_work_factory = _unit_of_work_factory(request, user.uuid, ledger_uuid)
+    unit_of_work_factory = ledger_unit_of_work_factory(request, user.uuid, ledger_uuid)
     try:
         if isinstance(payload, UpdateSimpleFinancialEventRequest):
             event = update_simple_financial_event(unit_of_work_factory, event_uuid, payload.occurred_at, payload.description, payload.account_uuid, payload.category_uuid, payload.value, payload.item_name)
@@ -148,14 +144,6 @@ def update_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, payload: 
 @router.delete("/{event_uuid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, request: Request, user: AuthenticatedUser) -> None:
     try:
-        delete_financial_event(_unit_of_work_factory(request, user.uuid, ledger_uuid), event_uuid)
+        delete_financial_event(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), event_uuid)
     except FinancialEventNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Financial event not found") from error
-
-
-def _unit_of_work_factory(request: Request, user_uuid: UUID, ledger_uuid: UUID) -> Callable[[], LedgerUnitOfWork]:
-    try:
-        ledger = access_owned_ledger(request.app.state.databases.open_registry, user_uuid, ledger_uuid, int(time.time()))
-    except LedgerNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ledger not found") from error
-    return partial(request.app.state.databases.open_ledger, ledger.path)

@@ -1,18 +1,14 @@
-import time
-from collections.abc import Callable
-from functools import partial
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from app.api.authentication import AuthenticatedUser
-from app.api.pagination import validate_requested_page
-from app.api.schema.account import AccountResponse, AccountSortKey, CreateAccountRequest, UpdateAccountRequest
-from app.application.ledger.exceptions import AccountInUseError, AccountNameUnavailableError, AccountNotFoundError, CurrencyNotFoundError, LedgerNotFoundError
-from app.application.ledger.unit_of_work import LedgerUnitOfWork
+from app.api.dependencies.authentication import AuthenticatedUser
+from app.api.dependencies.ledger import ledger_unit_of_work_factory
+from app.api.dependencies.pagination import validate_requested_page
+from app.api.ledger.schema.account import AccountResponse, AccountSortKey, CreateAccountRequest, UpdateAccountRequest
+from app.application.ledger.exceptions import AccountInUseError, AccountNameUnavailableError, AccountNotFoundError, CurrencyNotFoundError
 from app.application.ledger.use_cases.account import create_account, delete_account, get_account, list_account_page, update_account
-from app.application.ledger.use_cases.ledger import access_owned_ledger
 
 
 router = APIRouter(prefix="/api/ledgers/{ledger_uuid}/accounts", tags=["accounts"])
@@ -22,7 +18,7 @@ router = APIRouter(prefix="/api/ledgers/{ledger_uuid}/accounts", tags=["accounts
 def create_ledger_account(ledger_uuid: UUID, payload: CreateAccountRequest, request: Request, user: AuthenticatedUser) -> AccountResponse:
     try:
         account = create_account(
-            _unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
             payload.name,
             payload.note,
             payload.currency_uuid,
@@ -47,14 +43,14 @@ def list_ledger_accounts(
     ascending: bool = True,
 ) -> list[AccountResponse]:
     validate_requested_page(request, page_number, page_size)
-    accounts = list_account_page(_unit_of_work_factory(request, user.uuid, ledger_uuid), page_number, page_size, sort_key, ascending)
+    accounts = list_account_page(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), page_number, page_size, sort_key, ascending)
     return [AccountResponse.from_account(account) for account in accounts]
 
 
 @router.get("/{account_uuid}", response_model=AccountResponse)
 def get_ledger_account(ledger_uuid: UUID, account_uuid: UUID, request: Request, user: AuthenticatedUser) -> AccountResponse:
     try:
-        account = get_account(_unit_of_work_factory(request, user.uuid, ledger_uuid), account_uuid)
+        account = get_account(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), account_uuid)
     except AccountNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found") from error
     return AccountResponse.from_account(account)
@@ -70,7 +66,7 @@ def update_ledger_account(
 ) -> AccountResponse:
     try:
         account = update_account(
-            _unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
             account_uuid,
             payload.name,
             payload.note,
@@ -87,16 +83,8 @@ def update_ledger_account(
 @router.delete("/{account_uuid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_ledger_account(ledger_uuid: UUID, account_uuid: UUID, request: Request, user: AuthenticatedUser) -> None:
     try:
-        delete_account(_unit_of_work_factory(request, user.uuid, ledger_uuid), account_uuid)
+        delete_account(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), account_uuid)
     except AccountNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found") from error
     except AccountInUseError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Account is in use") from error
-
-
-def _unit_of_work_factory(request: Request, user_uuid: UUID, ledger_uuid: UUID) -> Callable[[], LedgerUnitOfWork]:
-    try:
-        ledger = access_owned_ledger(request.app.state.databases.open_registry, user_uuid, ledger_uuid, int(time.time()))
-    except LedgerNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ledger not found") from error
-    return partial(request.app.state.databases.open_ledger, ledger.path)
