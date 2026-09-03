@@ -40,6 +40,7 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.credential_operation_concurrency, 8)
         self.assertEqual(settings.password_hash_concurrency, 2)
         self.assertEqual(settings.max_page_size, 200)
+        self.assertEqual(settings.max_category_tree_size, 1000)
 
     def test_reads_security_limits_from_the_environment(self) -> None:
         environment = {
@@ -52,6 +53,7 @@ class SettingsTest(unittest.TestCase):
             "CREDENTIAL_OPERATION_CONCURRENCY": "6",
             "PASSWORD_HASH_CONCURRENCY": "1",
             "MAX_PAGE_SIZE": "150",
+            "MAX_CATEGORY_TREE_SIZE": "500",
         }
 
         settings = Settings.from_environment(environment)
@@ -64,6 +66,7 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.credential_operation_concurrency, 6)
         self.assertEqual(settings.password_hash_concurrency, 1)
         self.assertEqual(settings.max_page_size, 150)
+        self.assertEqual(settings.max_category_tree_size, 500)
 
     def test_rejects_invalid_security_limits(self) -> None:
         invalid_values = (
@@ -75,6 +78,7 @@ class SettingsTest(unittest.TestCase):
             ("CREDENTIAL_OPERATION_CONCURRENCY", "0"),
             ("PASSWORD_HASH_CONCURRENCY", "0"),
             ("MAX_PAGE_SIZE", "0"),
+            ("MAX_CATEGORY_TREE_SIZE", "0"),
         )
 
         for variable, value in invalid_values:

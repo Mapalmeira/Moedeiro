@@ -20,3 +20,11 @@ class AccountNameUnavailableError(Exception):
 
 class AccountInUseError(Exception):
     pass
+
+
+class CategoryNotFoundError(Exception):
+    pass
+
+
+class CategoryInUseError(Exception):
+    pass

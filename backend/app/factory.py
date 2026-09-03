@@ -7,6 +7,7 @@ from fastapi import FastAPI
 
 from app.api.account import router as account_router
 from app.api.authentication import router as authentication_router
+from app.api.category import router as category_router
 from app.api.currency import router as currency_router
 from app.api.ledger import router as ledger_router
 from app.api.password import router as password_router
@@ -28,7 +29,6 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
         selected_settings.registry_schema_path,
         selected_settings.ledger_dbs_dir,
         selected_settings.ledger_schema_path,
-        selected_settings.max_page_size,
     )
     databases.initialize()
 
@@ -44,6 +44,7 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
     application.state.rate_limiter = RateLimiter() if rate_limiter is None else rate_limiter
     application.include_router(account_router)
     application.include_router(authentication_router)
+    application.include_router(category_router)
     application.include_router(currency_router)
     application.include_router(ledger_router)
     application.include_router(password_router)
