@@ -85,7 +85,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
         """Only an explicit commit makes changes visible to a later operation."""
         ledger_uuid = uuid4()
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
-            unit_of_work.ledger_metadata_repository.create(ledger_uuid, 1)
+            unit_of_work.ledger_metadata_repository.create(ledger_uuid, 1, 100)
             unit_of_work.commit()
 
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
@@ -95,7 +95,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
 
     def test_commit_increments_revision_once_for_all_pending_changes(self) -> None:
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
-            unit_of_work.ledger_metadata_repository.create(uuid4(), 1)
+            unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 100)
             unit_of_work.commit()
 
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
@@ -114,7 +114,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
 
     def test_read_only_commit_does_not_increment_revision(self) -> None:
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
-            unit_of_work.ledger_metadata_repository.create(uuid4(), 1)
+            unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 100)
             unit_of_work.commit()
 
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
@@ -127,7 +127,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
 
     def test_second_commit_without_new_changes_does_not_increment_revision(self) -> None:
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
-            unit_of_work.ledger_metadata_repository.create(uuid4(), 1)
+            unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 100)
             unit_of_work.commit()
             unit_of_work.commit()
 
@@ -138,7 +138,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
 
     def test_commit_after_rollback_without_new_changes_does_not_increment_revision(self) -> None:
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
-            unit_of_work.ledger_metadata_repository.create(uuid4(), 1)
+            unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 100)
             unit_of_work.commit()
             unit_of_work.currency_repository.create("Temporary", None, None, 2, "Circle", b"\x80\x80\x80")
             unit_of_work.rollback()
@@ -152,7 +152,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
 
     def test_rollback_does_not_increment_revision(self) -> None:
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
-            unit_of_work.ledger_metadata_repository.create(uuid4(), 1)
+            unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 100)
             unit_of_work.commit()
 
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
