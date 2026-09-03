@@ -4,6 +4,7 @@ import sqlite3
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from uuid import uuid4
 
 from app.domain.registry.model.auth_session import DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS
 from app.domain.registry.model.user_invitation import DEFAULT_EXPIRATION_TIMEOUT_SECONDS
@@ -30,18 +31,33 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         self.repository = SqliteLedgerRepository(self.connection)
 
     def create_ledger(self, path: str):
-        return self.repository.create("Main ledger", path, "BookOpen", b"\x80\x80\x80")
+        return self.repository.create(uuid4(), "Main ledger", path, "BookOpen", b"\x80\x80\x80")
 
     def tearDown(self) -> None:
         self.connection.close()
         self.temporary_directory.cleanup()
 
     def test_create_can_be_read_by_uuid_and_path(self) -> None:
-        """create persists a generated UUID and the supplied path."""
+        """create persists the supplied identity and path."""
         ledger = self.create_ledger("ledger.sqlite")
 
         self.assertEqual(self.repository.get(ledger.uuid), ledger)
         self.assertEqual(self.repository.get_by_path("ledger.sqlite"), ledger)
+
+    def test_list_owned_by_user_returns_only_active_owner_ledgers(self) -> None:
+        grant_repository = SqliteLedgerGrantRepository(self.connection)
+        user_repository = SqliteUserRepository(self.connection)
+        first = self.create_ledger("first.sqlite")
+        second = self.create_ledger("second.sqlite")
+        other = self.create_ledger("other.sqlite")
+        first_user = user_repository.create("Alice", "$argon2id$test", 10)
+        second_user = user_repository.create("Bob", "$argon2id$test", 10)
+        first_grant = grant_repository.create(first_user.uuid, first.uuid, "OWNER", 20)
+        grant_repository.create(first_user.uuid, second.uuid, "OWNER", 20)
+        grant_repository.create(second_user.uuid, other.uuid, "OWNER", 20)
+        grant_repository.revoke(first_grant.uuid, 30)
+
+        self.assertEqual(self.repository.list_owned_by_user(first_user.uuid), [second])
 
     def test_get_returns_none_when_ledger_does_not_exist(self) -> None:
         """get and get_by_path represent an absent row with None."""

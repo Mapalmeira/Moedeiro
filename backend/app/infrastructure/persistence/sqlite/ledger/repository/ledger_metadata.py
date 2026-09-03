@@ -1,5 +1,4 @@
 import sqlite3
-from time import time
 from uuid import UUID
 
 from app.domain.ledger.model.ledger_metadata import LedgerMetadata
@@ -25,12 +24,12 @@ class SqliteLedgerMetadataRepository(LedgerMetadataRepository):
             (metadata.schema_version,),
         )
 
-    def create(self, ledger_uuid: UUID, version: int) -> LedgerMetadata:
+    def create(self, ledger_uuid: UUID, version: int, created_at: int) -> LedgerMetadata:
         metadata = LedgerMetadata(
             ledger_uuid=ledger_uuid,
             schema_version=version,
             revision=0,
-            created_at=int(time()),
+            created_at=created_at,
         )
         self.connection.execute(
             """
