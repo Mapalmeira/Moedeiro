@@ -7,7 +7,7 @@ from app.domain.registry.model.ledger import Ledger, LedgerName
 
 class LedgerRepository(ABC):
     @abstractmethod
-    def create(self, name: LedgerName, path: str, icon: Icon, color_code: RgbColorCode) -> Ledger:
+    def create(self, uuid: UUID, name: LedgerName, path: str, icon: Icon, color_code: RgbColorCode) -> Ledger:
         pass
 
     @abstractmethod
@@ -40,4 +40,8 @@ class LedgerRepository(ABC):
 
     @abstractmethod
     def list_all(self) -> list[Ledger]:
+        pass
+
+    @abstractmethod
+    def list_owned_by_user(self, user_uuid: UUID) -> list[Ledger]:
         pass
