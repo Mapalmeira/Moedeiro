@@ -30,8 +30,8 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         self.connection.executescript(SCHEMA_PATH.read_text())
         self.repository = SqliteLedgerRepository(self.connection)
 
-    def create_ledger(self, path: str):
-        return self.repository.create(uuid4(), "Main ledger", path, "BookOpen", b"\x80\x80\x80")
+    def create_ledger(self, path: str, last_accessed_at: int = 10):
+        return self.repository.create(uuid4(), "Main ledger", path, "BookOpen", b"\x80\x80\x80", last_accessed_at)
 
     def tearDown(self) -> None:
         self.connection.close()
@@ -57,7 +57,19 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         grant_repository.create(second_user.uuid, other.uuid, "OWNER", 20)
         grant_repository.revoke(first_grant.uuid, 30)
 
-        self.assertEqual(self.repository.list_owned_by_user(first_user.uuid), [second])
+        self.assertEqual(self.repository.list_owned_by_user(first_user.uuid, "name", True), [second])
+
+    def test_list_owned_by_user_orders_by_ledger_last_access(self) -> None:
+        grant_repository = SqliteLedgerGrantRepository(self.connection)
+        user = SqliteUserRepository(self.connection).create("Alice", "$argon2id$test", 10)
+        older = self.create_ledger("older.sqlite", 20)
+        recent = self.create_ledger("recent.sqlite", 30)
+        grant_repository.create(user.uuid, older.uuid, "OWNER", 20)
+        grant_repository.create(user.uuid, recent.uuid, "OWNER", 20)
+
+        ledgers = self.repository.list_owned_by_user(user.uuid, "last_accessed_at", False)
+
+        self.assertEqual(ledgers, [recent, older])
 
     def test_get_returns_none_when_ledger_does_not_exist(self) -> None:
         """get and get_by_path represent an absent row with None."""
@@ -110,17 +122,29 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         self.assertEqual(updated.color_code, b"\xff\x80\x00")
         self.assertEqual(updated.path, ledger.path)
 
-    def test_list_all_returns_every_ledger_without_promising_order(self) -> None:
-        """list_all returns the complete collection; ordering is unspecified."""
-        self.create_ledger("first.sqlite")
-        self.create_ledger("second.sqlite")
+    def test_update_last_accessed_at_is_monotonic(self) -> None:
+        ledger = self.create_ledger("ledger.sqlite", 20)
 
-        ledgers = self.repository.list_all()
+        self.repository.update_last_accessed_at(ledger.uuid, 30)
+        self.repository.update_last_accessed_at(ledger.uuid, 25)
 
-        self.assertCountEqual(
-            [ledger.path for ledger in ledgers],
-            ["first.sqlite", "second.sqlite"],
-        )
+        updated = self.repository.get(ledger.uuid)
+        assert updated is not None
+        self.assertEqual(updated.last_accessed_at, 30)
+
+    def test_list_all_orders_every_ledger_and_rejects_uuid_sorting(self) -> None:
+        self.repository.create(uuid4(), "Bravo", "first.sqlite", "BookOpen", b"\x80\x80\x80", 10)
+        self.repository.create(uuid4(), "Alpha", "second.sqlite", "BookOpen", b"\x80\x80\x80", 20)
+
+        ledgers = self.repository.list_all("name", False)
+
+        self.assertEqual([ledger.name for ledger in ledgers], ["Bravo", "Alpha"])
+        for sort_key in ("uuid", "path"):
+            with self.subTest(sort_key=sort_key):
+                with self.assertRaises(ValueError):
+                    self.repository.list_all(sort_key, True)
+
+        self.assertEqual([ledger.name for ledger in self.repository.list_all("last_accessed_at", False)], ["Alpha", "Bravo"])
 
     def test_delete_ledger_cascades_grants_without_deleting_user_sessions(self) -> None:
         grant_repository = SqliteLedgerGrantRepository(self.connection)

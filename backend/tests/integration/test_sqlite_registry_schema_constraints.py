@@ -23,7 +23,7 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         self.remember_session_uuid = uuid4().bytes
         self.connection.execute("INSERT INTO user_invitation VALUES (?, ?, 10, 3610, NULL)", (self.invitation_uuid, b"i" * 32))
         self.connection.execute("INSERT INTO user_account VALUES (?, 'Alice', 'alice', '$argon2id$encoded', 20, 20)", (self.user_uuid,))
-        self.connection.execute("INSERT INTO ledger VALUES (?, 'Main ledger', 'ledger.sqlite', 'BookOpen', ?)", (self.ledger_uuid, b"\x80\x80\x80"))
+        self.connection.execute("INSERT INTO ledger(uuid, name, path, icon, color_code, last_accessed_at) VALUES (?, 'Main ledger', 'ledger.sqlite', 'BookOpen', ?, 20)", (self.ledger_uuid, b"\x80\x80\x80"))
         self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'OWNER', 30, NULL)", (self.grant_uuid, self.user_uuid, self.ledger_uuid))
         self.connection.execute("INSERT INTO auth_session VALUES (?, ?, ?, 40, 43240, 1800, NULL)", (self.auth_session_uuid, self.user_uuid, b"s" * 32))
         self.connection.execute("INSERT INTO remember_session VALUES (?, ?, ?, 40, 2592040, NULL)", (self.remember_session_uuid, self.user_uuid, b"r" * 32))
@@ -86,6 +86,10 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
     def test_enforces_color_size(self) -> None:
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute("UPDATE ledger SET color_code = ?", (b"xx",))
+
+    def test_enforces_nonnegative_ledger_last_access_timestamp(self) -> None:
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("UPDATE ledger SET last_accessed_at = -1")
 
     def test_enforces_owner_grants_and_one_active_relation(self) -> None:
         with self.assertRaises(sqlite3.IntegrityError):

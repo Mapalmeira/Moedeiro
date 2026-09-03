@@ -61,6 +61,14 @@ class LedgerRoutesTest(unittest.TestCase):
         self.assertTrue(self.application.state.databases.get_ledger_path(created.uuid).is_file())
         self.assertNotIn("path", created.model_dump())
 
+    def test_list_applies_the_requested_name_order(self) -> None:
+        bravo = self.create_ledger("Bravo")
+        alpha = self.create_ledger("Alpha")
+
+        listed = list_user_ledgers(self.request, self.alice, "name", False)
+
+        self.assertEqual(listed, [bravo, alpha])
+
     def test_access_resolves_only_the_owner_ledger(self) -> None:
         created = self.create_ledger()
 

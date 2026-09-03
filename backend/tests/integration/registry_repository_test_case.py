@@ -53,7 +53,7 @@ class RegistryRepositoryTestCase(unittest.TestCase):
     def create_ledger(self, path: str | None = None, name: str = "Ledger"):
         if path is None:
             path = f"{uuid4()}.sqlite"
-        return self.ledger_repository.create(uuid4(), name, path, "BookOpen", b"\x80\x80\x80")
+        return self.ledger_repository.create(uuid4(), name, path, "BookOpen", b"\x80\x80\x80", 10)
 
     def create_grant(self, user=None, ledger=None, role="OWNER"):
         if user is None:

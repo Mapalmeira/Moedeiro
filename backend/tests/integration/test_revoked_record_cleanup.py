@@ -27,8 +27,8 @@ class InactiveRecordCleanupTest(unittest.TestCase):
         cutoff = timestamp - 30 * SECONDS_PER_DAY
         with self.open_registry() as unit_of_work:
             user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 1)
-            ledger = unit_of_work.ledger_repository.create(uuid4(), "Ledger", "ledger.sqlite", "BookOpen", b"\x80\x80\x80")
-            recent_ledger = unit_of_work.ledger_repository.create(uuid4(), "Recent Ledger", "recent-ledger.sqlite", "BookOpen", b"\x80\x80\x80")
+            ledger = unit_of_work.ledger_repository.create(uuid4(), "Ledger", "ledger.sqlite", "BookOpen", b"\x80\x80\x80", 1)
+            recent_ledger = unit_of_work.ledger_repository.create(uuid4(), "Recent Ledger", "recent-ledger.sqlite", "BookOpen", b"\x80\x80\x80", 1)
             old_grant = unit_of_work.ledger_grant_repository.create(user.uuid, ledger.uuid, "OWNER", 1)
             recent_grant = unit_of_work.ledger_grant_repository.create(user.uuid, recent_ledger.uuid, "OWNER", cutoff + 1)
             unit_of_work.ledger_grant_repository.revoke(old_grant.uuid, cutoff)
@@ -49,7 +49,7 @@ class InactiveRecordCleanupTest(unittest.TestCase):
     def test_zero_day_retention_removes_all_inactive_records_now(self) -> None:
         with self.open_registry() as unit_of_work:
             user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 1)
-            ledger = unit_of_work.ledger_repository.create(uuid4(), "Ledger", "ledger.sqlite", "BookOpen", b"\x80\x80\x80")
+            ledger = unit_of_work.ledger_repository.create(uuid4(), "Ledger", "ledger.sqlite", "BookOpen", b"\x80\x80\x80", 1)
             grant = unit_of_work.ledger_grant_repository.create(user.uuid, ledger.uuid, "OWNER", 1)
             unit_of_work.ledger_grant_repository.revoke(grant.uuid, 100)
             unit_of_work.commit()

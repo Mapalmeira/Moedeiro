@@ -78,7 +78,7 @@ class SqliteRegistryUnitOfWorkTest(unittest.TestCase):
     def test_commit_persists_changes_after_the_scope_ends(self) -> None:
         """An explicit commit makes changes visible to a later connection."""
         with SqliteRegistryUnitOfWork(self.database) as unit_of_work:
-            unit_of_work.ledger_repository.create(uuid4(), "Committed", "committed.sqlite", "BookOpen", b"\x80\x80\x80")
+            unit_of_work.ledger_repository.create(uuid4(), "Committed", "committed.sqlite", "BookOpen", b"\x80\x80\x80", 10)
             unit_of_work.commit()
 
         with SqliteRegistryUnitOfWork(self.database) as verification_unit_of_work:
@@ -90,7 +90,7 @@ class SqliteRegistryUnitOfWorkTest(unittest.TestCase):
     def test_explicit_rollback_discards_pending_changes(self) -> None:
         """rollback can cancel the current transaction before leaving the scope."""
         with SqliteRegistryUnitOfWork(self.database) as unit_of_work:
-            unit_of_work.ledger_repository.create(uuid4(), "Rolled back", "rolled-back.sqlite", "BookOpen", b"\x80\x80\x80")
+            unit_of_work.ledger_repository.create(uuid4(), "Rolled back", "rolled-back.sqlite", "BookOpen", b"\x80\x80\x80", 10)
             unit_of_work.rollback()
 
             ledger = unit_of_work.ledger_repository.get_by_path(
@@ -101,7 +101,7 @@ class SqliteRegistryUnitOfWorkTest(unittest.TestCase):
     def test_exit_without_commit_rolls_back_pending_changes(self) -> None:
         """Leaving a scope never commits changes implicitly."""
         with SqliteRegistryUnitOfWork(self.database) as unit_of_work:
-            unit_of_work.ledger_repository.create(uuid4(), "Uncommitted", "uncommitted.sqlite", "BookOpen", b"\x80\x80\x80")
+            unit_of_work.ledger_repository.create(uuid4(), "Uncommitted", "uncommitted.sqlite", "BookOpen", b"\x80\x80\x80", 10)
 
         with SqliteRegistryUnitOfWork(self.database) as verification_unit_of_work:
             ledger = verification_unit_of_work.ledger_repository.get_by_path(
@@ -127,7 +127,7 @@ class SqliteRegistryUnitOfWorkTest(unittest.TestCase):
         """An exceptional exit discards every uncommitted operation in the scope."""
         with self.assertRaises(RuntimeError):
             with SqliteRegistryUnitOfWork(self.database) as unit_of_work:
-                unit_of_work.ledger_repository.create(uuid4(), "Failing", "failing.sqlite", "BookOpen", b"\x80\x80\x80")
+                unit_of_work.ledger_repository.create(uuid4(), "Failing", "failing.sqlite", "BookOpen", b"\x80\x80\x80", 10)
                 raise RuntimeError("expected failure")
 
         with SqliteRegistryUnitOfWork(self.database) as verification_unit_of_work:

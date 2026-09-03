@@ -38,7 +38,7 @@ class SqliteDatabasesTest(unittest.TestCase):
         self.assertTrue(self.registry_db_path.is_file())
         self.assertTrue(self.ledger_dbs_dir.is_dir())
         with self.databases.open_registry() as unit_of_work:
-            self.assertEqual(unit_of_work.ledger_repository.list_all(), [])
+            self.assertEqual(unit_of_work.ledger_repository.list_all("name", True), [])
             metadata = unit_of_work.registry_metadata_repository.get()
         assert metadata is not None
         self.assertEqual(metadata.schema_version, CURRENT_REGISTRY_SCHEMA_VERSION)
@@ -52,7 +52,7 @@ class SqliteDatabasesTest(unittest.TestCase):
     def test_initialize_preserves_an_existing_registry(self) -> None:
         self.databases.initialize()
         with self.databases.open_registry() as unit_of_work:
-            ledger = unit_of_work.ledger_repository.create(uuid4(), "Existing", "existing.sqlite", "BookOpen", b"\x80\x80\x80")
+            ledger = unit_of_work.ledger_repository.create(uuid4(), "Existing", "existing.sqlite", "BookOpen", b"\x80\x80\x80", 10)
             unit_of_work.commit()
 
         self.databases.initialize()

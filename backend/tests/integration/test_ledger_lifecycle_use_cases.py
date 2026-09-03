@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from app.application.ledger.exceptions import LedgerNotFoundError
-from app.application.ledger.use_cases.ledger import create_ledger, delete_owned_ledger, get_owned_ledger, list_owned_ledgers, update_owned_ledger
+from app.application.ledger.use_cases.ledger import access_owned_ledger, create_ledger, delete_owned_ledger, get_owned_ledger, list_owned_ledgers, update_owned_ledger
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
 
 
@@ -49,6 +49,7 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
         ledger = self.create()
 
         self.assertEqual(ledger.path, f"{ledger.uuid}.sqlite")
+        self.assertEqual(ledger.last_accessed_at, 100)
         with self.databases.open_registry() as unit_of_work:
             self.assertEqual(unit_of_work.ledger_repository.get(ledger.uuid), ledger)
             grant = unit_of_work.ledger_grant_repository.get_active(self.user.uuid, ledger.uuid)
@@ -71,14 +72,14 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
                 self.create()
 
         with self.databases.open_registry() as unit_of_work:
-            self.assertEqual(unit_of_work.ledger_repository.list_all(), [])
+            self.assertEqual(unit_of_work.ledger_repository.list_all("name", True), [])
         self.assertEqual(list(self.databases.ledger_dbs_dir.iterdir()), [])
 
     def test_list_and_get_expose_only_ledgers_owned_by_the_user(self) -> None:
         owned = self.create(name="Owned")
         other = self.create(self.other_user.uuid, "Other")
 
-        self.assertEqual(list_owned_ledgers(self.databases.open_registry, self.user.uuid), [owned])
+        self.assertEqual(list_owned_ledgers(self.databases.open_registry, self.user.uuid, "name", True), [owned])
         self.assertEqual(get_owned_ledger(self.databases.open_registry, self.user.uuid, owned.uuid), owned)
         with self.assertRaises(LedgerNotFoundError):
             get_owned_ledger(self.databases.open_registry, self.user.uuid, other.uuid)
@@ -91,9 +92,20 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
             unit_of_work.ledger_grant_repository.revoke(grant.uuid, 110)
             unit_of_work.commit()
 
-        self.assertEqual(list_owned_ledgers(self.databases.open_registry, self.user.uuid), [])
+        self.assertEqual(list_owned_ledgers(self.databases.open_registry, self.user.uuid, "name", True), [])
         with self.assertRaises(LedgerNotFoundError):
             get_owned_ledger(self.databases.open_registry, self.user.uuid, ledger.uuid)
+
+    def test_access_updates_the_ledger_timestamp_without_affecting_other_ledgers(self) -> None:
+        accessed = self.create(name="Accessed")
+        untouched = self.create(name="Untouched")
+
+        result = access_owned_ledger(self.databases.open_registry, self.user.uuid, accessed.uuid, 120)
+
+        self.assertEqual(result.last_accessed_at, 120)
+        self.assertEqual(get_owned_ledger(self.databases.open_registry, self.user.uuid, accessed.uuid).last_accessed_at, 120)
+        self.assertEqual(get_owned_ledger(self.databases.open_registry, self.user.uuid, untouched.uuid).last_accessed_at, 100)
+        self.assertEqual(list_owned_ledgers(self.databases.open_registry, self.user.uuid, "last_accessed_at", False), [result, untouched])
 
     def test_update_changes_public_properties_without_changing_identity_or_path(self) -> None:
         original = self.create()
@@ -105,6 +117,7 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
             "Personal",
             "PiggyBank",
             b"\xaa\xbb\xcc",
+            120,
         )
 
         self.assertEqual(updated.uuid, original.uuid)
@@ -125,6 +138,7 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
                 "Stolen",
                 "Wallet",
                 b"\x00\x00\x00",
+                120,
             )
         with self.assertRaises(LedgerNotFoundError):
             delete_owned_ledger(
