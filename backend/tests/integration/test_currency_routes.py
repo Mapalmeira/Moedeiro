@@ -30,6 +30,7 @@ class CurrencyRoutesTest(unittest.TestCase):
                 ledger_schema_path=LEDGER_SCHEMA_PATH,
                 registry_db_path=directory / "registry/registry.sqlite",
                 ledger_dbs_dir=directory / "ledgers",
+                max_page_size=3,
             ),
             FakePasswordHasher(),
             FakeRateLimiter(),
@@ -78,11 +79,18 @@ class CurrencyRoutesTest(unittest.TestCase):
         alpha = self.create_currency("Alpha")
         bravo = self.create_currency("Bravo")
 
-        all_currencies = list_ledger_currencies(self.ledger.uuid, self.request, self.user, 1, 200, "name", False)
+        all_currencies = list_ledger_currencies(self.ledger.uuid, self.request, self.user, 1, 3, "name", False)
         page = list_ledger_currencies(self.ledger.uuid, self.request, self.user, 2, 1, "name", True)
 
         self.assertEqual(all_currencies, [charlie, bravo, alpha])
         self.assertEqual(page, [bravo])
+
+    def test_list_rejects_a_page_larger_than_the_configured_limit(self) -> None:
+        with self.assertRaises(HTTPException) as raised:
+            list_ledger_currencies(self.ledger.uuid, self.request, self.user, 1, 4, "name", True)
+
+        self.assertEqual(raised.exception.status_code, 422)
+        self.assertEqual(raised.exception.detail, "page_size must be less than or equal to 3")
 
     def test_update_preserves_decimal_places(self) -> None:
         created = self.create_currency(decimal_places=3)
@@ -124,7 +132,7 @@ class CurrencyRoutesTest(unittest.TestCase):
         currency = self.create_currency()
 
         operations = (
-            lambda: list_ledger_currencies(self.ledger.uuid, self.request, self.other_user, 1, 200, "name", True),
+            lambda: list_ledger_currencies(self.ledger.uuid, self.request, self.other_user, 1, 3, "name", True),
             lambda: get_ledger_currency(self.ledger.uuid, currency.uuid, self.request, self.other_user),
             lambda: update_ledger_currency(
                 self.ledger.uuid,
@@ -175,7 +183,8 @@ class CurrencyRoutesTest(unittest.TestCase):
         self.assertIn("200", collection["get"]["responses"])
         self.assertNotIn("/api/ledgers/{ledger_uuid}/currencies/page", paths)
         page_size = next(parameter for parameter in collection["get"]["parameters"] if parameter["name"] == "page_size")
-        self.assertEqual(page_size["schema"]["maximum"], 200)
+        self.assertEqual(page_size["schema"]["minimum"], 1)
+        self.assertNotIn("maximum", page_size["schema"])
         self.assertIn("200", member["get"]["responses"])
         self.assertIn("200", member["put"]["responses"])
         self.assertNotIn("content", member["delete"]["responses"]["204"])

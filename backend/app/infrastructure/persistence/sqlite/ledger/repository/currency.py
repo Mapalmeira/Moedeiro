@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.currency import Currency
 from app.domain.ledger.repository.currency import CurrencyRepository
+from app.pagination import validate_page
 
 
 class SqliteCurrencyRepository(CurrencyRepository):
@@ -14,8 +15,9 @@ class SqliteCurrencyRepository(CurrencyRepository):
         "decimal_places": "decimal_places",
     }
 
-    def __init__(self, connection: sqlite3.Connection):
+    def __init__(self, connection: sqlite3.Connection, max_page_size: int):
         self.connection = connection
+        self.max_page_size = max_page_size
 
     def create(self, name: str, prefix: str | None, suffix: str | None, decimal_places: int, icon: Icon, color_code: RgbColorCode) -> Currency:
         currency = Currency(uuid=uuid4(), name=name, prefix=prefix, suffix=suffix, decimal_places=decimal_places, icon=icon, color_code=color_code)
@@ -80,7 +82,7 @@ class SqliteCurrencyRepository(CurrencyRepository):
         )
 
     def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[Currency]:
-        self._validate_page(page_number, page_size)
+        validate_page(page_number, page_size, self.max_page_size)
         sort_column = self._get_sort_column(sort_key)
         direction = "ASC" if ascending else "DESC"
         offset = (page_number - 1) * page_size
@@ -124,12 +126,3 @@ class SqliteCurrencyRepository(CurrencyRepository):
             return cls._SORT_COLUMNS[sort_key]
         except KeyError as error:
             raise ValueError(f"Invalid currency sort key: {sort_key}") from error
-
-    @staticmethod
-    def _validate_page(page_number: int, page_size: int) -> None:
-        if page_number < 1:
-            raise ValueError("page_number must be greater than or equal to 1")
-        if page_size < 1:
-            raise ValueError("page_size must be greater than or equal to 1")
-        if page_size > 200:
-            raise ValueError("page_size must be less than or equal to 200")

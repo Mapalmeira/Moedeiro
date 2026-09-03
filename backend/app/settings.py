@@ -6,7 +6,6 @@ from typing import Self
 from limits import parse
 from pydantic import BaseModel, ConfigDict, Field, FilePath, field_validator, model_validator
 
-
 class Settings(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -21,6 +20,7 @@ class Settings(BaseModel):
     sync_route_concurrency: int = Field(default=40, gt=0)
     credential_operation_concurrency: int = Field(default=8, gt=0)
     password_hash_concurrency: int = Field(default=2, gt=0)
+    max_page_size: int = Field(default=200, gt=0)
     totp_encryption_key: str | None = None
 
     @field_validator("registration_ip_attempts_rate_limit", "login_ip_attempts_rate_limit", "password_recovery_ip_attempts_rate_limit", "totp_setup_ip_attempts_rate_limit")
@@ -61,6 +61,7 @@ class Settings(BaseModel):
             "sync_route_concurrency": "SYNC_ROUTE_CONCURRENCY",
             "credential_operation_concurrency": "CREDENTIAL_OPERATION_CONCURRENCY",
             "password_hash_concurrency": "PASSWORD_HASH_CONCURRENCY",
+            "max_page_size": "MAX_PAGE_SIZE",
             "totp_encryption_key": "TOTP_ENCRYPTION_KEY",
         }
         for field_name, variable_name in optional_variable_names.items():

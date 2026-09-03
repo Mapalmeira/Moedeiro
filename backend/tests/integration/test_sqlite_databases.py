@@ -27,6 +27,7 @@ class SqliteDatabasesTest(unittest.TestCase):
             REGISTRY_SCHEMA_PATH,
             self.ledger_dbs_dir,
             LEDGER_SCHEMA_PATH,
+            200,
         )
 
     def tearDown(self) -> None:
@@ -152,6 +153,21 @@ class SqliteDatabasesTest(unittest.TestCase):
             self.databases.open_ledger(missing_path)
 
         self.assertFalse(missing_path.exists())
+
+    def test_open_ledger_propagates_the_configured_page_limit(self) -> None:
+        databases = SqliteDatabases(
+            self.registry_db_path,
+            REGISTRY_SCHEMA_PATH,
+            self.ledger_dbs_dir,
+            LEDGER_SCHEMA_PATH,
+            max_page_size=2,
+        )
+        databases.initialize()
+        path = databases.initialize_ledger(uuid4(), 1, 100)
+
+        with databases.open_ledger(path) as unit_of_work:
+            with self.assertRaisesRegex(ValueError, "less than or equal to 2"):
+                unit_of_work.currency_repository.list_page(1, 3, "name", True)
 
 
 if __name__ == "__main__":

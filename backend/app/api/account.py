@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from app.api.authentication import AuthenticatedUser
+from app.api.pagination import validate_requested_page
 from app.api.schema.account import AccountResponse, AccountSortKey, CreateAccountRequest, UpdateAccountRequest
 from app.application.ledger.exceptions import AccountInUseError, AccountNameUnavailableError, AccountNotFoundError, CurrencyNotFoundError, LedgerNotFoundError
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
@@ -41,10 +42,11 @@ def list_ledger_accounts(
     request: Request,
     user: AuthenticatedUser,
     page_number: Annotated[int, Query(ge=1)],
-    page_size: Annotated[int, Query(ge=1, le=200)],
+    page_size: Annotated[int, Query(ge=1)],
     sort_key: AccountSortKey = "name",
     ascending: bool = True,
 ) -> list[AccountResponse]:
+    validate_requested_page(request, page_number, page_size)
     accounts = list_account_page(_unit_of_work_factory(request, user.uuid, ledger_uuid), page_number, page_size, sort_key, ascending)
     return [AccountResponse.from_account(account) for account in accounts]
 

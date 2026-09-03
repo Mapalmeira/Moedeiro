@@ -12,7 +12,7 @@ from tests.integration.ledger_repository_test_case import LedgerRepositoryTestCa
 class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.repository = SqliteCategoryRepository(self.connection)
+        self.repository = SqliteCategoryRepository(self.connection, 200)
 
     def test_create_get_and_update_parent(self) -> None:
         """A category can acquire and clear an existing parent."""

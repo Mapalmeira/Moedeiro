@@ -9,7 +9,7 @@ from tests.integration.ledger_repository_test_case import LedgerRepositoryTestCa
 class SqliteCurrencyRepositoryTest(LedgerRepositoryTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.repository = SqliteCurrencyRepository(self.connection)
+        self.repository = SqliteCurrencyRepository(self.connection, 200)
 
     def test_create_and_get_preserve_all_currency_fields(self) -> None:
         """create generates an identity and persists optional formatting fields."""

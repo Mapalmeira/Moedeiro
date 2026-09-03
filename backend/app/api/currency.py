@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from app.api.authentication import AuthenticatedUser
+from app.api.pagination import validate_requested_page
 from app.api.schema.currency import CreateCurrencyRequest, CurrencyResponse, CurrencySortKey, UpdateCurrencyRequest
 from app.application.ledger.exceptions import CurrencyInUseError, CurrencyNotFoundError, LedgerNotFoundError
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
@@ -42,10 +43,11 @@ def list_ledger_currencies(
     request: Request,
     user: AuthenticatedUser,
     page_number: Annotated[int, Query(ge=1)],
-    page_size: Annotated[int, Query(ge=1, le=200)],
+    page_size: Annotated[int, Query(ge=1)],
     sort_key: CurrencySortKey = "name",
     ascending: bool = True,
 ) -> list[CurrencyResponse]:
+    validate_requested_page(request, page_number, page_size)
     currencies = list_currency_page(
         _unit_of_work_factory(request, user.uuid, ledger_uuid),
         page_number,

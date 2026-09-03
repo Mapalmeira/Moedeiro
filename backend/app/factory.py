@@ -28,6 +28,7 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
         selected_settings.registry_schema_path,
         selected_settings.ledger_dbs_dir,
         selected_settings.ledger_schema_path,
+        selected_settings.max_page_size,
     )
     databases.initialize()
 

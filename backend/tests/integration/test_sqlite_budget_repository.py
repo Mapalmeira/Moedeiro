@@ -12,7 +12,7 @@ from tests.integration.ledger_repository_test_case import LedgerRepositoryTestCa
 class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.repository = SqliteBudgetRepository(self.connection)
+        self.repository = SqliteBudgetRepository(self.connection, 200)
         self.currency = self.create_currency()
         self.category = self.create_category()
 

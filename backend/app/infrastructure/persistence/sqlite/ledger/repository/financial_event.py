@@ -6,11 +6,13 @@ from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 from app.domain.ledger.model.financial_movement import FinancialMovement
 from app.domain.ledger.repository.financial_event import FinancialEventRepository
 from app.infrastructure.persistence.sqlite.ledger.repository._financial_event_filter import build_financial_event_filter
+from app.pagination import validate_page
 
 
 class SqliteFinancialEventRepository(FinancialEventRepository):
-    def __init__(self, connection: sqlite3.Connection):
+    def __init__(self, connection: sqlite3.Connection, max_page_size: int):
         self.connection = connection
+        self.max_page_size = max_page_size
 
     def create(self, occurred_at: int, description: str, type: FinancialEventType) -> FinancialEvent:
         event = FinancialEvent(uuid=uuid4(), occurred_at=occurred_at, description=description, type=type, movements=[])
@@ -58,7 +60,7 @@ class SqliteFinancialEventRepository(FinancialEventRepository):
         return self._to_models(rows)
 
     def list_page(self, page_number: int, page_size: int, ascending: bool, filters: FinancialEventFilter) -> list[FinancialEvent]:
-        self._validate_page(page_number, page_size)
+        validate_page(page_number, page_size, self.max_page_size)
         direction = "ASC" if ascending else "DESC"
         offset = (page_number - 1) * page_size
         where_clause, parameters = build_financial_event_filter(filters)
@@ -91,12 +93,3 @@ class SqliteFinancialEventRepository(FinancialEventRepository):
             movement = FinancialMovement.model_validate(dict(movement_row))
             events[movement.financial_event_uuid.bytes]["movements"].append(movement)
         return [FinancialEvent.model_validate(events[row["uuid"]]) for row in rows]
-
-    @staticmethod
-    def _validate_page(page_number: int, page_size: int) -> None:
-        if page_number < 1:
-            raise ValueError("page_number must be greater than or equal to 1")
-        if page_size < 1:
-            raise ValueError("page_size must be greater than or equal to 1")
-        if page_size > 200:
-            raise ValueError("page_size must be less than or equal to 200")

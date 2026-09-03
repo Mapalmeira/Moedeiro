@@ -7,6 +7,7 @@ from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.category import Category, CategoryName, MAX_CATEGORY_DEPTH
 from app.domain.ledger.model.category_tree_node import CategoryTreeNode
 from app.domain.ledger.repository.category import CategoryRepository
+from app.pagination import validate_page
 
 
 class SqliteCategoryRepository(CategoryRepository):
@@ -15,8 +16,9 @@ class SqliteCategoryRepository(CategoryRepository):
     _icon_adapter = TypeAdapter(Icon)
     _color_code_adapter = TypeAdapter(RgbColorCode)
 
-    def __init__(self, connection: sqlite3.Connection):
+    def __init__(self, connection: sqlite3.Connection, max_page_size: int):
         self.connection = connection
+        self.max_page_size = max_page_size
 
     def create(self, name: CategoryName, icon: Icon, color_code: RgbColorCode, parent_uuid: UUID | None) -> Category:
         category = Category(uuid=uuid4(), name=name, icon=icon, color_code=color_code, parent_uuid=parent_uuid)
@@ -95,7 +97,7 @@ class SqliteCategoryRepository(CategoryRepository):
         return roots
 
     def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[Category]:
-        self._validate_page(page_number, page_size)
+        validate_page(page_number, page_size, self.max_page_size)
         sort_column = self._get_sort_column(sort_key)
         direction = "ASC" if ascending else "DESC"
         offset = (page_number - 1) * page_size
@@ -163,12 +165,3 @@ class SqliteCategoryRepository(CategoryRepository):
             return cls._SORT_COLUMNS[sort_key]
         except KeyError as error:
             raise ValueError(f"Invalid category sort key: {sort_key}") from error
-
-    @staticmethod
-    def _validate_page(page_number: int, page_size: int) -> None:
-        if page_number < 1:
-            raise ValueError("page_number must be greater than or equal to 1")
-        if page_size < 1:
-            raise ValueError("page_size must be greater than or equal to 1")
-        if page_size > 200:
-            raise ValueError("page_size must be less than or equal to 200")

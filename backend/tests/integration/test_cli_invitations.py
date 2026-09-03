@@ -70,7 +70,7 @@ class InvitationCliTest(unittest.TestCase):
         self.assertEqual(remaining_output.getvalue(), "")
 
     def create_databases(self) -> SqliteDatabases:
-        databases = SqliteDatabases(self.settings.registry_db_path, self.settings.registry_schema_path, self.settings.ledger_dbs_dir, self.settings.ledger_schema_path)
+        databases = SqliteDatabases(self.settings.registry_db_path, self.settings.registry_schema_path, self.settings.ledger_dbs_dir, self.settings.ledger_schema_path, self.settings.max_page_size)
         databases.initialize()
         return databases
 

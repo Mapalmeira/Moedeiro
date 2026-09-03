@@ -27,7 +27,7 @@ class AccountUseCasesTest(unittest.TestCase):
         self.temporary_directory.cleanup()
 
     def open_ledger(self) -> SqliteLedgerUnitOfWork:
-        return SqliteLedgerUnitOfWork(self.database)
+        return SqliteLedgerUnitOfWork(self.database, 200)
 
     def create(self, name: str = "Checking"):
         return create_account(self.open_ledger, name, "Daily account", self.currency.uuid, "WalletCards", b"\x40\x50\x60")

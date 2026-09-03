@@ -26,6 +26,7 @@ def main(arguments: Sequence[str] | None = None, settings: Settings | None = Non
         selected_settings.registry_schema_path,
         selected_settings.ledger_dbs_dir,
         selected_settings.ledger_schema_path,
+        selected_settings.max_page_size,
     )
     databases.initialize()
     if parsed.resource == "invitation":

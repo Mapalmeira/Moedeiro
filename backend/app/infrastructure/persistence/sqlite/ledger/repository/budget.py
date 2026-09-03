@@ -5,6 +5,7 @@ from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.account import Account
 from app.domain.ledger.model.budget import Budget
 from app.domain.ledger.repository.budget import BudgetRepository
+from app.pagination import validate_page
 
 
 class SqliteBudgetRepository(BudgetRepository):
@@ -16,8 +17,9 @@ class SqliteBudgetRepository(BudgetRepository):
         "amount": "amount",
     }
 
-    def __init__(self, connection: sqlite3.Connection):
+    def __init__(self, connection: sqlite3.Connection, max_page_size: int):
         self.connection = connection
+        self.max_page_size = max_page_size
 
     def create(self, category_uuid: UUID, currency_uuid: UUID, from_timestamp: int, to_timestamp: int, name: str, description: str, amount: int, icon: Icon, color_code: RgbColorCode) -> Budget:
         budget = Budget(
@@ -156,7 +158,7 @@ class SqliteBudgetRepository(BudgetRepository):
         return [Account.model_validate(dict(row)) for row in rows]
 
     def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[Budget]:
-        self._validate_page(page_number, page_size)
+        validate_page(page_number, page_size, self.max_page_size)
         sort_column = self._get_sort_column(sort_key)
         direction = "ASC" if ascending else "DESC"
         offset = (page_number - 1) * page_size
@@ -187,12 +189,3 @@ class SqliteBudgetRepository(BudgetRepository):
             return cls._SORT_COLUMNS[sort_key]
         except KeyError as error:
             raise ValueError(f"Invalid budget sort key: {sort_key}") from error
-
-    @staticmethod
-    def _validate_page(page_number: int, page_size: int) -> None:
-        if page_number < 1:
-            raise ValueError("page_number must be greater than or equal to 1")
-        if page_size < 1:
-            raise ValueError("page_size must be greater than or equal to 1")
-        if page_size > 200:
-            raise ValueError("page_size must be less than or equal to 200")

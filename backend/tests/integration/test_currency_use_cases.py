@@ -29,7 +29,7 @@ class CurrencyUseCasesTest(unittest.TestCase):
         self.temporary_directory.cleanup()
 
     def open_ledger(self) -> SqliteLedgerUnitOfWork:
-        return SqliteLedgerUnitOfWork(self.database)
+        return SqliteLedgerUnitOfWork(self.database, 200)
 
     def create(self, name="Real"):
         return create_currency(

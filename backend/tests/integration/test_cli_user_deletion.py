@@ -30,7 +30,7 @@ class UserDeletionCliTest(unittest.TestCase):
             registry_db_path=directory / "registry/registry.sqlite",
             ledger_dbs_dir=directory / "ledgers",
         )
-        self.databases = SqliteDatabases(self.settings.registry_db_path, self.settings.registry_schema_path, self.settings.ledger_dbs_dir, self.settings.ledger_schema_path)
+        self.databases = SqliteDatabases(self.settings.registry_db_path, self.settings.registry_schema_path, self.settings.ledger_dbs_dir, self.settings.ledger_schema_path, self.settings.max_page_size)
         self.databases.initialize()
         with self.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 10)

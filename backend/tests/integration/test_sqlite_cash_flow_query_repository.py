@@ -13,7 +13,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.repository = SqliteCashFlowQueryRepository(self.connection)
-        self.event_repository = SqliteFinancialEventRepository(self.connection)
+        self.event_repository = SqliteFinancialEventRepository(self.connection, 200)
         self.movement_repository = SqliteFinancialMovementRepository(self.connection)
         self.currency = self.create_currency()
         self.other_currency = self.create_currency("Dollar")

@@ -32,6 +32,7 @@ class AccountRoutesTest(unittest.TestCase):
                 ledger_schema_path=LEDGER_SCHEMA_PATH,
                 registry_db_path=directory / "registry/registry.sqlite",
                 ledger_dbs_dir=directory / "ledgers",
+                max_page_size=3,
             ),
             FakePasswordHasher(),
             FakeRateLimiter(),
@@ -93,11 +94,18 @@ class AccountRoutesTest(unittest.TestCase):
         alpha = self.create_account("Alpha")
         bravo = self.create_account("Bravo")
 
-        descending = list_ledger_accounts(self.ledger.uuid, self.request, self.user, 1, 200, "name", False)
+        descending = list_ledger_accounts(self.ledger.uuid, self.request, self.user, 1, 3, "name", False)
         second_page = list_ledger_accounts(self.ledger.uuid, self.request, self.user, 2, 1, "name", True)
 
         self.assertEqual(descending, [charlie, bravo, alpha])
         self.assertEqual(second_page, [bravo])
+
+    def test_list_rejects_a_page_larger_than_the_configured_limit(self) -> None:
+        with self.assertRaises(HTTPException) as raised:
+            list_ledger_accounts(self.ledger.uuid, self.request, self.user, 1, 4, "name", True)
+
+        self.assertEqual(raised.exception.status_code, 422)
+        self.assertEqual(raised.exception.detail, "page_size must be less than or equal to 3")
 
     def test_update_changes_mutable_fields_without_changing_currency(self) -> None:
         created = self.create_account()
@@ -155,7 +163,7 @@ class AccountRoutesTest(unittest.TestCase):
     def test_another_user_cannot_discover_or_change_ledger_accounts(self) -> None:
         account = self.create_account()
         operations = (
-            lambda: list_ledger_accounts(self.ledger.uuid, self.request, self.other_user, 1, 200, "name", True),
+            lambda: list_ledger_accounts(self.ledger.uuid, self.request, self.other_user, 1, 3, "name", True),
             lambda: get_ledger_account(self.ledger.uuid, account.uuid, self.request, self.other_user),
             lambda: update_ledger_account(
                 self.ledger.uuid,
@@ -195,7 +203,8 @@ class AccountRoutesTest(unittest.TestCase):
         self.assertIn("201", collection["post"]["responses"])
         self.assertIn("200", collection["get"]["responses"])
         page_size = next(parameter for parameter in collection["get"]["parameters"] if parameter["name"] == "page_size")
-        self.assertEqual(page_size["schema"]["maximum"], 200)
+        self.assertEqual(page_size["schema"]["minimum"], 1)
+        self.assertNotIn("maximum", page_size["schema"])
         self.assertIn("200", member["get"]["responses"])
         self.assertIn("200", member["put"]["responses"])
         self.assertNotIn("content", member["delete"]["responses"]["204"])

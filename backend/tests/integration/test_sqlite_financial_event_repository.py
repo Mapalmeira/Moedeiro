@@ -12,7 +12,7 @@ from tests.integration.ledger_repository_test_case import LedgerRepositoryTestCa
 class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.repository = SqliteFinancialEventRepository(self.connection)
+        self.repository = SqliteFinancialEventRepository(self.connection, 200)
 
     def test_create_get_and_list_all_preserve_event_fields(self) -> None:
         """Basic reads return generated identity and all supplied event data."""
