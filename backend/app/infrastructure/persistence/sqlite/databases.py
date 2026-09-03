@@ -3,6 +3,7 @@ from uuid import UUID
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
+from app.infrastructure.persistence.sqlite.registry.schema_version import CURRENT_REGISTRY_SCHEMA_VERSION
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
 
 
@@ -22,10 +23,20 @@ class SqliteDatabases:
     def initialize(self) -> None:
         self.ledger_dbs_dir.mkdir(parents=True, exist_ok=True)
         if not self.registry_database.path.exists():
-            self.registry_database = SqliteDatabase.initialize(
-                self.registry_database.path,
-                self.registry_schema_path,
-            )
+            database_initialized = False
+            try:
+                self.registry_database = SqliteDatabase.initialize(
+                    self.registry_database.path,
+                    self.registry_schema_path,
+                )
+                database_initialized = True
+                with self.open_registry() as unit_of_work:
+                    unit_of_work.registry_metadata_repository.create(CURRENT_REGISTRY_SCHEMA_VERSION)
+                    unit_of_work.commit()
+            except Exception:
+                if database_initialized:
+                    self.registry_database.path.unlink(missing_ok=True)
+                raise
         self.registry_database.enable_wal()
 
     def get_ledger_path(self, ledger_uuid: UUID) -> Path:

@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
+from app.infrastructure.persistence.sqlite.registry.schema_version import CURRENT_REGISTRY_SCHEMA_VERSION
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -38,6 +39,9 @@ class SqliteDatabasesTest(unittest.TestCase):
         self.assertTrue(self.ledger_dbs_dir.is_dir())
         with self.databases.open_registry() as unit_of_work:
             self.assertEqual(unit_of_work.ledger_repository.list_all(), [])
+            metadata = unit_of_work.registry_metadata_repository.get()
+        assert metadata is not None
+        self.assertEqual(metadata.schema_version, CURRENT_REGISTRY_SCHEMA_VERSION)
 
         connection = sqlite3.connect(self.registry_db_path)
         try:

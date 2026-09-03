@@ -1,3 +1,8 @@
+CREATE TABLE registry_metadata (
+    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+    schema_version INTEGER NOT NULL CHECK (schema_version >= 1)
+) STRICT;
+
 CREATE TABLE user_invitation (
     uuid BLOB PRIMARY KEY,
     secret_hash BLOB NOT NULL UNIQUE,

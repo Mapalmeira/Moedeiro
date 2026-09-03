@@ -55,6 +55,14 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         self.assertEqual(row["storage_type"], "blob")
         self.assertEqual(row["size"], 16)
 
+    def test_registry_metadata_is_a_singleton_with_a_positive_version(self) -> None:
+        self.connection.execute("INSERT INTO registry_metadata VALUES (1, 1)")
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("INSERT INTO registry_metadata VALUES (2, 1)")
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("UPDATE registry_metadata SET schema_version = 0")
+
     def test_enforces_text_limits(self) -> None:
         invalid_updates = (
             ("user_account", "name", ""),

@@ -17,6 +17,7 @@ from app.infrastructure.persistence.sqlite.registry.repository.ledger import Sql
 from app.infrastructure.persistence.sqlite.registry.repository.ledger_grant import SqliteLedgerGrantRepository
 from app.infrastructure.persistence.sqlite.registry.repository.mfa_method import SqliteMfaMethodRepository
 from app.infrastructure.persistence.sqlite.registry.repository.recovery_code import SqliteRecoveryCodeRepository
+from app.infrastructure.persistence.sqlite.registry.repository.registry_metadata import SqliteRegistryMetadataRepository
 from app.infrastructure.persistence.sqlite.registry.repository.remember_session import SqliteRememberSessionRepository
 from app.infrastructure.persistence.sqlite.registry.repository.user import SqliteUserRepository
 from app.infrastructure.persistence.sqlite.registry.repository.user_invitation import SqliteUserInvitationRepository
@@ -58,6 +59,7 @@ class SqliteRegistryUnitOfWorkTest(unittest.TestCase):
         """All registry operations in one scope participate in one transaction."""
         with SqliteRegistryUnitOfWork(self.database) as unit_of_work:
             repositories = (
+                (unit_of_work.registry_metadata_repository, SqliteRegistryMetadataRepository),
                 (unit_of_work.ledger_repository, SqliteLedgerRepository),
                 (unit_of_work.user_repository, SqliteUserRepository),
                 (unit_of_work.user_invitation_repository, SqliteUserInvitationRepository),
