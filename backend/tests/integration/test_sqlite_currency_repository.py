@@ -78,6 +78,27 @@ class SqliteCurrencyRepositoryTest(LedgerRepositoryTestCase):
         with self.assertRaises(ValueError):
             self.repository.list_page(1, 10, "uuid", True)
 
+    def test_is_in_use_detects_accounts_and_budgets(self) -> None:
+        account_currency = self.create_currency("Account currency")
+        budget_currency = self.create_currency("Budget currency")
+        unused_currency = self.create_currency("Unused currency")
+        category = self.create_category()
+        self.create_account(currency=account_currency)
+        self.create_budget(currency=budget_currency, category=category)
+
+        self.assertTrue(self.repository.is_in_use(account_currency.uuid))
+        self.assertTrue(self.repository.is_in_use(budget_currency.uuid))
+        self.assertFalse(self.repository.is_in_use(unused_currency.uuid))
+
+    def test_delete_removes_only_the_selected_currency(self) -> None:
+        deleted = self.create_currency("Deleted")
+        preserved = self.create_currency("Preserved")
+
+        self.repository.delete(deleted.uuid)
+
+        self.assertIsNone(self.repository.get(deleted.uuid))
+        self.assertEqual(self.repository.get(preserved.uuid), preserved)
+
     def test_repository_does_not_commit_its_changes(self) -> None:
         """Transaction ownership remains with the unit of work."""
         self.repository.create("Real", "R$", None, 2, "R$", b"\x80\x80\x80")

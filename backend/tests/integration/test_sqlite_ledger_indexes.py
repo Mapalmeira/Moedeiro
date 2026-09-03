@@ -32,6 +32,7 @@ class SqliteLedgerIndexesTest(unittest.TestCase):
             "financial_movement_account_event_idx",
             "financial_movement_category_event_idx",
             "account_currency_idx",
+            "budget_currency_idx",
             "budget_to_from_idx",
             "budget_accounts_account_idx",
         }
@@ -102,6 +103,7 @@ class SqliteLedgerIndexesTest(unittest.TestCase):
         queries = (
             ("SELECT uuid FROM budget WHERE from_timestamp <= ? AND to_timestamp > ?", (10, 10), "budget_to_from_idx"),
             ("SELECT uuid FROM account WHERE currency_uuid = ?", (b"currency",), "account_currency_idx"),
+            ("SELECT uuid FROM budget WHERE currency_uuid = ?", (b"currency",), "budget_currency_idx"),
             ("SELECT budget_uuid FROM budget_accounts WHERE account_uuid = ?", (b"account",), "budget_accounts_account_idx"),
         )
         for query, parameters, index_name in queries:

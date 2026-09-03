@@ -48,3 +48,11 @@ class CurrencyRepository(ABC):
     @abstractmethod
     def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[Currency]:
         pass
+
+    @abstractmethod
+    def is_in_use(self, uuid: UUID) -> bool:
+        pass
+
+    @abstractmethod
+    def delete(self, uuid: UUID) -> None:
+        pass

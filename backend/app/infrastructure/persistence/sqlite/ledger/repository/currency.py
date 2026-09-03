@@ -101,6 +101,19 @@ class SqliteCurrencyRepository(CurrencyRepository):
         ).fetchall()
         return [self._to_model(row) for row in rows]
 
+    def is_in_use(self, uuid: UUID) -> bool:
+        row = self.connection.execute(
+            """
+            SELECT EXISTS(SELECT 1 FROM account WHERE currency_uuid = ?)
+                OR EXISTS(SELECT 1 FROM budget WHERE currency_uuid = ?)
+            """,
+            (uuid.bytes, uuid.bytes),
+        ).fetchone()
+        return bool(row[0])
+
+    def delete(self, uuid: UUID) -> None:
+        self.connection.execute("DELETE FROM currency WHERE uuid = ?", (uuid.bytes,))
+
     @staticmethod
     def _to_model(row: sqlite3.Row) -> Currency:
         return Currency.model_validate(dict(row))

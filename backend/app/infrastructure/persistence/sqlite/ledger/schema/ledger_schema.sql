@@ -142,6 +142,9 @@ ON financial_movement(category_uuid, financial_event_uuid);
 CREATE INDEX account_currency_idx
 ON account(currency_uuid, uuid);
 
+CREATE INDEX budget_currency_idx
+ON budget(currency_uuid);
+
 CREATE INDEX budget_to_from_idx
 ON budget(to_timestamp, from_timestamp);
 
