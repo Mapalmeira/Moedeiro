@@ -27,6 +27,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
             registry_db_path=directory / "registry/registry.sqlite",
             ledger_dbs_dir=directory / "ledgers",
             login_ip_attempts_rate_limit="3/minute",
+            authenticated_user_operations_rate_limit="2/minute",
             password_hash_concurrency=2,
         )
         self.password_hasher = FakePasswordHasher()
@@ -167,6 +168,20 @@ class AuthenticationRoutesTest(unittest.TestCase):
         with self.application.state.databases.open_registry() as unit_of_work:
             sessions = unit_of_work.auth_session_repository.list_by_user(self.user.uuid)
         self.assertIsNotNone(sessions[0].last_activity_at)
+        self.assertEqual(self.rate_limiter.checks[-1], ("2/minute", "authenticated-user-operations", str(self.user.uuid)))
+
+    def test_authenticated_operations_are_rejected_by_the_shared_user_limit(self) -> None:
+        login_response = Response(status_code=204)
+        asyncio.run(login_user(LoginRequest(name="Alice", password="correct password"), self.request(), login_response))
+        token = self.cookie_value(self.cookie_headers(login_response), "moedeiro_session")
+        self.rate_limiter.rejected_namespace = "authenticated-user-operations"
+
+        with self.assertRaises(HTTPException) as raised:
+            validate_session(self.request({"moedeiro_session": token}))
+
+        self.assertEqual(raised.exception.status_code, 429)
+        self.assertEqual(raised.exception.headers, {"Retry-After": "17"})
+        self.assertEqual(self.rate_limiter.checks[-1], ("2/minute", "authenticated-user-operations", str(self.user.uuid)))
 
     def test_refresh_rotates_the_remember_cookie_and_issues_a_new_short_cookie(self) -> None:
         login_response = Response(status_code=204)

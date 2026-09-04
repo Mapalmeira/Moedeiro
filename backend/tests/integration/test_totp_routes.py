@@ -31,6 +31,7 @@ class TotpRoutesTest(unittest.TestCase):
             registry_db_path=directory / "registry/registry.sqlite",
             ledger_dbs_dir=directory / "ledgers",
             totp_setup_ip_attempts_rate_limit="2/hour",
+            authenticated_user_operations_rate_limit="7/minute",
         )
         self.password_hasher = FakePasswordHasher()
         self.totp_authenticator = FakeTotpAuthenticator()
@@ -59,7 +60,7 @@ class TotpRoutesTest(unittest.TestCase):
 
         self.assertIn("otpauth://totp/Moedeiro:Alice", setup.provisioning_uri)
         self.assertIsNone(result)
-        self.assertEqual(self.rate_limiter.checks, [("2/hour", "totp-setup-ip-attempts", "192.0.2.1")])
+        self.assertEqual(self.rate_limiter.checks, [("7/minute", "authenticated-user-operations", str(self.user.uuid)), ("2/hour", "totp-setup-ip-attempts", "192.0.2.1")])
         with self.application.state.databases.open_registry() as unit_of_work:
             self.assertIsNotNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))
             self.assertEqual(unit_of_work.recovery_code_repository.list_by_user(self.user.uuid), [])
