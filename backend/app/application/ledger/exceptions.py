@@ -30,6 +30,14 @@ class CategoryInUseError(Exception):
     pass
 
 
+class CategoryTreeSizeExceededError(Exception):
+    pass
+
+
+class InvalidCategoryHierarchyError(Exception):
+    pass
+
+
 class BudgetNotFoundError(Exception):
     pass
 
@@ -55,6 +63,14 @@ class FinancialEventTypeMismatchError(Exception):
 
 
 class InvalidFinancialEventStructureError(Exception):
+    pass
+
+
+class InvalidFinancialEventError(Exception):
+    pass
+
+
+class QueryPointLimitExceededError(Exception):
     pass
 
 

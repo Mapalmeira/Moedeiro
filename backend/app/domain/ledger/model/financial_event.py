@@ -11,6 +11,7 @@ FinancialEventType = Literal[
     "SHOPPING_LIST",
 ]
 FinancialEventDescription = Annotated[str, Field(min_length=1, max_length=300)]
+MAX_SHOPPING_LIST_MOVEMENTS = 300
 
 
 class FinancialEvent(BaseModel):
