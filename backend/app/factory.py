@@ -12,6 +12,7 @@ from app.api.ledger.routes.cash_flow import router as cash_flow_router
 from app.api.ledger.routes.category import router as category_router
 from app.api.ledger.routes.currency import router as currency_router
 from app.api.ledger.routes.financial_event import router as financial_event_router
+from app.api.routes.health import router as health_router
 from app.api.registry.routes.authentication import router as authentication_router
 from app.api.registry.routes.ledger import router as ledger_router
 from app.api.registry.routes.password import router as password_router
@@ -54,6 +55,7 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
     application.include_router(category_router)
     application.include_router(currency_router)
     application.include_router(financial_event_router)
+    application.include_router(health_router)
     application.include_router(ledger_router)
     application.include_router(password_router)
     application.include_router(registration_router)
