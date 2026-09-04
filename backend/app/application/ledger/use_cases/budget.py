@@ -4,7 +4,7 @@ from uuid import UUID
 from app.application.ledger.exceptions import AccountNotFoundError, BudgetAccountCurrencyMismatchError, BudgetNameUnavailableError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
 from app.domain.appearance import Icon, RgbColorCode
-from app.domain.ledger.model.budget import Budget, BudgetAmount, BudgetDescription, BudgetName
+from app.domain.ledger.model.budget import MAX_BUDGET_ACCOUNTS, Budget, BudgetAmount, BudgetDescription, BudgetName
 
 
 def create_budget(
@@ -126,6 +126,8 @@ def _require_category(unit_of_work: LedgerUnitOfWork, category_uuid: UUID) -> No
 
 def _require_accounts_in_currency(unit_of_work: LedgerUnitOfWork, account_uuids: Collection[UUID], currency_uuid: UUID) -> list[UUID]:
     selected_account_uuids = sorted(set(account_uuids), key=lambda value: value.bytes)
+    if len(selected_account_uuids) > MAX_BUDGET_ACCOUNTS:
+        raise ValueError(f"a budget cannot select more than {MAX_BUDGET_ACCOUNTS} accounts")
     for account_uuid in selected_account_uuids:
         account = unit_of_work.account_repository.get(account_uuid)
         if account is None:

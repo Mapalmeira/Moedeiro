@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 from collections.abc import Callable
+from uuid import UUID
 
 from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError, UserNotFoundError
 from app.application.registry.password_hasher import PasswordHasher
@@ -58,15 +59,27 @@ def login(
 
 
 def authenticate_session(unit_of_work_factory: Callable[[], RegistryUnitOfWork], token: str, timestamp: int) -> User:
+    session_uuid, user = resolve_session_user(unit_of_work_factory, token, timestamp)
+    update_session_activity(unit_of_work_factory, session_uuid, timestamp)
+    return user
+
+
+def resolve_session_user(unit_of_work_factory: Callable[[], RegistryUnitOfWork], token: str, timestamp: int) -> tuple[UUID, User]:
     with unit_of_work_factory() as unit_of_work:
-        session = unit_of_work.auth_session_repository.get_by_token_hash(_token_hash(token))
-        if session is None or not unit_of_work.auth_session_repository.update_last_activity(session.uuid, timestamp):
+        session = unit_of_work.auth_session_repository.get_active_by_token_hash(_token_hash(token), timestamp)
+        if session is None:
             raise InvalidSessionError
         user = unit_of_work.user_repository.get(session.user_uuid)
         if user is None:
             raise InvalidSessionError
+    return session.uuid, user
+
+
+def update_session_activity(unit_of_work_factory: Callable[[], RegistryUnitOfWork], session_uuid: UUID, timestamp: int) -> None:
+    with unit_of_work_factory() as unit_of_work:
+        if not unit_of_work.auth_session_repository.update_last_activity(session_uuid, timestamp):
+            raise InvalidSessionError
         unit_of_work.commit()
-    return user
 
 
 def refresh_session(unit_of_work_factory: Callable[[], RegistryUnitOfWork], remember_token: str, timestamp: int) -> tuple[str, str]:

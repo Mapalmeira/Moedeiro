@@ -40,6 +40,17 @@ class SqliteAuthSessionRepositoryTest(RegistryRepositoryTestCase):
         self.assertIsNone(stored_inactive.last_activity_at)
         self.assertIsNone(stored_expired.last_activity_at)
 
+    def test_get_active_by_token_hash_applies_absolute_and_inactivity_timeouts(self) -> None:
+        user = self.create_user()
+        active = self.session_repository.create(user.uuid, b"a" * 32, 40, 100, 20)
+        inactive = self.session_repository.create(user.uuid, b"i" * 32, 40, 100, 10)
+        expired = self.session_repository.create(user.uuid, b"e" * 32, 40, 50, 20)
+
+        self.assertEqual(self.session_repository.get_active_by_token_hash(active.token_hash, 50), active)
+        self.assertIsNone(self.session_repository.get_active_by_token_hash(inactive.token_hash, 50))
+        self.assertIsNone(self.session_repository.get_active_by_token_hash(expired.token_hash, 50))
+        self.assertIsNone(self.session_repository.get_active_by_token_hash(b"unknown", 50))
+
     def test_delete_by_user_excludes_other_users_sessions(self) -> None:
         user = self.create_user()
         first = self.session_repository.create(user.uuid, b"a" * 32, 40, 40 + DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS)

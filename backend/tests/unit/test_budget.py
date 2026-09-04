@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.domain.ledger.model.budget import Budget
+from app.domain.ledger.model.budget import MAX_BUDGET_ACCOUNTS, Budget
 
 
 class BudgetTest(unittest.TestCase):
@@ -135,6 +135,24 @@ class BudgetTest(unittest.TestCase):
                 values[field] = value
                 with self.assertRaises(ValidationError):
                     Budget(**values)
+
+    def test_rejects_more_than_twenty_account_selectors(self) -> None:
+        values = {
+            "uuid": uuid4(),
+            "category_uuid": uuid4(),
+            "currency_uuid": uuid4(),
+            "from_timestamp": 10,
+            "to_timestamp": 20,
+            "name": "Monthly",
+            "description": "Monthly spending",
+            "amount": 100,
+            "icon": "ReceiptText",
+            "color_code": b"\x80\x80\x80",
+            "account_uuids": [uuid4() for _ in range(MAX_BUDGET_ACCOUNTS + 1)],
+        }
+
+        with self.assertRaises(ValidationError):
+            Budget(**values)
 
 
 if __name__ == "__main__":

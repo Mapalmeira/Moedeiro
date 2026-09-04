@@ -12,6 +12,7 @@ from app.api.ledger.routes.category import create_ledger_category
 from app.api.ledger.routes.currency import create_ledger_currency
 from app.api.ledger.schema.account import CreateAccountRequest
 from app.api.ledger.schema.budget import CreateBudgetRequest, UpdateBudgetRequest
+from app.domain.ledger.model.budget import MAX_BUDGET_ACCOUNTS
 from app.api.ledger.schema.category import CreateCategoryRequest
 from app.api.ledger.schema.currency import CreateCurrencyRequest
 from app.api.registry.routes.ledger import create_owned_ledger
@@ -267,6 +268,7 @@ class BudgetRoutesTest(unittest.TestCase):
             {**self.payload().model_dump(), "description": "x" * 301},
             {**self.payload().model_dump(), "amount": -1},
             {**self.payload().model_dump(), "color_code": "red"},
+            {**self.payload().model_dump(), "account_uuids": {uuid4() for _ in range(MAX_BUDGET_ACCOUNTS + 1)}},
         )
         for values in invalid_values:
             with self.subTest(values=values):

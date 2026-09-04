@@ -18,6 +18,7 @@ class Settings(BaseModel):
     login_ip_attempts_rate_limit: str = Field(default="5/minute", min_length=1)
     password_recovery_ip_attempts_rate_limit: str = Field(default="5/hour", min_length=1)
     totp_setup_ip_attempts_rate_limit: str = Field(default="5/hour", min_length=1)
+    refresh_ip_attempts_rate_limit: str = Field(default="10/minute", min_length=1)
     authenticated_user_operations_rate_limit: str = Field(default="50/minute", min_length=1)
     sync_route_concurrency: int = Field(default=40, gt=0)
     credential_operation_concurrency: int = Field(default=8, gt=0)
@@ -25,10 +26,10 @@ class Settings(BaseModel):
     max_page_size: int = Field(default=200, gt=0)
     max_category_tree_size: int = Field(default=1000, gt=0)
     max_shopping_list_movements: int = Field(default=300, gt=0)
-    max_query_points: int = Field(default=1000, gt=0)
+    max_query_points: int = Field(default=500, gt=0)
     totp_encryption_key: str | None = None
 
-    @field_validator("registration_ip_attempts_rate_limit", "login_ip_attempts_rate_limit", "password_recovery_ip_attempts_rate_limit", "totp_setup_ip_attempts_rate_limit", "authenticated_user_operations_rate_limit")
+    @field_validator("registration_ip_attempts_rate_limit", "login_ip_attempts_rate_limit", "password_recovery_ip_attempts_rate_limit", "totp_setup_ip_attempts_rate_limit", "refresh_ip_attempts_rate_limit", "authenticated_user_operations_rate_limit")
     @classmethod
     def validate_rate_limit(cls, value: str) -> str:
         if parse(value).amount <= 0:
@@ -63,6 +64,7 @@ class Settings(BaseModel):
             "login_ip_attempts_rate_limit": "LOGIN_IP_ATTEMPTS_RATE_LIMIT",
             "password_recovery_ip_attempts_rate_limit": "PASSWORD_RECOVERY_IP_ATTEMPTS_RATE_LIMIT",
             "totp_setup_ip_attempts_rate_limit": "TOTP_SETUP_IP_ATTEMPTS_RATE_LIMIT",
+            "refresh_ip_attempts_rate_limit": "REFRESH_IP_ATTEMPTS_RATE_LIMIT",
             "authenticated_user_operations_rate_limit": "AUTHENTICATED_USER_OPERATIONS_RATE_LIMIT",
             "sync_route_concurrency": "SYNC_ROUTE_CONCURRENCY",
             "credential_operation_concurrency": "CREDENTIAL_OPERATION_CONCURRENCY",

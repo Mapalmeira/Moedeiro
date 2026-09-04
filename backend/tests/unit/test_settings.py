@@ -36,6 +36,7 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.login_ip_attempts_rate_limit, "5/minute")
         self.assertEqual(settings.password_recovery_ip_attempts_rate_limit, "5/hour")
         self.assertEqual(settings.totp_setup_ip_attempts_rate_limit, "5/hour")
+        self.assertEqual(settings.refresh_ip_attempts_rate_limit, "10/minute")
         self.assertEqual(settings.authenticated_user_operations_rate_limit, "50/minute")
         self.assertEqual(settings.sync_route_concurrency, 40)
         self.assertEqual(settings.credential_operation_concurrency, 8)
@@ -43,7 +44,7 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.max_page_size, 200)
         self.assertEqual(settings.max_category_tree_size, 1000)
         self.assertEqual(settings.max_shopping_list_movements, 300)
-        self.assertEqual(settings.max_query_points, 1000)
+        self.assertEqual(settings.max_query_points, 500)
 
     def test_reads_security_limits_from_the_environment(self) -> None:
         environment = {
@@ -52,6 +53,7 @@ class SettingsTest(unittest.TestCase):
             "LOGIN_IP_ATTEMPTS_RATE_LIMIT": "4/minute",
             "PASSWORD_RECOVERY_IP_ATTEMPTS_RATE_LIMIT": "2/hour",
             "TOTP_SETUP_IP_ATTEMPTS_RATE_LIMIT": "3/hour",
+            "REFRESH_IP_ATTEMPTS_RATE_LIMIT": "4/minute",
             "AUTHENTICATED_USER_OPERATIONS_RATE_LIMIT": "90/minute",
             "SYNC_ROUTE_CONCURRENCY": "24",
             "CREDENTIAL_OPERATION_CONCURRENCY": "6",
@@ -68,6 +70,7 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.login_ip_attempts_rate_limit, "4/minute")
         self.assertEqual(settings.password_recovery_ip_attempts_rate_limit, "2/hour")
         self.assertEqual(settings.totp_setup_ip_attempts_rate_limit, "3/hour")
+        self.assertEqual(settings.refresh_ip_attempts_rate_limit, "4/minute")
         self.assertEqual(settings.authenticated_user_operations_rate_limit, "90/minute")
         self.assertEqual(settings.sync_route_concurrency, 24)
         self.assertEqual(settings.credential_operation_concurrency, 6)
@@ -83,6 +86,7 @@ class SettingsTest(unittest.TestCase):
             ("LOGIN_IP_ATTEMPTS_RATE_LIMIT", "0/minute"),
             ("PASSWORD_RECOVERY_IP_ATTEMPTS_RATE_LIMIT", "invalid"),
             ("TOTP_SETUP_IP_ATTEMPTS_RATE_LIMIT", "0/minute"),
+            ("REFRESH_IP_ATTEMPTS_RATE_LIMIT", "0/minute"),
             ("AUTHENTICATED_USER_OPERATIONS_RATE_LIMIT", "0/minute"),
             ("SYNC_ROUTE_CONCURRENCY", "0"),
             ("CREDENTIAL_OPERATION_CONCURRENCY", "0"),

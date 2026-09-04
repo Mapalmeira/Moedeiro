@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from app.application.ledger.exceptions import AccountNotFoundError, BudgetAccountCurrencyMismatchError, BudgetNameUnavailableError, BudgetNotActiveError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
 from app.application.ledger.use_cases.budget import create_budget, delete_budget, get_budget, list_budget_page, update_budget
 from app.application.ledger.use_cases.budget_status import get_budget_status, list_budget_status_page
+from app.domain.ledger.model.budget import MAX_BUDGET_ACCOUNTS
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
 
@@ -86,6 +87,12 @@ class BudgetUseCasesTest(unittest.TestCase):
             create_budget(self.open_ledger, self.category.uuid, self.currency.uuid, 20, 10, "Invalid", "Description", 100, "Circle", b"\x10\x20\x30", [])
 
         self.assertEqual(len(list_budget_page(self.open_ledger, 1, 200, "name", True)), 1)
+
+    def test_create_rejects_more_than_twenty_account_selectors_before_looking_them_up(self) -> None:
+        with self.assertRaisesRegex(ValueError, "cannot select more than 20 accounts"):
+            self.create(account_uuids=[uuid4() for _ in range(MAX_BUDGET_ACCOUNTS + 1)])
+
+        self.assertEqual(list_budget_page(self.open_ledger, 1, 200, "name", True), [])
 
     def test_get_and_delete_reject_an_unknown_budget(self) -> None:
         for operation in (lambda: get_budget(self.open_ledger, uuid4()), lambda: delete_budget(self.open_ledger, uuid4())):

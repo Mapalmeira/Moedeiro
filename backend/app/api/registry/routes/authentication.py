@@ -55,6 +55,7 @@ def validate_session(request: Request) -> None:
 
 @router.post("/refresh", status_code=status.HTTP_204_NO_CONTENT)
 def refresh(request: Request, response: Response) -> None:
+    check_rate_limit(request, _settings(request).refresh_ip_attempts_rate_limit, "refresh-ip-attempts")
     token = request.cookies.get(REMEMBER_COOKIE)
     if token is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")

@@ -27,6 +27,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
             registry_db_path=directory / "registry/registry.sqlite",
             ledger_dbs_dir=directory / "ledgers",
             login_ip_attempts_rate_limit="3/minute",
+            refresh_ip_attempts_rate_limit="4/minute",
             authenticated_user_operations_rate_limit="2/minute",
             password_hash_concurrency=2,
         )
@@ -182,6 +183,9 @@ class AuthenticationRoutesTest(unittest.TestCase):
         self.assertEqual(raised.exception.status_code, 429)
         self.assertEqual(raised.exception.headers, {"Retry-After": "17"})
         self.assertEqual(self.rate_limiter.checks[-1], ("2/minute", "authenticated-user-operations", str(self.user.uuid)))
+        with self.application.state.databases.open_registry() as unit_of_work:
+            sessions = unit_of_work.auth_session_repository.list_by_user(self.user.uuid)
+        self.assertIsNone(sessions[0].last_activity_at)
 
     def test_refresh_rotates_the_remember_cookie_and_issues_a_new_short_cookie(self) -> None:
         login_response = Response(status_code=204)
@@ -196,9 +200,20 @@ class AuthenticationRoutesTest(unittest.TestCase):
         new_remember = self.cookie_value(refresh_headers, "moedeiro_remember")
         self.assertNotEqual(new_remember, old_remember)
         self.assertTrue(any(header.startswith("moedeiro_session=") for header in refresh_headers))
+        self.assertEqual(self.rate_limiter.checks[-1], ("4/minute", "refresh-ip-attempts", "192.0.2.1"))
         with self.assertRaises(HTTPException) as raised:
             refresh(self.request({"moedeiro_remember": old_remember}), Response())
         self.assertEqual(raised.exception.status_code, 401)
+
+    def test_refresh_rate_limit_is_checked_before_the_remember_cookie(self) -> None:
+        self.rate_limiter.rejected_namespace = "refresh-ip-attempts"
+
+        with self.assertRaises(HTTPException) as raised:
+            refresh(self.request(), Response())
+
+        self.assertEqual(raised.exception.status_code, 429)
+        self.assertEqual(raised.exception.headers, {"Retry-After": "17"})
+        self.assertEqual(self.rate_limiter.checks[-1], ("4/minute", "refresh-ip-attempts", "192.0.2.1"))
 
     def test_logout_revokes_both_sessions_and_clears_both_cookies(self) -> None:
         login_response = Response(status_code=204)

@@ -18,6 +18,10 @@ class AuthSessionRepository(ABC):
         pass
 
     @abstractmethod
+    def get_active_by_token_hash(self, token_hash: bytes, timestamp: int) -> AuthSession | None:
+        pass
+
+    @abstractmethod
     def update_last_activity(self, uuid: UUID, last_activity_at: int) -> bool:
         pass
 

@@ -31,6 +31,13 @@ class SqliteAuthSessionRepository(AuthSessionRepository):
         ).fetchone()
         return None if row is None else self._to_model(row)
 
+    def get_active_by_token_hash(self, token_hash: bytes, timestamp: int) -> AuthSession | None:
+        row = self.connection.execute(
+            "SELECT uuid, user_uuid, token_hash, created_at, expires_at, inactivity_timeout_seconds, last_activity_at FROM auth_session WHERE token_hash = ? AND created_at <= ? AND expires_at > ? AND COALESCE(last_activity_at, created_at) + inactivity_timeout_seconds > ?",
+            (token_hash, timestamp, timestamp, timestamp),
+        ).fetchone()
+        return None if row is None else self._to_model(row)
+
     def update_last_activity(self, uuid: UUID, last_activity_at: int) -> bool:
         cursor = self.connection.execute(
             "UPDATE auth_session SET last_activity_at = ? WHERE uuid = ? AND created_at <= ? AND expires_at > ? AND COALESCE(last_activity_at, created_at) + inactivity_timeout_seconds > ? AND COALESCE(last_activity_at, created_at) <= ?",

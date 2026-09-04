@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, model_validator
 
 from app.domain.appearance import Icon
-from app.domain.ledger.model.budget import Budget, BudgetAmount, BudgetDescription, BudgetName
+from app.domain.ledger.model.budget import MAX_BUDGET_ACCOUNTS, Budget, BudgetAmount, BudgetDescription, BudgetName
 from app.domain.ledger.model.budget_status import BudgetStatus
 
 
@@ -22,7 +22,7 @@ class CreateBudgetRequest(BaseModel):
     amount: BudgetAmount
     icon: Icon
     color_code: HexRgbColorCode
-    account_uuids: set[UUID] = Field(default_factory=set)
+    account_uuids: set[UUID] = Field(default_factory=set, max_length=MAX_BUDGET_ACCOUNTS)
 
     @model_validator(mode="after")
     def validate_period(self) -> Self:
@@ -40,7 +40,7 @@ class UpdateBudgetRequest(BaseModel):
     amount: BudgetAmount
     icon: Icon
     color_code: HexRgbColorCode
-    account_uuids: set[UUID] = Field(default_factory=set)
+    account_uuids: set[UUID] = Field(default_factory=set, max_length=MAX_BUDGET_ACCOUNTS)
 
     @model_validator(mode="after")
     def validate_period(self) -> Self:
