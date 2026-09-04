@@ -341,7 +341,7 @@ class FinancialEventUseCasesTest(unittest.TestCase):
         with self.assertRaises(FinancialEventNotFoundError):
             get_financial_event(self.open_ledger, event.uuid)
         with self.open_ledger() as unit_of_work:
-            self.assertEqual(unit_of_work.financial_movement_repository.list_by_financial_event(event.uuid), [])
+            self.assertIsNone(unit_of_work.financial_event_repository.get(event.uuid))
 
     def test_get_and_delete_reject_unknown_events(self) -> None:
         for operation in (

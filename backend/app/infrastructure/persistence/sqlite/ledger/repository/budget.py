@@ -2,7 +2,6 @@ import sqlite3
 from uuid import UUID, uuid4
 
 from app.domain.appearance import Icon, RgbColorCode
-from app.domain.ledger.model.account import Account
 from app.domain.ledger.model.budget import Budget, BudgetAmount, BudgetDescription, BudgetName
 from app.domain.ledger.repository.budget import BudgetRepository
 
@@ -99,69 +98,6 @@ class SqliteBudgetRepository(BudgetRepository):
             ),
         )
 
-    def update_period(self, uuid: UUID, from_timestamp: int, to_timestamp: int) -> None:
-        budget = self._updated_model(uuid, from_timestamp=from_timestamp, to_timestamp=to_timestamp)
-        if budget is None:
-            return
-        self.connection.execute(
-            "UPDATE budget SET from_timestamp = ?, to_timestamp = ? WHERE uuid = ?",
-            (budget.from_timestamp, budget.to_timestamp, budget.uuid.bytes),
-        )
-
-    def update_name(self, uuid: UUID, value: BudgetName) -> None:
-        budget = self._updated_model(uuid, name=value)
-        if budget is None:
-            return
-        self.connection.execute(
-            "UPDATE budget SET budget_name = ? WHERE uuid = ?",
-            (budget.name, budget.uuid.bytes),
-        )
-
-    def update_description(self, uuid: UUID, value: BudgetDescription) -> None:
-        budget = self._updated_model(uuid, description=value)
-        if budget is None:
-            return
-        self.connection.execute(
-            "UPDATE budget SET description = ? WHERE uuid = ?",
-            (budget.description, budget.uuid.bytes),
-        )
-
-    def update_amount(self, uuid: UUID, value: BudgetAmount) -> None:
-        budget = self._updated_model(uuid, amount=value)
-        if budget is None:
-            return
-        self.connection.execute(
-            "UPDATE budget SET amount = ? WHERE uuid = ?",
-            (budget.amount, budget.uuid.bytes),
-        )
-
-    def update_category(self, uuid: UUID, category_uuid: UUID) -> None:
-        budget = self._updated_model(uuid, category_uuid=category_uuid)
-        if budget is None:
-            return
-        self.connection.execute(
-            "UPDATE budget SET category_uuid = ? WHERE uuid = ?",
-            (budget.category_uuid.bytes, budget.uuid.bytes),
-        )
-
-    def update_icon(self, uuid: UUID, value: Icon) -> None:
-        budget = self._updated_model(uuid, icon=value)
-        if budget is None:
-            return
-        self.connection.execute(
-            "UPDATE budget SET icon = ? WHERE uuid = ?",
-            (budget.icon, budget.uuid.bytes),
-        )
-
-    def update_color_code(self, uuid: UUID, value: RgbColorCode) -> None:
-        budget = self._updated_model(uuid, color_code=value)
-        if budget is None:
-            return
-        self.connection.execute(
-            "UPDATE budget SET color_code = ? WHERE uuid = ?",
-            (budget.color_code, budget.uuid.bytes),
-        )
-
     def add_account(self, budget_uuid: UUID, account_uuid: UUID) -> None:
         self.connection.execute(
             """
@@ -176,18 +112,6 @@ class SqliteBudgetRepository(BudgetRepository):
             "DELETE FROM budget_accounts WHERE budget_uuid = ? AND account_uuid = ?",
             (budget_uuid.bytes, account_uuid.bytes),
         )
-
-    def list_accounts(self, budget_uuid: UUID) -> list[Account]:
-        rows = self.connection.execute(
-            """
-            SELECT account.uuid, account.account_name AS name, account.note, account.currency_uuid, account.icon, account.color_code
-            FROM account
-            JOIN budget_accounts ON budget_accounts.account_uuid = account.uuid
-            WHERE budget_accounts.budget_uuid = ?
-            """,
-            (budget_uuid.bytes,),
-        ).fetchall()
-        return [Account.model_validate(dict(row)) for row in rows]
 
     def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[Budget]:
         sort_column = self._get_sort_column(sort_key)
@@ -208,12 +132,6 @@ class SqliteBudgetRepository(BudgetRepository):
 
     def delete(self, uuid: UUID) -> None:
         self.connection.execute("DELETE FROM budget WHERE uuid = ?", (uuid.bytes,))
-
-    def _updated_model(self, uuid: UUID, **changes: object) -> Budget | None:
-        budget = self.get(uuid)
-        if budget is None:
-            return None
-        return Budget.model_validate({**budget.model_dump(), **changes})
 
     def _list_account_uuids(self, budget_uuids: list[UUID]) -> dict[UUID, list[UUID]]:
         result = {budget_uuid: [] for budget_uuid in budget_uuids}

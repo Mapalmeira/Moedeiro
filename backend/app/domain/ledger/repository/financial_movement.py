@@ -18,42 +18,7 @@ class FinancialMovementRepository(ABC):
         pass
 
     @abstractmethod
-    def get(self, uuid: UUID) -> FinancialMovement | None:
-        pass
-
-    @abstractmethod
     def update(self, movement: FinancialMovement) -> None:
-        pass
-
-    @abstractmethod
-    def update_value(self, uuid: UUID, value: int) -> None:
-        pass
-
-    @abstractmethod
-    def update_quantity(self, uuid: UUID, quantity: FinancialMovementQuantity) -> None:
-        pass
-
-    @abstractmethod
-    def update_item_name(self, uuid: UUID, value: FinancialMovementItemName | None) -> None:
-        pass
-
-    @abstractmethod
-    def update_category(self, uuid: UUID, category_uuid: UUID) -> None:
-        pass
-
-    @abstractmethod
-    def update_account(self, uuid: UUID, account_uuid: UUID) -> None:
-        pass
-
-    @abstractmethod
-    def list_by_financial_event(
-        self,
-        financial_event_uuid: UUID,
-    ) -> list[FinancialMovement]:
-        pass
-
-    @abstractmethod
-    def list_all(self, sort_key: str, ascending: bool) -> list[FinancialMovement]:
         pass
 
     @abstractmethod

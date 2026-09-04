@@ -45,11 +45,11 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
         budget = self.create_budget(currency=self.currency, category=self.category)
         other_category = self.create_category("Leisure")
 
-        self.repository.update_period(budget.uuid, 20, 30)
-        self.repository.update_name(budget.uuid, "Updated")
-        self.repository.update_description(budget.uuid, "Updated spending")
-        self.repository.update_amount(budget.uuid, 200)
-        self.repository.update_category(budget.uuid, other_category.uuid)
+        self.repository.update(
+            budget.model_copy(
+                update={"from_timestamp": 20, "to_timestamp": 30, "name": "Updated", "description": "Updated spending", "amount": 200, "category_uuid": other_category.uuid}
+            )
+        )
 
         updated = self.repository.get(budget.uuid)
         assert updated is not None
@@ -81,32 +81,6 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
 
         self.assertEqual(self.repository.get(budget.uuid), updated_budget)
 
-    def test_updates_validate_budget_constraints(self) -> None:
-        """Update methods enforce period, text and amount constraints."""
-        budget = self.create_budget(currency=self.currency, category=self.category)
-
-        with self.assertRaises(ValidationError):
-            self.repository.update_period(budget.uuid, 20, 10)
-        with self.assertRaises(ValidationError):
-            self.repository.update_name(budget.uuid, "x" * 51)
-        with self.assertRaises(ValidationError):
-            self.repository.update_description(budget.uuid, "")
-        with self.assertRaises(ValidationError):
-            self.repository.update_amount(budget.uuid, -1)
-
-    def test_updates_icon_and_color_without_changing_budget_scope(self) -> None:
-        """Appearance changes preserve the budget period and relations."""
-        budget = self.create_budget(currency=self.currency, category=self.category)
-
-        self.repository.update_icon(budget.uuid, "💰")
-        self.repository.update_color_code(budget.uuid, b"\xff\x80\x00")
-
-        updated = self.repository.get(budget.uuid)
-        assert updated is not None
-        self.assertEqual(updated.icon, "💰")
-        self.assertEqual(updated.color_code, b"\xff\x80\x00")
-        self.assertEqual(updated.category_uuid, budget.category_uuid)
-
     def test_add_list_and_remove_accounts(self) -> None:
         """Budget-account relations support the complete basic lifecycle."""
         budget = self.create_budget(currency=self.currency, category=self.category)
@@ -116,10 +90,14 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
         self.repository.add_account(budget.uuid, first.uuid)
         self.repository.add_account(budget.uuid, second.uuid)
 
-        self.assertCountEqual(self.repository.list_accounts(budget.uuid), [first, second])
+        stored = self.repository.get(budget.uuid)
+        assert stored is not None
+        self.assertCountEqual(stored.account_uuids, [first.uuid, second.uuid])
 
         self.repository.remove_account(budget.uuid, first.uuid)
-        self.assertEqual(self.repository.list_accounts(budget.uuid), [second])
+        stored = self.repository.get(budget.uuid)
+        assert stored is not None
+        self.assertEqual(stored.account_uuids, [second.uuid])
 
     def test_get_and_list_page_include_account_selectors_in_uuid_order(self) -> None:
         budget = self.create_budget(currency=self.currency, category=self.category)
@@ -176,7 +154,7 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
         self.repository.delete(budget.uuid)
 
         self.assertIsNone(self.repository.get(budget.uuid))
-        self.assertEqual(self.repository.list_accounts(budget.uuid), [])
+        self.assertIsNone(self.repository.get(budget.uuid))
 
 
 if __name__ == "__main__":

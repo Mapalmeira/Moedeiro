@@ -99,7 +99,7 @@ class SqliteBudgetStatusQueryRepositoryTest(LedgerRepositoryTestCase):
         """The collection excludes budgets whose periods do not contain the timestamp."""
         active = self.budget
         inactive = self.create_budget("Later", self.currency, self.category)
-        self.budget_repository.update_period(inactive.uuid, 20, 30)
+        self.budget_repository.update(inactive.model_copy(update={"from_timestamp": 20, "to_timestamp": 30}))
 
         statuses = self.repository.list_page(15, 1, 200)
 

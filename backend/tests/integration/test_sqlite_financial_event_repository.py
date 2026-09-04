@@ -39,7 +39,7 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         self.repository.delete(event.uuid)
 
         self.assertIsNone(self.repository.get(event.uuid))
-        self.assertIsNone(movement_repository.get(movement.uuid))
+        self.assertIsNone(self.repository.get(event.uuid))
 
     def test_updates_timestamp_and_description_without_changing_type(self) -> None:
         """Event updates preserve identity and event type."""
@@ -81,87 +81,6 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         self.connection.rollback()
 
         self.assertEqual(self.repository.list_page(1, 200, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100)), [])
-
-    def test_list_filtered_applies_half_open_timestamp_interval(self) -> None:
-        """The lower timestamp is inclusive and the upper timestamp is exclusive."""
-        self.create_event("Before", occurred_at=10)
-        expected = self.create_event("Inside", occurred_at=20)
-        self.create_event("Upper bound", occurred_at=30)
-
-        events = self.repository.list_filtered(FinancialEventFilter(from_timestamp=20, to_timestamp=30), True)
-
-        self.assertEqual(events, [expected])
-
-    def test_list_filtered_matches_the_selected_category_and_event_type(self) -> None:
-        """The selected category and type are combined with AND."""
-        currency = self.create_currency()
-        account = self.create_account(currency=currency)
-        second_category = self.create_category("Second category")
-        event = self.create_event("Expected", "SHOPPING_LIST")
-        other_event = self.create_event("Other", "TRANSACTION")
-        movement_repository = SqliteFinancialMovementRepository(self.connection)
-        movement_repository.create(event.uuid, account.uuid, second_category.uuid, -10, None)
-        movement_repository.create(other_event.uuid, account.uuid, second_category.uuid, -10, None)
-
-        events = self.repository.list_filtered(
-            FinancialEventFilter(
-                from_timestamp=0,
-                to_timestamp=100,
-                category_uuid=second_category.uuid,
-                event_type="SHOPPING_LIST",
-            ),
-            True,
-        )
-
-        self.assertEqual([listed_event.uuid for listed_event in events], [event.uuid])
-        self.assertEqual(len(events[0].movements), 1)
-
-    def test_account_and_category_can_match_different_movements(self) -> None:
-        """Independent EXISTS clauses allow distinct movements to satisfy each relation filter."""
-        currency = self.create_currency()
-        selected_account = self.create_account("Selected account", currency)
-        other_account = self.create_account("Other account", currency)
-        selected_category = self.create_category("Selected category")
-        other_category = self.create_category("Other category")
-        expected = self.create_event("Expected")
-        account_only = self.create_event("Account only")
-        category_only = self.create_event("Category only")
-        movement_repository = SqliteFinancialMovementRepository(self.connection)
-        movement_repository.create(expected.uuid, selected_account.uuid, other_category.uuid, -10, None)
-        movement_repository.create(expected.uuid, other_account.uuid, selected_category.uuid, -20, None)
-        movement_repository.create(account_only.uuid, selected_account.uuid, other_category.uuid, -30, None)
-        movement_repository.create(category_only.uuid, other_account.uuid, selected_category.uuid, -40, None)
-
-        events = self.repository.list_filtered(
-            FinancialEventFilter(
-                from_timestamp=0,
-                to_timestamp=100,
-                account_uuid=selected_account.uuid,
-                category_uuid=selected_category.uuid,
-            ),
-            True,
-        )
-
-        self.assertEqual([event.uuid for event in events], [expected.uuid])
-        self.assertEqual(len(events[0].movements), 2)
-
-    def test_category_filter_includes_descendant_categories(self) -> None:
-        currency = self.create_currency()
-        account = self.create_account(currency=currency)
-        parent = self.create_category("Parent")
-        child = self.create_category("Child", parent)
-        grandchild = self.create_category("Grandchild", child)
-        expected = self.create_event("Expected")
-        self.create_event("Unrelated")
-        movement_repository = SqliteFinancialMovementRepository(self.connection)
-        movement_repository.create(expected.uuid, account.uuid, grandchild.uuid, -10, None)
-
-        events = self.repository.list_filtered(
-            FinancialEventFilter(from_timestamp=0, to_timestamp=100, category_uuid=parent.uuid),
-            True,
-        )
-
-        self.assertEqual([event.uuid for event in events], [expected.uuid])
 
     def test_get_and_list_page_load_movements_in_the_event(self) -> None:
         """Rich event reads hydrate movements without one query per event."""

@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from uuid import UUID
 
 from app.domain.appearance import Icon, RgbColorCode
-from app.domain.ledger.model.account import Account
 from app.domain.ledger.model.budget import Budget, BudgetAmount, BudgetDescription, BudgetName
 
 
@@ -35,48 +34,11 @@ class BudgetRepository(ABC):
         pass
 
     @abstractmethod
-    def update_period(
-        self,
-        uuid: UUID,
-        from_timestamp: int,
-        to_timestamp: int,
-    ) -> None:
-        pass
-
-    @abstractmethod
-    def update_name(self, uuid: UUID, value: BudgetName) -> None:
-        pass
-
-    @abstractmethod
-    def update_description(self, uuid: UUID, value: BudgetDescription) -> None:
-        pass
-
-    @abstractmethod
-    def update_amount(self, uuid: UUID, value: BudgetAmount) -> None:
-        pass
-
-    @abstractmethod
-    def update_category(self, uuid: UUID, category_uuid: UUID) -> None:
-        pass
-
-    @abstractmethod
-    def update_icon(self, uuid: UUID, value: Icon) -> None:
-        pass
-
-    @abstractmethod
-    def update_color_code(self, uuid: UUID, value: RgbColorCode) -> None:
-        pass
-
-    @abstractmethod
     def add_account(self, budget_uuid: UUID, account_uuid: UUID) -> None:
         pass
 
     @abstractmethod
     def remove_account(self, budget_uuid: UUID, account_uuid: UUID) -> None:
-        pass
-
-    @abstractmethod
-    def list_accounts(self, budget_uuid: UUID) -> list[Account]:
         pass
 
     @abstractmethod
