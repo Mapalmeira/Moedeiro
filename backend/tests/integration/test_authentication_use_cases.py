@@ -134,7 +134,7 @@ class AuthenticationUseCasesTest(unittest.TestCase):
             refresh_session(self.open_registry, remember_token, 31)
 
     def test_refresh_rejects_an_expired_remember_session_without_creating_a_short_session(self) -> None:
-        token = "remember-token"
+        token = "r" * 43
         with self.open_registry() as unit_of_work:
             unit_of_work.remember_session_repository.create(self.user.uuid, hashlib.sha256(token.encode("ascii")).digest(), 20, 30)
             unit_of_work.commit()

@@ -1,4 +1,5 @@
 import hashlib
+import re
 import secrets
 from collections.abc import Callable
 from uuid import UUID
@@ -12,6 +13,9 @@ from app.domain.registry.model.auth_session import DEFAULT_ABSOLUTE_TIMEOUT_SECO
 from app.domain.registry.model.remember_session import DEFAULT_EXPIRATION_TIMEOUT_SECONDS
 from app.domain.registry.model.totp import TotpCode
 from app.domain.registry.model.user import Password, User, UserName, normalize_user_name
+
+
+_TOKEN_PATTERN = re.compile(r"[A-Za-z0-9_-]{43}")
 
 
 def login(
@@ -65,6 +69,8 @@ def authenticate_session(unit_of_work_factory: Callable[[], RegistryUnitOfWork],
 
 
 def resolve_session_user(unit_of_work_factory: Callable[[], RegistryUnitOfWork], token: str, timestamp: int) -> tuple[UUID, User]:
+    if not _is_valid_token(token):
+        raise InvalidSessionError
     with unit_of_work_factory() as unit_of_work:
         session = unit_of_work.auth_session_repository.get_active_by_token_hash(_token_hash(token), timestamp)
         if session is None:
@@ -83,6 +89,8 @@ def update_session_activity(unit_of_work_factory: Callable[[], RegistryUnitOfWor
 
 
 def refresh_session(unit_of_work_factory: Callable[[], RegistryUnitOfWork], remember_token: str, timestamp: int) -> tuple[str, str]:
+    if not _is_valid_token(remember_token):
+        raise InvalidSessionError
     expected_hash = _token_hash(remember_token)
     new_remember_token = secrets.token_urlsafe(32)
     session_token = secrets.token_urlsafe(32)
@@ -114,11 +122,11 @@ def logout(unit_of_work_factory: Callable[[], RegistryUnitOfWork], session_token
 
 
 def _delete_presented_sessions(unit_of_work: RegistryUnitOfWork, session_token: str | None, remember_token: str | None) -> None:
-    if session_token is not None:
+    if session_token is not None and _is_valid_token(session_token):
         session = unit_of_work.auth_session_repository.get_by_token_hash(_token_hash(session_token))
         if session is not None:
             unit_of_work.auth_session_repository.delete(session.uuid)
-    if remember_token is not None:
+    if remember_token is not None and _is_valid_token(remember_token):
         remember_session = unit_of_work.remember_session_repository.get_by_token_hash(_token_hash(remember_token))
         if remember_session is not None:
             unit_of_work.remember_session_repository.delete(remember_session.uuid)
@@ -126,3 +134,7 @@ def _delete_presented_sessions(unit_of_work: RegistryUnitOfWork, session_token: 
 
 def _token_hash(token: str) -> bytes:
     return hashlib.sha256(token.encode()).digest()
+
+
+def _is_valid_token(token: str) -> bool:
+    return _TOKEN_PATTERN.fullmatch(token) is not None
