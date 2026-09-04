@@ -123,6 +123,29 @@ class SqliteDatabasesTest(unittest.TestCase):
         self.assertEqual(metadata.ledger_uuid, ledger_uuid)
         self.assertEqual(metadata.schema_version, CURRENT_LEDGER_SCHEMA_VERSION)
         self.assertEqual(metadata.created_at, 100)
+        connection = sqlite3.connect(path)
+        try:
+            self.assertEqual(connection.execute("PRAGMA journal_mode").fetchone()[0], "wal")
+        finally:
+            connection.close()
+
+    def test_initialize_enables_wal_for_an_existing_ledger(self) -> None:
+        self.databases.initialize()
+        ledger_uuid = uuid4()
+        path = self.databases.initialize_ledger(ledger_uuid, 100)
+        connection = sqlite3.connect(path)
+        try:
+            connection.execute("PRAGMA journal_mode = DELETE")
+        finally:
+            connection.close()
+
+        self.databases.initialize()
+
+        connection = sqlite3.connect(path)
+        try:
+            self.assertEqual(connection.execute("PRAGMA journal_mode").fetchone()[0], "wal")
+        finally:
+            connection.close()
 
     def test_initialize_ledger_never_overwrites_an_existing_database(self) -> None:
         self.databases.initialize()

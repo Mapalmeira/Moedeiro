@@ -62,6 +62,8 @@ class SqliteDatabases:
         for ledger_path in ledger_paths:
             self.ledger_migrator.validate(SqliteDatabase(ledger_path))
         self.registry_database.enable_wal()
+        for ledger_path in ledger_paths:
+            SqliteDatabase(ledger_path).enable_wal()
 
     def _initialize_storage(self) -> None:
         self.ledger_dbs_dir.mkdir(parents=True, exist_ok=True)
@@ -96,6 +98,7 @@ class SqliteDatabases:
             with SqliteLedgerUnitOfWork(database) as unit_of_work:
                 unit_of_work.ledger_metadata_repository.create(ledger_uuid, CURRENT_LEDGER_SCHEMA_VERSION, created_at)
                 unit_of_work.commit()
+            database.enable_wal()
         except Exception:
             if database_initialized:
                 path.unlink(missing_ok=True)
