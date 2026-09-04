@@ -18,6 +18,7 @@ from app.api.registry.routes.ledger import router as ledger_router
 from app.api.registry.routes.password import router as password_router
 from app.api.registry.routes.registration import router as registration_router
 from app.api.registry.routes.totp import router as totp_router
+from app.api.registry.routes.user_preferences import router as user_preferences_router
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.totp_authenticator import TotpAuthenticator
 from app.infrastructure.concurrency.concurrent_password_hasher import ConcurrentPasswordHasher
@@ -60,6 +61,7 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
     application.include_router(password_router)
     application.include_router(registration_router)
     application.include_router(totp_router)
+    application.include_router(user_preferences_router)
     return application
 
 
