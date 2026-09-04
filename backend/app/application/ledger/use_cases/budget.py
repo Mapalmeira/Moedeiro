@@ -89,13 +89,7 @@ def update_budget(
         budget_with_name = unit_of_work.budget_repository.get_by_name(updated_budget.name)
         if budget_with_name is not None and budget_with_name.uuid != budget.uuid:
             raise BudgetNameUnavailableError
-        unit_of_work.budget_repository.update_period(budget.uuid, updated_budget.from_timestamp, updated_budget.to_timestamp)
-        unit_of_work.budget_repository.update_name(budget.uuid, updated_budget.name)
-        unit_of_work.budget_repository.update_description(budget.uuid, updated_budget.description)
-        unit_of_work.budget_repository.update_amount(budget.uuid, updated_budget.amount)
-        unit_of_work.budget_repository.update_category(budget.uuid, updated_budget.category_uuid)
-        unit_of_work.budget_repository.update_icon(budget.uuid, updated_budget.icon)
-        unit_of_work.budget_repository.update_color_code(budget.uuid, updated_budget.color_code)
+        unit_of_work.budget_repository.update(updated_budget)
         existing_account_uuids = set(budget.account_uuids)
         requested_account_uuids = set(updated_budget.account_uuids)
         for account_uuid in existing_account_uuids - requested_account_uuids:

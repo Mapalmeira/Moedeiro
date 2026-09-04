@@ -55,6 +55,23 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
             return None
         return self._to_model(row)
 
+    def update(self, movement: FinancialMovement) -> None:
+        self.connection.execute(
+            """
+            UPDATE financial_movement
+            SET account_uuid = ?, category_uuid = ?, value = ?, quantity = ?, item_name = ?
+            WHERE uuid = ?
+            """,
+            (
+                movement.account_uuid.bytes,
+                movement.category_uuid.bytes,
+                movement.value,
+                movement.quantity,
+                movement.item_name,
+                movement.uuid.bytes,
+            ),
+        )
+
     def update_value(self, uuid: UUID, value: int) -> None:
         movement = self._validation_model(uuid, value=value)
         self.connection.execute(

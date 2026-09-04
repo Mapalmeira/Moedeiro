@@ -64,6 +64,24 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(updated.account_uuid, other_account.uuid)
         self.assertEqual(updated.financial_event_uuid, self.event.uuid)
 
+    def test_update_changes_all_mutable_fields(self) -> None:
+        movement = self.create_movement()
+        other_category = self.create_category("Dining")
+        other_account = self.create_account("Savings", currency=self.currency)
+        updated_movement = movement.model_copy(
+            update={
+                "account_uuid": other_account.uuid,
+                "category_uuid": other_category.uuid,
+                "value": -150,
+                "quantity": 2,
+                "item_name": None,
+            }
+        )
+
+        self.repository.update(updated_movement)
+
+        self.assertEqual(self.repository.get(movement.uuid), updated_movement)
+
     def test_update_account_requires_an_existing_account(self) -> None:
         movement = self.create_movement()
 

@@ -61,6 +61,26 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(updated.category_uuid, other_category.uuid)
         self.assertEqual(updated.currency_uuid, self.currency.uuid)
 
+    def test_update_changes_all_mutable_fields_without_changing_currency(self) -> None:
+        budget = self.create_budget(currency=self.currency, category=self.category)
+        other_category = self.create_category("Leisure")
+        updated_budget = budget.model_copy(
+            update={
+                "category_uuid": other_category.uuid,
+                "from_timestamp": 20,
+                "to_timestamp": 30,
+                "name": "Updated",
+                "description": "Updated spending",
+                "amount": 200,
+                "icon": "Landmark",
+                "color_code": b"\xaa\xbb\xcc",
+            }
+        )
+
+        self.repository.update(updated_budget)
+
+        self.assertEqual(self.repository.get(budget.uuid), updated_budget)
+
     def test_updates_validate_budget_constraints(self) -> None:
         """Update methods enforce period, text and amount constraints."""
         budget = self.create_budget(currency=self.currency, category=self.category)

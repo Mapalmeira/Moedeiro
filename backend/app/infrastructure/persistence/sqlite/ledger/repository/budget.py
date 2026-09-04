@@ -79,6 +79,26 @@ class SqliteBudgetRepository(BudgetRepository):
         uuid = UUID(bytes=row["uuid"])
         return self._to_model(row, self._list_account_uuids([uuid])[uuid])
 
+    def update(self, budget: Budget) -> None:
+        self.connection.execute(
+            """
+            UPDATE budget
+            SET category_uuid = ?, from_timestamp = ?, to_timestamp = ?, budget_name = ?, description = ?, amount = ?, icon = ?, color_code = ?
+            WHERE uuid = ?
+            """,
+            (
+                budget.category_uuid.bytes,
+                budget.from_timestamp,
+                budget.to_timestamp,
+                budget.name,
+                budget.description,
+                budget.amount,
+                budget.icon,
+                budget.color_code,
+                budget.uuid.bytes,
+            ),
+        )
+
     def update_period(self, uuid: UUID, from_timestamp: int, to_timestamp: int) -> None:
         budget = self._updated_model(uuid, from_timestamp=from_timestamp, to_timestamp=to_timestamp)
         if budget is None:

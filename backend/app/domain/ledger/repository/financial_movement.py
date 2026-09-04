@@ -22,6 +22,10 @@ class FinancialMovementRepository(ABC):
         pass
 
     @abstractmethod
+    def update(self, movement: FinancialMovement) -> None:
+        pass
+
+    @abstractmethod
     def update_value(self, uuid: UUID, value: int) -> None:
         pass
 

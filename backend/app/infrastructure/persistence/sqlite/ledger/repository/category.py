@@ -1,4 +1,5 @@
 import sqlite3
+from collections.abc import Collection
 from uuid import UUID, uuid4
 
 from pydantic import TypeAdapter
@@ -38,6 +39,17 @@ class SqliteCategoryRepository(CategoryRepository):
         if row is None:
             return None
         return self._to_model(row)
+
+    def get_many(self, uuids: Collection[UUID]) -> list[Category]:
+        unique_uuids = set(uuids)
+        if not unique_uuids:
+            return []
+        placeholders = ", ".join("?" for _ in unique_uuids)
+        rows = self.connection.execute(
+            f"SELECT uuid, category_name AS name, icon, color_code, parent_uuid FROM category WHERE uuid IN ({placeholders})",
+            tuple(uuid.bytes for uuid in unique_uuids),
+        ).fetchall()
+        return [self._to_model(row) for row in rows]
 
     def update_name(self, uuid: UUID, value: CategoryName) -> None:
         name = self._name_adapter.validate_python(value)

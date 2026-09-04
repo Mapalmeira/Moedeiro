@@ -31,6 +31,10 @@ class BudgetRepository(ABC):
         pass
 
     @abstractmethod
+    def update(self, budget: Budget) -> None:
+        pass
+
+    @abstractmethod
     def update_period(
         self,
         uuid: UUID,

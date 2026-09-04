@@ -1,6 +1,7 @@
 """Integration tests for the ledger SQLite category repository."""
 
 import sqlite3
+from uuid import uuid4
 
 from pydantic import ValidationError
 
@@ -43,6 +44,16 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(updated.icon, "Utensils")
         self.assertEqual(updated.color_code, b"\xff\x80\x00")
         self.assertEqual(updated.parent_uuid, category.parent_uuid)
+
+    def test_get_many_returns_only_requested_categories(self) -> None:
+        food = self.create_category("Food")
+        leisure = self.create_category("Leisure")
+        self.create_category("Transport")
+
+        categories = self.repository.get_many([leisure.uuid, food.uuid, leisure.uuid, uuid4()])
+
+        self.assertEqual({category.uuid for category in categories}, {food.uuid, leisure.uuid})
+        self.assertEqual(self.repository.get_many([]), [])
 
     def test_update_name_validates_model_limit(self) -> None:
         """Category names are validated before an update is executed."""
