@@ -12,7 +12,7 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
         self._ensure_account_exists(account_uuid)
         row = self.connection.execute(
             """
-            SELECT COALESCE(SUM(movement.value), 0) AS balance
+            SELECT COALESCE(SUM(movement.value * movement.quantity), 0) AS balance
             FROM financial_movement AS movement
             JOIN financial_event AS event ON event.uuid = movement.financial_event_uuid
             WHERE movement.account_uuid = ? AND event.occurred_at <= ?
@@ -32,7 +32,7 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
                     WHEN event.occurred_at < ? THEN NULL
                     ELSE ? + ((event.occurred_at - ?) / ?) * ?
                 END AS point_start,
-                SUM(movement.value) AS value
+                SUM(movement.value * movement.quantity) AS value
             FROM financial_movement AS movement
             JOIN financial_event AS event ON event.uuid = movement.financial_event_uuid
             WHERE movement.account_uuid = ?

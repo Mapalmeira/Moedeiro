@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.ledger.model.financial_movement import FinancialMovement
+from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName, FinancialMovementQuantity
 
 
 class FinancialMovementRepository(ABC):
@@ -12,7 +12,8 @@ class FinancialMovementRepository(ABC):
         account_uuid: UUID,
         category_uuid: UUID,
         value: int,
-        item_name: str | None,
+        item_name: FinancialMovementItemName | None,
+        quantity: FinancialMovementQuantity = 1,
     ) -> FinancialMovement:
         pass
 
@@ -25,7 +26,11 @@ class FinancialMovementRepository(ABC):
         pass
 
     @abstractmethod
-    def update_item_name(self, uuid: UUID, value: str | None) -> None:
+    def update_quantity(self, uuid: UUID, quantity: FinancialMovementQuantity) -> None:
+        pass
+
+    @abstractmethod
+    def update_item_name(self, uuid: UUID, value: FinancialMovementItemName | None) -> None:
         pass
 
     @abstractmethod

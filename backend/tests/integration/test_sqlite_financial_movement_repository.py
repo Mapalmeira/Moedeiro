@@ -19,17 +19,18 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         self.category = self.create_category()
         self.event = self.create_event()
 
-    def create_movement(self, value: int = -100, item_name: str | None = "Lunch") -> FinancialMovement:
-        return self.repository.create(self.event.uuid, self.account.uuid, self.category.uuid, value, item_name)
+    def create_movement(self, value: int = -100, item_name: str | None = "Lunch", quantity: int = 1) -> FinancialMovement:
+        return self.repository.create(self.event.uuid, self.account.uuid, self.category.uuid, value, item_name, quantity)
 
     def test_create_and_get_preserve_movement_relations(self) -> None:
         """create stores the event, account and category identities supplied."""
-        movement = self.create_movement()
+        movement = self.create_movement(quantity=3)
 
         self.assertEqual(self.repository.get(movement.uuid), movement)
         self.assertEqual(movement.financial_event_uuid, self.event.uuid)
         self.assertEqual(movement.account_uuid, self.account.uuid)
         self.assertEqual(movement.category_uuid, self.category.uuid)
+        self.assertEqual(movement.quantity, 3)
 
     def test_create_requires_existing_relations(self) -> None:
         """Foreign keys reject unknown event, account and category identities."""
@@ -49,6 +50,7 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         other_account = self.create_account("Savings", currency=self.currency)
 
         self.repository.update_value(movement.uuid, -150)
+        self.repository.update_quantity(movement.uuid, 2)
         self.repository.update_item_name(movement.uuid, None)
         self.repository.update_category(movement.uuid, other_category.uuid)
         self.repository.update_account(movement.uuid, other_account.uuid)
@@ -56,6 +58,7 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         updated = self.repository.get(movement.uuid)
         assert updated is not None
         self.assertEqual(updated.value, -150)
+        self.assertEqual(updated.quantity, 2)
         self.assertIsNone(updated.item_name)
         self.assertEqual(updated.category_uuid, other_category.uuid)
         self.assertEqual(updated.account_uuid, other_account.uuid)
@@ -82,6 +85,16 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         with self.assertRaises(ValidationError):
             self.repository.update_value(movement.uuid, 0)
 
+    def test_create_and_update_reject_nonpositive_quantity(self) -> None:
+        movement = self.create_movement()
+
+        for quantity in (0, -1):
+            with self.subTest(quantity=quantity):
+                with self.assertRaises(ValidationError):
+                    self.repository.create(self.event.uuid, self.account.uuid, self.category.uuid, -100, None, quantity)
+                with self.assertRaises(ValidationError):
+                    self.repository.update_quantity(movement.uuid, quantity)
+
     def test_list_by_financial_event_excludes_other_events(self) -> None:
         """The relation-specific listing only returns movements from one event."""
         first = self.create_movement(-100)
@@ -93,12 +106,13 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(movements, [first])
 
     def test_list_all_orders_by_public_fields_and_rejects_uuid_sorting(self) -> None:
-        self.create_movement(-100, "Lunch")
-        self.create_movement(50, "Refund")
+        self.create_movement(-100, "Lunch", 2)
+        self.create_movement(50, "Refund", 1)
 
         movements = self.repository.list_all("value", False)
 
         self.assertEqual([movement.value for movement in movements], [50, -100])
+        self.assertEqual([movement.quantity for movement in self.repository.list_all("quantity", False)], [2, 1])
         with self.assertRaises(ValueError):
             self.repository.list_all("uuid", True)
 

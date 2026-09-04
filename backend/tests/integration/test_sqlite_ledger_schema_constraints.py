@@ -46,7 +46,7 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             (self.event_uuid,),
         )
         self.connection.execute(
-            "INSERT INTO financial_movement VALUES (?, ?, -100, 'Lunch', ?, ?)",
+            "INSERT INTO financial_movement VALUES (?, ?, -100, 1, 'Lunch', ?, ?)",
             (self.movement_uuid, self.event_uuid, self.account_uuid, self.category_uuid),
         )
         self.connection.execute(
@@ -129,6 +129,12 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
                 with self.subTest(table=table, size=len(color_code)):
                     with self.assertRaises(sqlite3.IntegrityError):
                         self.connection.execute(f"UPDATE {table} SET color_code = ?", (color_code,))
+
+    def test_enforces_positive_financial_movement_quantity(self) -> None:
+        for quantity in (0, -1):
+            with self.subTest(quantity=quantity):
+                with self.assertRaises(sqlite3.IntegrityError):
+                    self.connection.execute("UPDATE financial_movement SET quantity = ?", (quantity,))
 
 if __name__ == "__main__":
     unittest.main()

@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from app.api.registry.routes.ledger import create_owned_ledger, delete_user_ledger, get_user_ledger, list_user_ledgers, update_user_ledger
 from app.api.registry.schema.ledger import CreateLedgerRequest, UpdateLedgerRequest
 from app.factory import create_app
+from app.infrastructure.persistence.sqlite.ledger.schema_version import CURRENT_LEDGER_SCHEMA_VERSION
 from app.settings import Settings
 from tests.fakes import FakeCredentialOperationExecutor, FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator
 
@@ -79,6 +80,7 @@ class LedgerRoutesTest(unittest.TestCase):
             metadata = unit_of_work.ledger_metadata_repository.get()
         assert metadata is not None
         self.assertEqual(metadata.ledger_uuid, created.uuid)
+        self.assertEqual(metadata.schema_version, CURRENT_LEDGER_SCHEMA_VERSION)
 
     def test_get_update_and_delete_follow_the_owner_grant(self) -> None:
         created = self.create_ledger()

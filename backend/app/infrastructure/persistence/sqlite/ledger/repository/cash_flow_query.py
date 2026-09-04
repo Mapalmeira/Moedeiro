@@ -21,8 +21,8 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
                 {where_clause}
             )
             SELECT
-                COALESCE(SUM(CASE WHEN movement.value > 0 THEN movement.value ELSE 0 END), 0) AS income,
-                COALESCE(SUM(CASE WHEN movement.value < 0 THEN -movement.value ELSE 0 END), 0) AS expense,
+                COALESCE(SUM(CASE WHEN movement.value > 0 THEN movement.value * movement.quantity ELSE 0 END), 0) AS income,
+                COALESCE(SUM(CASE WHEN movement.value < 0 THEN -movement.value * movement.quantity ELSE 0 END), 0) AS expense,
                 COUNT(DISTINCT filtered_events.uuid) AS event_count,
                 COALESCE(SUM(CASE WHEN movement.value > 0 THEN 1 ELSE 0 END), 0) AS income_movement_count,
                 COALESCE(SUM(CASE WHEN movement.value < 0 THEN 1 ELSE 0 END), 0) AS expense_movement_count
@@ -49,8 +49,8 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
             )
             SELECT
                 filtered_events.point_start,
-                COALESCE(SUM(CASE WHEN movement.value > 0 THEN movement.value ELSE 0 END), 0) AS income,
-                COALESCE(SUM(CASE WHEN movement.value < 0 THEN -movement.value ELSE 0 END), 0) AS expense,
+                COALESCE(SUM(CASE WHEN movement.value > 0 THEN movement.value * movement.quantity ELSE 0 END), 0) AS income,
+                COALESCE(SUM(CASE WHEN movement.value < 0 THEN -movement.value * movement.quantity ELSE 0 END), 0) AS expense,
                 COUNT(DISTINCT filtered_events.uuid) AS event_count,
                 COALESCE(SUM(CASE WHEN movement.value > 0 THEN 1 ELSE 0 END), 0) AS income_movement_count,
                 COALESCE(SUM(CASE WHEN movement.value < 0 THEN 1 ELSE 0 END), 0) AS expense_movement_count

@@ -41,6 +41,32 @@ class FinancialMovementTest(unittest.TestCase):
         )
 
         self.assertIsNone(movement.item_name)
+        self.assertEqual(movement.quantity, 1)
+
+    def test_accepts_a_positive_quantity(self) -> None:
+        movement = FinancialMovement(
+            uuid=uuid4(),
+            financial_event_uuid=uuid4(),
+            account_uuid=uuid4(),
+            category_uuid=uuid4(),
+            value=-100,
+            quantity=3,
+        )
+
+        self.assertEqual(movement.quantity, 3)
+
+    def test_rejects_a_nonpositive_quantity(self) -> None:
+        for quantity in (0, -1):
+            with self.subTest(quantity=quantity):
+                with self.assertRaises(ValidationError):
+                    FinancialMovement(
+                        uuid=uuid4(),
+                        financial_event_uuid=uuid4(),
+                        account_uuid=uuid4(),
+                        category_uuid=uuid4(),
+                        value=-100,
+                        quantity=quantity,
+                    )
 
     def test_rejects_item_name_longer_than_limit(self) -> None:
         with self.assertRaises(ValidationError):

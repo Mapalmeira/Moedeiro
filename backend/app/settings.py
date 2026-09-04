@@ -23,6 +23,7 @@ class Settings(BaseModel):
     password_hash_concurrency: int = Field(default=2, gt=0)
     max_page_size: int = Field(default=200, gt=0)
     max_category_tree_size: int = Field(default=1000, gt=0)
+    max_shopping_list_movements: int = Field(default=300, gt=0)
     totp_encryption_key: str | None = None
 
     @field_validator("registration_ip_attempts_rate_limit", "login_ip_attempts_rate_limit", "password_recovery_ip_attempts_rate_limit", "totp_setup_ip_attempts_rate_limit")
@@ -65,6 +66,7 @@ class Settings(BaseModel):
             "password_hash_concurrency": "PASSWORD_HASH_CONCURRENCY",
             "max_page_size": "MAX_PAGE_SIZE",
             "max_category_tree_size": "MAX_CATEGORY_TREE_SIZE",
+            "max_shopping_list_movements": "MAX_SHOPPING_LIST_MOVEMENTS",
             "totp_encryption_key": "TOTP_ENCRYPTION_KEY",
         }
         for field_name, variable_name in optional_variable_names.items():

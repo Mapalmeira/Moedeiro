@@ -5,13 +5,13 @@ from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotF
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
 from app.domain.ledger.model.financial_event import FinancialEvent, FinancialEventDescription, FinancialEventType
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
-from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName
+from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName, FinancialMovementQuantity
 
 
-ShoppingListMovement = tuple[UUID, int, FinancialMovementItemName | None]
-UpdatedShoppingListMovement = tuple[UUID | None, UUID, int, FinancialMovementItemName | None]
+ShoppingListMovement = tuple[UUID, int, FinancialMovementQuantity, FinancialMovementItemName | None]
+UpdatedShoppingListMovement = tuple[UUID | None, UUID, int, FinancialMovementQuantity, FinancialMovementItemName | None]
 TransferFee = tuple[UUID, int]
-_Movement = tuple[UUID, UUID, int, FinancialMovementItemName | None]
+_Movement = tuple[UUID, UUID, int, FinancialMovementQuantity, FinancialMovementItemName | None]
 
 
 def create_simple_financial_event(
@@ -21,11 +21,12 @@ def create_simple_financial_event(
     account_uuid: UUID,
     category_uuid: UUID,
     value: int,
+    quantity: FinancialMovementQuantity,
     item_name: FinancialMovementItemName | None,
 ) -> FinancialEvent:
     if value == 0:
         raise ValueError("simple financial event value must not be zero")
-    return _create_financial_event(unit_of_work_factory, occurred_at, description, "TRANSACTION", [(account_uuid, category_uuid, value, item_name)])
+    return _create_financial_event(unit_of_work_factory, occurred_at, description, "TRANSACTION", [(account_uuid, category_uuid, value, quantity, item_name)])
 
 
 def create_shopping_list_financial_event(
@@ -34,17 +35,20 @@ def create_shopping_list_financial_event(
     description: FinancialEventDescription,
     account_uuid: UUID,
     movements: Sequence[ShoppingListMovement],
+    max_movements: int,
 ) -> FinancialEvent:
     if not movements:
         raise ValueError("shopping list must contain at least one movement")
-    if any(value >= 0 for _, value, _ in movements):
+    if len(movements) > max_movements:
+        raise ValueError(f"shopping list must contain at most {max_movements} movements")
+    if any(value >= 0 for _, value, _, _ in movements):
         raise ValueError("shopping list movements must be expenses")
     return _create_financial_event(
         unit_of_work_factory,
         occurred_at,
         description,
         "SHOPPING_LIST",
-        [(account_uuid, category_uuid, value, item_name) for category_uuid, value, item_name in movements],
+        [(account_uuid, category_uuid, value, quantity, item_name) for category_uuid, value, quantity, item_name in movements],
     )
 
 
@@ -69,11 +73,11 @@ def create_account_transfer_financial_event(
     if fee is not None and fee[1] >= 0:
         raise ValueError("transfer fee movement must be an expense")
     movements: list[_Movement] = [
-        (source_account_uuid, source_category_uuid, source_value, None),
-        (destination_account_uuid, destination_category_uuid, destination_value, None),
+        (source_account_uuid, source_category_uuid, source_value, 1, None),
+        (destination_account_uuid, destination_category_uuid, destination_value, 1, None),
     ]
     if fee is not None:
-        movements.append((destination_account_uuid, fee[0], fee[1], None))
+        movements.append((destination_account_uuid, fee[0], fee[1], 1, None))
     return _create_financial_event(unit_of_work_factory, occurred_at, description, "ACCOUNT_TRANSFER", movements)
 
 
@@ -104,6 +108,7 @@ def update_simple_financial_event(
     account_uuid: UUID,
     category_uuid: UUID,
     value: int,
+    quantity: FinancialMovementQuantity,
     item_name: FinancialMovementItemName | None,
 ) -> FinancialEvent:
     if value == 0:
@@ -114,7 +119,7 @@ def update_simple_financial_event(
             raise InvalidFinancialEventStructureError
         _require_accounts(unit_of_work, [account_uuid])
         _require_categories(unit_of_work, [category_uuid])
-        movement = _update_movement(unit_of_work, event.movements[0], account_uuid, category_uuid, value, item_name)
+        movement = _update_movement(unit_of_work, event.movements[0], account_uuid, category_uuid, value, quantity, item_name)
         updated_event = _update_event(unit_of_work, event, occurred_at, description, [movement])
         unit_of_work.commit()
     return updated_event
@@ -127,12 +132,15 @@ def update_shopping_list_financial_event(
     description: FinancialEventDescription,
     account_uuid: UUID,
     movements: Sequence[UpdatedShoppingListMovement],
+    max_movements: int,
 ) -> FinancialEvent:
     if not movements:
         raise ValueError("shopping list must contain at least one movement")
-    if any(value >= 0 for _, _, value, _ in movements):
+    if len(movements) > max_movements:
+        raise ValueError(f"shopping list must contain at most {max_movements} movements")
+    if any(value >= 0 for _, _, value, _, _ in movements):
         raise ValueError("shopping list movements must be expenses")
-    supplied_uuids = [movement_uuid for movement_uuid, _, _, _ in movements if movement_uuid is not None]
+    supplied_uuids = [movement_uuid for movement_uuid, _, _, _, _ in movements if movement_uuid is not None]
     if len(supplied_uuids) != len(set(supplied_uuids)):
         raise ValueError("shopping list movement UUIDs must be unique")
     with unit_of_work_factory() as unit_of_work:
@@ -145,13 +153,13 @@ def update_shopping_list_financial_event(
         if any(movement_uuid not in existing_by_uuid for movement_uuid in supplied_uuids):
             raise FinancialMovementNotFoundError
         _require_accounts(unit_of_work, [account_uuid])
-        _require_categories(unit_of_work, [category_uuid for _, category_uuid, _, _ in movements])
+        _require_categories(unit_of_work, [category_uuid for _, category_uuid, _, _, _ in movements])
         updated_movements: list[FinancialMovement] = []
-        for movement_uuid, category_uuid, value, item_name in movements:
+        for movement_uuid, category_uuid, value, quantity, item_name in movements:
             if movement_uuid is None:
-                updated_movements.append(unit_of_work.financial_movement_repository.create(event.uuid, account_uuid, category_uuid, value, item_name))
+                updated_movements.append(unit_of_work.financial_movement_repository.create(event.uuid, account_uuid, category_uuid, value, item_name, quantity))
             else:
-                updated_movements.append(_update_movement(unit_of_work, existing_by_uuid[movement_uuid], account_uuid, category_uuid, value, item_name))
+                updated_movements.append(_update_movement(unit_of_work, existing_by_uuid[movement_uuid], account_uuid, category_uuid, value, quantity, item_name))
         for movement_uuid in existing_by_uuid.keys() - set(supplied_uuids):
             unit_of_work.financial_movement_repository.delete(movement_uuid)
         updated_movements.sort(key=lambda movement: movement.uuid.bytes)
@@ -190,16 +198,16 @@ def update_account_transfer_financial_event(
             category_uuids.append(fee[0])
         _require_categories(unit_of_work, category_uuids)
         updated_movements = [
-            _update_movement(unit_of_work, source, source_account_uuid, source_category_uuid, source_value, None),
-            _update_movement(unit_of_work, destination, destination_account_uuid, destination_category_uuid, destination_value, None),
+            _update_movement(unit_of_work, source, source_account_uuid, source_category_uuid, source_value, 1, None),
+            _update_movement(unit_of_work, destination, destination_account_uuid, destination_category_uuid, destination_value, 1, None),
         ]
         if fee is None:
             if existing_fee is not None:
                 unit_of_work.financial_movement_repository.delete(existing_fee.uuid)
         elif existing_fee is None:
-            updated_movements.append(unit_of_work.financial_movement_repository.create(event.uuid, destination_account_uuid, fee[0], fee[1], None))
+            updated_movements.append(unit_of_work.financial_movement_repository.create(event.uuid, destination_account_uuid, fee[0], fee[1], None, 1))
         else:
-            updated_movements.append(_update_movement(unit_of_work, existing_fee, destination_account_uuid, fee[0], fee[1], None))
+            updated_movements.append(_update_movement(unit_of_work, existing_fee, destination_account_uuid, fee[0], fee[1], 1, None))
         updated_movements.sort(key=lambda movement: movement.uuid.bytes)
         updated_event = _update_event(unit_of_work, event, occurred_at, description, updated_movements)
         unit_of_work.commit()
@@ -230,8 +238,8 @@ def _create_financial_event(
                 raise CategoryNotFoundError
         event = unit_of_work.financial_event_repository.create(occurred_at, description, event_type)
         created_movements = [
-            unit_of_work.financial_movement_repository.create(event.uuid, account_uuid, category_uuid, value, item_name)
-            for account_uuid, category_uuid, value, item_name in movements
+            unit_of_work.financial_movement_repository.create(event.uuid, account_uuid, category_uuid, value, item_name, quantity)
+            for account_uuid, category_uuid, value, quantity, item_name in movements
         ]
         created_movements.sort(key=lambda movement: movement.uuid.bytes)
         event = FinancialEvent.model_validate({**event.model_dump(), "movements": created_movements})
@@ -266,12 +274,14 @@ def _update_movement(
     account_uuid: UUID,
     category_uuid: UUID,
     value: int,
+    quantity: FinancialMovementQuantity,
     item_name: FinancialMovementItemName | None,
 ) -> FinancialMovement:
-    updated_movement = FinancialMovement.model_validate({**movement.model_dump(), "account_uuid": account_uuid, "category_uuid": category_uuid, "value": value, "item_name": item_name})
+    updated_movement = FinancialMovement.model_validate({**movement.model_dump(), "account_uuid": account_uuid, "category_uuid": category_uuid, "value": value, "quantity": quantity, "item_name": item_name})
     unit_of_work.financial_movement_repository.update_account(movement.uuid, account_uuid)
     unit_of_work.financial_movement_repository.update_category(movement.uuid, category_uuid)
     unit_of_work.financial_movement_repository.update_value(movement.uuid, value)
+    unit_of_work.financial_movement_repository.update_quantity(movement.uuid, quantity)
     unit_of_work.financial_movement_repository.update_item_name(movement.uuid, item_name)
     return updated_movement
 

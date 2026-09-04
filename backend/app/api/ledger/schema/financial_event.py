@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator
 
 from app.domain.ledger.model.financial_event import FinancialEvent, FinancialEventDescription, FinancialEventType
-from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName
+from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName, FinancialMovementQuantity
 
 
 ExpenseValue = Annotated[int, Field(lt=0)]
@@ -18,6 +18,7 @@ class SimpleFinancialEventRequest(BaseModel):
     account_uuid: UUID
     category_uuid: UUID
     value: int
+    quantity: FinancialMovementQuantity = 1
     item_name: FinancialMovementItemName | None = None
 
     @field_validator("value")
@@ -31,6 +32,7 @@ class SimpleFinancialEventRequest(BaseModel):
 class ShoppingListMovementRequest(BaseModel):
     category_uuid: UUID
     value: ExpenseValue
+    quantity: FinancialMovementQuantity = 1
     item_name: FinancialMovementItemName | None = None
 
 
@@ -70,6 +72,7 @@ class UpdateSimpleFinancialEventRequest(BaseModel):
     account_uuid: UUID
     category_uuid: UUID
     value: int
+    quantity: FinancialMovementQuantity = 1
     item_name: FinancialMovementItemName | None = None
 
     @field_validator("value")
@@ -84,6 +87,7 @@ class UpdateShoppingListMovementRequest(BaseModel):
     uuid: UUID | None = None
     category_uuid: UUID
     value: ExpenseValue
+    quantity: FinancialMovementQuantity = 1
     item_name: FinancialMovementItemName | None = None
 
 
@@ -116,11 +120,12 @@ class FinancialMovementResponse(BaseModel):
     account_uuid: UUID
     category_uuid: UUID
     value: int
+    quantity: FinancialMovementQuantity
     item_name: FinancialMovementItemName | None
 
     @classmethod
     def from_movement(cls, movement: FinancialMovement) -> Self:
-        return cls(uuid=movement.uuid, account_uuid=movement.account_uuid, category_uuid=movement.category_uuid, value=movement.value, item_name=movement.item_name)
+        return cls(uuid=movement.uuid, account_uuid=movement.account_uuid, category_uuid=movement.category_uuid, value=movement.value, quantity=movement.quantity, item_name=movement.item_name)
 
 
 class FinancialEventResponse(BaseModel):

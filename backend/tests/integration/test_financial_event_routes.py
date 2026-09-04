@@ -31,6 +31,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
                 registry_db_path=directory / "registry/registry.sqlite",
                 ledger_dbs_dir=directory / "ledgers",
                 max_page_size=2,
+                max_shopping_list_movements=2,
             ),
             FakePasswordHasher(),
             FakeRateLimiter(),
@@ -59,7 +60,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
     def create_simple(self, occurred_at: int = 10):
         return create_ledger_financial_event(
             self.ledger.uuid,
-            SimpleFinancialEventRequest(type="TRANSACTION", occurred_at=occurred_at, description="Lunch", account_uuid=self.source.uuid, category_uuid=self.food.uuid, value=-100),
+            SimpleFinancialEventRequest(type="TRANSACTION", occurred_at=occurred_at, description="Lunch", account_uuid=self.source.uuid, category_uuid=self.food.uuid, value=-100, quantity=2),
             self.request,
             self.user,
         )
@@ -71,6 +72,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
         self.assertEqual(len(event.movements), 1)
         self.assertEqual(event.movements[0].account_uuid, self.source.uuid)
         self.assertEqual(event.movements[0].value, -100)
+        self.assertEqual(event.movements[0].quantity, 2)
 
     def test_create_shopping_list_returns_expenses_on_the_selected_account(self) -> None:
         event = create_ledger_financial_event(
@@ -81,7 +83,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
                 description="Groceries",
                 account_uuid=self.source.uuid,
                 movements=[
-                    ShoppingListMovementRequest(category_uuid=self.food.uuid, value=-100, item_name="Rice"),
+                    ShoppingListMovementRequest(category_uuid=self.food.uuid, value=-100, quantity=3, item_name="Rice"),
                     ShoppingListMovementRequest(category_uuid=self.transport.uuid, value=-20, item_name="Delivery"),
                 ],
             ),
@@ -92,6 +94,42 @@ class FinancialEventRoutesTest(unittest.TestCase):
         self.assertEqual(event.type, "SHOPPING_LIST")
         self.assertEqual({movement.account_uuid for movement in event.movements}, {self.source.uuid})
         self.assertEqual({movement.category_uuid for movement in event.movements}, {self.food.uuid, self.transport.uuid})
+        self.assertEqual({movement.quantity for movement in event.movements}, {1, 3})
+
+    def test_create_and_update_reject_shopping_lists_above_the_configured_limit(self) -> None:
+        movements = [ShoppingListMovementRequest(category_uuid=self.food.uuid, value=-10) for _ in range(3)]
+
+        with self.assertRaises(HTTPException) as create_error:
+            create_ledger_financial_event(
+                self.ledger.uuid,
+                ShoppingListFinancialEventRequest(type="SHOPPING_LIST", occurred_at=20, description="Too large", account_uuid=self.source.uuid, movements=movements),
+                self.request,
+                self.user,
+            )
+
+        event = create_ledger_financial_event(
+            self.ledger.uuid,
+            ShoppingListFinancialEventRequest(type="SHOPPING_LIST", occurred_at=20, description="Valid", account_uuid=self.source.uuid, movements=movements[:1]),
+            self.request,
+            self.user,
+        )
+        with self.assertRaises(HTTPException) as update_error:
+            update_ledger_financial_event(
+                self.ledger.uuid,
+                event.uuid,
+                UpdateShoppingListFinancialEventRequest(
+                    type="SHOPPING_LIST",
+                    occurred_at=21,
+                    description="Too large",
+                    account_uuid=self.source.uuid,
+                    movements=[UpdateShoppingListMovementRequest(category_uuid=self.food.uuid, value=-10) for _ in range(3)],
+                ),
+                self.request,
+                self.user,
+            )
+
+        self.assertEqual(create_error.exception.status_code, 422)
+        self.assertEqual(update_error.exception.status_code, 422)
 
     def test_create_account_transfer_returns_explicit_values_and_optional_fee(self) -> None:
         event = create_ledger_financial_event(
@@ -162,7 +200,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
         updated = update_ledger_financial_event(
             self.ledger.uuid,
             event.uuid,
-            UpdateSimpleFinancialEventRequest(type="TRANSACTION", occurred_at=50, description="Dinner", account_uuid=self.destination.uuid, category_uuid=self.transport.uuid, value=200, item_name="Refund"),
+            UpdateSimpleFinancialEventRequest(type="TRANSACTION", occurred_at=50, description="Dinner", account_uuid=self.destination.uuid, category_uuid=self.transport.uuid, value=200, quantity=4, item_name="Refund"),
             self.request,
             self.user,
         )
@@ -172,7 +210,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
         self.assertEqual(updated.type, event.type)
         self.assertEqual(updated.movements[0].uuid, event.movements[0].uuid)
         self.assertEqual(updated.movements[0].account_uuid, self.destination.uuid)
-        self.assertEqual((updated.movements[0].category_uuid, updated.movements[0].value, updated.movements[0].item_name), (self.transport.uuid, 200, "Refund"))
+        self.assertEqual((updated.movements[0].category_uuid, updated.movements[0].value, updated.movements[0].quantity, updated.movements[0].item_name), (self.transport.uuid, 200, 4, "Refund"))
         self.assertEqual(get_ledger_financial_event(self.ledger.uuid, event.uuid, self.request, self.user), updated)
         self.assertIsNone(delete_ledger_financial_event(self.ledger.uuid, event.uuid, self.request, self.user))
         with self.assertRaises(HTTPException) as missing:
@@ -202,8 +240,8 @@ class FinancialEventRoutesTest(unittest.TestCase):
                 description="Market",
                 account_uuid=self.destination.uuid,
                 movements=[
-                    UpdateShoppingListMovementRequest(uuid=event.movements[0].uuid, category_uuid=self.transport.uuid, value=-80, item_name="Delivery"),
-                    UpdateShoppingListMovementRequest(category_uuid=self.food.uuid, value=-20, item_name="Milk"),
+                    UpdateShoppingListMovementRequest(uuid=event.movements[0].uuid, category_uuid=self.transport.uuid, value=-80, quantity=2, item_name="Delivery"),
+                    UpdateShoppingListMovementRequest(category_uuid=self.food.uuid, value=-20, quantity=3, item_name="Milk"),
                 ],
             ),
             self.request,
@@ -212,6 +250,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
 
         self.assertEqual(len(updated.movements), 2)
         self.assertEqual({movement.account_uuid for movement in updated.movements}, {self.destination.uuid})
+        self.assertEqual({movement.quantity for movement in updated.movements}, {2, 3})
 
     def test_update_transfer_dispatches_values_categories_and_fee(self) -> None:
         event = create_ledger_financial_event(
@@ -255,6 +294,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
             (self.source.uuid, self.transport.uuid, 190),
             (self.source.uuid, self.fee.uuid, -5),
         })
+        self.assertEqual({movement.quantity for movement in updated.movements}, {1})
 
     def test_update_rejects_changing_the_event_type(self) -> None:
         event = self.create_simple()
@@ -324,6 +364,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
         adapter = TypeAdapter(CreateFinancialEventRequest)
         invalid_payloads = (
             {"type": "TRANSACTION", "occurred_at": 10, "description": "Purchase", "account_uuid": self.source.uuid, "category_uuid": self.food.uuid, "value": 0},
+            {"type": "TRANSACTION", "occurred_at": 10, "description": "Purchase", "account_uuid": self.source.uuid, "category_uuid": self.food.uuid, "value": -10, "quantity": 0},
             {"type": "SHOPPING_LIST", "occurred_at": 10, "description": "List", "account_uuid": self.source.uuid, "movements": []},
             {"type": "SHOPPING_LIST", "occurred_at": 10, "description": "List", "account_uuid": self.source.uuid, "movements": [{"category_uuid": self.food.uuid, "value": 10}]},
             {"type": "ACCOUNT_TRANSFER", "occurred_at": 10, "description": "Transfer", "source_account_uuid": self.source.uuid, "source_category_uuid": self.food.uuid, "source_value": 10, "destination_account_uuid": self.destination.uuid, "destination_category_uuid": self.transport.uuid, "destination_value": 10},
@@ -338,6 +379,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
         adapter = TypeAdapter(UpdateFinancialEventRequest)
         invalid_payloads = (
             {"type": "TRANSACTION", "occurred_at": 10, "description": "Purchase", "account_uuid": self.source.uuid, "category_uuid": self.food.uuid, "value": 0},
+            {"type": "TRANSACTION", "occurred_at": 10, "description": "Purchase", "account_uuid": self.source.uuid, "category_uuid": self.food.uuid, "value": -10, "quantity": 0},
             {"type": "SHOPPING_LIST", "occurred_at": 10, "description": "List", "account_uuid": self.source.uuid, "movements": []},
             {"type": "SHOPPING_LIST", "occurred_at": 10, "description": "List", "account_uuid": self.source.uuid, "movements": [{"category_uuid": self.food.uuid, "value": 10}]},
             {"type": "ACCOUNT_TRANSFER", "occurred_at": 10, "description": "Transfer", "source_account_uuid": self.source.uuid, "source_category_uuid": self.food.uuid, "source_value": 10, "destination_account_uuid": self.destination.uuid, "destination_category_uuid": self.transport.uuid, "destination_value": 10},

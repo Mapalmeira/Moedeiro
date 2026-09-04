@@ -37,7 +37,7 @@ class FinancialEventUseCasesTest(unittest.TestCase):
         return SqliteLedgerUnitOfWork(self.database)
 
     def create_simple(self, value: int = -100, occurred_at: int = 10):
-        return create_simple_financial_event(self.open_ledger, occurred_at, "Lunch", self.source.uuid, self.food.uuid, value, None)
+        return create_simple_financial_event(self.open_ledger, occurred_at, "Lunch", self.source.uuid, self.food.uuid, value, 1, None)
 
     def test_create_simple_event_persists_exactly_one_movement(self) -> None:
         event = self.create_simple(250)
@@ -61,19 +61,29 @@ class FinancialEventUseCasesTest(unittest.TestCase):
             20,
             "Groceries",
             self.source.uuid,
-            [(self.food.uuid, -100, "Rice"), (self.transport.uuid, -50, "Delivery")],
+            [(self.food.uuid, -100, 2, "Rice"), (self.transport.uuid, -50, 1, "Delivery")],
+            300,
         )
 
         self.assertEqual(event.type, "SHOPPING_LIST")
         self.assertEqual({movement.account_uuid for movement in event.movements}, {self.source.uuid})
         self.assertEqual({movement.category_uuid for movement in event.movements}, {self.food.uuid, self.transport.uuid})
         self.assertEqual({movement.value for movement in event.movements}, {-100, -50})
+        self.assertEqual({movement.quantity for movement in event.movements}, {1, 2})
 
     def test_create_shopping_list_rejects_empty_or_non_expense_movements(self) -> None:
-        for movements in ([], [(self.food.uuid, 100, "Refund")], [(self.food.uuid, 0, None)]):
+        for movements in ([], [(self.food.uuid, 100, 1, "Refund")], [(self.food.uuid, 0, 1, None)], [(self.food.uuid, -10, 0, None)]):
             with self.subTest(movements=movements):
                 with self.assertRaises(ValueError):
-                    create_shopping_list_financial_event(self.open_ledger, 20, "Groceries", self.source.uuid, movements)
+                    create_shopping_list_financial_event(self.open_ledger, 20, "Groceries", self.source.uuid, movements, 300)
+
+        self.assertEqual(self.list_events(), [])
+
+    def test_create_shopping_list_rejects_more_than_the_configured_number_of_movements(self) -> None:
+        movements = [(self.food.uuid, -10, 1, None), (self.transport.uuid, -20, 1, None)]
+
+        with self.assertRaisesRegex(ValueError, "at most 1"):
+            create_shopping_list_financial_event(self.open_ledger, 20, "Groceries", self.source.uuid, movements, 1)
 
         self.assertEqual(self.list_events(), [])
 
@@ -97,6 +107,7 @@ class FinancialEventUseCasesTest(unittest.TestCase):
             (self.destination.uuid, self.fee.uuid, -5),
             (self.destination.uuid, self.food.uuid, 180),
         })
+        self.assertEqual({movement.quantity for movement in event.movements}, {1})
 
     def test_create_account_transfer_rejects_invalid_accounts_and_signs(self) -> None:
         invalid_values = (
@@ -125,9 +136,9 @@ class FinancialEventUseCasesTest(unittest.TestCase):
 
     def test_creation_rejects_unknown_accounts_and_categories_atomically(self) -> None:
         operations = (
-            lambda: create_simple_financial_event(self.open_ledger, 10, "Missing account", uuid4(), self.food.uuid, -10, None),
-            lambda: create_simple_financial_event(self.open_ledger, 10, "Missing category", self.source.uuid, uuid4(), -10, None),
-            lambda: create_shopping_list_financial_event(self.open_ledger, 10, "Missing item category", self.source.uuid, [(self.food.uuid, -10, None), (uuid4(), -20, None)]),
+            lambda: create_simple_financial_event(self.open_ledger, 10, "Missing account", uuid4(), self.food.uuid, -10, 1, None),
+            lambda: create_simple_financial_event(self.open_ledger, 10, "Missing category", self.source.uuid, uuid4(), -10, 1, None),
+            lambda: create_shopping_list_financial_event(self.open_ledger, 10, "Missing item category", self.source.uuid, [(self.food.uuid, -10, 1, None), (uuid4(), -20, 1, None)], 300),
         )
         expected_errors = (AccountNotFoundError, CategoryNotFoundError, CategoryNotFoundError)
 
@@ -163,7 +174,7 @@ class FinancialEventUseCasesTest(unittest.TestCase):
         event = self.create_simple()
         movement = event.movements[0]
 
-        updated = update_simple_financial_event(self.open_ledger, event.uuid, 50, "Dinner", self.destination.uuid, self.transport.uuid, 250, "Refund")
+        updated = update_simple_financial_event(self.open_ledger, event.uuid, 50, "Dinner", self.destination.uuid, self.transport.uuid, 250, 2, "Refund")
 
         self.assertEqual(updated.occurred_at, 50)
         self.assertEqual(updated.description, "Dinner")
@@ -173,6 +184,7 @@ class FinancialEventUseCasesTest(unittest.TestCase):
         self.assertEqual(updated.movements[0].account_uuid, self.destination.uuid)
         self.assertEqual(updated.movements[0].category_uuid, self.transport.uuid)
         self.assertEqual(updated.movements[0].value, 250)
+        self.assertEqual(updated.movements[0].quantity, 2)
         self.assertEqual(updated.movements[0].item_name, "Refund")
         self.assertEqual(get_financial_event(self.open_ledger, event.uuid), updated)
 
@@ -182,7 +194,8 @@ class FinancialEventUseCasesTest(unittest.TestCase):
             20,
             "Groceries",
             self.source.uuid,
-            [(self.food.uuid, -100, "Rice"), (self.transport.uuid, -50, "Delivery")],
+            [(self.food.uuid, -100, 1, "Rice"), (self.transport.uuid, -50, 1, "Delivery")],
+            300,
         )
         retained, removed = event.movements
 
@@ -192,14 +205,15 @@ class FinancialEventUseCasesTest(unittest.TestCase):
             25,
             "Market",
             self.destination.uuid,
-            [(retained.uuid, self.transport.uuid, -120, "Beans"), (None, self.food.uuid, -30, "Milk")],
+            [(retained.uuid, self.transport.uuid, -120, 3, "Beans"), (None, self.food.uuid, -30, 2, "Milk")],
+            300,
         )
 
         self.assertEqual(updated.occurred_at, 25)
         self.assertEqual(updated.description, "Market")
         self.assertEqual(len(updated.movements), 2)
         self.assertEqual({movement.account_uuid for movement in updated.movements}, {self.destination.uuid})
-        self.assertIn((retained.uuid, self.transport.uuid, -120, "Beans"), {(movement.uuid, movement.category_uuid, movement.value, movement.item_name) for movement in updated.movements})
+        self.assertIn((retained.uuid, self.transport.uuid, -120, 3, "Beans"), {(movement.uuid, movement.category_uuid, movement.value, movement.quantity, movement.item_name) for movement in updated.movements})
         self.assertNotIn(removed.uuid, {movement.uuid for movement in updated.movements})
         self.assertEqual(get_financial_event(self.open_ledger, event.uuid), updated)
 
@@ -277,31 +291,49 @@ class FinancialEventUseCasesTest(unittest.TestCase):
         event = self.create_simple()
 
         with self.assertRaises(FinancialEventTypeMismatchError):
-            update_shopping_list_financial_event(self.open_ledger, event.uuid, 20, "Wrong type", self.source.uuid, [(None, self.food.uuid, -10, None)])
+            update_shopping_list_financial_event(self.open_ledger, event.uuid, 20, "Wrong type", self.source.uuid, [(None, self.food.uuid, -10, 1, None)], 300)
 
         self.assertEqual(get_financial_event(self.open_ledger, event.uuid), event)
 
     def test_update_shopping_list_rejects_a_movement_from_another_event_atomically(self) -> None:
-        event = create_shopping_list_financial_event(self.open_ledger, 20, "First", self.source.uuid, [(self.food.uuid, -100, "Rice")])
-        other = create_shopping_list_financial_event(self.open_ledger, 21, "Other", self.source.uuid, [(self.food.uuid, -50, "Milk")])
+        event = create_shopping_list_financial_event(self.open_ledger, 20, "First", self.source.uuid, [(self.food.uuid, -100, 1, "Rice")], 300)
+        other = create_shopping_list_financial_event(self.open_ledger, 21, "Other", self.source.uuid, [(self.food.uuid, -50, 1, "Milk")], 300)
 
         with self.assertRaises(FinancialMovementNotFoundError):
-            update_shopping_list_financial_event(self.open_ledger, event.uuid, 30, "Changed", self.source.uuid, [(other.movements[0].uuid, self.transport.uuid, -1, None)])
+            update_shopping_list_financial_event(self.open_ledger, event.uuid, 30, "Changed", self.source.uuid, [(other.movements[0].uuid, self.transport.uuid, -1, 1, None)], 300)
 
         self.assertEqual(get_financial_event(self.open_ledger, event.uuid), event)
         self.assertEqual(get_financial_event(self.open_ledger, other.uuid), other)
+
+    def test_update_shopping_list_rejects_more_than_the_configured_number_of_movements_atomically(self) -> None:
+        event = create_shopping_list_financial_event(self.open_ledger, 20, "Original", self.source.uuid, [(self.food.uuid, -100, 1, "Rice")], 300)
+
+        with self.assertRaisesRegex(ValueError, "at most 1"):
+            update_shopping_list_financial_event(
+                self.open_ledger,
+                event.uuid,
+                30,
+                "Too large",
+                self.source.uuid,
+                [(event.movements[0].uuid, self.food.uuid, -100, 1, "Rice"), (None, self.transport.uuid, -20, 1, "Bus")],
+                1,
+            )
+
+        self.assertEqual(get_financial_event(self.open_ledger, event.uuid), event)
 
     def test_update_rejects_invalid_or_unknown_events_atomically(self) -> None:
         event = self.create_simple()
 
         with self.assertRaises(ValidationError):
-            update_simple_financial_event(self.open_ledger, event.uuid, 20, "", self.source.uuid, self.transport.uuid, -20, None)
+            update_simple_financial_event(self.open_ledger, event.uuid, 20, "", self.source.uuid, self.transport.uuid, -20, 1, None)
+        with self.assertRaises(ValidationError):
+            update_simple_financial_event(self.open_ledger, event.uuid, 20, "Changed", self.source.uuid, self.transport.uuid, -20, 0, None)
         with self.assertRaises(AccountNotFoundError):
-            update_simple_financial_event(self.open_ledger, event.uuid, 20, "Changed", uuid4(), self.transport.uuid, -20, None)
+            update_simple_financial_event(self.open_ledger, event.uuid, 20, "Changed", uuid4(), self.transport.uuid, -20, 1, None)
         with self.assertRaises(CategoryNotFoundError):
-            update_simple_financial_event(self.open_ledger, event.uuid, 20, "Changed", self.source.uuid, uuid4(), -20, None)
+            update_simple_financial_event(self.open_ledger, event.uuid, 20, "Changed", self.source.uuid, uuid4(), -20, 1, None)
         with self.assertRaises(FinancialEventNotFoundError):
-            update_simple_financial_event(self.open_ledger, uuid4(), 20, "Missing", self.source.uuid, self.food.uuid, -20, None)
+            update_simple_financial_event(self.open_ledger, uuid4(), 20, "Missing", self.source.uuid, self.food.uuid, -20, 1, None)
 
         self.assertEqual(get_financial_event(self.open_ledger, event.uuid), event)
 

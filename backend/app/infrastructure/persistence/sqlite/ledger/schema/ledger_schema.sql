@@ -53,6 +53,7 @@ CREATE TABLE financial_movement (
     uuid BLOB PRIMARY KEY,
     financial_event_uuid BLOB NOT NULL,
     value INTEGER NOT NULL CHECK (value <> 0),
+    quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
     item_name TEXT CHECK (item_name IS NULL OR length(item_name) <= 50),
     account_uuid BLOB NOT NULL,
     category_uuid BLOB NOT NULL,

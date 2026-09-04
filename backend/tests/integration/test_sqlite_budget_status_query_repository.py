@@ -80,6 +80,15 @@ class SqliteBudgetStatusQueryRepositoryTest(LedgerRepositoryTestCase):
         assert status is not None
         self.assertEqual(status.spent_amount, 40)
 
+    def test_spent_amount_multiplies_unit_value_by_quantity(self) -> None:
+        event = self.create_event("Multiple items", occurred_at=10)
+        self.movement_repository.create(event.uuid, self.account.uuid, self.category.uuid, -25, None, 3)
+
+        status = self.repository.get_status(self.budget.uuid, 15)
+
+        assert status is not None
+        self.assertEqual(status.spent_amount, 75)
+
     def test_get_status_returns_none_outside_budget_interval(self) -> None:
         """A budget is active on its inclusive lower and exclusive upper boundary."""
         self.assertIsNone(self.repository.get_status(self.budget.uuid, 9))

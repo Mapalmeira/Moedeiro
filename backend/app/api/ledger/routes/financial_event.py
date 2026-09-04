@@ -21,14 +21,15 @@ def create_ledger_financial_event(ledger_uuid: UUID, payload: CreateFinancialEve
     unit_of_work_factory = ledger_unit_of_work_factory(request, user.uuid, ledger_uuid)
     try:
         if isinstance(payload, SimpleFinancialEventRequest):
-            event = create_simple_financial_event(unit_of_work_factory, payload.occurred_at, payload.description, payload.account_uuid, payload.category_uuid, payload.value, payload.item_name)
+            event = create_simple_financial_event(unit_of_work_factory, payload.occurred_at, payload.description, payload.account_uuid, payload.category_uuid, payload.value, payload.quantity, payload.item_name)
         elif isinstance(payload, ShoppingListFinancialEventRequest):
             event = create_shopping_list_financial_event(
                 unit_of_work_factory,
                 payload.occurred_at,
                 payload.description,
                 payload.account_uuid,
-                [(movement.category_uuid, movement.value, movement.item_name) for movement in payload.movements],
+                [(movement.category_uuid, movement.value, movement.quantity, movement.item_name) for movement in payload.movements],
+                request.app.state.settings.max_shopping_list_movements,
             )
         elif isinstance(payload, AccountTransferFinancialEventRequest):
             fee = None if payload.fee is None else (payload.fee.category_uuid, payload.fee.value)
@@ -97,7 +98,7 @@ def update_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, payload: 
     unit_of_work_factory = ledger_unit_of_work_factory(request, user.uuid, ledger_uuid)
     try:
         if isinstance(payload, UpdateSimpleFinancialEventRequest):
-            event = update_simple_financial_event(unit_of_work_factory, event_uuid, payload.occurred_at, payload.description, payload.account_uuid, payload.category_uuid, payload.value, payload.item_name)
+            event = update_simple_financial_event(unit_of_work_factory, event_uuid, payload.occurred_at, payload.description, payload.account_uuid, payload.category_uuid, payload.value, payload.quantity, payload.item_name)
         elif isinstance(payload, UpdateShoppingListFinancialEventRequest):
             event = update_shopping_list_financial_event(
                 unit_of_work_factory,
@@ -105,7 +106,8 @@ def update_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, payload: 
                 payload.occurred_at,
                 payload.description,
                 payload.account_uuid,
-                [(movement.uuid, movement.category_uuid, movement.value, movement.item_name) for movement in payload.movements],
+                [(movement.uuid, movement.category_uuid, movement.value, movement.quantity, movement.item_name) for movement in payload.movements],
+                request.app.state.settings.max_shopping_list_movements,
             )
         elif isinstance(payload, UpdateAccountTransferFinancialEventRequest):
             fee = None if payload.fee is None else (payload.fee.category_uuid, payload.fee.value)

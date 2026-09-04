@@ -171,7 +171,7 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         first = self.create_event("First", occurred_at=10)
         second = self.create_event("Second", occurred_at=20)
         movement_repository = SqliteFinancialMovementRepository(self.connection)
-        movement_repository.create(first.uuid, account.uuid, category.uuid, -10, "First item")
+        movement_repository.create(first.uuid, account.uuid, category.uuid, -10, "First item", 3)
         movement_repository.create(second.uuid, account.uuid, category.uuid, -20, "Second item")
 
         loaded = self.repository.get(first.uuid)
@@ -179,6 +179,7 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
 
         assert loaded is not None
         self.assertEqual([movement.value for movement in loaded.movements], [-10])
+        self.assertEqual([movement.quantity for movement in loaded.movements], [3])
         self.assertEqual(
             [[movement.value for movement in event.movements] for event in page],
             [[-10], [-20]],

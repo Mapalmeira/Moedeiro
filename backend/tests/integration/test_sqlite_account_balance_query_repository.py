@@ -98,6 +98,13 @@ class SqliteAccountBalanceQueryRepositoryTest(LedgerRepositoryTestCase):
 
         self.assertEqual(self.repository.get_balance_at(self.account.uuid, 10), -30)
 
+    def test_balance_and_points_multiply_unit_value_by_quantity(self) -> None:
+        event = self.create_event("Multiple items", occurred_at=100)
+        self.movement_repository.create(event.uuid, self.account.uuid, self.category.uuid, -25, None, 4)
+
+        self.assertEqual(self.repository.get_balance_at(self.account.uuid, 100), -100)
+        self.assertEqual(self.repository.list_points(self.account.uuid, 100, 1, 10), [-100])
+
     def test_list_points_requires_positive_count_and_interval(self) -> None:
         """The caller explicitly controls both the number and width of points."""
         for point_count, point_interval in ((0, 86400), (-1, 86400), (1, 0), (1, -1)):

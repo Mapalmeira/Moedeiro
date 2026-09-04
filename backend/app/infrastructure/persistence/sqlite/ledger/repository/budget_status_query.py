@@ -47,7 +47,7 @@ class SqliteBudgetStatusQueryRepository(BudgetStatusQueryRepository):
                     WHEN event.uuid IS NOT NULL
                      AND account.uuid IS NOT NULL
                      AND (budget.account_count = 0 OR selected_account.account_uuid IS NOT NULL)
-                    THEN -movement.value
+                    THEN -movement.value * movement.quantity
                     ELSE 0
                 END
             ), 0) AS spent_amount

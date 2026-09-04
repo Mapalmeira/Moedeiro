@@ -80,7 +80,7 @@ class SqliteFinancialEventRepository(FinancialEventRepository):
         placeholders = ", ".join("?" for _ in rows)
         movement_rows = self.connection.execute(
             f"""
-            SELECT uuid, financial_event_uuid, account_uuid, category_uuid, value, item_name
+            SELECT uuid, financial_event_uuid, account_uuid, category_uuid, value, quantity, item_name
             FROM financial_movement
             WHERE financial_event_uuid IN ({placeholders})
             ORDER BY financial_event_uuid ASC, uuid ASC
