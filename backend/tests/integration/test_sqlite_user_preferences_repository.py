@@ -14,9 +14,9 @@ class SqliteUserPreferencesRepositoryTest(RegistryRepositoryTestCase):
 
     def test_save_replaces_all_preferences_for_existing_user(self) -> None:
         user = self.create_user()
-        self.preferences_repository.save(user.uuid, "DD/MM/YYYY", "HH:mm", "pt-BR", "LIGHT", "America/Fortaleza")
+        self.preferences_repository.save(user.uuid, "DMY", "H24", "COMMA", "LIGHT", "America/Fortaleza")
 
-        updated = self.preferences_repository.save(user.uuid, "MM/DD/YYYY", None, "en-US", "DARK", "America/New_York")
+        updated = self.preferences_repository.save(user.uuid, "MDY", None, "DOT", "DARK", "America/New_York")
 
         self.assertEqual(self.preferences_repository.get(user.uuid), updated)
         self.assertIsNone(updated.time_format)

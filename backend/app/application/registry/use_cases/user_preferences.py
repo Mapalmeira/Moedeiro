@@ -3,7 +3,7 @@ from uuid import UUID
 
 from app.application.registry.exceptions import UserNotFoundError
 from app.application.registry.unit_of_work import RegistryUnitOfWork
-from app.domain.registry.model.user_preferences import ShortFormat, Theme, Timezone, UserPreferences
+from app.domain.registry.model.user_preferences import DateFormat, NumberFormat, Theme, TimeFormat, Timezone, UserPreferences
 
 
 def get_user_preferences(unit_of_work_factory: Callable[[], RegistryUnitOfWork], user_uuid: UUID) -> UserPreferences:
@@ -15,9 +15,9 @@ def get_user_preferences(unit_of_work_factory: Callable[[], RegistryUnitOfWork],
 def save_user_preferences(
     unit_of_work_factory: Callable[[], RegistryUnitOfWork],
     user_uuid: UUID,
-    date_format: ShortFormat | None,
-    time_format: ShortFormat | None,
-    number_format: ShortFormat | None,
+    date_format: DateFormat | None,
+    time_format: TimeFormat | None,
+    number_format: NumberFormat | None,
     theme: Theme | None,
     timezone: Timezone | None,
 ) -> UserPreferences:

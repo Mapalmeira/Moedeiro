@@ -67,11 +67,11 @@ CREATE TABLE recovery_code (
 
 CREATE TABLE user_preferences (
     user_uuid BLOB PRIMARY KEY,
-    date_format TEXT CHECK (date_format IS NULL OR length(date_format) >= 1),
-    time_format TEXT CHECK (time_format IS NULL OR length(time_format) >= 1),
-    number_format TEXT CHECK (number_format IS NULL OR length(number_format) >= 1),
+    date_format TEXT CHECK (date_format IS NULL OR date_format IN ('DMY', 'MDY', 'YMD')),
+    time_format TEXT CHECK (time_format IS NULL OR time_format IN ('H12', 'H24')),
+    number_format TEXT CHECK (number_format IS NULL OR number_format IN ('COMMA', 'DOT')),
     theme TEXT CHECK (theme IS NULL OR theme IN ('LIGHT', 'DARK')),
-    timezone TEXT CHECK (timezone IS NULL OR length(timezone) >= 1),
+    timezone TEXT CHECK (timezone IS NULL OR length(timezone) BETWEEN 1 AND 50),
 
     FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE
 ) STRICT;

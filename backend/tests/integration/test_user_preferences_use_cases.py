@@ -34,8 +34,8 @@ class UserPreferencesUseCasesTest(unittest.TestCase):
         self.assertIsNone(preferences.theme)
 
     def test_save_replaces_the_complete_preference_set(self) -> None:
-        saved = save_user_preferences(self.open_registry, self.user.uuid, "DD/MM/YYYY", "HH:mm", "pt-BR", "DARK", "America/Fortaleza")
-        replaced = save_user_preferences(self.open_registry, self.user.uuid, None, "h:mm a", "1,234.56", "LIGHT", "America/New_York")
+        saved = save_user_preferences(self.open_registry, self.user.uuid, "DMY", "H24", "COMMA", "DARK", "America/Fortaleza")
+        replaced = save_user_preferences(self.open_registry, self.user.uuid, None, "H12", "DOT", "LIGHT", "America/New_York")
 
         self.assertEqual(saved.theme, "DARK")
         self.assertIsNone(replaced.date_format)

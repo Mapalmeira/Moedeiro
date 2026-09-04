@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.dependencies.authentication import AuthenticatedUser
-from app.api.registry.schema.user_preferences import UpdateUserPreferencesRequest, UserPreferencesResponse
+from app.api.registry.schema.user_preferences import UserPreferencesPayload
 from app.application.registry.exceptions import UserNotFoundError
 from app.application.registry.use_cases.user_preferences import get_user_preferences, save_user_preferences
 
@@ -9,14 +9,14 @@ from app.application.registry.use_cases.user_preferences import get_user_prefere
 router = APIRouter(prefix="/api/user/preferences", tags=["user preferences"])
 
 
-@router.get("", response_model=UserPreferencesResponse)
-def get_preferences(request: Request, user: AuthenticatedUser) -> UserPreferencesResponse:
+@router.get("", response_model=UserPreferencesPayload)
+def get_preferences(request: Request, user: AuthenticatedUser) -> UserPreferencesPayload:
     preferences = get_user_preferences(request.app.state.databases.open_registry, user.uuid)
-    return UserPreferencesResponse.from_preferences(preferences)
+    return UserPreferencesPayload.from_preferences(preferences)
 
 
-@router.put("", response_model=UserPreferencesResponse)
-def save_preferences(payload: UpdateUserPreferencesRequest, request: Request, user: AuthenticatedUser) -> UserPreferencesResponse:
+@router.put("", response_model=UserPreferencesPayload)
+def save_preferences(payload: UserPreferencesPayload, request: Request, user: AuthenticatedUser) -> UserPreferencesPayload:
     try:
         preferences = save_user_preferences(
             request.app.state.databases.open_registry,
@@ -29,4 +29,4 @@ def save_preferences(payload: UpdateUserPreferencesRequest, request: Request, us
         )
     except UserNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from error
-    return UserPreferencesResponse.from_preferences(preferences)
+    return UserPreferencesPayload.from_preferences(preferences)

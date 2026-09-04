@@ -6,7 +6,7 @@ from fastapi import Request
 from pydantic import ValidationError
 
 from app.api.registry.routes.user_preferences import get_preferences, save_preferences
-from app.api.registry.schema.user_preferences import UpdateUserPreferencesRequest
+from app.api.registry.schema.user_preferences import UserPreferencesPayload
 from app.factory import create_app
 from app.settings import Settings
 from tests.fakes import FakeCredentialOperationExecutor, FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator
@@ -49,27 +49,27 @@ class UserPreferencesRoutesTest(unittest.TestCase):
 
     def test_put_replaces_preferences_and_get_returns_the_saved_values(self) -> None:
         saved = save_preferences(
-            UpdateUserPreferencesRequest(
-                date_format="DD/MM/YYYY",
-                time_format="HH:mm",
-                number_format="pt-BR",
+            UserPreferencesPayload(
+                date_format="DMY",
+                time_format="H24",
+                number_format="COMMA",
                 theme="DARK",
                 timezone="America/Fortaleza",
             ),
             self.request,
             self.user,
         )
-        replaced = save_preferences(UpdateUserPreferencesRequest(theme="LIGHT"), self.request, self.user)
+        replaced = save_preferences(UserPreferencesPayload(theme="LIGHT"), self.request, self.user)
 
         self.assertEqual(saved.theme, "DARK")
         self.assertIsNone(replaced.date_format)
         self.assertEqual(get_preferences(self.request, self.user), replaced)
 
     def test_request_rejects_an_invalid_theme_or_empty_format(self) -> None:
-        for values in ({"theme": "SYSTEM"}, {"date_format": ""}, {"timezone": ""}):
+        for values in ({"theme": "SYSTEM"}, {"date_format": "DD/MM/YYYY"}, {"timezone": "Unknown/Timezone"}):
             with self.subTest(values=values):
                 with self.assertRaises(ValidationError):
-                    UpdateUserPreferencesRequest(**values)
+                    UserPreferencesPayload(**values)
 
     def test_routes_are_exposed(self) -> None:
         operations = self.application.openapi()["paths"]["/api/user/preferences"]
