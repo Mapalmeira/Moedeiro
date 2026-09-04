@@ -42,5 +42,16 @@ class FinancialEventRepository(ABC):
         pass
 
     @abstractmethod
+    def list_after(
+        self,
+        page_size: int,
+        ascending: bool,
+        filters: FinancialEventFilter,
+        occurred_at: int | None,
+        uuid: UUID | None,
+    ) -> list[FinancialEvent]:
+        pass
+
+    @abstractmethod
     def delete(self, uuid: UUID) -> None:
         pass

@@ -167,15 +167,31 @@ class FinancialEventRoutesTest(unittest.TestCase):
 
     def test_list_filters_orders_and_limits_pages(self) -> None:
         first = self.create_simple(10)
-        self.create_simple(20)
+        second = self.create_simple(20)
 
-        events = list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 0, 30, 1, 1, self.source.uuid, self.food.uuid, "TRANSACTION", True)
+        events = list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 0, 30, 1, self.source.uuid, self.food.uuid, "TRANSACTION", True)
         with self.assertRaises(HTTPException) as too_large:
-            list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 0, 30, 1, 3, None, None, None, False)
+            list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 0, 30, 3, None, None, None, False)
         with self.assertRaises(HTTPException) as invalid_period:
-            list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 30, 30, 1, 2, None, None, None, False)
+            list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 30, 30, 2, None, None, None, False)
 
-        self.assertEqual(events, [first])
+        self.assertEqual(events.events, [first])
+        self.assertIsNotNone(events.next_cursor)
+        next_page = list_ledger_financial_events(
+            self.ledger.uuid,
+            self.request,
+            self.user,
+            0,
+            30,
+            1,
+            self.source.uuid,
+            self.food.uuid,
+            "TRANSACTION",
+            True,
+            events.next_cursor,
+        )
+        self.assertEqual(next_page.events, [second])
+        self.assertIsNone(next_page.next_cursor)
         self.assertEqual(too_large.exception.status_code, 422)
         self.assertEqual(invalid_period.exception.status_code, 422)
 
@@ -332,7 +348,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
     def test_another_user_cannot_discover_or_change_events(self) -> None:
         event = self.create_simple()
         operations = (
-            lambda: list_ledger_financial_events(self.ledger.uuid, self.request, self.other_user, 0, 100, 1, 2, None, None, None, False),
+            lambda: list_ledger_financial_events(self.ledger.uuid, self.request, self.other_user, 0, 100, 2, None, None, None, False),
             lambda: get_ledger_financial_event(self.ledger.uuid, event.uuid, self.request, self.other_user),
             lambda: update_ledger_financial_event(self.ledger.uuid, event.uuid, UpdateSimpleFinancialEventRequest(type="TRANSACTION", occurred_at=20, description="Changed", account_uuid=self.source.uuid, category_uuid=self.food.uuid, value=-100), self.request, self.other_user),
             lambda: delete_ledger_financial_event(self.ledger.uuid, event.uuid, self.request, self.other_user),

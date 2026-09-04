@@ -99,6 +99,18 @@ def list_financial_event_page(
         return unit_of_work.financial_event_repository.list_page(page_number, page_size, ascending, filters)
 
 
+def list_financial_events_after(
+    unit_of_work_factory: Callable[[], LedgerUnitOfWork],
+    page_size: int,
+    ascending: bool,
+    filters: FinancialEventFilter,
+    occurred_at: int | None,
+    uuid: UUID | None,
+) -> list[FinancialEvent]:
+    with unit_of_work_factory() as unit_of_work:
+        return unit_of_work.financial_event_repository.list_after(page_size + 1, ascending, filters, occurred_at, uuid)
+
+
 def update_simple_financial_event(
     unit_of_work_factory: Callable[[], LedgerUnitOfWork],
     event_uuid: UUID,
@@ -228,12 +240,8 @@ def _create_financial_event(
     movements: Sequence[_Movement],
 ) -> FinancialEvent:
     with unit_of_work_factory() as unit_of_work:
-        for account_uuid in {movement[0] for movement in movements}:
-            if unit_of_work.account_repository.get(account_uuid) is None:
-                raise AccountNotFoundError
-        for category_uuid in {movement[1] for movement in movements}:
-            if unit_of_work.category_repository.get(category_uuid) is None:
-                raise CategoryNotFoundError
+        _require_accounts(unit_of_work, [movement[0] for movement in movements])
+        _require_categories(unit_of_work, [movement[1] for movement in movements])
         event = unit_of_work.financial_event_repository.create(occurred_at, description, event_type)
         created_movements = [
             unit_of_work.financial_movement_repository.create(event.uuid, account_uuid, category_uuid, value, item_name, quantity)
@@ -255,15 +263,15 @@ def _get_event_of_type(unit_of_work: LedgerUnitOfWork, event_uuid: UUID, expecte
 
 
 def _require_categories(unit_of_work: LedgerUnitOfWork, category_uuids: Sequence[UUID]) -> None:
-    for category_uuid in set(category_uuids):
-        if unit_of_work.category_repository.get(category_uuid) is None:
-            raise CategoryNotFoundError
+    selected_category_uuids = set(category_uuids)
+    if len(unit_of_work.category_repository.get_many(selected_category_uuids)) != len(selected_category_uuids):
+        raise CategoryNotFoundError
 
 
 def _require_accounts(unit_of_work: LedgerUnitOfWork, account_uuids: Sequence[UUID]) -> None:
-    for account_uuid in set(account_uuids):
-        if unit_of_work.account_repository.get(account_uuid) is None:
-            raise AccountNotFoundError
+    selected_account_uuids = set(account_uuids)
+    if len(unit_of_work.account_repository.get_many(selected_account_uuids)) != len(selected_account_uuids):
+        raise AccountNotFoundError
 
 
 def _update_movement(
@@ -276,11 +284,7 @@ def _update_movement(
     item_name: FinancialMovementItemName | None,
 ) -> FinancialMovement:
     updated_movement = FinancialMovement.model_validate({**movement.model_dump(), "account_uuid": account_uuid, "category_uuid": category_uuid, "value": value, "quantity": quantity, "item_name": item_name})
-    unit_of_work.financial_movement_repository.update_account(movement.uuid, account_uuid)
-    unit_of_work.financial_movement_repository.update_category(movement.uuid, category_uuid)
-    unit_of_work.financial_movement_repository.update_value(movement.uuid, value)
-    unit_of_work.financial_movement_repository.update_quantity(movement.uuid, quantity)
-    unit_of_work.financial_movement_repository.update_item_name(movement.uuid, item_name)
+    unit_of_work.financial_movement_repository.update(updated_movement)
     return updated_movement
 
 

@@ -5,10 +5,10 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from app.api.dependencies.authentication import AuthenticatedUser
 from app.api.dependencies.ledger import ledger_unit_of_work_factory
-from app.api.dependencies.pagination import validate_requested_page
-from app.api.ledger.schema.financial_event import AccountTransferFinancialEventRequest, CreateFinancialEventRequest, FinancialEventResponse, ShoppingListFinancialEventRequest, SimpleFinancialEventRequest, UpdateAccountTransferFinancialEventRequest, UpdateFinancialEventRequest, UpdateShoppingListFinancialEventRequest, UpdateSimpleFinancialEventRequest
+from app.api.dependencies.pagination import validate_page_size
+from app.api.ledger.schema.financial_event import AccountTransferFinancialEventRequest, CreateFinancialEventRequest, FinancialEventPageResponse, FinancialEventResponse, ShoppingListFinancialEventRequest, SimpleFinancialEventRequest, UpdateAccountTransferFinancialEventRequest, UpdateFinancialEventRequest, UpdateShoppingListFinancialEventRequest, UpdateSimpleFinancialEventRequest
 from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError, InvalidFinancialEventStructureError
-from app.application.ledger.use_cases.financial_event import create_account_transfer_financial_event, create_shopping_list_financial_event, create_simple_financial_event, delete_financial_event, get_financial_event, list_financial_event_page, update_account_transfer_financial_event, update_shopping_list_financial_event, update_simple_financial_event
+from app.application.ledger.use_cases.financial_event import create_account_transfer_financial_event, create_shopping_list_financial_event, create_simple_financial_event, delete_financial_event, get_financial_event, list_financial_events_after, update_account_transfer_financial_event, update_shopping_list_financial_event, update_simple_financial_event
 from app.domain.ledger.model.financial_event import FinancialEventType
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 
@@ -55,21 +55,21 @@ def create_ledger_financial_event(ledger_uuid: UUID, payload: CreateFinancialEve
     return FinancialEventResponse.from_event(event)
 
 
-@router.get("", response_model=list[FinancialEventResponse])
+@router.get("", response_model=FinancialEventPageResponse)
 def list_ledger_financial_events(
     ledger_uuid: UUID,
     request: Request,
     user: AuthenticatedUser,
     from_timestamp: int,
     to_timestamp: int,
-    page_number: Annotated[int, Query(ge=1)],
     page_size: Annotated[int, Query(ge=1)],
     account_uuid: UUID | None = None,
     category_uuid: UUID | None = None,
     event_type: FinancialEventType | None = None,
     ascending: bool = False,
-) -> list[FinancialEventResponse]:
-    validate_requested_page(request, page_number, page_size)
+    cursor: Annotated[str | None, Query(max_length=53)] = None,
+) -> FinancialEventPageResponse:
+    validate_page_size(request, page_size)
     if from_timestamp >= to_timestamp:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="from_timestamp must be less than to_timestamp")
     filters = FinancialEventFilter(
@@ -79,8 +79,29 @@ def list_ledger_financial_events(
         category_uuid=category_uuid,
         event_type=event_type,
     )
-    events = list_financial_event_page(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), page_number, page_size, ascending, filters)
-    return [FinancialEventResponse.from_event(event) for event in events]
+    try:
+        cursor_occurred_at, cursor_uuid = _parse_cursor(cursor)
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid cursor") from error
+    events = list_financial_events_after(
+        ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), page_size, ascending, filters, cursor_occurred_at, cursor_uuid
+    )
+    next_cursor = None
+    if len(events) > page_size:
+        events = events[:page_size]
+        next_cursor = _format_cursor(events[-1])
+    return FinancialEventPageResponse(events=[FinancialEventResponse.from_event(event) for event in events], next_cursor=next_cursor)
+
+
+def _format_cursor(event) -> str:
+    return f"{event.occurred_at}:{event.uuid.hex}"
+
+
+def _parse_cursor(cursor: str | None) -> tuple[int | None, UUID | None]:
+    if cursor is None:
+        return None, None
+    occurred_at, raw_uuid = cursor.split(":")
+    return int(occurred_at), UUID(hex=raw_uuid)
 
 
 @router.get("/{event_uuid}", response_model=FinancialEventResponse)

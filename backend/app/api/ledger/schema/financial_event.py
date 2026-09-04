@@ -119,3 +119,8 @@ class FinancialEventResponse(BaseModel):
             type=event.type,
             movements=[FinancialMovementResponse.from_movement(movement) for movement in event.movements],
         )
+
+
+class FinancialEventPageResponse(BaseModel):
+    events: list[FinancialEventResponse]
+    next_cursor: str | None

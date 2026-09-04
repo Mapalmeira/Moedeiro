@@ -45,8 +45,6 @@ class SqliteLedgerUnitOfWork(LedgerUnitOfWork):
             self.connection.close()
 
     def commit(self) -> None:
-        if self.connection.total_changes > self._transaction_start_total_changes:
-            self.connection.execute("UPDATE ledger_metadata SET revision = revision + 1 WHERE singleton = 1")
         self.connection.commit()
         self._transaction_start_total_changes = self.connection.total_changes
 

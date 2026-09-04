@@ -13,7 +13,6 @@ class LedgerMetadataTest(unittest.TestCase):
         metadata = LedgerMetadata(
             ledger_uuid=uuid4(),
             schema_version=1,
-            revision=0,
             created_at=10,
         )
 
@@ -24,22 +23,12 @@ class LedgerMetadataTest(unittest.TestCase):
             LedgerMetadata(
                 ledger_uuid=uuid4(),
                 schema_version=0,
-                revision=0,
-                created_at=10,
-            )
-
-    def test_rejects_negative_revision(self) -> None:
-        with self.assertRaises(ValidationError):
-            LedgerMetadata(
-                ledger_uuid=uuid4(),
-                schema_version=1,
-                revision=-1,
                 created_at=10,
             )
 
     def test_rejects_negative_creation_timestamp(self) -> None:
         with self.assertRaises(ValidationError):
-            LedgerMetadata(ledger_uuid=uuid4(), schema_version=1, revision=0, created_at=-1)
+            LedgerMetadata(ledger_uuid=uuid4(), schema_version=1, created_at=-1)
 
 
 if __name__ == "__main__":

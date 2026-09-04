@@ -51,7 +51,7 @@ class SqliteFinancialEventRepository(FinancialEventRepository):
             SELECT event.uuid, event.occurred_at, event.description, event.type
             FROM financial_event AS event
             {where_clause}
-            ORDER BY event.occurred_at {direction}, event.uuid ASC
+            ORDER BY event.occurred_at {direction}, event.uuid {direction}
             """,
             parameters,
         ).fetchall()
@@ -66,10 +66,38 @@ class SqliteFinancialEventRepository(FinancialEventRepository):
             SELECT event.uuid, event.occurred_at, event.description, event.type
             FROM financial_event AS event
             {where_clause}
-            ORDER BY event.occurred_at {direction}, event.uuid ASC
+            ORDER BY event.occurred_at {direction}, event.uuid {direction}
             LIMIT ? OFFSET ?
             """,
             [*parameters, page_size, offset],
+        ).fetchall()
+        return self._to_models(rows)
+
+    def list_after(
+        self,
+        page_size: int,
+        ascending: bool,
+        filters: FinancialEventFilter,
+        occurred_at: int | None,
+        uuid: UUID | None,
+    ) -> list[FinancialEvent]:
+        if (occurred_at is None) != (uuid is None):
+            raise ValueError("cursor timestamp and UUID must be provided together")
+        direction = "ASC" if ascending else "DESC"
+        where_clause, parameters = build_financial_event_filter(filters)
+        if occurred_at is not None and uuid is not None:
+            comparison = ">" if ascending else "<"
+            where_clause += f" AND (event.occurred_at {comparison} ? OR (event.occurred_at = ? AND event.uuid {comparison} ?))"
+            parameters.extend((occurred_at, occurred_at, uuid.bytes))
+        rows = self.connection.execute(
+            f"""
+            SELECT event.uuid, event.occurred_at, event.description, event.type
+            FROM financial_event AS event
+            {where_clause}
+            ORDER BY event.occurred_at {direction}, event.uuid {direction}
+            LIMIT ?
+            """,
+            [*parameters, page_size],
         ).fetchall()
         return self._to_models(rows)
 
