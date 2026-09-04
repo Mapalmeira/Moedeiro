@@ -25,6 +25,7 @@ def change_password(unit_of_work_factory: Callable[[], RegistryUnitOfWork], pass
             if unit_of_work.user_repository.get(user.uuid) is None:
                 raise UserNotFoundError
             raise PasswordUpdateConflictError
+        _delete_user_sessions(unit_of_work, user.uuid)
         unit_of_work.commit()
 
 

@@ -73,35 +73,49 @@ class PasswordRoutesTest(unittest.TestCase):
 
         self.assertEqual(raised.exception.status_code, 401)
 
-    def test_change_updates_password_without_ending_the_session(self) -> None:
+    def test_change_updates_password_revokes_sessions_and_clears_cookies(self) -> None:
         request = self.session_request()
-        with self.application.state.databases.open_registry() as unit_of_work:
-            session_count = len(unit_of_work.auth_session_repository.list_by_user(self.user.uuid))
+        response = Response(status_code=204)
 
-        asyncio.run(change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password"), request, require_authenticated_user(request)))
+        asyncio.run(
+            change_current_password(
+                ChangePasswordRequest(current_password="current password", new_password="replacement password"),
+                request,
+                response,
+                require_authenticated_user(request),
+            )
+        )
 
         with self.application.state.databases.open_registry() as unit_of_work:
             user = unit_of_work.user_repository.get(self.user.uuid)
             sessions = unit_of_work.auth_session_repository.list_by_user(self.user.uuid)
         assert user is not None
         self.assertEqual(user.password_hash, "$argon2id$test$replacement password")
-        self.assertEqual(len(sessions), session_count)
+        self.assertEqual(sessions, [])
+        self.assertEqual(sum("Max-Age=0" in header for header in self.cookie_headers(response)), 2)
 
     def test_change_requests_totp_then_accepts_the_repeated_request(self) -> None:
         request = self.session_request()
         self.enable_totp()
 
         with self.assertRaises(HTTPException) as raised:
-            asyncio.run(change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password"), request, require_authenticated_user(request)))
+            asyncio.run(change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password"), request, Response(), require_authenticated_user(request)))
         self.assertEqual(raised.exception.detail, "TOTP required")
 
-        asyncio.run(change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password", totp_code="123456"), request, require_authenticated_user(request)))
+        asyncio.run(change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password", totp_code="123456"), request, Response(), require_authenticated_user(request)))
 
     def test_change_rejects_an_invalid_current_password_without_ending_the_session(self) -> None:
         request = self.session_request()
 
         with self.assertRaises(HTTPException) as raised:
-            asyncio.run(change_current_password(ChangePasswordRequest(current_password="incorrect password", new_password="replacement password"), request, require_authenticated_user(request)))
+            asyncio.run(
+                change_current_password(
+                    ChangePasswordRequest(current_password="incorrect password", new_password="replacement password"),
+                    request,
+                    Response(),
+                    require_authenticated_user(request),
+                )
+            )
 
         self.assertEqual(raised.exception.status_code, 401)
 
@@ -112,7 +126,14 @@ class PasswordRoutesTest(unittest.TestCase):
             self.assertTrue(semaphore.acquire(blocking=False))
         try:
             with self.assertRaises(HTTPException) as raised:
-                asyncio.run(change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password"), request, require_authenticated_user(request)))
+                asyncio.run(
+                    change_current_password(
+                        ChangePasswordRequest(current_password="current password", new_password="replacement password"),
+                        request,
+                        Response(),
+                        require_authenticated_user(request),
+                    )
+                )
         finally:
             for _ in range(self.application.state.settings.password_hash_concurrency):
                 semaphore.release()
