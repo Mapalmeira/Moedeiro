@@ -28,6 +28,16 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(account.color_code, b"\x80\x80\x80")
         self.assertEqual(self.repository.get_by_name("Checking"), account)
 
+    def test_get_many_returns_only_requested_accounts(self) -> None:
+        checking = self.create_account("Checking", self.currency)
+        savings = self.create_account("Savings", self.currency)
+        self.create_account("Card", self.currency)
+
+        accounts = self.repository.get_many([savings.uuid, checking.uuid, savings.uuid, uuid4()])
+
+        self.assertEqual({account.uuid for account in accounts}, {checking.uuid, savings.uuid})
+        self.assertEqual(self.repository.get_many([]), [])
+
     def test_create_requires_an_existing_currency(self) -> None:
         """The database foreign key rejects an unknown currency."""
         with self.assertRaises(sqlite3.IntegrityError):

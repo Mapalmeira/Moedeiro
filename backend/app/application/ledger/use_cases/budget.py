@@ -128,10 +128,10 @@ def _require_accounts_in_currency(unit_of_work: LedgerUnitOfWork, account_uuids:
     selected_account_uuids = sorted(set(account_uuids), key=lambda value: value.bytes)
     if len(selected_account_uuids) > MAX_BUDGET_ACCOUNTS:
         raise ValueError(f"a budget cannot select more than {MAX_BUDGET_ACCOUNTS} accounts")
-    for account_uuid in selected_account_uuids:
-        account = unit_of_work.account_repository.get(account_uuid)
-        if account is None:
-            raise AccountNotFoundError
+    accounts_by_uuid = {account.uuid: account for account in unit_of_work.account_repository.get_many(selected_account_uuids)}
+    if len(accounts_by_uuid) != len(selected_account_uuids):
+        raise AccountNotFoundError
+    for account in accounts_by_uuid.values():
         if account.currency_uuid != currency_uuid:
             raise BudgetAccountCurrencyMismatchError
     return selected_account_uuids

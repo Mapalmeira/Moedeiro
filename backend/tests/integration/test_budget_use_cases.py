@@ -6,7 +6,7 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from app.application.ledger.exceptions import AccountNotFoundError, BudgetAccountCurrencyMismatchError, BudgetNameUnavailableError, BudgetNotActiveError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
-from app.application.ledger.use_cases.budget import create_budget, delete_budget, get_budget, list_budget_page, update_budget
+from app.application.ledger.use_cases.budget import _require_accounts_in_currency, create_budget, delete_budget, get_budget, list_budget_page, update_budget
 from app.application.ledger.use_cases.budget_status import get_budget_status, list_budget_status_page
 from app.domain.ledger.model.budget import MAX_BUDGET_ACCOUNTS
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
@@ -93,6 +93,25 @@ class BudgetUseCasesTest(unittest.TestCase):
             self.create(account_uuids=[uuid4() for _ in range(MAX_BUDGET_ACCOUNTS + 1)])
 
         self.assertEqual(list_budget_page(self.open_ledger, 1, 200, "name", True), [])
+
+    def test_create_validates_selected_accounts_with_one_lookup_query(self) -> None:
+        with self.open_ledger() as unit_of_work:
+            accounts = [
+                unit_of_work.account_repository.create(f"Account {index}", None, self.currency.uuid, "WalletCards", b"\x40\x50\x60")
+                for index in range(3)
+            ]
+            unit_of_work.commit()
+
+        statements: list[str] = []
+        with self.open_ledger() as unit_of_work:
+            unit_of_work.connection.set_trace_callback(statements.append)
+            try:
+                _require_accounts_in_currency(unit_of_work, [account.uuid for account in accounts], self.currency.uuid)
+            finally:
+                unit_of_work.connection.set_trace_callback(None)
+
+        account_selects = [statement for statement in statements if "FROM account WHERE uuid IN" in statement]
+        self.assertEqual(len(account_selects), 1)
 
     def test_get_and_delete_reject_an_unknown_budget(self) -> None:
         for operation in (lambda: get_budget(self.open_ledger, uuid4()), lambda: delete_budget(self.open_ledger, uuid4())):

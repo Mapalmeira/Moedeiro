@@ -1,4 +1,5 @@
 import sqlite3
+from collections.abc import Collection
 from uuid import UUID, uuid4
 
 from app.domain.appearance import Icon, RgbColorCode
@@ -31,6 +32,17 @@ class SqliteAccountRepository(AccountRepository):
         if row is None:
             return None
         return self._to_model(row)
+
+    def get_many(self, uuids: Collection[UUID]) -> list[Account]:
+        unique_uuids = set(uuids)
+        if not unique_uuids:
+            return []
+        placeholders = ", ".join("?" for _ in unique_uuids)
+        rows = self.connection.execute(
+            f"SELECT uuid, account_name AS name, note, currency_uuid, icon, color_code FROM account WHERE uuid IN ({placeholders})",
+            tuple(uuid.bytes for uuid in unique_uuids),
+        ).fetchall()
+        return [self._to_model(row) for row in rows]
 
     def get_by_name(self, name: AccountName) -> Account | None:
         row = self.connection.execute(

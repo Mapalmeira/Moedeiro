@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import Collection
 from uuid import UUID
 
 from app.domain.appearance import Icon, RgbColorCode
@@ -19,6 +20,10 @@ class AccountRepository(ABC):
 
     @abstractmethod
     def get(self, uuid: UUID) -> Account | None:
+        pass
+
+    @abstractmethod
+    def get_many(self, uuids: Collection[UUID]) -> list[Account]:
         pass
 
     @abstractmethod
