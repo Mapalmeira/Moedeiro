@@ -83,7 +83,7 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
 
         self.connection.rollback()
 
-        events = SqliteFinancialEventRepository(self.connection).list_page(1, 10, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100))
+        events = SqliteFinancialEventRepository(self.connection).list_after(10, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100), None, None)
         self.assertEqual(events[0].movements, [])
 
 

@@ -63,13 +63,13 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         with self.assertRaises(ValidationError):
             self.repository.update_description(event.uuid, "x" * 301)
 
-    def test_list_page_orders_every_matching_event_by_timestamp(self) -> None:
+    def test_list_after_orders_every_matching_event_by_timestamp(self) -> None:
         first = self.repository.create(10, "First", "TRANSACTION")
         second = self.repository.create(20, "Second", "ACCOUNT_TRANSFER")
         filters = FinancialEventFilter(from_timestamp=0, to_timestamp=30)
 
-        ascending = self.repository.list_page(1, 200, True, filters)
-        descending = self.repository.list_page(1, 200, False, filters)
+        ascending = self.repository.list_after(200, True, filters, None, None)
+        descending = self.repository.list_after(200, False, filters, None, None)
 
         self.assertEqual(ascending, [first, second])
         self.assertEqual(descending, [second, first])
@@ -80,9 +80,9 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
 
         self.connection.rollback()
 
-        self.assertEqual(self.repository.list_page(1, 200, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100)), [])
+        self.assertEqual(self.repository.list_after(200, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100), None, None), [])
 
-    def test_get_and_list_page_load_movements_in_the_event(self) -> None:
+    def test_get_and_list_after_load_movements_in_the_event(self) -> None:
         """Rich event reads hydrate movements without one query per event."""
         currency = self.create_currency()
         account = self.create_account(currency=currency)
@@ -94,7 +94,7 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         movement_repository.create(second.uuid, account.uuid, category.uuid, -20, "Second item")
 
         loaded = self.repository.get(first.uuid)
-        page = self.repository.list_page(1, 10, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100))
+        page = self.repository.list_after(10, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100), None, None)
 
         assert loaded is not None
         self.assertEqual([movement.value for movement in loaded.movements], [-10])
@@ -104,7 +104,7 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
             [[-10], [-20]],
         )
 
-    def test_list_page_loads_movements_with_two_queries(self) -> None:
+    def test_list_after_loads_movements_with_two_queries(self) -> None:
         """Movement hydration uses one batch query regardless of page size."""
         self.create_event("First", occurred_at=10)
         self.create_event("Second", occurred_at=20)
@@ -112,14 +112,14 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         self.connection.set_trace_callback(statements.append)
 
         try:
-            self.repository.list_page(1, 10, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100))
+            self.repository.list_after(10, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100), None, None)
         finally:
             self.connection.set_trace_callback(None)
 
         select_statements = [statement for statement in statements if statement.lstrip().startswith("SELECT")]
         self.assertEqual(len(select_statements), 2)
 
-    def test_list_page_filters_orders_and_paginates(self) -> None:
+    def test_list_after_filters_orders_and_limits(self) -> None:
         """Pagination is applied after filtering and orders by timestamp."""
         self.create_event("Third", occurred_at=30)
         first = self.create_event("First", occurred_at=10)
@@ -127,20 +127,20 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         self.create_event("Excluded", "ACCOUNT_TRANSFER", 15)
         filters = FinancialEventFilter(from_timestamp=0, to_timestamp=100, event_type="TRANSACTION")
 
-        page = self.repository.list_page(1, 2, True, filters)
+        page = self.repository.list_after(2, True, filters, None, None)
 
         self.assertEqual(page, [first, second])
 
-    def test_list_page_can_reverse_timestamp_direction(self) -> None:
+    def test_list_after_can_reverse_timestamp_direction(self) -> None:
         """Event timestamp is the fixed sort field while its direction remains configurable."""
         first = self.create_event("First", occurred_at=10)
         second = self.create_event("Second", occurred_at=20)
 
-        page = self.repository.list_page(1, 10, False, FinancialEventFilter(from_timestamp=0, to_timestamp=100))
+        page = self.repository.list_after(10, False, FinancialEventFilter(from_timestamp=0, to_timestamp=100), None, None)
 
         self.assertEqual(page, [second, first])
 
-    def test_list_page_uses_uuid_to_break_timestamp_ties(self) -> None:
+    def test_list_after_uses_uuid_to_break_timestamp_ties(self) -> None:
         with patch(
             "app.infrastructure.persistence.sqlite.ledger.repository.financial_event.uuid4",
             side_effect=[UUID(int=2), UUID(int=1)],
@@ -148,12 +148,7 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
             higher_uuid = self.create_event("Higher UUID", occurred_at=10)
             lower_uuid = self.create_event("Lower UUID", occurred_at=10)
 
-        page = self.repository.list_page(
-            1,
-            10,
-            True,
-            FinancialEventFilter(from_timestamp=0, to_timestamp=100),
-        )
+        page = self.repository.list_after(10, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100), None, None)
 
         self.assertEqual(page, [lower_uuid, higher_uuid])
 

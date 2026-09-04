@@ -88,17 +88,6 @@ def get_financial_event(unit_of_work_factory: Callable[[], LedgerUnitOfWork], ev
         return event
 
 
-def list_financial_event_page(
-    unit_of_work_factory: Callable[[], LedgerUnitOfWork],
-    page_number: int,
-    page_size: int,
-    ascending: bool,
-    filters: FinancialEventFilter,
-) -> list[FinancialEvent]:
-    with unit_of_work_factory() as unit_of_work:
-        return unit_of_work.financial_event_repository.list_page(page_number, page_size, ascending, filters)
-
-
 def list_financial_events_after(
     unit_of_work_factory: Callable[[], LedgerUnitOfWork],
     page_size: int,

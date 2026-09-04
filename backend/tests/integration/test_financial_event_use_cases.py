@@ -6,7 +6,7 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError
-from app.application.ledger.use_cases.financial_event import create_account_transfer_financial_event, create_shopping_list_financial_event, create_simple_financial_event, delete_financial_event, get_financial_event, list_financial_event_page, update_account_transfer_financial_event, update_shopping_list_financial_event, update_simple_financial_event
+from app.application.ledger.use_cases.financial_event import create_account_transfer_financial_event, create_shopping_list_financial_event, create_simple_financial_event, delete_financial_event, get_financial_event, list_financial_events_after, update_account_transfer_financial_event, update_shopping_list_financial_event, update_simple_financial_event
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
@@ -148,9 +148,9 @@ class FinancialEventUseCasesTest(unittest.TestCase):
 
         self.assertEqual(self.list_events(), [])
 
-    def test_list_page_applies_filters_pagination_and_direction(self) -> None:
+    def test_list_after_applies_filters_and_direction(self) -> None:
         first = self.create_simple(-100, 10)
-        self.create_simple(-200, 20)
+        second = self.create_simple(-200, 20)
         transfer = create_account_transfer_financial_event(
             self.open_ledger,
             30,
@@ -166,8 +166,8 @@ class FinancialEventUseCasesTest(unittest.TestCase):
 
         filters = FinancialEventFilter(from_timestamp=0, to_timestamp=40, account_uuid=self.destination.uuid)
 
-        self.assertEqual(list_financial_event_page(self.open_ledger, 1, 1, False, filters), [transfer])
-        self.assertEqual(list_financial_event_page(self.open_ledger, 1, 1, True, FinancialEventFilter(from_timestamp=0, to_timestamp=25)), [first])
+        self.assertEqual(list_financial_events_after(self.open_ledger, 1, False, filters, None, None), [transfer])
+        self.assertEqual(list_financial_events_after(self.open_ledger, 200, True, FinancialEventFilter(from_timestamp=0, to_timestamp=25), None, None), [first, second])
 
     def test_update_simple_event_changes_its_editable_structure_including_account(self) -> None:
         event = self.create_simple()
@@ -353,7 +353,7 @@ class FinancialEventUseCasesTest(unittest.TestCase):
                     operation()
 
     def list_events(self):
-        return list_financial_event_page(self.open_ledger, 1, 200, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100))
+        return list_financial_events_after(self.open_ledger, 200, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100), None, None)
 
 
 if __name__ == "__main__":

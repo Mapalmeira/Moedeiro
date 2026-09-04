@@ -28,16 +28,6 @@ class FinancialEventRepository(ABC):
         pass
 
     @abstractmethod
-    def list_page(
-        self,
-        page_number: int,
-        page_size: int,
-        ascending: bool,
-        filters: FinancialEventFilter,
-    ) -> list[FinancialEvent]:
-        pass
-
-    @abstractmethod
     def list_after(
         self,
         page_size: int,

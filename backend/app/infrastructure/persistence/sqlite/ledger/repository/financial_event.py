@@ -43,22 +43,6 @@ class SqliteFinancialEventRepository(FinancialEventRepository):
             (event.description, event.uuid.bytes),
         )
 
-    def list_page(self, page_number: int, page_size: int, ascending: bool, filters: FinancialEventFilter) -> list[FinancialEvent]:
-        direction = "ASC" if ascending else "DESC"
-        offset = (page_number - 1) * page_size
-        where_clause, parameters = build_financial_event_filter(filters)
-        rows = self.connection.execute(
-            f"""
-            SELECT event.uuid, event.occurred_at, event.description, event.type
-            FROM financial_event AS event
-            {where_clause}
-            ORDER BY event.occurred_at {direction}, event.uuid {direction}
-            LIMIT ? OFFSET ?
-            """,
-            [*parameters, page_size, offset],
-        ).fetchall()
-        return self._to_models(rows)
-
     def list_after(
         self,
         page_size: int,
