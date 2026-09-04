@@ -3,8 +3,8 @@ from typing import TypeVar
 
 from fastapi import HTTPException, Request, status
 
-from app.infrastructure.credential_operation_executor import CredentialOperationCapacityExceededError, CredentialOperationExecutor
-from app.infrastructure.security.concurrent_password_hasher import PasswordHashCapacityExceededError
+from app.infrastructure.concurrency.concurrent_password_hasher import PasswordHashCapacityExceededError
+from app.infrastructure.concurrency.credential_operation_executor import CredentialOperationCapacityExceededError, CredentialOperationExecutor
 
 
 Result = TypeVar("Result")

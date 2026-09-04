@@ -17,9 +17,9 @@ from app.api.registry.routes.registration import router as registration_router
 from app.api.registry.routes.totp import router as totp_router
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.totp_authenticator import TotpAuthenticator
-from app.infrastructure.credential_operation_executor import CredentialOperationExecutor
+from app.infrastructure.concurrency.concurrent_password_hasher import ConcurrentPasswordHasher
+from app.infrastructure.concurrency.credential_operation_executor import CredentialOperationExecutor
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
-from app.infrastructure.security.concurrent_password_hasher import ConcurrentPasswordHasher
 from app.infrastructure.security.rate_limiter import RateLimiter
 from app.settings import Settings
 

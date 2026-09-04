@@ -4,7 +4,7 @@ class FakeCredentialOperationExecutor:
 
     async def run(self, operation):
         if self.reject:
-            from app.infrastructure.credential_operation_executor import CredentialOperationCapacityExceededError
+            from app.infrastructure.concurrency.credential_operation_executor import CredentialOperationCapacityExceededError
 
             raise CredentialOperationCapacityExceededError
         return operation()
