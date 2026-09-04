@@ -43,6 +43,8 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.password_hash_concurrency, 2)
         self.assertEqual(settings.max_page_size, 200)
         self.assertEqual(settings.max_query_points, 500)
+        self.assertIsNone(settings.trusted_proxy_ip)
+        self.assertFalse(settings.allow_insecure_http)
 
     def test_reads_security_limits_from_the_environment(self) -> None:
         environment = {
@@ -58,6 +60,8 @@ class SettingsTest(unittest.TestCase):
             "PASSWORD_HASH_CONCURRENCY": "1",
             "MAX_PAGE_SIZE": "150",
             "MAX_QUERY_POINTS": "750",
+            "TRUSTED_PROXY_IP": "192.0.2.10",
+            "ALLOW_INSECURE_HTTP": "true",
         }
 
         settings = Settings.from_environment(environment)
@@ -73,6 +77,8 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.password_hash_concurrency, 1)
         self.assertEqual(settings.max_page_size, 150)
         self.assertEqual(settings.max_query_points, 750)
+        self.assertEqual(str(settings.trusted_proxy_ip), "192.0.2.10")
+        self.assertTrue(settings.allow_insecure_http)
 
     def test_rejects_invalid_security_limits(self) -> None:
         invalid_values = (
@@ -87,6 +93,8 @@ class SettingsTest(unittest.TestCase):
             ("PASSWORD_HASH_CONCURRENCY", "0"),
             ("MAX_PAGE_SIZE", "0"),
             ("MAX_QUERY_POINTS", "0"),
+            ("TRUSTED_PROXY_IP", "not-an-ip"),
+            ("ALLOW_INSECURE_HTTP", "not-a-bool"),
         )
 
         for variable, value in invalid_values:

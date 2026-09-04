@@ -23,6 +23,7 @@ from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.totp_authenticator import TotpAuthenticator
 from app.infrastructure.concurrency.concurrent_password_hasher import ConcurrentPasswordHasher
 from app.infrastructure.concurrency.credential_operation_executor import CredentialOperationExecutor
+from app.infrastructure.http.trusted_proxy import TrustedProxyMiddleware
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
 from app.infrastructure.security.rate_limiter import RateLimiter
 from app.settings import Settings
@@ -39,6 +40,7 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
     databases.initialize()
 
     application = FastAPI(title="Moedeiro", lifespan=_lifespan)
+    application.add_middleware(TrustedProxyMiddleware, trusted_proxy_ip=selected_settings.trusted_proxy_ip)
     application.state.settings = selected_settings
     application.state.databases = databases
     password_hash_semaphore = BoundedSemaphore(selected_settings.password_hash_concurrency)

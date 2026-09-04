@@ -33,30 +33,30 @@ def require_authenticated_user(request: Request) -> User:
 AuthenticatedUser = Annotated[User, Depends(require_authenticated_user)]
 
 
-def set_session_cookie(response: Response, token: str) -> None:
-    response.set_cookie(SESSION_COOKIE, token, path=SESSION_COOKIE_PATH, secure=True, httponly=True, samesite="strict")
+def set_session_cookie(response: Response, token: str, secure: bool = True) -> None:
+    response.set_cookie(SESSION_COOKIE, token, path=SESSION_COOKIE_PATH, secure=secure, httponly=True, samesite="strict")
 
 
-def set_remember_cookie(response: Response, token: str) -> None:
+def set_remember_cookie(response: Response, token: str, secure: bool = True) -> None:
     response.set_cookie(
         REMEMBER_COOKIE,
         token,
         max_age=DEFAULT_EXPIRATION_TIMEOUT_SECONDS,
         path=REMEMBER_COOKIE_PATH,
-        secure=True,
+        secure=secure,
         httponly=True,
         samesite="strict",
     )
 
 
-def clear_authentication_cookies(response: Response) -> None:
-    _delete_cookie(response, SESSION_COOKIE, SESSION_COOKIE_PATH)
-    _delete_cookie(response, REMEMBER_COOKIE, REMEMBER_COOKIE_PATH)
+def clear_authentication_cookies(response: Response, secure: bool = True) -> None:
+    _delete_cookie(response, SESSION_COOKIE, SESSION_COOKIE_PATH, secure)
+    _delete_cookie(response, REMEMBER_COOKIE, REMEMBER_COOKIE_PATH, secure)
 
 
-def delete_remember_cookie(response: Response) -> None:
-    _delete_cookie(response, REMEMBER_COOKIE, REMEMBER_COOKIE_PATH)
+def delete_remember_cookie(response: Response, secure: bool = True) -> None:
+    _delete_cookie(response, REMEMBER_COOKIE, REMEMBER_COOKIE_PATH, secure)
 
 
-def _delete_cookie(response: Response, name: str, path: str) -> None:
-    response.delete_cookie(name, path=path, secure=True, httponly=True, samesite="strict")
+def _delete_cookie(response: Response, name: str, path: str, secure: bool) -> None:
+    response.delete_cookie(name, path=path, secure=secure, httponly=True, samesite="strict")

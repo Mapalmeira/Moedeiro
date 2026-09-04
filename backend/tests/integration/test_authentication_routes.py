@@ -76,6 +76,14 @@ class AuthenticationRoutesTest(unittest.TestCase):
         self.assertNotIn("Domain=", "".join(headers))
         self.assertEqual(self.rate_limiter.checks, [("3/minute", "login-ip-attempts", "192.0.2.1")])
 
+    def test_login_omits_secure_for_explicit_insecure_http_mode(self) -> None:
+        self.application.state.settings = self.application.state.settings.model_copy(update={"allow_insecure_http": True})
+        response = Response(status_code=204)
+
+        asyncio.run(login_user(LoginRequest(name="Alice", password="correct password", remember=True), self.request(), response))
+
+        self.assertTrue(all("Secure" not in header for header in self.cookie_headers(response)))
+
     def test_login_without_remember_expires_any_client_remember_cookie(self) -> None:
         remembered_response = Response(status_code=204)
         asyncio.run(login_user(LoginRequest(name="Alice", password="correct password", remember=True), self.request(), remembered_response))

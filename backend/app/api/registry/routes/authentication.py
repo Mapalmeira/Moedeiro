@@ -41,11 +41,12 @@ async def login_user(payload: LoginRequest, request: Request, response: Response
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="TOTP required") from error
     except (UserNotFoundError, InvalidTotpCodeError, InvalidCredentialsError) as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from error
-    set_session_cookie(response, session_token)
+    secure = not _settings(request).allow_insecure_http
+    set_session_cookie(response, session_token, secure)
     if remember_token is None:
-        delete_remember_cookie(response)
+        delete_remember_cookie(response, secure)
     else:
-        set_remember_cookie(response, remember_token)
+        set_remember_cookie(response, remember_token, secure)
 
 
 @router.get("/session", status_code=status.HTTP_204_NO_CONTENT)
@@ -63,8 +64,9 @@ def refresh(request: Request, response: Response) -> None:
         session_token, remember_token = refresh_session(_databases(request).open_registry, token, int(time.time()))
     except InvalidSessionError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from error
-    set_session_cookie(response, session_token)
-    set_remember_cookie(response, remember_token)
+    secure = not _settings(request).allow_insecure_http
+    set_session_cookie(response, session_token, secure)
+    set_remember_cookie(response, remember_token, secure)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -74,7 +76,7 @@ def logout_user(request: Request, response: Response) -> None:
         request.cookies.get(SESSION_COOKIE),
         request.cookies.get(REMEMBER_COOKIE),
     )
-    clear_authentication_cookies(response)
+    clear_authentication_cookies(response, not _settings(request).allow_insecure_http)
 
 
 def _databases(request: Request) -> SqliteDatabases:

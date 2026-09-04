@@ -1,5 +1,6 @@
 import os
 from collections.abc import Mapping
+from ipaddress import IPv4Address, IPv6Address
 from pathlib import Path
 from typing import Self
 
@@ -25,6 +26,8 @@ class Settings(BaseModel):
     password_hash_concurrency: int = Field(default=2, gt=0)
     max_page_size: int = Field(default=200, gt=0)
     max_query_points: int = Field(default=500, gt=0)
+    trusted_proxy_ip: IPv4Address | IPv6Address | None = None
+    allow_insecure_http: bool = False
     totp_encryption_key: str | None = None
 
     @field_validator("registration_ip_attempts_rate_limit", "login_ip_attempts_rate_limit", "password_recovery_ip_attempts_rate_limit", "totp_setup_ip_attempts_rate_limit", "refresh_ip_attempts_rate_limit", "authenticated_user_operations_rate_limit")
@@ -69,9 +72,11 @@ class Settings(BaseModel):
             "password_hash_concurrency": "PASSWORD_HASH_CONCURRENCY",
             "max_page_size": "MAX_PAGE_SIZE",
             "max_query_points": "MAX_QUERY_POINTS",
+            "trusted_proxy_ip": "TRUSTED_PROXY_IP",
+            "allow_insecure_http": "ALLOW_INSECURE_HTTP",
             "totp_encryption_key": "TOTP_ENCRYPTION_KEY",
         }
         for field_name, variable_name in optional_variable_names.items():
-            if variable_name in source:
+            if variable_name in source and (field_name != "trusted_proxy_ip" or source[variable_name].strip()):
                 values[field_name] = source[variable_name]
         return cls.model_validate(values)

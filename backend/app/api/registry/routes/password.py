@@ -75,7 +75,7 @@ async def recover_password(payload: ResetPasswordRequest, request: Request, resp
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from error
     except PasswordUpdateConflictError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Password update conflict") from error
-    clear_authentication_cookies(response)
+    clear_authentication_cookies(response, not _settings(request).allow_insecure_http)
 
 
 def _databases(request: Request) -> SqliteDatabases:
