@@ -7,7 +7,7 @@ from app.domain.ledger.model.financial_event import FinancialEventType
 
 
 class FinancialEventFilter(BaseModel):
-    """Filtering criteria shared by transaction-event queries.
+    """Filtering criteria shared by financial-event queries.
 
     Different criteria are combined with AND.
 

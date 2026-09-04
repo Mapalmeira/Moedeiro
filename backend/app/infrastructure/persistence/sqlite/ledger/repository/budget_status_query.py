@@ -10,6 +10,7 @@ class SqliteBudgetStatusQueryRepository(BudgetStatusQueryRepository):
         WITH RECURSIVE active_budgets AS MATERIALIZED (
             SELECT
                 budget.uuid,
+                budget.budget_name,
                 budget.amount,
                 budget.category_uuid,
                 budget.currency_uuid,
@@ -20,6 +21,7 @@ class SqliteBudgetStatusQueryRepository(BudgetStatusQueryRepository):
         selected_budgets AS (
             SELECT
                 budget.uuid,
+                budget.budget_name,
                 budget.amount,
                 budget.category_uuid,
                 budget.currency_uuid,
@@ -27,7 +29,7 @@ class SqliteBudgetStatusQueryRepository(BudgetStatusQueryRepository):
                 COUNT(budget_accounts.account_uuid) AS account_count
             FROM active_budgets AS budget
             LEFT JOIN budget_accounts ON budget_accounts.budget_uuid = budget.uuid
-            GROUP BY budget.uuid
+            GROUP BY budget.uuid, budget.budget_name
         ),
         category_descendants(root_uuid, uuid) AS (
             SELECT category_uuid, category_uuid
@@ -65,7 +67,8 @@ class SqliteBudgetStatusQueryRepository(BudgetStatusQueryRepository):
         LEFT JOIN budget_accounts AS selected_account
           ON selected_account.budget_uuid = budget.uuid
          AND selected_account.account_uuid = movement.account_uuid
-        GROUP BY budget.uuid, budget.amount
+        GROUP BY budget.uuid, budget.budget_name, budget.amount
+        ORDER BY budget.budget_name ASC, budget.uuid ASC
     """
 
     def __init__(self, connection: sqlite3.Connection):
@@ -80,10 +83,17 @@ class SqliteBudgetStatusQueryRepository(BudgetStatusQueryRepository):
             return None
         return self._to_model(row)
 
-    def list_statuses(self, timestamp: int) -> list[BudgetStatus]:
+    def list_page(self, timestamp: int, page_number: int, page_size: int) -> list[BudgetStatus]:
+        offset = (page_number - 1) * page_size
         rows = self.connection.execute(
-            self._SELECT.format(budget_where="WHERE budget.from_timestamp <= ? AND budget.to_timestamp > ?"),
-            (timestamp, timestamp, timestamp),
+            self._SELECT.format(
+                budget_where="""
+                WHERE budget.from_timestamp <= ? AND budget.to_timestamp > ?
+                ORDER BY budget.budget_name ASC, budget.uuid ASC
+                LIMIT ? OFFSET ?
+                """
+            ),
+            (timestamp, timestamp, page_size, offset, timestamp),
         ).fetchall()
         return [self._to_model(row) for row in rows]
 

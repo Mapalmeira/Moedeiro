@@ -8,7 +8,8 @@ from app.api.dependencies.ledger import ledger_unit_of_work_factory
 from app.api.dependencies.pagination import validate_requested_page
 from app.api.ledger.schema.budget import BudgetResponse, BudgetSortKey, BudgetStatusResponse, CreateBudgetRequest, UpdateBudgetRequest
 from app.application.ledger.exceptions import AccountNotFoundError, BudgetAccountCurrencyMismatchError, BudgetNameUnavailableError, BudgetNotActiveError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
-from app.application.ledger.use_cases.budget import create_budget, delete_budget, get_budget, get_budget_status, list_budget_page, update_budget
+from app.application.ledger.use_cases.budget import create_budget, delete_budget, get_budget, list_budget_page, update_budget
+from app.application.ledger.use_cases.budget_status import get_budget_status, list_budget_status_page
 
 
 router = APIRouter(prefix="/api/ledgers/{ledger_uuid}/budgets", tags=["budgets"])
@@ -56,6 +57,20 @@ def list_ledger_budgets(
     validate_requested_page(request, page_number, page_size)
     budgets = list_budget_page(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), page_number, page_size, sort_key, ascending)
     return [BudgetResponse.from_budget(budget) for budget in budgets]
+
+
+@router.get("/statuses", response_model=list[BudgetStatusResponse])
+def list_ledger_budget_statuses(
+    ledger_uuid: UUID,
+    timestamp: int,
+    request: Request,
+    user: AuthenticatedUser,
+    page_number: Annotated[int, Query(ge=1)],
+    page_size: Annotated[int, Query(ge=1)],
+) -> list[BudgetStatusResponse]:
+    validate_requested_page(request, page_number, page_size)
+    budget_statuses = list_budget_status_page(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), timestamp, page_number, page_size)
+    return [BudgetStatusResponse.from_status(budget_status) for budget_status in budget_statuses]
 
 
 @router.get("/{budget_uuid}", response_model=BudgetResponse)

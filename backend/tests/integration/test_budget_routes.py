@@ -7,7 +7,7 @@ from fastapi import HTTPException, Request
 from pydantic import ValidationError
 
 from app.api.ledger.routes.account import create_ledger_account
-from app.api.ledger.routes.budget import create_ledger_budget, delete_ledger_budget, get_ledger_budget, get_ledger_budget_status, list_ledger_budgets, update_ledger_budget
+from app.api.ledger.routes.budget import create_ledger_budget, delete_ledger_budget, get_ledger_budget, get_ledger_budget_status, list_ledger_budget_statuses, list_ledger_budgets, update_ledger_budget
 from app.api.ledger.routes.category import create_ledger_category
 from app.api.ledger.routes.currency import create_ledger_currency
 from app.api.ledger.schema.account import CreateAccountRequest
@@ -218,6 +218,16 @@ class BudgetRoutesTest(unittest.TestCase):
         self.assertEqual(raised.exception.status_code, 409)
         self.assertEqual(raised.exception.detail, "Budget is not active at timestamp")
 
+    def test_status_list_returns_active_budgets_with_pagination(self) -> None:
+        monthly = self.create_budget("Monthly")
+        alpha = self.create_budget("Alpha")
+
+        first_page = list_ledger_budget_statuses(self.ledger.uuid, 15, self.request, self.user, 1, 1)
+        second_page = list_ledger_budget_statuses(self.ledger.uuid, 15, self.request, self.user, 2, 1)
+
+        self.assertEqual([budget_status.budget_uuid for budget_status in first_page], [alpha.uuid])
+        self.assertEqual([budget_status.budget_uuid for budget_status in second_page], [monthly.uuid])
+
     def test_delete_removes_a_budget_and_missing_members_return_not_found(self) -> None:
         budget = self.create_budget()
 
@@ -268,11 +278,13 @@ class BudgetRoutesTest(unittest.TestCase):
     def test_routes_expose_the_complete_budget_lifecycle_and_status(self) -> None:
         paths = self.application.openapi()["paths"]
         collection = paths["/api/ledgers/{ledger_uuid}/budgets"]
+        statuses = paths["/api/ledgers/{ledger_uuid}/budgets/statuses"]
         member = paths["/api/ledgers/{ledger_uuid}/budgets/{budget_uuid}"]
         budget_status = paths["/api/ledgers/{ledger_uuid}/budgets/{budget_uuid}/status"]
 
         self.assertIn("201", collection["post"]["responses"])
         self.assertIn("200", collection["get"]["responses"])
+        self.assertIn("200", statuses["get"]["responses"])
         self.assertIn("200", member["get"]["responses"])
         self.assertIn("200", member["put"]["responses"])
         self.assertNotIn("content", member["delete"]["responses"]["204"])

@@ -6,7 +6,8 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from app.application.ledger.exceptions import AccountNotFoundError, BudgetAccountCurrencyMismatchError, BudgetNameUnavailableError, BudgetNotActiveError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
-from app.application.ledger.use_cases.budget import create_budget, delete_budget, get_budget, get_budget_status, list_budget_page, update_budget
+from app.application.ledger.use_cases.budget import create_budget, delete_budget, get_budget, list_budget_page, update_budget
+from app.application.ledger.use_cases.budget_status import get_budget_status, list_budget_status_page
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
 
@@ -171,6 +172,16 @@ class BudgetUseCasesTest(unittest.TestCase):
             get_budget_status(self.open_ledger, uuid4(), 15)
         with self.assertRaises(BudgetNotActiveError):
             get_budget_status(self.open_ledger, budget.uuid, 20)
+
+    def test_list_status_page_returns_active_budgets_in_name_order(self) -> None:
+        monthly = self.create("Monthly")
+        alpha = self.create("Alpha")
+
+        first_page = list_budget_status_page(self.open_ledger, 15, 1, 1)
+        second_page = list_budget_status_page(self.open_ledger, 15, 2, 1)
+
+        self.assertEqual([status.budget_uuid for status in first_page], [alpha.uuid])
+        self.assertEqual([status.budget_uuid for status in second_page], [monthly.uuid])
 
 
 if __name__ == "__main__":

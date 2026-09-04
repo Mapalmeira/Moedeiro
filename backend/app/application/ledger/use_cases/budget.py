@@ -1,11 +1,10 @@
 from collections.abc import Callable, Collection
 from uuid import UUID
 
-from app.application.ledger.exceptions import AccountNotFoundError, BudgetAccountCurrencyMismatchError, BudgetNameUnavailableError, BudgetNotActiveError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
+from app.application.ledger.exceptions import AccountNotFoundError, BudgetAccountCurrencyMismatchError, BudgetNameUnavailableError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
 from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.budget import Budget, BudgetAmount, BudgetDescription, BudgetName
-from app.domain.ledger.model.budget_status import BudgetStatus
 
 
 def create_budget(
@@ -113,16 +112,6 @@ def delete_budget(unit_of_work_factory: Callable[[], LedgerUnitOfWork], budget_u
             raise BudgetNotFoundError
         unit_of_work.budget_repository.delete(budget_uuid)
         unit_of_work.commit()
-
-
-def get_budget_status(unit_of_work_factory: Callable[[], LedgerUnitOfWork], budget_uuid: UUID, timestamp: int) -> BudgetStatus:
-    with unit_of_work_factory() as unit_of_work:
-        if unit_of_work.budget_repository.get(budget_uuid) is None:
-            raise BudgetNotFoundError
-        budget_status = unit_of_work.budget_status_query_repository.get_status(budget_uuid, timestamp)
-        if budget_status is None:
-            raise BudgetNotActiveError
-        return budget_status
 
 
 def _require_currency(unit_of_work: LedgerUnitOfWork, currency_uuid: UUID) -> None:

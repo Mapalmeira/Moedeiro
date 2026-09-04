@@ -6,7 +6,9 @@ from anyio.to_thread import current_default_thread_limiter
 from fastapi import FastAPI
 
 from app.api.ledger.routes.account import router as account_router
+from app.api.ledger.routes.account_balance import router as account_balance_router
 from app.api.ledger.routes.budget import router as budget_router
+from app.api.ledger.routes.cash_flow import router as cash_flow_router
 from app.api.ledger.routes.category import router as category_router
 from app.api.ledger.routes.currency import router as currency_router
 from app.api.ledger.routes.financial_event import router as financial_event_router
@@ -45,8 +47,10 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
     application.state.credential_operation_executor = CredentialOperationExecutor(selected_settings.credential_operation_concurrency) if credential_operation_executor is None else credential_operation_executor
     application.state.rate_limiter = RateLimiter() if rate_limiter is None else rate_limiter
     application.include_router(account_router)
+    application.include_router(account_balance_router)
     application.include_router(authentication_router)
     application.include_router(budget_router)
+    application.include_router(cash_flow_router)
     application.include_router(category_router)
     application.include_router(currency_router)
     application.include_router(financial_event_router)

@@ -10,5 +10,5 @@ class BudgetStatusQueryRepository(ABC):
         pass
 
     @abstractmethod
-    def list_statuses(self, timestamp: int) -> list[BudgetStatus]:
+    def list_page(self, timestamp: int, page_number: int, page_size: int) -> list[BudgetStatus]:
         pass

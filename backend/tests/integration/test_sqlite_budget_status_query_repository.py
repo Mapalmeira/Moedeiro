@@ -95,26 +95,36 @@ class SqliteBudgetStatusQueryRepositoryTest(LedgerRepositoryTestCase):
         self.assertIsNotNone(self.repository.get_status(self.budget.uuid, 10))
         self.assertIsNone(self.repository.get_status(self.budget.uuid, 20))
 
-    def test_list_statuses_returns_only_budgets_active_at_timestamp(self) -> None:
+    def test_list_page_returns_only_budgets_active_at_timestamp(self) -> None:
         """The collection excludes budgets whose periods do not contain the timestamp."""
         active = self.budget
         inactive = self.create_budget("Later", self.currency, self.category)
         self.budget_repository.update_period(inactive.uuid, 20, 30)
 
-        statuses = self.repository.list_statuses(15)
+        statuses = self.repository.list_page(15, 1, 200)
 
         self.assertEqual([status.budget_uuid for status in statuses], [active.uuid])
 
-    def test_list_statuses_aggregates_overlapping_budgets_independently(self) -> None:
+    def test_list_page_aggregates_overlapping_budgets_independently(self) -> None:
         other_budget = self.create_budget("Other account budget", self.currency, self.category)
         self.budget_repository.add_account(other_budget.uuid, self.other_account.uuid)
         self.add_movement("First account", 10, -30, account=self.account)
         self.add_movement("Other account", 10, -40, account=self.other_account)
 
-        statuses = {status.budget_uuid: status for status in self.repository.list_statuses(15)}
+        statuses = {status.budget_uuid: status for status in self.repository.list_page(15, 1, 200)}
 
         self.assertEqual(statuses[self.budget.uuid].spent_amount, 30)
         self.assertEqual(statuses[other_budget.uuid].spent_amount, 40)
+
+    def test_list_page_orders_by_budget_name_and_applies_pagination(self) -> None:
+        alpha = self.create_budget("Alpha", self.currency, self.category)
+        bravo = self.create_budget("Bravo", self.currency, self.category)
+
+        first_page = self.repository.list_page(15, 1, 2)
+        second_page = self.repository.list_page(15, 2, 2)
+
+        self.assertEqual([status.budget_uuid for status in first_page], [alpha.uuid, bravo.uuid])
+        self.assertEqual([status.budget_uuid for status in second_page], [self.budget.uuid])
 
     def test_budget_without_accounts_includes_every_account_in_its_currency(self) -> None:
         """Absent account selectors make the budget apply to its complete currency."""
