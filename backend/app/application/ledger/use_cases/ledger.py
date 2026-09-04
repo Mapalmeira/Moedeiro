@@ -11,14 +11,13 @@ from app.domain.registry.model.ledger import Ledger, LedgerName
 
 def create_ledger(
     unit_of_work_factory: Callable[[], RegistryUnitOfWork],
-    initialize_database: Callable[[UUID, int, int], Path],
+    initialize_database: Callable[[UUID, int], Path],
     delete_database: Callable[[str | Path], None],
     user_uuid: UUID,
     name: LedgerName,
     icon: Icon,
     color_code: RgbColorCode,
     timestamp: int,
-    schema_version: int,
 ) -> Ledger:
     ledger_uuid = uuid4()
     database_path: Path | None = None
@@ -26,7 +25,7 @@ def create_ledger(
         with unit_of_work_factory() as unit_of_work:
             if unit_of_work.user_repository.get(user_uuid) is None:
                 raise UserNotFoundError
-            database_path = initialize_database(ledger_uuid, schema_version, timestamp)
+            database_path = initialize_database(ledger_uuid, timestamp)
             ledger = unit_of_work.ledger_repository.create(
                 ledger_uuid,
                 name,

@@ -42,7 +42,6 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
             "WalletCards",
             b"\x10\x20\x30",
             100,
-            1,
         )
 
     def test_create_materializes_registry_grant_database_and_metadata(self) -> None:

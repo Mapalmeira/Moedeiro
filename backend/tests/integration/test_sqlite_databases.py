@@ -2,12 +2,13 @@ from pathlib import Path
 import sqlite3
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 from uuid import uuid4
-
-from pydantic import ValidationError
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
+from app.infrastructure.persistence.sqlite.ledger.schema_version import CURRENT_LEDGER_SCHEMA_VERSION
+from app.infrastructure.persistence.sqlite.migration import SchemaVersionError, SqliteSchemaMigrator
 from app.infrastructure.persistence.sqlite.registry.schema_version import CURRENT_REGISTRY_SCHEMA_VERSION
 
 
@@ -52,7 +53,9 @@ class SqliteDatabasesTest(unittest.TestCase):
     def test_initialize_preserves_an_existing_registry(self) -> None:
         self.databases.initialize()
         with self.databases.open_registry() as unit_of_work:
-            ledger = unit_of_work.ledger_repository.create(uuid4(), "Existing", "existing.sqlite", "BookOpen", b"\x80\x80\x80", 10)
+            ledger_uuid = uuid4()
+            ledger_path = self.databases.initialize_ledger(ledger_uuid, 10)
+            ledger = unit_of_work.ledger_repository.create(ledger_uuid, "Existing", ledger_path.name, "BookOpen", b"\x80\x80\x80", 10)
             unit_of_work.commit()
 
         self.databases.initialize()
@@ -62,6 +65,15 @@ class SqliteDatabasesTest(unittest.TestCase):
 
     def test_initialize_enables_wal_for_an_existing_registry(self) -> None:
         SqliteDatabase.initialize(self.registry_db_path, REGISTRY_SCHEMA_PATH)
+        connection = sqlite3.connect(self.registry_db_path)
+        try:
+            connection.execute(
+                "INSERT INTO registry_metadata(singleton, schema_version) VALUES (1, ?)",
+                (CURRENT_REGISTRY_SCHEMA_VERSION,),
+            )
+            connection.commit()
+        finally:
+            connection.close()
 
         self.databases.initialize()
 
@@ -102,23 +114,23 @@ class SqliteDatabasesTest(unittest.TestCase):
         self.databases.initialize()
         ledger_uuid = uuid4()
 
-        path = self.databases.initialize_ledger(ledger_uuid, 1, 100)
+        path = self.databases.initialize_ledger(ledger_uuid, 100)
 
         self.assertEqual(path, self.ledger_dbs_dir / f"{ledger_uuid}.sqlite")
         with self.databases.open_ledger(path) as unit_of_work:
             metadata = unit_of_work.ledger_metadata_repository.get()
             assert metadata is not None
         self.assertEqual(metadata.ledger_uuid, ledger_uuid)
-        self.assertEqual(metadata.schema_version, 1)
+        self.assertEqual(metadata.schema_version, CURRENT_LEDGER_SCHEMA_VERSION)
         self.assertEqual(metadata.created_at, 100)
 
     def test_initialize_ledger_never_overwrites_an_existing_database(self) -> None:
         self.databases.initialize()
         ledger_uuid = uuid4()
-        path = self.databases.initialize_ledger(ledger_uuid, 1, 100)
+        path = self.databases.initialize_ledger(ledger_uuid, 100)
 
         with self.assertRaises(FileExistsError):
-            self.databases.initialize_ledger(ledger_uuid, 1, 100)
+            self.databases.initialize_ledger(ledger_uuid, 100)
 
         self.assertTrue(path.is_file())
         with self.databases.open_ledger(path) as unit_of_work:
@@ -126,15 +138,95 @@ class SqliteDatabasesTest(unittest.TestCase):
             assert metadata is not None
             self.assertEqual(metadata.ledger_uuid, ledger_uuid)
 
-    def test_initialize_ledger_removes_a_new_database_when_schema_version_is_invalid(self) -> None:
+    def test_initialize_rejects_a_registry_without_schema_metadata(self) -> None:
+        self.registry_db_path.parent.mkdir(parents=True)
+        sqlite3.connect(self.registry_db_path).close()
+
+        with self.assertRaisesRegex(SchemaVersionError, "no valid schema metadata"):
+            self.databases.initialize()
+
+    def test_initialize_ledger_removes_a_new_database_when_metadata_creation_fails(self) -> None:
         self.databases.initialize()
         ledger_uuid = uuid4()
         path = self.databases.get_ledger_path(ledger_uuid)
 
-        with self.assertRaises(ValidationError):
-            self.databases.initialize_ledger(ledger_uuid, 0, 100)
+        with patch(
+            "app.infrastructure.persistence.sqlite.ledger.repository.ledger_metadata.SqliteLedgerMetadataRepository.create",
+            side_effect=RuntimeError("metadata failed"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "metadata failed"):
+                self.databases.initialize_ledger(ledger_uuid, 100)
 
         self.assertFalse(path.exists())
+
+    def test_initialize_backs_up_only_the_registry_when_only_it_requires_a_migration(self) -> None:
+        self.databases.initialize()
+        ledger_uuid = uuid4()
+        self.databases.initialize_ledger(ledger_uuid, 10)
+        migrations_directory = self.directory / "registry_migrations"
+        migrations_directory.mkdir()
+        (migrations_directory / "0002_add_marker.sql").write_text(
+            "ALTER TABLE registry_metadata ADD COLUMN marker TEXT;\n",
+            encoding="utf-8",
+        )
+        self.databases.registry_migrator = SqliteSchemaMigrator(
+            "registry_metadata",
+            2,
+            migrations_directory,
+        )
+
+        self.databases.initialize()
+
+        connection = sqlite3.connect(self.registry_db_path)
+        try:
+            self.assertEqual(
+                connection.execute("SELECT schema_version FROM registry_metadata WHERE singleton = 1").fetchone()[0],
+                2,
+            )
+            self.assertIn(
+                "marker",
+                {row[1] for row in connection.execute("PRAGMA table_info(registry_metadata)").fetchall()},
+            )
+        finally:
+            connection.close()
+        registry_backups = list((self.registry_db_path.parent / "backups").iterdir())
+        self.assertEqual(len(registry_backups), 1)
+        self.assertFalse((self.ledger_dbs_dir / "backup").exists())
+        connection = sqlite3.connect(registry_backups[0])
+        try:
+            self.assertEqual(
+                connection.execute("SELECT schema_version FROM registry_metadata WHERE singleton = 1").fetchone()[0],
+                1,
+            )
+        finally:
+            connection.close()
+
+    def test_initialize_rejects_a_ledger_from_a_newer_release(self) -> None:
+        self.databases.initialize()
+        ledger_uuid = uuid4()
+        ledger_path = self.databases.initialize_ledger(ledger_uuid, 10)
+        with self.databases.open_registry() as unit_of_work:
+            unit_of_work.ledger_repository.create(
+                ledger_uuid,
+                "Future",
+                ledger_path.name,
+                "BookOpen",
+                b"\x80\x80\x80",
+                10,
+            )
+            unit_of_work.commit()
+        connection = sqlite3.connect(ledger_path)
+        try:
+            connection.execute(
+                "UPDATE ledger_metadata SET schema_version = ?",
+                (CURRENT_LEDGER_SCHEMA_VERSION + 1,),
+            )
+            connection.commit()
+        finally:
+            connection.close()
+
+        with self.assertRaisesRegex(SchemaVersionError, "only supports up to"):
+            self.databases.initialize()
 
     def test_open_ledger_rejects_paths_outside_the_configured_directory(self) -> None:
         self.databases.initialize()

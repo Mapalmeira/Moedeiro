@@ -9,7 +9,6 @@ from unittest.mock import patch
 from uuid import uuid4
 
 from app.cli import main
-from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
 from app.settings import Settings
 from tests.fakes import FakePasswordHasher
@@ -32,10 +31,14 @@ class UserDeletionCliTest(unittest.TestCase):
         )
         self.databases = SqliteDatabases(self.settings.registry_db_path, self.settings.registry_schema_path, self.settings.ledger_dbs_dir, self.settings.ledger_schema_path)
         self.databases.initialize()
+        owned_ledger_uuid = uuid4()
+        revoked_ledger_uuid = uuid4()
+        owned_ledger_path = self.databases.initialize_ledger(owned_ledger_uuid, 10)
+        revoked_ledger_path = self.databases.initialize_ledger(revoked_ledger_uuid, 10)
         with self.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 10)
-            self.owned_ledger = unit_of_work.ledger_repository.create(uuid4(), "Owned", "owned.sqlite", "BookOpen", b"\x80\x80\x80", 10)
-            self.revoked_ledger = unit_of_work.ledger_repository.create(uuid4(), "Revoked", "revoked.sqlite", "BookOpen", b"\x80\x80\x80", 10)
+            self.owned_ledger = unit_of_work.ledger_repository.create(owned_ledger_uuid, "Owned", owned_ledger_path.name, "BookOpen", b"\x80\x80\x80", 10)
+            self.revoked_ledger = unit_of_work.ledger_repository.create(revoked_ledger_uuid, "Revoked", revoked_ledger_path.name, "BookOpen", b"\x80\x80\x80", 10)
             unit_of_work.ledger_grant_repository.create(self.user.uuid, self.owned_ledger.uuid, "OWNER", 10)
             revoked_grant = unit_of_work.ledger_grant_repository.create(self.user.uuid, self.revoked_ledger.uuid, "OWNER", 10)
             unit_of_work.ledger_grant_repository.revoke(revoked_grant.uuid, 20)
@@ -45,8 +48,6 @@ class UserDeletionCliTest(unittest.TestCase):
             unit_of_work.auth_session_repository.create(self.user.uuid, b"s" * 32, 10, 100, 10)
             unit_of_work.remember_session_repository.create(self.user.uuid, b"r" * 32, 10, 100)
             unit_of_work.commit()
-        SqliteDatabase.initialize(self.databases.ledger_dbs_dir / self.owned_ledger.path, LEDGER_SCHEMA_PATH)
-        SqliteDatabase.initialize(self.databases.ledger_dbs_dir / self.revoked_ledger.path, LEDGER_SCHEMA_PATH)
 
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()

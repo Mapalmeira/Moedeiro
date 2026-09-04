@@ -26,6 +26,21 @@ class SqliteDatabase:
         finally:
             connection.close()
 
+    def backup_to(self, destination: Path) -> None:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        source = self.get_connection()
+        try:
+            backup = sqlite3.connect(destination)
+            try:
+                source.backup(backup)
+            finally:
+                backup.close()
+        except Exception:
+            destination.unlink(missing_ok=True)
+            raise
+        finally:
+            source.close()
+
     @classmethod
     def initialize(cls, path: Path, schema_path: Path) -> Self:
         database = cls(path)

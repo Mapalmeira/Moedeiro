@@ -8,7 +8,6 @@ from app.api.registry.schema.ledger import CreateLedgerRequest, LedgerResponse, 
 from app.application.ledger.exceptions import LedgerNotFoundError
 from app.application.ledger.use_cases.ledger import access_owned_ledger, create_ledger, delete_owned_ledger, list_owned_ledgers, update_owned_ledger
 from app.application.registry.exceptions import UserNotFoundError
-from app.infrastructure.persistence.sqlite.ledger.schema_version import CURRENT_LEDGER_SCHEMA_VERSION
 
 
 router = APIRouter(prefix="/api/ledgers", tags=["ledgers"])
@@ -27,7 +26,6 @@ def create_owned_ledger(payload: CreateLedgerRequest, request: Request, user: Au
             payload.icon,
             bytes.fromhex(payload.color_code[1:]),
             int(time.time()),
-            CURRENT_LEDGER_SCHEMA_VERSION,
         )
     except UserNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from error
