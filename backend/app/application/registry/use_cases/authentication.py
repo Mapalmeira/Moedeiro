@@ -33,6 +33,7 @@ def login(
     with unit_of_work_factory() as unit_of_work:
         user = unit_of_work.user_repository.get_by_normalized_name(normalize_user_name(name))
         if user is None:
+            password_hasher.hash(password)
             raise UserNotFoundError
         if not password_hasher.verify(user.password_hash, password):
             raise InvalidCredentialsError

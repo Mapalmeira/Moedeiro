@@ -77,12 +77,14 @@ class AuthenticationUseCasesTest(unittest.TestCase):
         self.assertEqual(len(sessions), 1)
         self.assertEqual(remember_sessions, [])
 
-    def test_login_distinguishes_an_unknown_user_from_an_invalid_password_internally(self) -> None:
+    def test_login_hashes_passwords_for_unknown_users_and_invalid_passwords(self) -> None:
         with self.assertRaises(UserNotFoundError):
             login(self.open_registry, self.password_hasher, "Unknown", "correct password", True, 20)
         with self.assertRaises(InvalidCredentialsError):
             login(self.open_registry, self.password_hasher, "Alice", "wrong password", True, 20)
 
+        self.assertEqual(self.password_hasher.passwords, ["correct password"])
+        self.assertEqual(self.password_hasher.verifications, [(self.user.password_hash, "wrong password")])
         with self.open_registry() as unit_of_work:
             self.assertEqual(unit_of_work.auth_session_repository.list_by_user(self.user.uuid), [])
             self.assertEqual(unit_of_work.remember_session_repository.list_by_user(self.user.uuid), [])
