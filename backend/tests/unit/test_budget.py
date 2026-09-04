@@ -10,6 +10,7 @@ from app.domain.ledger.model.budget import Budget
 
 class BudgetTest(unittest.TestCase):
     def test_accepts_valid_period_and_zero_amount(self) -> None:
+        account_uuid = uuid4()
         budget = Budget(
             uuid=uuid4(),
             category_uuid=uuid4(),
@@ -21,10 +22,28 @@ class BudgetTest(unittest.TestCase):
             amount=0,
             icon="ReceiptText",
             color_code=b"\x80\x80\x80",
+            account_uuids=[account_uuid],
         )
 
         self.assertEqual(budget.amount, 0)
         self.assertEqual(budget.icon, "ReceiptText")
+        self.assertEqual(budget.account_uuids, [account_uuid])
+
+    def test_defaults_to_all_accounts_in_the_currency(self) -> None:
+        budget = Budget(
+            uuid=uuid4(),
+            category_uuid=uuid4(),
+            currency_uuid=uuid4(),
+            from_timestamp=10,
+            to_timestamp=20,
+            name="Monthly",
+            description="Monthly spending",
+            amount=100,
+            icon="ReceiptText",
+            color_code=b"\x80\x80\x80",
+        )
+
+        self.assertEqual(budget.account_uuids, [])
 
     def test_rejects_empty_or_reversed_period(self) -> None:
         for from_timestamp, to_timestamp in ((10, 10), (20, 10)):

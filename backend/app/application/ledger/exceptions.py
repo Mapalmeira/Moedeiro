@@ -30,6 +30,22 @@ class CategoryInUseError(Exception):
     pass
 
 
+class BudgetNotFoundError(Exception):
+    pass
+
+
+class BudgetNameUnavailableError(Exception):
+    pass
+
+
+class BudgetAccountCurrencyMismatchError(Exception):
+    pass
+
+
+class BudgetNotActiveError(Exception):
+    pass
+
+
 class FinancialEventNotFoundError(Exception):
     pass
 

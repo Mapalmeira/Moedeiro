@@ -3,7 +3,7 @@ from uuid import UUID
 
 from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.account import Account
-from app.domain.ledger.model.budget import Budget
+from app.domain.ledger.model.budget import Budget, BudgetAmount, BudgetDescription, BudgetName
 
 
 class BudgetRepository(ABC):
@@ -14,9 +14,9 @@ class BudgetRepository(ABC):
         currency_uuid: UUID,
         from_timestamp: int,
         to_timestamp: int,
-        name: str,
-        description: str,
-        amount: int,
+        name: BudgetName,
+        description: BudgetDescription,
+        amount: BudgetAmount,
         icon: Icon,
         color_code: RgbColorCode,
     ) -> Budget:
@@ -24,6 +24,10 @@ class BudgetRepository(ABC):
 
     @abstractmethod
     def get(self, uuid: UUID) -> Budget | None:
+        pass
+
+    @abstractmethod
+    def get_by_name(self, name: BudgetName) -> Budget | None:
         pass
 
     @abstractmethod
@@ -36,15 +40,15 @@ class BudgetRepository(ABC):
         pass
 
     @abstractmethod
-    def update_name(self, uuid: UUID, value: str) -> None:
+    def update_name(self, uuid: UUID, value: BudgetName) -> None:
         pass
 
     @abstractmethod
-    def update_description(self, uuid: UUID, value: str) -> None:
+    def update_description(self, uuid: UUID, value: BudgetDescription) -> None:
         pass
 
     @abstractmethod
-    def update_amount(self, uuid: UUID, value: int) -> None:
+    def update_amount(self, uuid: UUID, value: BudgetAmount) -> None:
         pass
 
     @abstractmethod
@@ -79,4 +83,8 @@ class BudgetRepository(ABC):
         sort_key: str,
         ascending: bool,
     ) -> list[Budget]:
+        pass
+
+    @abstractmethod
+    def delete(self, uuid: UUID) -> None:
         pass

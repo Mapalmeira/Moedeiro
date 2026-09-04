@@ -27,6 +27,12 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(budget.icon, "ReceiptText")
         self.assertEqual(budget.color_code, b"\x80\x80\x80")
 
+    def test_get_by_name_returns_the_budget_and_unknown_name_returns_none(self) -> None:
+        budget = self.create_budget(currency=self.currency, category=self.category)
+
+        self.assertEqual(self.repository.get_by_name(budget.name), budget)
+        self.assertIsNone(self.repository.get_by_name("Unknown"))
+
     def test_create_requires_existing_category_and_currency(self) -> None:
         """Foreign keys reject unknown category or currency identities."""
         for category_uuid, currency_uuid in ((uuid4(), self.currency.uuid), (self.category.uuid, uuid4())):
@@ -95,6 +101,20 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
         self.repository.remove_account(budget.uuid, first.uuid)
         self.assertEqual(self.repository.list_accounts(budget.uuid), [second])
 
+    def test_get_and_list_page_include_account_selectors_in_uuid_order(self) -> None:
+        budget = self.create_budget(currency=self.currency, category=self.category)
+        first = self.create_account("First", self.currency)
+        second = self.create_account("Second", self.currency)
+        for account in sorted((first, second), key=lambda value: value.uuid.bytes, reverse=True):
+            self.repository.add_account(budget.uuid, account.uuid)
+
+        expected = sorted((first.uuid, second.uuid), key=lambda value: value.bytes)
+
+        selected = self.repository.get(budget.uuid)
+        assert selected is not None
+        self.assertEqual(selected.account_uuids, expected)
+        self.assertEqual(self.repository.list_page(1, 1, "name", True)[0].account_uuids, expected)
+
     def test_add_account_rejects_a_different_currency(self) -> None:
         """The composite foreign key keeps all budget accounts in one currency."""
         budget = self.create_budget(currency=self.currency, category=self.category)
@@ -127,6 +147,16 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
         self.connection.rollback()
 
         self.assertEqual(self.repository.list_page(1, 200, "name", True), [])
+
+    def test_delete_removes_the_budget_and_its_account_relations(self) -> None:
+        budget = self.create_budget(currency=self.currency, category=self.category)
+        account = self.create_account(currency=self.currency)
+        self.repository.add_account(budget.uuid, account.uuid)
+
+        self.repository.delete(budget.uuid)
+
+        self.assertIsNone(self.repository.get(budget.uuid))
+        self.assertEqual(self.repository.list_accounts(budget.uuid), [])
 
 
 if __name__ == "__main__":
