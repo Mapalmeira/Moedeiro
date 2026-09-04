@@ -1,6 +1,7 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
@@ -30,7 +31,6 @@ class CategoryRoutesTest(unittest.TestCase):
                 ledger_schema_path=LEDGER_SCHEMA_PATH,
                 registry_db_path=directory / "registry/registry.sqlite",
                 ledger_dbs_dir=directory / "ledgers",
-                max_category_tree_size=3,
             ),
             FakePasswordHasher(),
             FakeRateLimiter(),
@@ -82,16 +82,15 @@ class CategoryRoutesTest(unittest.TestCase):
         self.assertEqual(create_error.exception.status_code, 404)
         self.assertEqual(update_error.exception.status_code, 404)
 
-    def test_create_rejects_categories_above_the_configured_tree_limit(self) -> None:
-        self.create_category("First")
-        self.create_category("Second")
-        self.create_category("Third")
-
-        with self.assertRaises(HTTPException) as raised:
-            self.create_category("Fourth")
+    def test_create_returns_a_fixed_error_when_the_category_limit_is_reached(self) -> None:
+        with patch("app.application.ledger.use_cases.category.MAX_CATEGORY_TREE_SIZE", 2):
+            self.create_category("First")
+            self.create_category("Second")
+            with self.assertRaises(HTTPException) as raised:
+                self.create_category("Third")
 
         self.assertEqual(raised.exception.status_code, 409)
-        self.assertEqual(raised.exception.detail, "category tree must not contain more than 3 categories")
+        self.assertEqual(raised.exception.detail, "Category limit exceeded")
 
     def test_update_changes_category_data_and_parent(self) -> None:
         parent = self.create_category("Parent")
@@ -124,7 +123,7 @@ class CategoryRoutesTest(unittest.TestCase):
             )
 
         self.assertEqual(raised.exception.status_code, 409)
-        self.assertEqual(raised.exception.detail, "category parent cannot be a descendant")
+        self.assertEqual(raised.exception.detail, "Invalid category hierarchy")
 
     def test_delete_removes_an_unused_category_subtree(self) -> None:
         parent = self.create_category("Parent")

@@ -104,7 +104,7 @@ class AccountBalanceRoutesTest(unittest.TestCase):
             list_ledger_account_balance_points(self.ledger.uuid, self.account.uuid, self.request, self.user, 0, 3, 10)
 
         self.assertEqual(raised.exception.status_code, 422)
-        self.assertEqual(raised.exception.detail, "point_count must be less than or equal to 2")
+        self.assertEqual(raised.exception.detail, "Point count cannot exceed 2")
 
     def test_another_user_cannot_query_the_account(self) -> None:
         with self.assertRaises(HTTPException) as raised:

@@ -74,5 +74,9 @@ class QueryPointLimitExceededError(Exception):
     pass
 
 
+class InvalidQueryParameterError(Exception):
+    pass
+
+
 class FinancialMovementNotFoundError(Exception):
     pass

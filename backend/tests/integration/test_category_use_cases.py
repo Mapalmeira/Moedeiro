@@ -1,11 +1,12 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.application.ledger.exceptions import CategoryInUseError, CategoryNotFoundError
+from app.application.ledger.exceptions import CategoryInUseError, CategoryNotFoundError, CategoryTreeSizeExceededError, InvalidCategoryHierarchyError
 from app.application.ledger.use_cases.category import create_category, delete_category, get_category, get_category_tree, update_category
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
@@ -31,7 +32,7 @@ class CategoryUseCasesTest(unittest.TestCase):
         return SqliteLedgerUnitOfWork(self.database)
 
     def create(self, name: str = "Food", parent_uuid=None):
-        return create_category(self.open_ledger, name, "Utensils", b"\x70\x80\x90", parent_uuid, 1000)
+        return create_category(self.open_ledger, name, "Utensils", b"\x70\x80\x90", parent_uuid)
 
     def test_create_commits_and_returns_a_root_or_child_category(self) -> None:
         parent = self.create("Food")
@@ -46,7 +47,7 @@ class CategoryUseCasesTest(unittest.TestCase):
         with self.assertRaises(ValidationError):
             self.create("")
 
-        self.assertEqual(get_category_tree(self.open_ledger, 1000), [])
+        self.assertEqual(get_category_tree(self.open_ledger), [])
 
     def test_get_raises_for_an_unknown_category(self) -> None:
         with self.assertRaises(CategoryNotFoundError):
@@ -56,18 +57,23 @@ class CategoryUseCasesTest(unittest.TestCase):
         parent = self.create("Food")
         child = self.create("Restaurants", parent.uuid)
 
-        tree = get_category_tree(self.open_ledger, 1000)
+        tree = get_category_tree(self.open_ledger)
 
         self.assertEqual(len(tree), 1)
         self.assertEqual(tree[0].category, parent)
         self.assertEqual(tree[0].children[0].category, child)
 
-    def test_create_rejects_categories_above_the_configured_tree_limit(self) -> None:
-        create_category(self.open_ledger, "First", "Circle", b"\x10\x20\x30", None, 2)
-        create_category(self.open_ledger, "Second", "Circle", b"\x10\x20\x30", None, 2)
+    def test_create_and_tree_read_enforce_the_domain_category_limit(self) -> None:
+        self.create("First")
+        self.create("Second")
 
-        with self.assertRaisesRegex(ValueError, "more than 2 categories"):
-            create_category(self.open_ledger, "Third", "Circle", b"\x10\x20\x30", None, 2)
+        with patch("app.application.ledger.use_cases.category.MAX_CATEGORY_TREE_SIZE", 2):
+            with self.assertRaises(CategoryTreeSizeExceededError):
+                self.create("Third")
+
+        with patch("app.application.ledger.use_cases.category.MAX_CATEGORY_TREE_SIZE", 1):
+            with self.assertRaises(CategoryTreeSizeExceededError):
+                get_category_tree(self.open_ledger)
 
     def test_update_changes_all_mutable_fields_and_parent(self) -> None:
         parent = self.create("Parent")
@@ -95,7 +101,7 @@ class CategoryUseCasesTest(unittest.TestCase):
         parent = self.create("Parent")
         child = self.create("Child", parent.uuid)
 
-        with self.assertRaisesRegex(ValueError, "cannot be a descendant"):
+        with self.assertRaises(InvalidCategoryHierarchyError):
             update_category(self.open_ledger, parent.uuid, "Changed", "Shapes", b"\xaa\xbb\xcc", child.uuid)
 
         self.assertEqual(get_category(self.open_ledger, parent.uuid), parent)

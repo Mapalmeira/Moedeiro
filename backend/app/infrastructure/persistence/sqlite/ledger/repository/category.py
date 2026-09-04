@@ -3,6 +3,7 @@ from uuid import UUID, uuid4
 
 from pydantic import TypeAdapter
 
+from app.application.ledger.exceptions import CategoryTreeSizeExceededError, InvalidCategoryHierarchyError
 from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.category import Category, CategoryName, MAX_CATEGORY_DEPTH
 from app.domain.ledger.model.category_tree_node import CategoryTreeNode
@@ -22,7 +23,7 @@ class SqliteCategoryRepository(CategoryRepository):
         if parent_uuid is not None:
             ancestors = self._get_ancestors(parent_uuid)
             if ancestors is not None and len(ancestors) >= MAX_CATEGORY_DEPTH:
-                raise ValueError(f"category depth must not exceed {MAX_CATEGORY_DEPTH}")
+                raise InvalidCategoryHierarchyError
         self.connection.execute(
             "INSERT INTO category(uuid, category_name, icon, color_code, parent_uuid) VALUES (?, ?, ?, ?, ?)",
             (category.uuid.bytes, category.name, category.icon, category.color_code, self._serialize_uuid(category.parent_uuid)),
@@ -64,9 +65,9 @@ class SqliteCategoryRepository(CategoryRepository):
             ancestors = self._get_ancestors(parent_uuid)
             if ancestors is not None:
                 if uuid in ancestors:
-                    raise ValueError("category parent cannot be a descendant")
+                    raise InvalidCategoryHierarchyError
                 if len(ancestors) + self._get_subtree_height(uuid) > MAX_CATEGORY_DEPTH:
-                    raise ValueError(f"category depth must not exceed {MAX_CATEGORY_DEPTH}")
+                    raise InvalidCategoryHierarchyError
         self.connection.execute(
             "UPDATE category SET parent_uuid = ? WHERE uuid = ?",
             (self._serialize_uuid(parent_uuid), uuid.bytes),
@@ -86,7 +87,7 @@ class SqliteCategoryRepository(CategoryRepository):
             (max_size + 1,),
         ).fetchall()
         if len(rows) > max_size:
-            raise ValueError(f"category tree must not contain more than {max_size} categories")
+            raise CategoryTreeSizeExceededError
         categories = [self._to_model(row) for row in rows]
         nodes = {category.uuid: CategoryTreeNode(category=category) for category in categories}
         roots: list[CategoryTreeNode] = []
@@ -144,7 +145,7 @@ class SqliteCategoryRepository(CategoryRepository):
         current_uuid = uuid
         while True:
             if current_uuid in ancestors:
-                raise ValueError("category hierarchy contains a cycle")
+                raise InvalidCategoryHierarchyError
             row = self.connection.execute("SELECT parent_uuid FROM category WHERE uuid = ?", (current_uuid.bytes,)).fetchone()
             if row is None:
                 return None

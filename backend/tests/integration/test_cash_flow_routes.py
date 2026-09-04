@@ -107,7 +107,7 @@ class CashFlowRoutesTest(unittest.TestCase):
 
         self.assertEqual(invalid_period.exception.status_code, 422)
         self.assertEqual(too_many_points.exception.status_code, 422)
-        self.assertEqual(too_many_points.exception.detail, "query must return at most 2 points")
+        self.assertEqual(too_many_points.exception.detail, "Point count cannot exceed 2")
 
     def test_another_user_cannot_query_cash_flow(self) -> None:
         with self.assertRaises(HTTPException) as raised:

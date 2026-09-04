@@ -7,7 +7,7 @@ from app.api.dependencies.authentication import AuthenticatedUser
 from app.api.dependencies.ledger import ledger_unit_of_work_factory
 from app.api.dependencies.pagination import validate_requested_page
 from app.api.ledger.schema.financial_event import AccountTransferFinancialEventRequest, CreateFinancialEventRequest, FinancialEventResponse, ShoppingListFinancialEventRequest, SimpleFinancialEventRequest, UpdateAccountTransferFinancialEventRequest, UpdateFinancialEventRequest, UpdateShoppingListFinancialEventRequest, UpdateSimpleFinancialEventRequest
-from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventStructureError
+from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError, InvalidFinancialEventStructureError
 from app.application.ledger.use_cases.financial_event import create_account_transfer_financial_event, create_shopping_list_financial_event, create_simple_financial_event, delete_financial_event, get_financial_event, list_financial_event_page, update_account_transfer_financial_event, update_shopping_list_financial_event, update_simple_financial_event
 from app.domain.ledger.model.financial_event import FinancialEventType
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
@@ -29,7 +29,6 @@ def create_ledger_financial_event(ledger_uuid: UUID, payload: CreateFinancialEve
                 payload.description,
                 payload.account_uuid,
                 [(movement.category_uuid, movement.value, movement.quantity, movement.item_name) for movement in payload.movements],
-                request.app.state.settings.max_shopping_list_movements,
             )
         elif isinstance(payload, AccountTransferFinancialEventRequest):
             fee = None if payload.fee is None else (payload.fee.category_uuid, payload.fee.value)
@@ -51,8 +50,8 @@ def create_ledger_financial_event(ledger_uuid: UUID, payload: CreateFinancialEve
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found") from error
     except CategoryNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found") from error
-    except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)) from error
+    except InvalidFinancialEventError as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid financial event") from error
     return FinancialEventResponse.from_event(event)
 
 
@@ -107,7 +106,6 @@ def update_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, payload: 
                 payload.description,
                 payload.account_uuid,
                 [(movement.uuid, movement.category_uuid, movement.value, movement.quantity, movement.item_name) for movement in payload.movements],
-                request.app.state.settings.max_shopping_list_movements,
             )
         elif isinstance(payload, UpdateAccountTransferFinancialEventRequest):
             fee = None if payload.fee is None else (payload.fee.category_uuid, payload.fee.value)
@@ -138,8 +136,8 @@ def update_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, payload: 
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Financial event type cannot be changed") from error
     except InvalidFinancialEventStructureError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stored financial event structure is invalid") from error
-    except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)) from error
+    except InvalidFinancialEventError as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid financial event") from error
     return FinancialEventResponse.from_event(event)
 
 

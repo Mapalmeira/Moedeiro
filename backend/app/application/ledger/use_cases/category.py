@@ -1,10 +1,10 @@
 from collections.abc import Callable
 from uuid import UUID
 
-from app.application.ledger.exceptions import CategoryInUseError, CategoryNotFoundError
+from app.application.ledger.exceptions import CategoryInUseError, CategoryNotFoundError, CategoryTreeSizeExceededError
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
 from app.domain.appearance import Icon, RgbColorCode
-from app.domain.ledger.model.category import Category, CategoryName
+from app.domain.ledger.model.category import MAX_CATEGORY_TREE_SIZE, Category, CategoryName
 from app.domain.ledger.model.category_tree_node import CategoryTreeNode
 
 
@@ -14,13 +14,12 @@ def create_category(
     icon: Icon,
     color_code: RgbColorCode,
     parent_uuid: UUID | None,
-    max_tree_size: int,
 ) -> Category:
     with unit_of_work_factory() as unit_of_work:
         if parent_uuid is not None and unit_of_work.category_repository.get(parent_uuid) is None:
             raise CategoryNotFoundError
-        if unit_of_work.category_repository.count() >= max_tree_size:
-            raise ValueError(f"category tree must not contain more than {max_tree_size} categories")
+        if unit_of_work.category_repository.count() >= MAX_CATEGORY_TREE_SIZE:
+            raise CategoryTreeSizeExceededError
         category = unit_of_work.category_repository.create(name, icon, color_code, parent_uuid)
         unit_of_work.commit()
     return category
@@ -34,9 +33,9 @@ def get_category(unit_of_work_factory: Callable[[], LedgerUnitOfWork], category_
         return category
 
 
-def get_category_tree(unit_of_work_factory: Callable[[], LedgerUnitOfWork], max_tree_size: int) -> list[CategoryTreeNode]:
+def get_category_tree(unit_of_work_factory: Callable[[], LedgerUnitOfWork]) -> list[CategoryTreeNode]:
     with unit_of_work_factory() as unit_of_work:
-        return unit_of_work.category_repository.get_tree(max_tree_size)
+        return unit_of_work.category_repository.get_tree(MAX_CATEGORY_TREE_SIZE)
 
 
 def update_category(

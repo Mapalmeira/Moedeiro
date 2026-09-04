@@ -1,9 +1,9 @@
 from collections.abc import Callable, Sequence
 from uuid import UUID
 
-from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventStructureError
+from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError, InvalidFinancialEventStructureError
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
-from app.domain.ledger.model.financial_event import FinancialEvent, FinancialEventDescription, FinancialEventType
+from app.domain.ledger.model.financial_event import MAX_SHOPPING_LIST_MOVEMENTS, FinancialEvent, FinancialEventDescription, FinancialEventType
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName, FinancialMovementQuantity
 
@@ -25,7 +25,7 @@ def create_simple_financial_event(
     item_name: FinancialMovementItemName | None,
 ) -> FinancialEvent:
     if value == 0:
-        raise ValueError("simple financial event value must not be zero")
+        raise InvalidFinancialEventError
     return _create_financial_event(unit_of_work_factory, occurred_at, description, "TRANSACTION", [(account_uuid, category_uuid, value, quantity, item_name)])
 
 
@@ -35,14 +35,13 @@ def create_shopping_list_financial_event(
     description: FinancialEventDescription,
     account_uuid: UUID,
     movements: Sequence[ShoppingListMovement],
-    max_movements: int,
 ) -> FinancialEvent:
     if not movements:
-        raise ValueError("shopping list must contain at least one movement")
-    if len(movements) > max_movements:
-        raise ValueError(f"shopping list must contain at most {max_movements} movements")
+        raise InvalidFinancialEventError
+    if len(movements) > MAX_SHOPPING_LIST_MOVEMENTS:
+        raise InvalidFinancialEventError
     if any(value >= 0 for _, value, _, _ in movements):
-        raise ValueError("shopping list movements must be expenses")
+        raise InvalidFinancialEventError
     return _create_financial_event(
         unit_of_work_factory,
         occurred_at,
@@ -65,13 +64,13 @@ def create_account_transfer_financial_event(
     fee: TransferFee | None,
 ) -> FinancialEvent:
     if source_account_uuid == destination_account_uuid:
-        raise ValueError("transfer accounts must be different")
+        raise InvalidFinancialEventError
     if source_value >= 0:
-        raise ValueError("transfer source movement must be an expense")
+        raise InvalidFinancialEventError
     if destination_value <= 0:
-        raise ValueError("transfer destination movement must be income")
+        raise InvalidFinancialEventError
     if fee is not None and fee[1] >= 0:
-        raise ValueError("transfer fee movement must be an expense")
+        raise InvalidFinancialEventError
     movements: list[_Movement] = [
         (source_account_uuid, source_category_uuid, source_value, 1, None),
         (destination_account_uuid, destination_category_uuid, destination_value, 1, None),
@@ -112,7 +111,7 @@ def update_simple_financial_event(
     item_name: FinancialMovementItemName | None,
 ) -> FinancialEvent:
     if value == 0:
-        raise ValueError("simple financial event value must not be zero")
+        raise InvalidFinancialEventError
     with unit_of_work_factory() as unit_of_work:
         event = _get_event_of_type(unit_of_work, event_uuid, "TRANSACTION")
         if len(event.movements) != 1:
@@ -132,17 +131,16 @@ def update_shopping_list_financial_event(
     description: FinancialEventDescription,
     account_uuid: UUID,
     movements: Sequence[UpdatedShoppingListMovement],
-    max_movements: int,
 ) -> FinancialEvent:
     if not movements:
-        raise ValueError("shopping list must contain at least one movement")
-    if len(movements) > max_movements:
-        raise ValueError(f"shopping list must contain at most {max_movements} movements")
+        raise InvalidFinancialEventError
+    if len(movements) > MAX_SHOPPING_LIST_MOVEMENTS:
+        raise InvalidFinancialEventError
     if any(value >= 0 for _, _, value, _, _ in movements):
-        raise ValueError("shopping list movements must be expenses")
+        raise InvalidFinancialEventError
     supplied_uuids = [movement_uuid for movement_uuid, _, _, _, _ in movements if movement_uuid is not None]
     if len(supplied_uuids) != len(set(supplied_uuids)):
-        raise ValueError("shopping list movement UUIDs must be unique")
+        raise InvalidFinancialEventError
     with unit_of_work_factory() as unit_of_work:
         event = _get_event_of_type(unit_of_work, event_uuid, "SHOPPING_LIST")
         if not event.movements or any(movement.value >= 0 for movement in event.movements):
@@ -182,13 +180,13 @@ def update_account_transfer_financial_event(
     fee: TransferFee | None,
 ) -> FinancialEvent:
     if source_account_uuid == destination_account_uuid:
-        raise ValueError("transfer accounts must be different")
+        raise InvalidFinancialEventError
     if source_value >= 0:
-        raise ValueError("transfer source movement must be an expense")
+        raise InvalidFinancialEventError
     if destination_value <= 0:
-        raise ValueError("transfer destination movement must be income")
+        raise InvalidFinancialEventError
     if fee is not None and fee[1] >= 0:
-        raise ValueError("transfer fee movement must be an expense")
+        raise InvalidFinancialEventError
     with unit_of_work_factory() as unit_of_work:
         event = _get_event_of_type(unit_of_work, event_uuid, "ACCOUNT_TRANSFER")
         source, destination, existing_fee = _transfer_movements(event)

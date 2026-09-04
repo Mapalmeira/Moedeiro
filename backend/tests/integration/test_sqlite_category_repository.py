@@ -4,6 +4,7 @@ import sqlite3
 
 from pydantic import ValidationError
 
+from app.application.ledger.exceptions import CategoryTreeSizeExceededError, InvalidCategoryHierarchyError
 from app.domain.ledger.model.category_tree_node import CategoryTreeNode
 from app.infrastructure.persistence.sqlite.ledger.repository.category import SqliteCategoryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.financial_movement import SqliteFinancialMovementRepository
@@ -89,7 +90,7 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
             parent = self.repository.create(f"Level {level}", "Circle", b"\x80\x80\x80", None if parent is None else parent.uuid)
         assert parent is not None
 
-        with self.assertRaisesRegex(ValueError, "depth must not exceed 5"):
+        with self.assertRaises(InvalidCategoryHierarchyError):
             self.repository.create("Too deep", "Circle", b"\x80\x80\x80", parent.uuid)
 
         self.assertEqual(self._count(self.repository.get_tree(1000)), 5)
@@ -103,9 +104,9 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         target_child = self.create_category("Target child", target_root)
         target_grandchild = self.create_category("Target grandchild", target_child)
 
-        with self.assertRaisesRegex(ValueError, "cannot be a descendant"):
+        with self.assertRaises(InvalidCategoryHierarchyError):
             self.repository.update_parent(root.uuid, child.uuid)
-        with self.assertRaisesRegex(ValueError, "depth must not exceed 5"):
+        with self.assertRaises(InvalidCategoryHierarchyError):
             self.repository.update_parent(source.uuid, target_grandchild.uuid)
 
         stored_root = self.repository.get(root.uuid)
@@ -133,7 +134,7 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         self.repository.create("Second", "Circle", b"\x80\x80\x80", None)
 
         self.assertEqual(self.repository.count(), 2)
-        with self.assertRaisesRegex(ValueError, "more than 1 categories"):
+        with self.assertRaises(CategoryTreeSizeExceededError):
             self.repository.get_tree(1)
 
     def test_get_tree_returns_roots_with_ordered_descendants(self) -> None:

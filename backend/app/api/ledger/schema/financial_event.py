@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.domain.ledger.model.financial_event import FinancialEvent, FinancialEventDescription, FinancialEventType
+from app.domain.ledger.model.financial_event import MAX_SHOPPING_LIST_MOVEMENTS, FinancialEvent, FinancialEventDescription, FinancialEventType
 from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName, FinancialMovementQuantity
 
 
@@ -41,7 +41,7 @@ class ShoppingListFinancialEventRequest(BaseModel):
     occurred_at: int
     description: FinancialEventDescription
     account_uuid: UUID
-    movements: list[ShoppingListMovementRequest] = Field(min_length=1)
+    movements: list[ShoppingListMovementRequest] = Field(min_length=1, max_length=MAX_SHOPPING_LIST_MOVEMENTS)
 
 
 class AccountTransferFeeRequest(BaseModel):
@@ -96,7 +96,7 @@ class UpdateShoppingListFinancialEventRequest(BaseModel):
     occurred_at: int
     description: FinancialEventDescription
     account_uuid: UUID
-    movements: list[UpdateShoppingListMovementRequest] = Field(min_length=1)
+    movements: list[UpdateShoppingListMovementRequest] = Field(min_length=1, max_length=MAX_SHOPPING_LIST_MOVEMENTS)
 
 
 class UpdateAccountTransferFinancialEventRequest(BaseModel):

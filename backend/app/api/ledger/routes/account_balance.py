@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from app.api.dependencies.authentication import AuthenticatedUser
 from app.api.dependencies.ledger import ledger_unit_of_work_factory
-from app.application.ledger.exceptions import AccountNotFoundError
+from app.application.ledger.exceptions import AccountNotFoundError, QueryPointLimitExceededError
 from app.application.ledger.use_cases.account_balance import get_account_balance, list_account_balance_points
 
 
@@ -41,5 +41,5 @@ def list_ledger_account_balance_points(
         )
     except AccountNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found") from error
-    except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)) from error
+    except QueryPointLimitExceededError as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=f"Point count cannot exceed {request.app.state.settings.max_query_points}") from error

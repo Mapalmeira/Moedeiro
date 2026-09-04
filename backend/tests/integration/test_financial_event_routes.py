@@ -31,7 +31,6 @@ class FinancialEventRoutesTest(unittest.TestCase):
                 registry_db_path=directory / "registry/registry.sqlite",
                 ledger_dbs_dir=directory / "ledgers",
                 max_page_size=2,
-                max_shopping_list_movements=2,
             ),
             FakePasswordHasher(),
             FakeRateLimiter(),
@@ -96,40 +95,25 @@ class FinancialEventRoutesTest(unittest.TestCase):
         self.assertEqual({movement.category_uuid for movement in event.movements}, {self.food.uuid, self.transport.uuid})
         self.assertEqual({movement.quantity for movement in event.movements}, {1, 3})
 
-    def test_create_and_update_reject_shopping_lists_above_the_configured_limit(self) -> None:
-        movements = [ShoppingListMovementRequest(category_uuid=self.food.uuid, value=-10) for _ in range(3)]
+    def test_request_schemas_reject_shopping_lists_above_three_hundred_movements(self) -> None:
+        movements = [ShoppingListMovementRequest(category_uuid=self.food.uuid, value=-10) for _ in range(301)]
 
-        with self.assertRaises(HTTPException) as create_error:
-            create_ledger_financial_event(
-                self.ledger.uuid,
-                ShoppingListFinancialEventRequest(type="SHOPPING_LIST", occurred_at=20, description="Too large", account_uuid=self.source.uuid, movements=movements),
-                self.request,
-                self.user,
+        with self.assertRaises(ValidationError):
+            ShoppingListFinancialEventRequest(
+                type="SHOPPING_LIST",
+                occurred_at=20,
+                description="Too large",
+                account_uuid=self.source.uuid,
+                movements=movements,
             )
-
-        event = create_ledger_financial_event(
-            self.ledger.uuid,
-            ShoppingListFinancialEventRequest(type="SHOPPING_LIST", occurred_at=20, description="Valid", account_uuid=self.source.uuid, movements=movements[:1]),
-            self.request,
-            self.user,
-        )
-        with self.assertRaises(HTTPException) as update_error:
-            update_ledger_financial_event(
-                self.ledger.uuid,
-                event.uuid,
-                UpdateShoppingListFinancialEventRequest(
-                    type="SHOPPING_LIST",
-                    occurred_at=21,
-                    description="Too large",
-                    account_uuid=self.source.uuid,
-                    movements=[UpdateShoppingListMovementRequest(category_uuid=self.food.uuid, value=-10) for _ in range(3)],
-                ),
-                self.request,
-                self.user,
+        with self.assertRaises(ValidationError):
+            UpdateShoppingListFinancialEventRequest(
+                type="SHOPPING_LIST",
+                occurred_at=21,
+                description="Too large",
+                account_uuid=self.source.uuid,
+                movements=[UpdateShoppingListMovementRequest(category_uuid=self.food.uuid, value=-10) for _ in range(301)],
             )
-
-        self.assertEqual(create_error.exception.status_code, 422)
-        self.assertEqual(update_error.exception.status_code, 422)
 
     def test_create_account_transfer_returns_explicit_values_and_optional_fee(self) -> None:
         event = create_ledger_financial_event(
@@ -177,6 +161,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
             create_ledger_financial_event(self.ledger.uuid, unknown_category, self.request, self.user)
 
         self.assertEqual(invalid.exception.status_code, 422)
+        self.assertEqual(invalid.exception.detail, "Invalid financial event")
         self.assertEqual(missing.exception.status_code, 404)
         self.assertEqual(missing.exception.detail, "Category not found")
 

@@ -3,7 +3,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from uuid import uuid4
 
-from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
+from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, CurrencyNotFoundError, InvalidQueryParameterError, QueryPointLimitExceededError
 from app.application.ledger.use_cases.cash_flow import get_cash_flow_summary, list_cash_flow_points
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
@@ -81,9 +81,9 @@ class CashFlowUseCasesTest(unittest.TestCase):
     def test_points_reject_invalid_width_and_results_above_the_configured_limit(self) -> None:
         filters = FinancialEventFilter(from_timestamp=100, to_timestamp=301)
 
-        with self.assertRaisesRegex(ValueError, "greater than zero"):
+        with self.assertRaises(InvalidQueryParameterError):
             list_cash_flow_points(self.open_ledger, self.currency.uuid, filters, 0, 100)
-        with self.assertRaisesRegex(ValueError, "at most 2 points"):
+        with self.assertRaises(QueryPointLimitExceededError):
             list_cash_flow_points(self.open_ledger, self.currency.uuid, filters, 100, 2)
 
 

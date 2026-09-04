@@ -3,7 +3,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from uuid import uuid4
 
-from app.application.ledger.exceptions import AccountNotFoundError
+from app.application.ledger.exceptions import AccountNotFoundError, QueryPointLimitExceededError
 from app.application.ledger.use_cases.account_balance import get_account_balance, list_account_balance_points
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
@@ -60,9 +60,9 @@ class AccountBalanceUseCasesTest(unittest.TestCase):
             list_account_balance_points(self.open_ledger, account_uuid, 10, 1, 10, 100)
 
     def test_list_points_rejects_invalid_dimensions_and_the_configured_limit(self) -> None:
-        for point_count, point_interval, max_points in ((0, 10, 100), (1, 0, 100), (4, 10, 3)):
+        for point_count, point_interval, max_points, expected_error in ((0, 10, 100, ValueError), (1, 0, 100, ValueError), (4, 10, 3, QueryPointLimitExceededError)):
             with self.subTest(point_count=point_count, point_interval=point_interval, max_points=max_points):
-                with self.assertRaises(ValueError):
+                with self.assertRaises(expected_error):
                     list_account_balance_points(self.open_ledger, self.account.uuid, 100, point_count, point_interval, max_points)
 
 

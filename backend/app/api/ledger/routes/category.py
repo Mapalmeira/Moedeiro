@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from app.api.dependencies.authentication import AuthenticatedUser
 from app.api.dependencies.ledger import ledger_unit_of_work_factory
 from app.api.ledger.schema.category import CategoryResponse, CategoryTreeNodeResponse, CreateCategoryRequest, UpdateCategoryRequest
-from app.application.ledger.exceptions import CategoryInUseError, CategoryNotFoundError
+from app.application.ledger.exceptions import CategoryInUseError, CategoryNotFoundError, CategoryTreeSizeExceededError, InvalidCategoryHierarchyError
 from app.application.ledger.use_cases.category import create_category, delete_category, get_category, get_category_tree, update_category
 
 
@@ -21,21 +21,22 @@ def create_ledger_category(ledger_uuid: UUID, payload: CreateCategoryRequest, re
             payload.icon,
             bytes.fromhex(payload.color_code[1:]),
             payload.parent_uuid,
-            request.app.state.settings.max_category_tree_size,
         )
     except CategoryNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found") from error
-    except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    except CategoryTreeSizeExceededError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Category limit exceeded") from error
+    except InvalidCategoryHierarchyError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Invalid category hierarchy") from error
     return CategoryResponse.from_category(category)
 
 
 @router.get("/tree", response_model=list[CategoryTreeNodeResponse])
 def get_ledger_category_tree(ledger_uuid: UUID, request: Request, user: AuthenticatedUser) -> list[CategoryTreeNodeResponse]:
     try:
-        tree = get_category_tree(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), request.app.state.settings.max_category_tree_size)
-    except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+        tree = get_category_tree(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid))
+    except CategoryTreeSizeExceededError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Category limit exceeded") from error
     return [CategoryTreeNodeResponse.from_node(node) for node in tree]
 
 
@@ -61,8 +62,8 @@ def update_ledger_category(ledger_uuid: UUID, category_uuid: UUID, payload: Upda
         )
     except CategoryNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found") from error
-    except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    except InvalidCategoryHierarchyError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Invalid category hierarchy") from error
     return CategoryResponse.from_category(category)
 
 
