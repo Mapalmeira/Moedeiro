@@ -11,21 +11,20 @@ CurrencySortKey = Literal["name", "prefix", "suffix", "decimal_places"]
 HexRgbColorCode = Annotated[str, Field(pattern=r"^#[0-9A-Fa-f]{6}$")]
 
 
-class CreateCurrencyRequest(BaseModel):
+class CurrencyPayload(BaseModel):
     name: str = Field(min_length=1, max_length=30)
     prefix: str | None = Field(default=None, max_length=10)
     suffix: str | None = Field(default=None, max_length=10)
+    icon: Icon
+    color_code: HexRgbColorCode
+
+
+class CreateCurrencyRequest(CurrencyPayload):
     decimal_places: int = Field(ge=0, le=20)
-    icon: Icon
-    color_code: HexRgbColorCode
 
 
-class UpdateCurrencyRequest(BaseModel):
-    name: str = Field(min_length=1, max_length=30)
-    prefix: str | None = Field(default=None, max_length=10)
-    suffix: str | None = Field(default=None, max_length=10)
-    icon: Icon
-    color_code: HexRgbColorCode
+class UpdateCurrencyRequest(CurrencyPayload):
+    pass
 
 
 class CurrencyResponse(BaseModel):

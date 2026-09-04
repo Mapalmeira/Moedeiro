@@ -11,16 +11,14 @@ HexRgbColorCode = Annotated[str, Field(pattern=r"^#[0-9A-Fa-f]{6}$")]
 LedgerSortKey = Literal["name", "last_accessed_at"]
 
 
-class CreateLedgerRequest(BaseModel):
+class LedgerPayload(BaseModel):
     name: LedgerName
     icon: Icon
     color_code: HexRgbColorCode
 
 
-class UpdateLedgerRequest(BaseModel):
-    name: LedgerName
-    icon: Icon
-    color_code: HexRgbColorCode
+CreateLedgerRequest = LedgerPayload
+UpdateLedgerRequest = LedgerPayload
 
 
 class LedgerResponse(BaseModel):

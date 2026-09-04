@@ -65,22 +65,7 @@ class AccountTransferFinancialEventRequest(BaseModel):
 CreateFinancialEventRequest = Annotated[SimpleFinancialEventRequest | ShoppingListFinancialEventRequest | AccountTransferFinancialEventRequest, Field(discriminator="type")]
 
 
-class UpdateSimpleFinancialEventRequest(BaseModel):
-    type: Literal["TRANSACTION"]
-    occurred_at: int
-    description: FinancialEventDescription
-    account_uuid: UUID
-    category_uuid: UUID
-    value: int
-    quantity: FinancialMovementQuantity = 1
-    item_name: FinancialMovementItemName | None = None
-
-    @field_validator("value")
-    @classmethod
-    def reject_zero_value(cls, value: int) -> int:
-        if value == 0:
-            raise ValueError("value must not be zero")
-        return value
+UpdateSimpleFinancialEventRequest = SimpleFinancialEventRequest
 
 
 class UpdateShoppingListMovementRequest(BaseModel):
@@ -99,17 +84,7 @@ class UpdateShoppingListFinancialEventRequest(BaseModel):
     movements: list[UpdateShoppingListMovementRequest] = Field(min_length=1, max_length=MAX_SHOPPING_LIST_MOVEMENTS)
 
 
-class UpdateAccountTransferFinancialEventRequest(BaseModel):
-    type: Literal["ACCOUNT_TRANSFER"]
-    occurred_at: int
-    description: FinancialEventDescription
-    source_account_uuid: UUID
-    source_category_uuid: UUID
-    source_value: ExpenseValue
-    destination_account_uuid: UUID
-    destination_category_uuid: UUID
-    destination_value: IncomeValue
-    fee: AccountTransferFeeRequest | None = None
+UpdateAccountTransferFinancialEventRequest = AccountTransferFinancialEventRequest
 
 
 UpdateFinancialEventRequest = Annotated[UpdateSimpleFinancialEventRequest | UpdateShoppingListFinancialEventRequest | UpdateAccountTransferFinancialEventRequest, Field(discriminator="type")]

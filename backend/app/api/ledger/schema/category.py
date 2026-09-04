@@ -13,18 +13,14 @@ from app.domain.ledger.model.category_tree_node import CategoryTreeNode
 HexRgbColorCode = Annotated[str, Field(pattern=r"^#[0-9A-Fa-f]{6}$")]
 
 
-class CreateCategoryRequest(BaseModel):
+class CategoryPayload(BaseModel):
     name: CategoryName
     icon: Icon
     color_code: HexRgbColorCode
     parent_uuid: UUID | None = None
 
-
-class UpdateCategoryRequest(BaseModel):
-    name: CategoryName
-    icon: Icon
-    color_code: HexRgbColorCode
-    parent_uuid: UUID | None = None
+CreateCategoryRequest = CategoryPayload
+UpdateCategoryRequest = CategoryPayload
 
 
 class CategoryResponse(BaseModel):
