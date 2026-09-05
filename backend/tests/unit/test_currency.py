@@ -14,7 +14,7 @@ class CurrencyTest(unittest.TestCase):
             uuid=uuid4(),
             name="Real",
             decimal_places=2,
-            icon="R$",
+            icon="unicode:R$",
             color_code=b"\x80\x80\x80",
         )
         with_symbols = Currency(
@@ -23,7 +23,7 @@ class CurrencyTest(unittest.TestCase):
             prefix="R$",
             suffix="BRL",
             decimal_places=2,
-            icon="R$",
+            icon="unicode:R$",
             color_code=b"\x80\x80\x80",
         )
 
@@ -31,7 +31,7 @@ class CurrencyTest(unittest.TestCase):
         self.assertIsNone(without_symbols.suffix)
         self.assertEqual(with_symbols.prefix, "R$")
         self.assertEqual(with_symbols.suffix, "BRL")
-        self.assertEqual(with_symbols.icon, "R$")
+        self.assertEqual(with_symbols.icon, "unicode:R$")
 
     def test_accepts_decimal_place_boundaries(self) -> None:
         for decimal_places in (0, 20):
@@ -40,7 +40,7 @@ class CurrencyTest(unittest.TestCase):
                     uuid=uuid4(),
                     name="Currency",
                     decimal_places=decimal_places,
-                    icon="$",
+                    icon="unicode:$",
                     color_code=b"\x80\x80\x80",
                 )
                 self.assertEqual(currency.decimal_places, decimal_places)
@@ -53,7 +53,7 @@ class CurrencyTest(unittest.TestCase):
                         uuid=uuid4(),
                         name="Currency",
                         decimal_places=decimal_places,
-                        icon="$",
+                        icon="unicode:$",
                         color_code=b"\x80\x80\x80",
                     )
 
@@ -61,7 +61,7 @@ class CurrencyTest(unittest.TestCase):
         for name in ("", "x" * 31):
             with self.subTest(name_length=len(name)):
                 with self.assertRaises(ValidationError):
-                    Currency(uuid=uuid4(), name=name, decimal_places=2, icon="$", color_code=b"\x80\x80\x80")
+                    Currency(uuid=uuid4(), name=name, decimal_places=2, icon="unicode:$", color_code=b"\x80\x80\x80")
 
     def test_rejects_prefix_or_suffix_longer_than_limit(self) -> None:
         for field in ("prefix", "suffix"):
@@ -69,7 +69,7 @@ class CurrencyTest(unittest.TestCase):
                 "uuid": uuid4(),
                 "name": "Currency",
                 "decimal_places": 2,
-                "icon": "$",
+                "icon": "unicode:$",
                 "color_code": b"\x80\x80\x80",
                 field: "x" * 11,
             }
@@ -79,10 +79,10 @@ class CurrencyTest(unittest.TestCase):
                     Currency.model_validate(values)
 
     def test_rejects_icon_or_color_outside_limits(self) -> None:
-        invalid_values = (("icon", ""), ("icon", "x" * 51), ("color_code", b"\x00\x00"), ("color_code", b"\x00" * 4))
+        invalid_values = (("icon", ""), ("icon", "lucide:" + "x" * 94), ("color_code", b"\x00\x00"), ("color_code", b"\x00" * 4))
         for field, value in invalid_values:
             with self.subTest(field=field, length=len(value)):
-                values = {"uuid": uuid4(), "name": "Currency", "decimal_places": 2, "icon": "$", "color_code": b"\x80\x80\x80"}
+                values = {"uuid": uuid4(), "name": "Currency", "decimal_places": 2, "icon": "unicode:$", "color_code": b"\x80\x80\x80"}
                 values[field] = value
                 with self.assertRaises(ValidationError):
                     Currency(**values)

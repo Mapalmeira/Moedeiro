@@ -20,7 +20,7 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
     def test_create_get_and_update_parent(self) -> None:
         """A category can acquire and clear an existing parent."""
         parent = self.create_category("Parent")
-        child = self.repository.create("Child", "Circle", b"\x80\x80\x80", None)
+        child = self.repository.create("Child", "lucide:Circle", b"\x80\x80\x80", None)
 
         self.repository.update_parent(child.uuid, parent.uuid)
         updated = self.repository.get(child.uuid)
@@ -36,12 +36,12 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         """The category appearance persists independently from its hierarchy."""
         category = self.create_category()
 
-        self.repository.update_icon(category.uuid, "Utensils")
+        self.repository.update_icon(category.uuid, "lucide:Utensils")
         self.repository.update_color_code(category.uuid, b"\xff\x80\x00")
 
         updated = self.repository.get(category.uuid)
         assert updated is not None
-        self.assertEqual(updated.icon, "Utensils")
+        self.assertEqual(updated.icon, "lucide:Utensils")
         self.assertEqual(updated.color_code, b"\xff\x80\x00")
         self.assertEqual(updated.parent_uuid, category.parent_uuid)
 
@@ -65,7 +65,7 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
     def test_deleting_parent_cascades_to_children(self) -> None:
         """The schema relation applies its configured parent cascade."""
         parent = self.create_category("Parent")
-        child = self.repository.create("Child", "Circle", b"\x80\x80\x80", parent.uuid)
+        child = self.repository.create("Child", "lucide:Circle", b"\x80\x80\x80", parent.uuid)
 
         self.repository.delete(parent.uuid)
 
@@ -93,16 +93,16 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         from uuid import uuid4
 
         with self.assertRaises(sqlite3.IntegrityError):
-            self.repository.create("Child", "Circle", b"\x80\x80\x80", uuid4())
+            self.repository.create("Child", "lucide:Circle", b"\x80\x80\x80", uuid4())
 
     def test_create_rejects_a_sixth_category_level(self) -> None:
         parent = None
         for level in range(5):
-            parent = self.repository.create(f"Level {level}", "Circle", b"\x80\x80\x80", None if parent is None else parent.uuid)
+            parent = self.repository.create(f"Level {level}", "lucide:Circle", b"\x80\x80\x80", None if parent is None else parent.uuid)
         assert parent is not None
 
         with self.assertRaises(InvalidCategoryHierarchyError):
-            self.repository.create("Too deep", "Circle", b"\x80\x80\x80", parent.uuid)
+            self.repository.create("Too deep", "lucide:Circle", b"\x80\x80\x80", parent.uuid)
 
         self.assertEqual(self._count(self.repository.get_tree(1000)), 5)
 
@@ -141,8 +141,8 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(stored_child.parent_uuid, fourth.uuid)
 
     def test_count_and_tree_read_limit_are_applied(self) -> None:
-        self.repository.create("First", "Circle", b"\x80\x80\x80", None)
-        self.repository.create("Second", "Circle", b"\x80\x80\x80", None)
+        self.repository.create("First", "lucide:Circle", b"\x80\x80\x80", None)
+        self.repository.create("Second", "lucide:Circle", b"\x80\x80\x80", None)
 
         self.assertEqual(self.repository.count(), 2)
         with self.assertRaises(CategoryTreeSizeExceededError):

@@ -24,7 +24,7 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(budget.from_timestamp, 10)
         self.assertEqual(budget.to_timestamp, 20)
         self.assertEqual(budget.amount, 100)
-        self.assertEqual(budget.icon, "ReceiptText")
+        self.assertEqual(budget.icon, "lucide:ReceiptText")
         self.assertEqual(budget.color_code, b"\x80\x80\x80")
 
     def test_get_by_name_returns_the_budget_and_unknown_name_returns_none(self) -> None:
@@ -38,7 +38,7 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
         for category_uuid, currency_uuid in ((uuid4(), self.currency.uuid), (self.category.uuid, uuid4())):
             with self.subTest(category_uuid=category_uuid, currency_uuid=currency_uuid):
                 with self.assertRaises(sqlite3.IntegrityError):
-                    self.repository.create(category_uuid, currency_uuid, 10, 20, "Monthly", "Spending", 100, "ReceiptText", b"\x80\x80\x80")
+                    self.repository.create(category_uuid, currency_uuid, 10, 20, "Monthly", "Spending", 100, "lucide:ReceiptText", b"\x80\x80\x80")
 
     def test_updates_mutable_budget_fields_without_changing_currency(self) -> None:
         """Budget updates preserve identity and immutable currency relation."""
@@ -72,7 +72,7 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
                 "name": "Updated",
                 "description": "Updated spending",
                 "amount": 200,
-                "icon": "Landmark",
+                "icon": "lucide:Landmark",
                 "color_code": b"\xaa\xbb\xcc",
             }
         )

@@ -31,7 +31,7 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         self.repository = SqliteLedgerRepository(self.connection)
 
     def create_ledger(self, path: str, last_accessed_at: int = 10):
-        return self.repository.create(uuid4(), "Main ledger", path, "BookOpen", b"\x80\x80\x80", last_accessed_at)
+        return self.repository.create(uuid4(), "Main ledger", path, "lucide:BookOpen", b"\x80\x80\x80", last_accessed_at)
 
     def tearDown(self) -> None:
         self.connection.close()
@@ -113,12 +113,12 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         """A ledger appearance can change without changing its path or identity."""
         ledger = self.create_ledger("ledger.sqlite")
 
-        self.repository.update_icon(ledger.uuid, "WalletCards")
+        self.repository.update_icon(ledger.uuid, "lucide:WalletCards")
         self.repository.update_color_code(ledger.uuid, b"\xff\x80\x00")
 
         updated = self.repository.get(ledger.uuid)
         assert updated is not None
-        self.assertEqual(updated.icon, "WalletCards")
+        self.assertEqual(updated.icon, "lucide:WalletCards")
         self.assertEqual(updated.color_code, b"\xff\x80\x00")
         self.assertEqual(updated.path, ledger.path)
 
@@ -133,8 +133,8 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         self.assertEqual(updated.last_accessed_at, 30)
 
     def test_list_all_orders_every_ledger_and_rejects_uuid_sorting(self) -> None:
-        self.repository.create(uuid4(), "Bravo", "first.sqlite", "BookOpen", b"\x80\x80\x80", 10)
-        self.repository.create(uuid4(), "Alpha", "second.sqlite", "BookOpen", b"\x80\x80\x80", 20)
+        self.repository.create(uuid4(), "Bravo", "first.sqlite", "lucide:BookOpen", b"\x80\x80\x80", 10)
+        self.repository.create(uuid4(), "Alpha", "second.sqlite", "lucide:BookOpen", b"\x80\x80\x80", 20)
 
         ledgers = self.repository.list_all("name", False)
 

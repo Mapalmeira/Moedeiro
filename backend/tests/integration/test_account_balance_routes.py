@@ -46,22 +46,22 @@ class AccountBalanceRoutesTest(unittest.TestCase):
             self.other_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
             unit_of_work.commit()
         self.request = Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": []})
-        self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="WalletCards", color_code="#102030"), self.request, self.user)
+        self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="lucide:WalletCards", color_code="#102030"), self.request, self.user)
         self.currency = create_ledger_currency(
             self.ledger.uuid,
-            CreateCurrencyRequest(name="Real", prefix="R$", suffix=None, decimal_places=2, icon="CircleDollarSign", color_code="#AABBCC"),
+            CreateCurrencyRequest(name="Real", prefix="R$", suffix=None, decimal_places=2, icon="lucide:CircleDollarSign", color_code="#AABBCC"),
             self.request,
             self.user,
         )
         self.category = create_ledger_category(
             self.ledger.uuid,
-            CreateCategoryRequest(name="General", icon="Circle", color_code="#708090"),
+            CreateCategoryRequest(name="General", icon="lucide:Circle", color_code="#708090"),
             self.request,
             self.user,
         )
         self.account = create_ledger_account(
             self.ledger.uuid,
-            CreateAccountRequest(name="Checking", currency_uuid=self.currency.uuid, icon="WalletCards", color_code="#405060"),
+            CreateAccountRequest(name="Checking", currency_uuid=self.currency.uuid, icon="lucide:WalletCards", color_code="#405060"),
             self.request,
             self.user,
         )

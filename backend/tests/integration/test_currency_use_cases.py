@@ -38,7 +38,7 @@ class CurrencyUseCasesTest(unittest.TestCase):
             "R$",
             None,
             2,
-            "CircleDollarSign",
+            "lucide:CircleDollarSign",
             b"\x10\x20\x30",
         )
 
@@ -55,7 +55,7 @@ class CurrencyUseCasesTest(unittest.TestCase):
                 None,
                 None,
                 2,
-                "CircleDollarSign",
+                "lucide:CircleDollarSign",
                 b"\x10\x20\x30",
             )
 
@@ -85,14 +85,14 @@ class CurrencyUseCasesTest(unittest.TestCase):
             "Brazilian Real",
             None,
             " BRL",
-            "Banknote",
+            "lucide:Banknote",
             b"\xaa\xbb\xcc",
         )
 
         self.assertEqual(updated.name, "Brazilian Real")
         self.assertIsNone(updated.prefix)
         self.assertEqual(updated.suffix, " BRL")
-        self.assertEqual(updated.icon, "Banknote")
+        self.assertEqual(updated.icon, "lucide:Banknote")
         self.assertEqual(updated.color_code, b"\xaa\xbb\xcc")
         self.assertEqual(updated.decimal_places, currency.decimal_places)
         self.assertEqual(get_currency(self.open_ledger, currency.uuid), updated)
@@ -105,7 +105,7 @@ class CurrencyUseCasesTest(unittest.TestCase):
                 "Real",
                 "R$",
                 None,
-                "Banknote",
+                "lucide:Banknote",
                 b"\xaa\xbb\xcc",
             )
 
@@ -125,7 +125,7 @@ class CurrencyUseCasesTest(unittest.TestCase):
                 "Checking",
                 None,
                 currency.uuid,
-                "WalletCards",
+                "lucide:WalletCards",
                 b"\x80\x80\x80",
             )
             unit_of_work.commit()
@@ -140,7 +140,7 @@ class CurrencyUseCasesTest(unittest.TestCase):
         with self.open_ledger() as unit_of_work:
             category = unit_of_work.category_repository.create(
                 "Food",
-                "Utensils",
+                "lucide:Utensils",
                 b"\x80\x80\x80",
                 None,
             )
@@ -152,7 +152,7 @@ class CurrencyUseCasesTest(unittest.TestCase):
                 "Monthly",
                 "Monthly food budget",
                 100,
-                "ReceiptText",
+                "lucide:ReceiptText",
                 b"\x80\x80\x80",
             )
             unit_of_work.commit()

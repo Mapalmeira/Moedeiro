@@ -21,8 +21,8 @@ class CategoryUseCasesTest(unittest.TestCase):
         self.database = SqliteDatabase.initialize(Path(self.temporary_directory.name) / "ledger.sqlite", SCHEMA_PATH)
         with self.open_ledger() as unit_of_work:
             unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 10)
-            self.currency = unit_of_work.currency_repository.create("Real", "R$", None, 2, "CircleDollarSign", b"\x10\x20\x30")
-            self.account = unit_of_work.account_repository.create("Checking", None, self.currency.uuid, "WalletCards", b"\x40\x50\x60")
+            self.currency = unit_of_work.currency_repository.create("Real", "R$", None, 2, "lucide:CircleDollarSign", b"\x10\x20\x30")
+            self.account = unit_of_work.account_repository.create("Checking", None, self.currency.uuid, "lucide:WalletCards", b"\x40\x50\x60")
             unit_of_work.commit()
 
     def tearDown(self) -> None:
@@ -32,7 +32,7 @@ class CategoryUseCasesTest(unittest.TestCase):
         return SqliteLedgerUnitOfWork(self.database)
 
     def create(self, name: str = "Food", parent_uuid=None):
-        return create_category(self.open_ledger, name, "Utensils", b"\x70\x80\x90", parent_uuid)
+        return create_category(self.open_ledger, name, "lucide:Utensils", b"\x70\x80\x90", parent_uuid)
 
     def test_create_commits_and_returns_a_root_or_child_category(self) -> None:
         parent = self.create("Food")
@@ -79,10 +79,10 @@ class CategoryUseCasesTest(unittest.TestCase):
         parent = self.create("Parent")
         category = self.create("Old")
 
-        updated = update_category(self.open_ledger, category.uuid, "New", "Shapes", b"\xaa\xbb\xcc", parent.uuid)
+        updated = update_category(self.open_ledger, category.uuid, "New", "lucide:Shapes", b"\xaa\xbb\xcc", parent.uuid)
 
         self.assertEqual(updated.name, "New")
-        self.assertEqual(updated.icon, "Shapes")
+        self.assertEqual(updated.icon, "lucide:Shapes")
         self.assertEqual(updated.color_code, b"\xaa\xbb\xcc")
         self.assertEqual(updated.parent_uuid, parent.uuid)
         self.assertEqual(get_category(self.open_ledger, category.uuid), updated)
@@ -91,9 +91,9 @@ class CategoryUseCasesTest(unittest.TestCase):
         category = self.create()
 
         with self.assertRaises(CategoryNotFoundError):
-            update_category(self.open_ledger, uuid4(), "Missing", "Circle", b"\x10\x20\x30", None)
+            update_category(self.open_ledger, uuid4(), "Missing", "lucide:Circle", b"\x10\x20\x30", None)
         with self.assertRaises(CategoryNotFoundError):
-            update_category(self.open_ledger, category.uuid, "Child", "Circle", b"\x10\x20\x30", uuid4())
+            update_category(self.open_ledger, category.uuid, "Child", "lucide:Circle", b"\x10\x20\x30", uuid4())
 
         self.assertEqual(get_category(self.open_ledger, category.uuid), category)
 
@@ -102,7 +102,7 @@ class CategoryUseCasesTest(unittest.TestCase):
         child = self.create("Child", parent.uuid)
 
         with self.assertRaises(InvalidCategoryHierarchyError):
-            update_category(self.open_ledger, parent.uuid, "Changed", "Shapes", b"\xaa\xbb\xcc", child.uuid)
+            update_category(self.open_ledger, parent.uuid, "Changed", "lucide:Shapes", b"\xaa\xbb\xcc", child.uuid)
 
         self.assertEqual(get_category(self.open_ledger, parent.uuid), parent)
 

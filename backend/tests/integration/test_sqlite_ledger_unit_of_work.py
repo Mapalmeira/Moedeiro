@@ -97,7 +97,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 100)
             unit_of_work.commit()
-            unit_of_work.currency_repository.create("Temporary", None, None, 2, "Circle", b"\x80\x80\x80")
+            unit_of_work.currency_repository.create("Temporary", None, None, 2, "lucide:Circle", b"\x80\x80\x80")
             unit_of_work.rollback()
             unit_of_work.commit()
 
@@ -108,7 +108,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
         """Leaving the scope discards pending writes."""
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
             unit_of_work.currency_repository.create(
-                "Temporary", None, None, 2, "Circle", b"\x80\x80\x80"
+                "Temporary", None, None, 2, "lucide:Circle", b"\x80\x80\x80"
             )
 
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
@@ -119,7 +119,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "expected failure"):
             with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
                 unit_of_work.currency_repository.create(
-                    "Temporary", None, None, 2, "Circle", b"\x80\x80\x80"
+                    "Temporary", None, None, 2, "lucide:Circle", b"\x80\x80\x80"
                 )
                 raise RuntimeError("expected failure")
 

@@ -10,6 +10,16 @@ from app.infrastructure.persistence.sqlite.registry.schema_version import CURREN
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
 
 
+_DEFAULT_LEDGER_CURRENCIES = (
+    ("Real", "R$", None, 2, "unicode:R$", bytes.fromhex("009B3A")),
+    ("Dollar", "$", None, 2, "unicode:$", bytes.fromhex("2E7D32")),
+    ("Euro", "€", None, 2, "unicode:€", bytes.fromhex("003399")),
+    ("Bitcoin", "₿", None, 8, "unicode:₿", bytes.fromhex("F7931A")),
+    ("Iene", "¥", None, 0, "unicode:¥", bytes.fromhex("BC002D")),
+    ("Libra", "£", None, 2, "unicode:£", bytes.fromhex("5B2C6F")),
+)
+
+
 class SqliteDatabases:
     def __init__(
         self,
@@ -97,6 +107,8 @@ class SqliteDatabases:
             database_initialized = True
             with SqliteLedgerUnitOfWork(database) as unit_of_work:
                 unit_of_work.ledger_metadata_repository.create(ledger_uuid, CURRENT_LEDGER_SCHEMA_VERSION, created_at)
+                for currency in _DEFAULT_LEDGER_CURRENCIES:
+                    unit_of_work.currency_repository.create(*currency)
                 unit_of_work.commit()
             database.enable_wal()
         except Exception:

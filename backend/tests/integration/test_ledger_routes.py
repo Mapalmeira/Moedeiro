@@ -47,7 +47,7 @@ class LedgerRoutesTest(unittest.TestCase):
 
     def create_ledger(self, name="Household"):
         return create_owned_ledger(
-            CreateLedgerRequest(name=name, icon="WalletCards", color_code="#102030"),
+            CreateLedgerRequest(name=name, icon="lucide:WalletCards", color_code="#102030"),
             self.request,
             self.alice,
         )
@@ -88,7 +88,7 @@ class LedgerRoutesTest(unittest.TestCase):
 
         updated = update_user_ledger(
             created.uuid,
-            UpdateLedgerRequest(name="Personal", icon="PiggyBank", color_code="#AABBCC"),
+            UpdateLedgerRequest(name="Personal", icon="lucide:PiggyBank", color_code="#AABBCC"),
             self.request,
             self.alice,
         )
@@ -115,7 +115,7 @@ class LedgerRoutesTest(unittest.TestCase):
         with self.assertRaises(HTTPException) as raised:
             update_user_ledger(
                 created.uuid,
-                UpdateLedgerRequest(name="Stolen", icon="Wallet", color_code="#000000"),
+                UpdateLedgerRequest(name="Stolen", icon="lucide:Wallet", color_code="#000000"),
                 self.request,
                 self.bob,
             )
@@ -126,9 +126,10 @@ class LedgerRoutesTest(unittest.TestCase):
 
     def test_request_schemas_reject_invalid_names_icons_and_colors(self) -> None:
         invalid_values = (
-            {"name": "", "icon": "Wallet", "color_code": "#102030"},
+            {"name": "", "icon": "lucide:Wallet", "color_code": "#102030"},
             {"name": "Ledger", "icon": "", "color_code": "#102030"},
-            {"name": "Ledger", "icon": "Wallet", "color_code": "red"},
+            {"name": "Ledger", "icon": "Wallet", "color_code": "#102030"},
+            {"name": "Ledger", "icon": "lucide:Wallet", "color_code": "red"},
         )
 
         for values in invalid_values:

@@ -22,13 +22,13 @@ class BudgetUseCasesTest(unittest.TestCase):
         self.database = SqliteDatabase.initialize(Path(self.temporary_directory.name) / "ledger.sqlite", SCHEMA_PATH)
         with self.open_ledger() as unit_of_work:
             unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 10)
-            self.currency = unit_of_work.currency_repository.create("Real", "R$", None, 2, "CircleDollarSign", b"\x10\x20\x30")
-            self.other_currency = unit_of_work.currency_repository.create("Dollar", "$", None, 2, "CircleDollarSign", b"\x20\x30\x40")
-            self.category = unit_of_work.category_repository.create("Food", "Utensils", b"\x70\x80\x90", None)
-            self.other_category = unit_of_work.category_repository.create("Leisure", "Gamepad2", b"\x80\x90\xa0", None)
-            self.account = unit_of_work.account_repository.create("Checking", None, self.currency.uuid, "WalletCards", b"\x40\x50\x60")
-            self.second_account = unit_of_work.account_repository.create("Savings", None, self.currency.uuid, "PiggyBank", b"\x50\x60\x70")
-            self.other_currency_account = unit_of_work.account_repository.create("Dollar", None, self.other_currency.uuid, "WalletCards", b"\x60\x70\x80")
+            self.currency = unit_of_work.currency_repository.create("Real", "R$", None, 2, "lucide:CircleDollarSign", b"\x10\x20\x30")
+            self.other_currency = unit_of_work.currency_repository.create("Dollar", "$", None, 2, "lucide:CircleDollarSign", b"\x20\x30\x40")
+            self.category = unit_of_work.category_repository.create("Food", "lucide:Utensils", b"\x70\x80\x90", None)
+            self.other_category = unit_of_work.category_repository.create("Leisure", "lucide:Gamepad2", b"\x80\x90\xa0", None)
+            self.account = unit_of_work.account_repository.create("Checking", None, self.currency.uuid, "lucide:WalletCards", b"\x40\x50\x60")
+            self.second_account = unit_of_work.account_repository.create("Savings", None, self.currency.uuid, "lucide:PiggyBank", b"\x50\x60\x70")
+            self.other_currency_account = unit_of_work.account_repository.create("Dollar", None, self.other_currency.uuid, "lucide:WalletCards", b"\x60\x70\x80")
             unit_of_work.commit()
 
     def tearDown(self) -> None:
@@ -47,7 +47,7 @@ class BudgetUseCasesTest(unittest.TestCase):
             name,
             "Monthly spending",
             100,
-            "ReceiptText",
+            "lucide:ReceiptText",
             b"\x80\x80\x80",
             account_uuids,
         )
@@ -65,10 +65,10 @@ class BudgetUseCasesTest(unittest.TestCase):
 
     def test_create_rejects_unknown_relations_or_an_account_in_another_currency(self) -> None:
         operations = (
-            (CurrencyNotFoundError, lambda: create_budget(self.open_ledger, self.category.uuid, uuid4(), 10, 20, "Currency", "Description", 100, "Circle", b"\x10\x20\x30", [])),
-            (CategoryNotFoundError, lambda: create_budget(self.open_ledger, uuid4(), self.currency.uuid, 10, 20, "Category", "Description", 100, "Circle", b"\x10\x20\x30", [])),
-            (AccountNotFoundError, lambda: create_budget(self.open_ledger, self.category.uuid, self.currency.uuid, 10, 20, "Account", "Description", 100, "Circle", b"\x10\x20\x30", [uuid4()])),
-            (BudgetAccountCurrencyMismatchError, lambda: create_budget(self.open_ledger, self.category.uuid, self.currency.uuid, 10, 20, "Mismatch", "Description", 100, "Circle", b"\x10\x20\x30", [self.other_currency_account.uuid])),
+            (CurrencyNotFoundError, lambda: create_budget(self.open_ledger, self.category.uuid, uuid4(), 10, 20, "Currency", "Description", 100, "lucide:Circle", b"\x10\x20\x30", [])),
+            (CategoryNotFoundError, lambda: create_budget(self.open_ledger, uuid4(), self.currency.uuid, 10, 20, "Category", "Description", 100, "lucide:Circle", b"\x10\x20\x30", [])),
+            (AccountNotFoundError, lambda: create_budget(self.open_ledger, self.category.uuid, self.currency.uuid, 10, 20, "Account", "Description", 100, "lucide:Circle", b"\x10\x20\x30", [uuid4()])),
+            (BudgetAccountCurrencyMismatchError, lambda: create_budget(self.open_ledger, self.category.uuid, self.currency.uuid, 10, 20, "Mismatch", "Description", 100, "lucide:Circle", b"\x10\x20\x30", [self.other_currency_account.uuid])),
         )
 
         for expected_error, operation in operations:
@@ -84,11 +84,11 @@ class BudgetUseCasesTest(unittest.TestCase):
         with self.assertRaises(BudgetNameUnavailableError):
             self.create()
         with self.assertRaises(ValidationError):
-            create_budget(self.open_ledger, self.category.uuid, self.currency.uuid, 20, 10, "Invalid", "Description", 100, "Circle", b"\x10\x20\x30", [])
+            create_budget(self.open_ledger, self.category.uuid, self.currency.uuid, 20, 10, "Invalid", "Description", 100, "lucide:Circle", b"\x10\x20\x30", [])
 
         self.assertEqual(len(list_budget_page(self.open_ledger, 1, 200, "name", True)), 1)
 
-    def test_create_rejects_more_than_twenty_account_selectors_before_looking_them_up(self) -> None:
+    def test_create_rejects_more_than_the_account_selector_limit_before_looking_them_up(self) -> None:
         with self.assertRaisesRegex(ValueError, "cannot select more than 50 accounts"):
             self.create(account_uuids=[uuid4() for _ in range(MAX_BUDGET_ACCOUNTS + 1)])
 
@@ -97,7 +97,7 @@ class BudgetUseCasesTest(unittest.TestCase):
     def test_create_validates_selected_accounts_with_one_lookup_query(self) -> None:
         with self.open_ledger() as unit_of_work:
             accounts = [
-                unit_of_work.account_repository.create(f"Account {index}", None, self.currency.uuid, "WalletCards", b"\x40\x50\x60")
+                unit_of_work.account_repository.create(f"Account {index}", None, self.currency.uuid, "lucide:WalletCards", b"\x40\x50\x60")
                 for index in range(3)
             ]
             unit_of_work.commit()
@@ -139,7 +139,7 @@ class BudgetUseCasesTest(unittest.TestCase):
             "Updated",
             "Updated spending",
             250,
-            "Landmark",
+            "lucide:Landmark",
             b"\xaa\xbb\xcc",
             [self.second_account.uuid],
         )
@@ -158,10 +158,10 @@ class BudgetUseCasesTest(unittest.TestCase):
         self.create("Existing")
 
         operations = (
-            (CategoryNotFoundError, lambda: update_budget(self.open_ledger, budget.uuid, uuid4(), 20, 30, "Changed", "Changed", 200, "Circle", b"\x10\x20\x30", [])),
-            (AccountNotFoundError, lambda: update_budget(self.open_ledger, budget.uuid, self.category.uuid, 20, 30, "Changed", "Changed", 200, "Circle", b"\x10\x20\x30", [uuid4()])),
-            (BudgetAccountCurrencyMismatchError, lambda: update_budget(self.open_ledger, budget.uuid, self.category.uuid, 20, 30, "Changed", "Changed", 200, "Circle", b"\x10\x20\x30", [self.other_currency_account.uuid])),
-            (BudgetNameUnavailableError, lambda: update_budget(self.open_ledger, budget.uuid, self.category.uuid, 20, 30, "Existing", "Changed", 200, "Circle", b"\x10\x20\x30", [])),
+            (CategoryNotFoundError, lambda: update_budget(self.open_ledger, budget.uuid, uuid4(), 20, 30, "Changed", "Changed", 200, "lucide:Circle", b"\x10\x20\x30", [])),
+            (AccountNotFoundError, lambda: update_budget(self.open_ledger, budget.uuid, self.category.uuid, 20, 30, "Changed", "Changed", 200, "lucide:Circle", b"\x10\x20\x30", [uuid4()])),
+            (BudgetAccountCurrencyMismatchError, lambda: update_budget(self.open_ledger, budget.uuid, self.category.uuid, 20, 30, "Changed", "Changed", 200, "lucide:Circle", b"\x10\x20\x30", [self.other_currency_account.uuid])),
+            (BudgetNameUnavailableError, lambda: update_budget(self.open_ledger, budget.uuid, self.category.uuid, 20, 30, "Existing", "Changed", 200, "lucide:Circle", b"\x10\x20\x30", [])),
         )
 
         for expected_error, operation in operations:

@@ -23,7 +23,7 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         self.remember_session_uuid = uuid4().bytes
         self.connection.execute("INSERT INTO user_invitation VALUES (?, ?, 10, 3610, NULL)", (self.invitation_uuid, b"i" * 32))
         self.connection.execute("INSERT INTO user_account VALUES (?, 'Alice', 'alice', '$argon2id$encoded', 20, 20)", (self.user_uuid,))
-        self.connection.execute("INSERT INTO ledger(uuid, name, path, icon, color_code, last_accessed_at) VALUES (?, 'Main ledger', 'ledger.sqlite', 'BookOpen', ?, 20)", (self.ledger_uuid, b"\x80\x80\x80"))
+        self.connection.execute("INSERT INTO ledger(uuid, name, path, icon, color_code, last_accessed_at) VALUES (?, 'Main ledger', 'ledger.sqlite', 'lucide:BookOpen', ?, 20)", (self.ledger_uuid, b"\x80\x80\x80"))
         self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'OWNER', 30, NULL)", (self.grant_uuid, self.user_uuid, self.ledger_uuid))
         self.connection.execute("INSERT INTO auth_session VALUES (?, ?, ?, 40, 43240, 1800, NULL)", (self.auth_session_uuid, self.user_uuid, b"s" * 32))
         self.connection.execute("INSERT INTO remember_session VALUES (?, ?, ?, 40, 2592040, NULL)", (self.remember_session_uuid, self.user_uuid, b"r" * 32))
@@ -69,13 +69,23 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
             ("user_account", "name", "x" * 51),
             ("ledger", "name", ""),
             ("ledger", "name", "x" * 51),
-            ("ledger", "icon", ""),
-            ("ledger", "icon", "x" * 51),
         )
         for table, column, value in invalid_updates:
             with self.subTest(table=table, column=column):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.connection.execute(f"UPDATE {table} SET {column} = ?", (value,))
+
+    def test_ledger_icon_enforces_only_the_one_to_one_hundred_character_length(self) -> None:
+        for value in ("x", "x" * 100, "not-a-domain-icon", "unicode:ABCD"):
+            with self.subTest(value=value):
+                self.connection.execute("UPDATE ledger SET icon = ?", (value,))
+                stored = self.connection.execute("SELECT icon FROM ledger").fetchone()[0]
+                self.assertEqual(stored, value)
+
+        for value in ("", "x" * 101):
+            with self.subTest(size=len(value)):
+                with self.assertRaises(sqlite3.IntegrityError):
+                    self.connection.execute("UPDATE ledger SET icon = ?", (value,))
 
     def test_enforces_user_timestamp_and_normalized_name_uniqueness(self) -> None:
         with self.assertRaises(sqlite3.IntegrityError):

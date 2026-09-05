@@ -30,15 +30,15 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             (self.ledger_uuid,),
         )
         self.connection.execute(
-            "INSERT INTO currency VALUES (?, 'Real', NULL, 'R$', 2, 'R$', ?)",
+            "INSERT INTO currency VALUES (?, 'Real', NULL, 'R$', 2, 'unicode:R$', ?)",
             (self.currency_uuid, b"\x80\x80\x80"),
         )
         self.connection.execute(
-            "INSERT INTO account VALUES (?, 'Checking', NULL, ?, 'WalletCards', ?)",
+            "INSERT INTO account VALUES (?, 'Checking', NULL, ?, 'lucide:WalletCards', ?)",
             (self.account_uuid, self.currency_uuid, b"\x80\x80\x80"),
         )
         self.connection.execute(
-            "INSERT INTO category VALUES (?, 'Food', 'Utensils', ?, NULL)",
+            "INSERT INTO category VALUES (?, 'Food', 'lucide:Utensils', ?, NULL)",
             (self.category_uuid, b"\xff\x80\x00"),
         )
         self.connection.execute(
@@ -50,7 +50,7 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             (self.movement_uuid, self.event_uuid, self.account_uuid, self.category_uuid),
         )
         self.connection.execute(
-            "INSERT INTO budget VALUES (?, 0, 10, 'Monthly', 'Spending', 100, 'ReceiptText', ?, ?, ?)",
+            "INSERT INTO budget VALUES (?, 0, 10, 'Monthly', 'Spending', 100, 'lucide:ReceiptText', ?, ?, ?)",
             (self.budget_uuid, b"\x80\x80\x80", self.category_uuid, self.currency_uuid),
         )
 
@@ -96,17 +96,11 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             ("currency", "currency_name", "x" * 31),
             ("currency", "prefix", "x" * 11),
             ("currency", "suffix", "x" * 11),
-            ("currency", "icon", ""),
-            ("currency", "icon", "x" * 51),
             ("account", "account_name", ""),
             ("account", "account_name", "x" * 51),
             ("account", "note", "x" * 301),
-            ("account", "icon", ""),
-            ("account", "icon", "x" * 51),
             ("category", "category_name", ""),
             ("category", "category_name", "x" * 31),
-            ("category", "icon", ""),
-            ("category", "icon", "x" * 51),
             ("financial_event", "description", ""),
             ("financial_event", "description", "x" * 301),
             ("financial_movement", "item_name", "x" * 51),
@@ -114,14 +108,25 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             ("budget", "budget_name", "x" * 51),
             ("budget", "description", ""),
             ("budget", "description", "x" * 301),
-            ("budget", "icon", ""),
-            ("budget", "icon", "x" * 51),
         )
 
         for table, column, value in invalid_values:
             with self.subTest(table=table, column=column, size=len(value)):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.connection.execute(f"UPDATE {table} SET {column} = ?", (value,))
+
+    def test_icon_columns_enforce_only_the_one_to_one_hundred_character_length(self) -> None:
+        for table in ("currency", "account", "category", "budget"):
+            for value in ("x", "x" * 100, "not-a-domain-icon", "unicode:ABCD"):
+                with self.subTest(table=table, value=value):
+                    self.connection.execute(f"UPDATE {table} SET icon = ?", (value,))
+                    stored = self.connection.execute(f"SELECT icon FROM {table}").fetchone()[0]
+                    self.assertEqual(stored, value)
+
+            for value in ("", "x" * 101):
+                with self.subTest(table=table, size=len(value)):
+                    with self.assertRaises(sqlite3.IntegrityError):
+                        self.connection.execute(f"UPDATE {table} SET icon = ?", (value,))
 
     def test_enforces_color_as_rgb_bytes(self) -> None:
         for table in ("currency", "account", "category", "budget"):

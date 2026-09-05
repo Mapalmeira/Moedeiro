@@ -42,7 +42,7 @@ class CategoryRoutesTest(unittest.TestCase):
             self.other_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
             unit_of_work.commit()
         self.request = Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": []})
-        self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="WalletCards", color_code="#102030"), self.request, self.user)
+        self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="lucide:WalletCards", color_code="#102030"), self.request, self.user)
 
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()
@@ -50,7 +50,7 @@ class CategoryRoutesTest(unittest.TestCase):
     def create_category(self, name: str = "Food", parent_uuid=None):
         return create_ledger_category(
             self.ledger.uuid,
-            CreateCategoryRequest(name=name, icon="Utensils", color_code="#708090", parent_uuid=parent_uuid),
+            CreateCategoryRequest(name=name, icon="lucide:Utensils", color_code="#708090", parent_uuid=parent_uuid),
             self.request,
             self.user,
         )
@@ -74,7 +74,7 @@ class CategoryRoutesTest(unittest.TestCase):
             update_ledger_category(
                 self.ledger.uuid,
                 category.uuid,
-                UpdateCategoryRequest(name="Child", icon="Circle", color_code="#102030", parent_uuid=uuid4()),
+                UpdateCategoryRequest(name="Child", icon="lucide:Circle", color_code="#102030", parent_uuid=uuid4()),
                 self.request,
                 self.user,
             )
@@ -99,13 +99,13 @@ class CategoryRoutesTest(unittest.TestCase):
         updated = update_ledger_category(
             self.ledger.uuid,
             category.uuid,
-            UpdateCategoryRequest(name="New", icon="Shapes", color_code="#AABBCC", parent_uuid=parent.uuid),
+            UpdateCategoryRequest(name="New", icon="lucide:Shapes", color_code="#AABBCC", parent_uuid=parent.uuid),
             self.request,
             self.user,
         )
 
         self.assertEqual(updated.name, "New")
-        self.assertEqual(updated.icon, "Shapes")
+        self.assertEqual(updated.icon, "lucide:Shapes")
         self.assertEqual(updated.color_code, "#AABBCC")
         self.assertEqual(updated.parent_uuid, parent.uuid)
 
@@ -117,7 +117,7 @@ class CategoryRoutesTest(unittest.TestCase):
             update_ledger_category(
                 self.ledger.uuid,
                 parent.uuid,
-                UpdateCategoryRequest(name="Parent", icon="Circle", color_code="#102030", parent_uuid=child.uuid),
+                UpdateCategoryRequest(name="Parent", icon="lucide:Circle", color_code="#102030", parent_uuid=child.uuid),
                 self.request,
                 self.user,
             )
@@ -141,8 +141,8 @@ class CategoryRoutesTest(unittest.TestCase):
         parent = self.create_category("Parent")
         child = self.create_category("Child", parent.uuid)
         with self.application.state.databases.open_ledger(f"{self.ledger.uuid}.sqlite") as unit_of_work:
-            currency = unit_of_work.currency_repository.create("Real", "R$", None, 2, "CircleDollarSign", b"\x10\x20\x30")
-            account = unit_of_work.account_repository.create("Checking", None, currency.uuid, "WalletCards", b"\x40\x50\x60")
+            currency = unit_of_work.currency_repository.create("Real", "R$", None, 2, "lucide:CircleDollarSign", b"\x10\x20\x30")
+            account = unit_of_work.account_repository.create("Checking", None, currency.uuid, "lucide:WalletCards", b"\x40\x50\x60")
             event = unit_of_work.financial_event_repository.create(20, "Purchase", "TRANSACTION")
             unit_of_work.financial_movement_repository.create(event.uuid, account.uuid, child.uuid, -100, None)
             unit_of_work.commit()
@@ -161,7 +161,7 @@ class CategoryRoutesTest(unittest.TestCase):
             lambda: update_ledger_category(
                 self.ledger.uuid,
                 missing_uuid,
-                UpdateCategoryRequest(name="Missing", icon="Circle", color_code="#102030"),
+                UpdateCategoryRequest(name="Missing", icon="lucide:Circle", color_code="#102030"),
                 self.request,
                 self.user,
             ),
@@ -181,7 +181,7 @@ class CategoryRoutesTest(unittest.TestCase):
             lambda: update_ledger_category(
                 self.ledger.uuid,
                 category.uuid,
-                UpdateCategoryRequest(name="Changed", icon="Circle", color_code="#102030"),
+                UpdateCategoryRequest(name="Changed", icon="lucide:Circle", color_code="#102030"),
                 self.request,
                 self.other_user,
             ),
@@ -197,10 +197,11 @@ class CategoryRoutesTest(unittest.TestCase):
 
     def test_request_schemas_enforce_category_limits(self) -> None:
         invalid_values = (
-            {"name": "", "icon": "Circle", "color_code": "#102030"},
-            {"name": "x" * 31, "icon": "Circle", "color_code": "#102030"},
+            {"name": "", "icon": "lucide:Circle", "color_code": "#102030"},
+            {"name": "x" * 31, "icon": "lucide:Circle", "color_code": "#102030"},
             {"name": "Food", "icon": "", "color_code": "#102030"},
-            {"name": "Food", "icon": "Circle", "color_code": "red"},
+            {"name": "Food", "icon": "Circle", "color_code": "#102030"},
+            {"name": "Food", "icon": "lucide:Circle", "color_code": "red"},
         )
         for values in invalid_values:
             with self.subTest(values=values):

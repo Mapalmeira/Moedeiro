@@ -42,15 +42,15 @@ class FinancialEventRoutesTest(unittest.TestCase):
             self.other_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
             unit_of_work.commit()
         self.request = Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": []})
-        self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="WalletCards", color_code="#102030"), self.request, self.user)
+        self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="lucide:WalletCards", color_code="#102030"), self.request, self.user)
         with self.application.state.databases.open_ledger(f"{self.ledger.uuid}.sqlite") as unit_of_work:
-            real = unit_of_work.currency_repository.create("Real", "R$", None, 2, "CircleDollarSign", b"\x10\x20\x30")
-            dollar = unit_of_work.currency_repository.create("Dollar", "$", None, 2, "CircleDollarSign", b"\x20\x30\x40")
-            self.source = unit_of_work.account_repository.create("Checking", None, real.uuid, "WalletCards", b"\x30\x40\x50")
-            self.destination = unit_of_work.account_repository.create("Savings", None, dollar.uuid, "PiggyBank", b"\x40\x50\x60")
-            self.food = unit_of_work.category_repository.create("Food", "Utensils", b"\x50\x60\x70", None)
-            self.transport = unit_of_work.category_repository.create("Transport", "Bus", b"\x60\x70\x80", None)
-            self.fee = unit_of_work.category_repository.create("Fees", "ReceiptText", b"\x70\x80\x90", None)
+            real = unit_of_work.currency_repository.create("Real", "R$", None, 2, "lucide:CircleDollarSign", b"\x10\x20\x30")
+            dollar = unit_of_work.currency_repository.create("Dollar", "$", None, 2, "lucide:CircleDollarSign", b"\x20\x30\x40")
+            self.source = unit_of_work.account_repository.create("Checking", None, real.uuid, "lucide:WalletCards", b"\x30\x40\x50")
+            self.destination = unit_of_work.account_repository.create("Savings", None, dollar.uuid, "lucide:PiggyBank", b"\x40\x50\x60")
+            self.food = unit_of_work.category_repository.create("Food", "lucide:Utensils", b"\x50\x60\x70", None)
+            self.transport = unit_of_work.category_repository.create("Transport", "lucide:Bus", b"\x60\x70\x80", None)
+            self.fee = unit_of_work.category_repository.create("Fees", "lucide:ReceiptText", b"\x70\x80\x90", None)
             unit_of_work.commit()
 
     def tearDown(self) -> None:

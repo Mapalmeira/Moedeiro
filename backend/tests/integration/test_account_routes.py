@@ -44,10 +44,10 @@ class AccountRoutesTest(unittest.TestCase):
             self.other_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
             unit_of_work.commit()
         self.request = Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": []})
-        self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="WalletCards", color_code="#102030"), self.request, self.user)
+        self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="lucide:WalletCards", color_code="#102030"), self.request, self.user)
         self.currency = create_ledger_currency(
             self.ledger.uuid,
-            CreateCurrencyRequest(name="Real", prefix="R$", suffix=None, decimal_places=2, icon="CircleDollarSign", color_code="#AABBCC"),
+            CreateCurrencyRequest(name="Real", prefix="R$", suffix=None, decimal_places=2, icon="lucide:CircleDollarSign", color_code="#AABBCC"),
             self.request,
             self.user,
         )
@@ -58,7 +58,7 @@ class AccountRoutesTest(unittest.TestCase):
     def create_account(self, name: str = "Checking"):
         return create_ledger_account(
             self.ledger.uuid,
-            CreateAccountRequest(name=name, note="Daily account", currency_uuid=self.currency.uuid, icon="WalletCards", color_code="#405060"),
+            CreateAccountRequest(name=name, note="Daily account", currency_uuid=self.currency.uuid, icon="lucide:WalletCards", color_code="#405060"),
             self.request,
             self.user,
         )
@@ -77,7 +77,7 @@ class AccountRoutesTest(unittest.TestCase):
         with self.assertRaises(HTTPException) as missing_currency:
             create_ledger_account(
                 self.ledger.uuid,
-                CreateAccountRequest(name="Savings", currency_uuid=uuid4(), icon="PiggyBank", color_code="#405060"),
+                CreateAccountRequest(name="Savings", currency_uuid=uuid4(), icon="lucide:PiggyBank", color_code="#405060"),
                 self.request,
                 self.user,
             )
@@ -113,7 +113,7 @@ class AccountRoutesTest(unittest.TestCase):
         updated = update_ledger_account(
             self.ledger.uuid,
             created.uuid,
-            UpdateAccountRequest(name="Savings", note=None, icon="PiggyBank", color_code="#010203"),
+            UpdateAccountRequest(name="Savings", note=None, icon="lucide:PiggyBank", color_code="#010203"),
             self.request,
             self.user,
         )
@@ -126,7 +126,7 @@ class AccountRoutesTest(unittest.TestCase):
     def test_update_rejects_an_unknown_account_or_unavailable_name(self) -> None:
         existing = self.create_account("Existing")
         other = self.create_account("Other")
-        payload = UpdateAccountRequest(name="Existing", note=None, icon="WalletCards", color_code="#405060")
+        payload = UpdateAccountRequest(name="Existing", note=None, icon="lucide:WalletCards", color_code="#405060")
 
         with self.assertRaises(HTTPException) as missing:
             update_ledger_account(self.ledger.uuid, uuid4(), payload, self.request, self.user)
@@ -149,7 +149,7 @@ class AccountRoutesTest(unittest.TestCase):
     def test_delete_returns_conflict_when_a_movement_uses_the_account(self) -> None:
         account = self.create_account()
         with self.application.state.databases.open_ledger(f"{self.ledger.uuid}.sqlite") as unit_of_work:
-            category = unit_of_work.category_repository.create("Food", "Utensils", b"\x80\x80\x80", None)
+            category = unit_of_work.category_repository.create("Food", "lucide:Utensils", b"\x80\x80\x80", None)
             event = unit_of_work.financial_event_repository.create(20, "Lunch", "TRANSACTION")
             unit_of_work.financial_movement_repository.create(event.uuid, account.uuid, category.uuid, -100, None)
             unit_of_work.commit()
@@ -168,7 +168,7 @@ class AccountRoutesTest(unittest.TestCase):
             lambda: update_ledger_account(
                 self.ledger.uuid,
                 account.uuid,
-                UpdateAccountRequest(name="Stolen", note=None, icon="WalletCards", color_code="#000000"),
+                UpdateAccountRequest(name="Stolen", note=None, icon="lucide:WalletCards", color_code="#000000"),
                 self.request,
                 self.other_user,
             ),
@@ -184,9 +184,10 @@ class AccountRoutesTest(unittest.TestCase):
 
     def test_request_schemas_enforce_limits_and_keep_currency_immutable(self) -> None:
         invalid_values = (
-            {"name": "", "currency_uuid": self.currency.uuid, "icon": "WalletCards", "color_code": "#405060"},
-            {"name": "Checking", "note": "x" * 301, "currency_uuid": self.currency.uuid, "icon": "WalletCards", "color_code": "#405060"},
-            {"name": "Checking", "currency_uuid": self.currency.uuid, "icon": "WalletCards", "color_code": "red"},
+            {"name": "", "currency_uuid": self.currency.uuid, "icon": "lucide:WalletCards", "color_code": "#405060"},
+            {"name": "Checking", "note": "x" * 301, "currency_uuid": self.currency.uuid, "icon": "lucide:WalletCards", "color_code": "#405060"},
+            {"name": "Checking", "currency_uuid": self.currency.uuid, "icon": "WalletCards", "color_code": "#405060"},
+            {"name": "Checking", "currency_uuid": self.currency.uuid, "icon": "lucide:WalletCards", "color_code": "red"},
         )
         for values in invalid_values:
             with self.subTest(values=values):

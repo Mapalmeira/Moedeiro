@@ -21,13 +21,13 @@ class FinancialEventUseCasesTest(unittest.TestCase):
         self.database = SqliteDatabase.initialize(Path(self.temporary_directory.name) / "ledger.sqlite", SCHEMA_PATH)
         with self.open_ledger() as unit_of_work:
             unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 10)
-            self.real = unit_of_work.currency_repository.create("Real", "R$", None, 2, "CircleDollarSign", b"\x10\x20\x30")
-            self.dollar = unit_of_work.currency_repository.create("Dollar", "$", None, 2, "CircleDollarSign", b"\x20\x30\x40")
-            self.source = unit_of_work.account_repository.create("Checking", None, self.real.uuid, "WalletCards", b"\x30\x40\x50")
-            self.destination = unit_of_work.account_repository.create("Savings", None, self.dollar.uuid, "PiggyBank", b"\x40\x50\x60")
-            self.food = unit_of_work.category_repository.create("Food", "Utensils", b"\x50\x60\x70", None)
-            self.transport = unit_of_work.category_repository.create("Transport", "Bus", b"\x60\x70\x80", None)
-            self.fee = unit_of_work.category_repository.create("Fees", "ReceiptText", b"\x70\x80\x90", None)
+            self.real = unit_of_work.currency_repository.create("Real", "R$", None, 2, "lucide:CircleDollarSign", b"\x10\x20\x30")
+            self.dollar = unit_of_work.currency_repository.create("Dollar", "$", None, 2, "lucide:CircleDollarSign", b"\x20\x30\x40")
+            self.source = unit_of_work.account_repository.create("Checking", None, self.real.uuid, "lucide:WalletCards", b"\x30\x40\x50")
+            self.destination = unit_of_work.account_repository.create("Savings", None, self.dollar.uuid, "lucide:PiggyBank", b"\x40\x50\x60")
+            self.food = unit_of_work.category_repository.create("Food", "lucide:Utensils", b"\x50\x60\x70", None)
+            self.transport = unit_of_work.category_repository.create("Transport", "lucide:Bus", b"\x60\x70\x80", None)
+            self.fee = unit_of_work.category_repository.create("Fees", "lucide:ReceiptText", b"\x70\x80\x90", None)
             unit_of_work.commit()
 
     def tearDown(self) -> None:

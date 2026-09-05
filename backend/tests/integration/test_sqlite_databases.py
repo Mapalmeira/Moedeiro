@@ -55,7 +55,7 @@ class SqliteDatabasesTest(unittest.TestCase):
         with self.databases.open_registry() as unit_of_work:
             ledger_uuid = uuid4()
             ledger_path = self.databases.initialize_ledger(ledger_uuid, 10)
-            ledger = unit_of_work.ledger_repository.create(ledger_uuid, "Existing", ledger_path.name, "BookOpen", b"\x80\x80\x80", 10)
+            ledger = unit_of_work.ledger_repository.create(ledger_uuid, "Existing", ledger_path.name, "lucide:BookOpen", b"\x80\x80\x80", 10)
             unit_of_work.commit()
 
         self.databases.initialize()
@@ -110,7 +110,7 @@ class SqliteDatabasesTest(unittest.TestCase):
             connection.close()
         self.assertIsNotNone(table)
 
-    def test_initialize_ledger_applies_the_schema_and_creates_metadata(self) -> None:
+    def test_initialize_ledger_applies_the_schema_and_creates_metadata_and_default_currencies(self) -> None:
         self.databases.initialize()
         ledger_uuid = uuid4()
 
@@ -119,7 +119,22 @@ class SqliteDatabasesTest(unittest.TestCase):
         self.assertEqual(path, self.ledger_dbs_dir / f"{ledger_uuid}.sqlite")
         with self.databases.open_ledger(path) as unit_of_work:
             metadata = unit_of_work.ledger_metadata_repository.get()
+            currencies = unit_of_work.currency_repository.list_page(1, 100, "name", True)
             assert metadata is not None
+        self.assertEqual(
+            [
+                (currency.name, currency.prefix, currency.suffix, currency.decimal_places, currency.icon, currency.color_code)
+                for currency in currencies
+            ],
+            [
+                ("Bitcoin", "₿", None, 8, "unicode:₿", bytes.fromhex("F7931A")),
+                ("Dollar", "$", None, 2, "unicode:$", bytes.fromhex("2E7D32")),
+                ("Euro", "€", None, 2, "unicode:€", bytes.fromhex("003399")),
+                ("Iene", "¥", None, 0, "unicode:¥", bytes.fromhex("BC002D")),
+                ("Libra", "£", None, 2, "unicode:£", bytes.fromhex("5B2C6F")),
+                ("Real", "R$", None, 2, "unicode:R$", bytes.fromhex("009B3A")),
+            ],
+        )
         self.assertEqual(metadata.ledger_uuid, ledger_uuid)
         self.assertEqual(metadata.schema_version, CURRENT_LEDGER_SCHEMA_VERSION)
         self.assertEqual(metadata.created_at, 100)
@@ -182,6 +197,20 @@ class SqliteDatabasesTest(unittest.TestCase):
 
         self.assertFalse(path.exists())
 
+    def test_initialize_ledger_removes_a_new_database_when_default_currency_creation_fails(self) -> None:
+        self.databases.initialize()
+        ledger_uuid = uuid4()
+        path = self.databases.get_ledger_path(ledger_uuid)
+
+        with patch(
+            "app.infrastructure.persistence.sqlite.ledger.repository.currency.SqliteCurrencyRepository.create",
+            side_effect=RuntimeError("currency failed"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "currency failed"):
+                self.databases.initialize_ledger(ledger_uuid, 100)
+
+        self.assertFalse(path.exists())
+
     def test_initialize_backs_up_only_the_registry_when_only_it_requires_a_migration(self) -> None:
         self.databases.initialize()
         ledger_uuid = uuid4()
@@ -233,7 +262,7 @@ class SqliteDatabasesTest(unittest.TestCase):
                 ledger_uuid,
                 "Future",
                 ledger_path.name,
-                "BookOpen",
+                "lucide:BookOpen",
                 b"\x80\x80\x80",
                 10,
             )

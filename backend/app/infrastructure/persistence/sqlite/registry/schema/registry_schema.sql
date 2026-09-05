@@ -24,7 +24,7 @@ CREATE TABLE ledger (
     uuid BLOB PRIMARY KEY,
     name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 50),
     path TEXT NOT NULL UNIQUE,
-    icon TEXT NOT NULL CHECK (length(icon) BETWEEN 1 AND 50),
+    icon TEXT NOT NULL CHECK (length(icon) BETWEEN 1 AND 100),
     color_code BLOB NOT NULL CHECK (length(color_code) = 3),
     last_accessed_at INTEGER NOT NULL CHECK (last_accessed_at >= 0)
 ) STRICT;

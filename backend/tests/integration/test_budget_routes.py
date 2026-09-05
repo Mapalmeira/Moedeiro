@@ -49,46 +49,46 @@ class BudgetRoutesTest(unittest.TestCase):
             self.other_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
             unit_of_work.commit()
         self.request = Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": []})
-        self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="WalletCards", color_code="#102030"), self.request, self.user)
+        self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="lucide:WalletCards", color_code="#102030"), self.request, self.user)
         self.currency = create_ledger_currency(
             self.ledger.uuid,
-            CreateCurrencyRequest(name="Real", prefix="R$", suffix=None, decimal_places=2, icon="CircleDollarSign", color_code="#AABBCC"),
+            CreateCurrencyRequest(name="Real", prefix="R$", suffix=None, decimal_places=2, icon="lucide:CircleDollarSign", color_code="#AABBCC"),
             self.request,
             self.user,
         )
         self.other_currency = create_ledger_currency(
             self.ledger.uuid,
-            CreateCurrencyRequest(name="Dollar", prefix="$", suffix=None, decimal_places=2, icon="CircleDollarSign", color_code="#BBCCDD"),
+            CreateCurrencyRequest(name="Dollar", prefix="$", suffix=None, decimal_places=2, icon="lucide:CircleDollarSign", color_code="#BBCCDD"),
             self.request,
             self.user,
         )
         self.category = create_ledger_category(
             self.ledger.uuid,
-            CreateCategoryRequest(name="Food", icon="Utensils", color_code="#708090"),
+            CreateCategoryRequest(name="Food", icon="lucide:Utensils", color_code="#708090"),
             self.request,
             self.user,
         )
         self.other_category = create_ledger_category(
             self.ledger.uuid,
-            CreateCategoryRequest(name="Leisure", icon="Gamepad2", color_code="#8090A0"),
+            CreateCategoryRequest(name="Leisure", icon="lucide:Gamepad2", color_code="#8090A0"),
             self.request,
             self.user,
         )
         self.account = create_ledger_account(
             self.ledger.uuid,
-            CreateAccountRequest(name="Checking", currency_uuid=self.currency.uuid, icon="WalletCards", color_code="#405060"),
+            CreateAccountRequest(name="Checking", currency_uuid=self.currency.uuid, icon="lucide:WalletCards", color_code="#405060"),
             self.request,
             self.user,
         )
         self.second_account = create_ledger_account(
             self.ledger.uuid,
-            CreateAccountRequest(name="Savings", currency_uuid=self.currency.uuid, icon="PiggyBank", color_code="#506070"),
+            CreateAccountRequest(name="Savings", currency_uuid=self.currency.uuid, icon="lucide:PiggyBank", color_code="#506070"),
             self.request,
             self.user,
         )
         self.other_currency_account = create_ledger_account(
             self.ledger.uuid,
-            CreateAccountRequest(name="Dollar", currency_uuid=self.other_currency.uuid, icon="WalletCards", color_code="#607080"),
+            CreateAccountRequest(name="Dollar", currency_uuid=self.other_currency.uuid, icon="lucide:WalletCards", color_code="#607080"),
             self.request,
             self.user,
         )
@@ -105,7 +105,7 @@ class BudgetRoutesTest(unittest.TestCase):
             name=name,
             description="Monthly spending",
             amount=100,
-            icon="ReceiptText",
+            icon="lucide:ReceiptText",
             color_code="#808080",
             account_uuids=set() if account_uuids is None else account_uuids,
         )
@@ -150,7 +150,7 @@ class BudgetRoutesTest(unittest.TestCase):
             name=existing.name,
             description="Changed",
             amount=200,
-            icon="Circle",
+            icon="lucide:Circle",
             color_code="#102030",
         )
         with self.assertRaises(HTTPException) as update_error:
@@ -191,7 +191,7 @@ class BudgetRoutesTest(unittest.TestCase):
                 name="Updated",
                 description="Updated spending",
                 amount=250,
-                icon="Landmark",
+                icon="lucide:Landmark",
                 color_code="#AABBCC",
                 account_uuids={self.second_account.uuid},
             ),
@@ -267,6 +267,7 @@ class BudgetRoutesTest(unittest.TestCase):
             {**self.payload().model_dump(), "name": ""},
             {**self.payload().model_dump(), "description": "x" * 301},
             {**self.payload().model_dump(), "amount": -1},
+            {**self.payload().model_dump(), "icon": "ReceiptText"},
             {**self.payload().model_dump(), "color_code": "red"},
             {**self.payload().model_dump(), "account_uuids": {uuid4() for _ in range(MAX_BUDGET_ACCOUNTS + 1)}},
         )

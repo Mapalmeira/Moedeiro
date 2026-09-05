@@ -13,14 +13,14 @@ class SqliteCurrencyRepositoryTest(LedgerRepositoryTestCase):
 
     def test_create_and_get_preserve_all_currency_fields(self) -> None:
         """create generates an identity and persists optional formatting fields."""
-        currency = self.repository.create("Real", "R$", None, 2, "R$", b"\x80\x80\x80")
+        currency = self.repository.create("Real", "R$", None, 2, "unicode:R$", b"\x80\x80\x80")
 
         self.assertEqual(self.repository.get(currency.uuid), currency)
         self.assertEqual(currency.name, "Real")
         self.assertEqual(currency.prefix, "R$")
         self.assertIsNone(currency.suffix)
         self.assertEqual(currency.decimal_places, 2)
-        self.assertEqual(currency.icon, "R$")
+        self.assertEqual(currency.icon, "unicode:R$")
         self.assertEqual(currency.color_code, b"\x80\x80\x80")
 
     def test_get_returns_none_for_unknown_currency(self) -> None:
@@ -57,20 +57,20 @@ class SqliteCurrencyRepositoryTest(LedgerRepositoryTestCase):
         """Currency appearance changes preserve formatting properties."""
         currency = self.create_currency()
 
-        self.repository.update_icon(currency.uuid, "💵")
+        self.repository.update_icon(currency.uuid, "unicode:💵")
         self.repository.update_color_code(currency.uuid, b"\xff\x80\x00")
 
         updated = self.repository.get(currency.uuid)
         assert updated is not None
-        self.assertEqual(updated.icon, "💵")
+        self.assertEqual(updated.icon, "unicode:💵")
         self.assertEqual(updated.color_code, b"\xff\x80\x00")
         self.assertEqual(updated.decimal_places, currency.decimal_places)
 
     def test_list_page_orders_and_rejects_uuid_sorting(self) -> None:
         """Pagination accepts model fields but never UUID as a public sort key."""
-        self.repository.create("Charlie", None, None, 2, "$", b"\x80\x80\x80")
-        self.repository.create("Alpha", None, None, 2, "$", b"\x80\x80\x80")
-        self.repository.create("Bravo", None, None, 2, "$", b"\x80\x80\x80")
+        self.repository.create("Charlie", None, None, 2, "unicode:$", b"\x80\x80\x80")
+        self.repository.create("Alpha", None, None, 2, "unicode:$", b"\x80\x80\x80")
+        self.repository.create("Bravo", None, None, 2, "unicode:$", b"\x80\x80\x80")
 
         page = self.repository.list_page(1, 2, "name", True)
         all_currencies = self.repository.list_page(1, 200, "name", False)
@@ -103,7 +103,7 @@ class SqliteCurrencyRepositoryTest(LedgerRepositoryTestCase):
 
     def test_repository_does_not_commit_its_changes(self) -> None:
         """Transaction ownership remains with the unit of work."""
-        self.repository.create("Real", "R$", None, 2, "R$", b"\x80\x80\x80")
+        self.repository.create("Real", "R$", None, 2, "unicode:R$", b"\x80\x80\x80")
 
         self.connection.rollback()
 

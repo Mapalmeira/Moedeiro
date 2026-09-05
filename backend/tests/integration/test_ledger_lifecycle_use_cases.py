@@ -39,7 +39,7 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
             self.databases.delete_ledger_database,
             self.user.uuid if user_uuid is None else user_uuid,
             name,
-            "WalletCards",
+            "lucide:WalletCards",
             b"\x10\x20\x30",
             100,
         )
@@ -114,7 +114,7 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
             self.user.uuid,
             original.uuid,
             "Personal",
-            "PiggyBank",
+            "lucide:PiggyBank",
             b"\xaa\xbb\xcc",
             120,
         )
@@ -122,7 +122,7 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
         self.assertEqual(updated.uuid, original.uuid)
         self.assertEqual(updated.path, original.path)
         self.assertEqual(updated.name, "Personal")
-        self.assertEqual(updated.icon, "PiggyBank")
+        self.assertEqual(updated.icon, "lucide:PiggyBank")
         self.assertEqual(updated.color_code, b"\xaa\xbb\xcc")
         self.assertEqual(get_owned_ledger(self.databases.open_registry, self.user.uuid, original.uuid), updated)
 
@@ -135,7 +135,7 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
                 self.other_user.uuid,
                 ledger.uuid,
                 "Stolen",
-                "Wallet",
+                "lucide:Wallet",
                 b"\x00\x00\x00",
                 120,
             )

@@ -43,7 +43,7 @@ class CurrencyRoutesTest(unittest.TestCase):
             unit_of_work.commit()
         self.request = Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": []})
         self.ledger = create_owned_ledger(
-            CreateLedgerRequest(name="Household", icon="WalletCards", color_code="#102030"),
+            CreateLedgerRequest(name="Household", icon="lucide:WalletCards", color_code="#102030"),
             self.request,
             self.user,
         )
@@ -59,7 +59,7 @@ class CurrencyRoutesTest(unittest.TestCase):
                 prefix="R$",
                 suffix=None,
                 decimal_places=decimal_places,
-                icon="CircleDollarSign",
+                icon="lucide:CircleDollarSign",
                 color_code="#AABBCC",
             ),
             self.request,
@@ -75,15 +75,18 @@ class CurrencyRoutesTest(unittest.TestCase):
         self.assertEqual(response.color_code, "#AABBCC")
 
     def test_list_all_and_page_apply_the_requested_order(self) -> None:
+        defaults = list_ledger_currencies(self.ledger.uuid, self.request, self.user, 1, 3, "name", True)
+        defaults += list_ledger_currencies(self.ledger.uuid, self.request, self.user, 2, 3, "name", True)
         charlie = self.create_currency("Charlie")
         alpha = self.create_currency("Alpha")
         bravo = self.create_currency("Bravo")
+        expected = defaults + [charlie, alpha, bravo]
 
         all_currencies = list_ledger_currencies(self.ledger.uuid, self.request, self.user, 1, 3, "name", False)
         page = list_ledger_currencies(self.ledger.uuid, self.request, self.user, 2, 1, "name", True)
 
-        self.assertEqual(all_currencies, [charlie, bravo, alpha])
-        self.assertEqual(page, [bravo])
+        self.assertEqual(all_currencies, sorted(expected, key=lambda currency: currency.name, reverse=True)[:3])
+        self.assertEqual(page, sorted(expected, key=lambda currency: currency.name)[1:2])
 
     def test_list_rejects_a_page_larger_than_the_configured_limit(self) -> None:
         with self.assertRaises(HTTPException) as raised:
@@ -98,7 +101,7 @@ class CurrencyRoutesTest(unittest.TestCase):
         updated = update_ledger_currency(
             self.ledger.uuid,
             created.uuid,
-            UpdateCurrencyRequest(name="Brazilian Real", prefix=None, suffix=" BRL", icon="Banknote", color_code="#010203"),
+            UpdateCurrencyRequest(name="Brazilian Real", prefix=None, suffix=" BRL", icon="lucide:Banknote", color_code="#010203"),
             self.request,
             self.user,
         )
@@ -119,7 +122,7 @@ class CurrencyRoutesTest(unittest.TestCase):
     def test_delete_returns_conflict_when_an_account_uses_the_currency(self) -> None:
         currency = self.create_currency()
         with self.application.state.databases.open_ledger(f"{self.ledger.uuid}.sqlite") as unit_of_work:
-            unit_of_work.account_repository.create("Checking", None, currency.uuid, "WalletCards", b"\x80\x80\x80")
+            unit_of_work.account_repository.create("Checking", None, currency.uuid, "lucide:WalletCards", b"\x80\x80\x80")
             unit_of_work.commit()
 
         with self.assertRaises(HTTPException) as raised:
@@ -137,7 +140,7 @@ class CurrencyRoutesTest(unittest.TestCase):
             lambda: update_ledger_currency(
                 self.ledger.uuid,
                 currency.uuid,
-                UpdateCurrencyRequest(name="Stolen", prefix=None, suffix=None, icon="Banknote", color_code="#000000"),
+                UpdateCurrencyRequest(name="Stolen", prefix=None, suffix=None, icon="lucide:Banknote", color_code="#000000"),
                 self.request,
                 self.other_user,
             ),
@@ -164,9 +167,10 @@ class CurrencyRoutesTest(unittest.TestCase):
 
     def test_request_schemas_reject_invalid_currency_data(self) -> None:
         invalid_values = (
-            {"name": "", "prefix": None, "suffix": None, "decimal_places": 2, "icon": "DollarSign", "color_code": "#102030"},
-            {"name": "Real", "prefix": None, "suffix": None, "decimal_places": -1, "icon": "DollarSign", "color_code": "#102030"},
-            {"name": "Real", "prefix": None, "suffix": None, "decimal_places": 2, "icon": "DollarSign", "color_code": "red"},
+            {"name": "", "prefix": None, "suffix": None, "decimal_places": 2, "icon": "lucide:DollarSign", "color_code": "#102030"},
+            {"name": "Real", "prefix": None, "suffix": None, "decimal_places": -1, "icon": "lucide:DollarSign", "color_code": "#102030"},
+            {"name": "Real", "prefix": None, "suffix": None, "decimal_places": 2, "icon": "DollarSign", "color_code": "#102030"},
+            {"name": "Real", "prefix": None, "suffix": None, "decimal_places": 2, "icon": "lucide:DollarSign", "color_code": "red"},
         )
 
         for values in invalid_values:

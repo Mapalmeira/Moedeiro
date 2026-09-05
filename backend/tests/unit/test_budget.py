@@ -20,13 +20,13 @@ class BudgetTest(unittest.TestCase):
             name="Monthly",
             description="Monthly spending",
             amount=0,
-            icon="ReceiptText",
+            icon="lucide:ReceiptText",
             color_code=b"\x80\x80\x80",
             account_uuids=[account_uuid],
         )
 
         self.assertEqual(budget.amount, 0)
-        self.assertEqual(budget.icon, "ReceiptText")
+        self.assertEqual(budget.icon, "lucide:ReceiptText")
         self.assertEqual(budget.account_uuids, [account_uuid])
 
     def test_defaults_to_all_accounts_in_the_currency(self) -> None:
@@ -39,7 +39,7 @@ class BudgetTest(unittest.TestCase):
             name="Monthly",
             description="Monthly spending",
             amount=100,
-            icon="ReceiptText",
+            icon="lucide:ReceiptText",
             color_code=b"\x80\x80\x80",
         )
 
@@ -58,7 +58,7 @@ class BudgetTest(unittest.TestCase):
                         name="Monthly",
                         description="Monthly spending",
                         amount=100,
-                        icon="ReceiptText",
+                        icon="lucide:ReceiptText",
                         color_code=b"\x80\x80\x80",
                     )
 
@@ -73,7 +73,7 @@ class BudgetTest(unittest.TestCase):
                 name="Monthly",
                 description="Monthly spending",
                 amount=-1,
-                icon="ReceiptText",
+                icon="lucide:ReceiptText",
                 color_code=b"\x80\x80\x80",
             )
 
@@ -90,7 +90,7 @@ class BudgetTest(unittest.TestCase):
                         name=name,
                         description="Monthly spending",
                         amount=100,
-                        icon="ReceiptText",
+                        icon="lucide:ReceiptText",
                         color_code=b"\x80\x80\x80",
                     )
 
@@ -104,7 +104,7 @@ class BudgetTest(unittest.TestCase):
             name="x" * 50,
             description="Monthly spending",
             amount=100,
-            icon="ReceiptText",
+            icon="lucide:ReceiptText",
             color_code=b"\x80\x80\x80",
         )
 
@@ -123,20 +123,20 @@ class BudgetTest(unittest.TestCase):
                         name="Monthly",
                         description=description,
                         amount=100,
-                        icon="ReceiptText",
+                        icon="lucide:ReceiptText",
                         color_code=b"\x80\x80\x80",
                     )
 
     def test_rejects_icon_or_color_outside_limits(self) -> None:
-        invalid_values = (("icon", ""), ("icon", "x" * 51), ("color_code", b"\x00\x00"), ("color_code", b"\x00" * 4))
+        invalid_values = (("icon", ""), ("icon", "lucide:" + "x" * 94), ("color_code", b"\x00\x00"), ("color_code", b"\x00" * 4))
         for field, value in invalid_values:
             with self.subTest(field=field, length=len(value)):
-                values = {"uuid": uuid4(), "category_uuid": uuid4(), "currency_uuid": uuid4(), "from_timestamp": 10, "to_timestamp": 20, "name": "Monthly", "description": "Monthly spending", "amount": 100, "icon": "ReceiptText", "color_code": b"\x80\x80\x80"}
+                values = {"uuid": uuid4(), "category_uuid": uuid4(), "currency_uuid": uuid4(), "from_timestamp": 10, "to_timestamp": 20, "name": "Monthly", "description": "Monthly spending", "amount": 100, "icon": "lucide:ReceiptText", "color_code": b"\x80\x80\x80"}
                 values[field] = value
                 with self.assertRaises(ValidationError):
                     Budget(**values)
 
-    def test_rejects_more_than_twenty_account_selectors(self) -> None:
+    def test_rejects_more_than_the_account_selector_limit(self) -> None:
         values = {
             "uuid": uuid4(),
             "category_uuid": uuid4(),
@@ -146,7 +146,7 @@ class BudgetTest(unittest.TestCase):
             "name": "Monthly",
             "description": "Monthly spending",
             "amount": 100,
-            "icon": "ReceiptText",
+            "icon": "lucide:ReceiptText",
             "color_code": b"\x80\x80\x80",
             "account_uuids": [uuid4() for _ in range(MAX_BUDGET_ACCOUNTS + 1)],
         }
