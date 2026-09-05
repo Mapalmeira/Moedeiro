@@ -4,29 +4,28 @@ Moedeiro provides built-in defaults for most settings. Environment variables are
 
 ## Storage and frontend paths
 
-
-| Variable               | Native default                                                                  | When to set it                                      |
-| ---------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Variable               | Native default                                                                                | When to set it                                        |
+| ---------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
 | `REGISTRY_SCHEMA_PATH` | `<project>/backend/app/infrastructure/persistence/sqlite/registry/schema/registry_schema.sql` | Only when the registry schema is installed elsewhere. |
 | `LEDGER_SCHEMA_PATH`   | `<project>/backend/app/infrastructure/persistence/sqlite/ledger/schema/ledger_schema.sql`     | Only when the ledger schema is installed elsewhere.   |
-| `REGISTRY_DB_PATH`     | `<project>/data/registry/registry.sqlite`                                        | To store the registry database somewhere else.     |
-| `LEDGER_DBS_DIR`       | `<project>/data/ledgers`                                                        | To store ledger databases somewhere else.          |
-| `FRONTEND_DIST_PATH`   | `<project>/frontend/dist/moedeiro/browser`                                      | Only when the built frontend is installed elsewhere. |
+| `REGISTRY_DB_PATH`     | `<project>/data/registry/registry.sqlite`                                                     | To store the registry database somewhere else.        |
+| `LEDGER_DBS_DIR`       | `<project>/data/ledgers`                                                                      | To store ledger databases somewhere else.             |
+| `FRONTEND_DIST_PATH`   | `<project>/frontend/dist/moedeiro/browser`                                                    | Only when the built frontend is installed elsewhere.  |
 
 A native installation from the repository does not need to set any of these variables when it uses the standard layout. The container image intentionally overrides these paths to match its filesystem layout:
 
-| Variable               | Container value                                                                 |
-| ---------------------- | ------------------------------------------------------------------------------- |
+| Variable               | Container value                                                                          |
+| ---------------------- | ---------------------------------------------------------------------------------------- |
 | `REGISTRY_SCHEMA_PATH` | `/app/backend/app/infrastructure/persistence/sqlite/registry/schema/registry_schema.sql` |
 | `LEDGER_SCHEMA_PATH`   | `/app/backend/app/infrastructure/persistence/sqlite/ledger/schema/ledger_schema.sql`     |
-| `REGISTRY_DB_PATH`     | `/data/registry/registry.sqlite`                                                |
-| `LEDGER_DBS_DIR`       | `/data/ledgers`                                                                |
-| `FRONTEND_DIST_PATH`   | `/app/frontend`                                                                |
+| `REGISTRY_DB_PATH`     | `/data/registry/registry.sqlite`                                                         |
+| `LEDGER_DBS_DIR`       | `/data/ledgers`                                                                          |
+| `FRONTEND_DIST_PATH`   | `/app/frontend`                                                                          |
 
 ## Security
 
-| Variable              | Default | Purpose                                                                 |
-| --------------------- | ------- | ----------------------------------------------------------------------- |
+| Variable              | Default | Purpose                                                                  |
+| --------------------- | ------- | ------------------------------------------------------------------------ |
 | `TOTP_ENCRYPTION_KEY` | unset   | Fernet-compatible key used to encrypt and decrypt enrolled TOTP secrets. |
 
 `TOTP_ENCRYPTION_KEY` is required for normal service operation and intentionally has no generated or built-in default. Key generation and storage are covered in [Installation](installation.md).

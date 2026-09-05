@@ -187,13 +187,6 @@ Set the TOTP encryption key:
 export TOTP_ENCRYPTION_KEY="$(cat /etc/moedeiro/totp.key)"
 ```
 
-If a native installation should keep its databases outside the repository, override the storage paths. For example:
-
-```sh
-export REGISTRY_DB_PATH=/srv/moedeiro/registry/registry.sqlite
-export LEDGER_DBS_DIR=/srv/moedeiro/ledgers
-```
-
 Start Uvicorn on the desired host address and port:
 
 ```sh
@@ -210,7 +203,13 @@ Databases created by a newer, incompatible version of Moedeiro are rejected duri
 
 ## Application settings
 
-Moedeiro provides built-in defaults for its optional settings. Any installation method can override them through the environment when different behavior is required.
+Moedeiro provides built-in defaults for its optional settings. Any installation method can override them through environment variables when different behavior is required.
+
+Configure environment variables according to the installation method:
+
+* **Docker Compose:** under `environment` in `compose.yaml`.
+* **Podman Quadlet:** with `Environment=` entries in the `[Container]` section of `moedeiro.container`.
+* **Native installation:** export them in the environment before starting Moedeiro.
 
 See [Environment settings](environment.md) for the available settings, their defaults, and their effects.
 
