@@ -3,7 +3,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from uuid import uuid4
 
-from app.application.registry.exceptions import UserNotFoundError
+from app.application.registry.exceptions import UserNotFoundError, UserPreferencesNotFoundError
 from app.application.registry.use_cases.user_preferences import get_user_preferences, save_user_preferences
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
@@ -26,13 +26,9 @@ class UserPreferencesUseCasesTest(unittest.TestCase):
     def open_registry(self) -> SqliteRegistryUnitOfWork:
         return SqliteRegistryUnitOfWork(self.database)
 
-    def test_get_returns_default_preferences_until_the_user_saves_them(self) -> None:
-        preferences = get_user_preferences(self.open_registry, self.user.uuid)
-
-        self.assertEqual(preferences.user_uuid, self.user.uuid)
-        self.assertEqual(preferences.language, "pt-BR")
-        self.assertEqual(preferences.date_format, "DMY")
-        self.assertEqual(preferences.theme, "LIGHT")
+    def test_get_rejects_missing_preferences(self) -> None:
+        with self.assertRaises(UserPreferencesNotFoundError):
+            get_user_preferences(self.open_registry, self.user.uuid)
 
     def test_save_replaces_the_complete_preference_set(self) -> None:
         saved = save_user_preferences(self.open_registry, self.user.uuid, "pt-BR", "DMY", "H24", "COMMA", "DARK", "America/Fortaleza")

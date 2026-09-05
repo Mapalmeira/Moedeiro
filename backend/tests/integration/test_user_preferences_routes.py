@@ -2,7 +2,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from fastapi import Request
+from fastapi import HTTPException, Request, status
 from pydantic import ValidationError
 
 from app.api.registry.routes.user_preferences import get_preferences, save_preferences
@@ -15,6 +15,15 @@ from tests.fakes import FakeCredentialOperationExecutor, FakePasswordHasher, Fak
 ROOT = Path(__file__).resolve().parents[2]
 REGISTRY_SCHEMA_PATH = ROOT / "app/infrastructure/persistence/sqlite/registry/schema/registry_schema.sql"
 LEDGER_SCHEMA_PATH = ROOT / "app/infrastructure/persistence/sqlite/ledger/schema/ledger_schema.sql"
+
+VALID_PREFERENCES = {
+    "language": "pt-BR",
+    "date_format": "DMY",
+    "time_format": "H24",
+    "number_format": "COMMA",
+    "theme": "LIGHT",
+    "timezone": "UTC",
+}
 
 
 class UserPreferencesRoutesTest(unittest.TestCase):
@@ -41,12 +50,12 @@ class UserPreferencesRoutesTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()
 
-    def test_get_returns_default_preferences_before_the_first_save(self) -> None:
-        preferences = get_preferences(self.request, self.user)
+    def test_get_returns_not_found_before_the_first_save(self) -> None:
+        with self.assertRaises(HTTPException) as context:
+            get_preferences(self.request, self.user)
 
-        self.assertEqual(preferences.language, "pt-BR")
-        self.assertEqual(preferences.date_format, "DMY")
-        self.assertEqual(preferences.timezone, "UTC")
+        self.assertEqual(context.exception.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(context.exception.detail, "User preferences not found")
 
     def test_put_replaces_preferences_and_get_returns_the_saved_values(self) -> None:
         saved = save_preferences(
@@ -61,7 +70,18 @@ class UserPreferencesRoutesTest(unittest.TestCase):
             self.request,
             self.user,
         )
-        replaced = save_preferences(UserPreferencesPayload(language="en", date_format="MDY", time_format="H12", number_format="DOT", theme="LIGHT", timezone="America/New_York"), self.request, self.user)
+        replaced = save_preferences(
+            UserPreferencesPayload(
+                language="en",
+                date_format="MDY",
+                time_format="H12",
+                number_format="DOT",
+                theme="LIGHT",
+                timezone="America/New_York",
+            ),
+            self.request,
+            self.user,
+        )
 
         self.assertEqual(saved.language, "pt-BR")
         self.assertEqual(replaced.language, "en")
@@ -69,11 +89,27 @@ class UserPreferencesRoutesTest(unittest.TestCase):
         self.assertEqual(replaced.date_format, "MDY")
         self.assertEqual(get_preferences(self.request, self.user), replaced)
 
-    def test_request_rejects_an_invalid_theme_or_empty_format(self) -> None:
-        for values in ({"language": "pt"}, {"theme": "SYSTEM"}, {"date_format": "DD/MM/YYYY"}, {"timezone": "Unknown/Timezone"}, {"language": None}, {"date_format": None}, {"time_format": None}, {"number_format": None}, {"theme": None}, {"timezone": None}, {}):
-            with self.subTest(values=values):
+    def test_request_rejects_invalid_preferences(self) -> None:
+        invalid_overrides = (
+            {"language": "pt"},
+            {"theme": "SYSTEM"},
+            {"date_format": "DD/MM/YYYY"},
+            {"timezone": "Unknown/Timezone"},
+            {"language": None},
+            {"date_format": None},
+            {"time_format": None},
+            {"number_format": None},
+            {"theme": None},
+            {"timezone": None},
+        )
+        for override in invalid_overrides:
+            with self.subTest(override=override):
                 with self.assertRaises(ValidationError):
-                    UserPreferencesPayload(**values)
+                    UserPreferencesPayload.model_validate(VALID_PREFERENCES | override)
+
+    def test_request_requires_all_preferences(self) -> None:
+        with self.assertRaises(ValidationError):
+            UserPreferencesPayload.model_validate({})
 
     def test_routes_are_exposed(self) -> None:
         operations = self.application.openapi()["paths"]["/api/user/preferences"]

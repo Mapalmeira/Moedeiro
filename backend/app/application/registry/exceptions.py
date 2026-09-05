@@ -48,3 +48,6 @@ class InvalidTotpCodeError(Exception):
 
 class InvalidTotpSetupError(Exception):
     pass
+
+class UserPreferencesNotFoundError(Exception):
+    pass

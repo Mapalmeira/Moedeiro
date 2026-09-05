@@ -1,16 +1,20 @@
 from collections.abc import Callable
 from uuid import UUID
 
-from app.application.registry.exceptions import UserNotFoundError
+from app.application.registry.exceptions import UserNotFoundError, UserPreferencesNotFoundError
 from app.application.registry.unit_of_work import RegistryUnitOfWork
 from app.domain.registry.model.user_preferences import DateFormat, Language, NumberFormat, Theme, TimeFormat, Timezone, UserPreferences
 
 
-def get_user_preferences(unit_of_work_factory: Callable[[], RegistryUnitOfWork], user_uuid: UUID) -> UserPreferences:
+def get_user_preferences(
+    unit_of_work_factory: Callable[[], RegistryUnitOfWork],
+    user_uuid: UUID,
+) -> UserPreferences:
     with unit_of_work_factory() as unit_of_work:
         preferences = unit_of_work.user_preferences_repository.get(user_uuid)
-    return UserPreferences(user_uuid=user_uuid) if preferences is None else preferences
-
+        if preferences is None:
+            raise UserPreferencesNotFoundError
+        return preferences
 
 def save_user_preferences(
     unit_of_work_factory: Callable[[], RegistryUnitOfWork],
