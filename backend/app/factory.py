@@ -1,4 +1,6 @@
 from contextlib import asynccontextmanager
+import os
+from pathlib import Path
 from threading import BoundedSemaphore
 from typing import AsyncGenerator
 
@@ -64,6 +66,7 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
     application.include_router(registration_router)
     application.include_router(totp_router)
     application.include_router(user_preferences_router)
+    _mount_frontend(application)
     return application
 
 
@@ -88,3 +91,13 @@ def _create_totp_authenticator(settings: Settings) -> TotpAuthenticator:
     from app.infrastructure.security.totp_authenticator import FernetTotpAuthenticator
 
     return FernetTotpAuthenticator(settings.totp_encryption_key)
+
+
+def _mount_frontend(application: FastAPI) -> None:
+    frontend_directory = Path(os.environ.get("FRONTEND_DIST_PATH", "/app/frontend"))
+
+    application.frontend(
+        "/",
+        directory=frontend_directory,
+        fallback="index.html",
+    )

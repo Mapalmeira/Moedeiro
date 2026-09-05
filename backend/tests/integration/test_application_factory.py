@@ -2,7 +2,8 @@ import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
-
+from unittest.mock import patch
+from fastapi.testclient import TestClient
 from app.factory import create_app
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
 from app.settings import Settings
@@ -66,6 +67,48 @@ class ApplicationFactoryTest(unittest.TestCase):
 
             asyncio.run(assert_limit())
 
+    def test_serves_the_frontend_and_falls_back_to_its_index_for_client_routes(self) -> None:
+        with TemporaryDirectory() as temporary_directory:
+            directory = Path(temporary_directory)
+            frontend_directory = directory / "frontend"
+            frontend_directory.mkdir()
+
+            (frontend_directory / "index.html").write_text("<html>Moedeiro</html>")
+            (frontend_directory / "main.js").write_text("console.log('moedeiro')")
+
+            settings = Settings(
+                registry_schema_path=REGISTRY_SCHEMA_PATH,
+                ledger_schema_path=LEDGER_SCHEMA_PATH,
+                registry_db_path=directory / "registry/registry.sqlite",
+                ledger_dbs_dir=directory / "ledgers",
+            )
+
+            with patch.dict(
+                "os.environ",
+                {"FRONTEND_DIST_PATH": str(frontend_directory)},
+            ):
+                application = create_app(
+                    settings,
+                    totp_authenticator=FakeTotpAuthenticator(),
+                    credential_operation_executor=FakeCredentialOperationExecutor(),
+                )
+
+            with TestClient(application) as client:
+                index_response = client.get("/")
+                javascript_response = client.get("/main.js")
+                client_route_response = client.get(
+                    "/cadastro",
+                    headers={"Accept": "text/html"},
+                )
+
+            self.assertEqual(index_response.status_code, 200)
+            self.assertEqual(index_response.text, "<html>Moedeiro</html>")
+
+            self.assertEqual(javascript_response.status_code, 200)
+            self.assertEqual(javascript_response.text, "console.log('moedeiro')")
+
+            self.assertEqual(client_route_response.status_code, 200)
+            self.assertEqual(client_route_response.text, "<html>Moedeiro</html>")
 
 if __name__ == "__main__":
     unittest.main()

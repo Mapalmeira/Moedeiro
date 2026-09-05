@@ -1,3 +1,16 @@
+FROM node:24-alpine AS frontend-build
+
+WORKDIR /app/frontend
+
+COPY frontend/package.json ./
+
+RUN npm install
+
+COPY frontend ./
+
+RUN npm run build:production
+
+
 FROM python:3.14-slim-trixie
 
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -15,8 +28,10 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY backend /app/backend
 COPY --chmod=755 backend/bin/moedeiro /usr/local/bin/moedeiro
+COPY --from=frontend-build /app/frontend/dist/moedeiro-web/browser /app/frontend
 
 ENV PYTHONPATH=/app/backend
+ENV FRONTEND_DIST_PATH=/app/frontend
 
 EXPOSE 8000
 
