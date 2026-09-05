@@ -10,6 +10,3 @@ Start with [Installation](docs/installation.md). The remaining guides explain th
 * [Reverse proxy](docs/reverse-proxy.md) explains HTTPS and trustworthy client addresses for rate limiting.
 * [Administrative CLI](docs/cli.md) covers invitations, users, recovery, MFA, and maintenance.
 * [Security and concurrency](docs/security.md) describes the protection model and why the service has separate resource limits.
-* [Backups](docs/backups.md) describes the small set of files required for a complete recovery.
-
-`GET /health` returns HTTP `204` while the service is available. FastAPI's interactive API reference is available from the running service at `/docs`.
