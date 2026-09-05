@@ -2,7 +2,7 @@ import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 from app.factory import create_app
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
@@ -86,6 +86,20 @@ class ApplicationFactoryTest(unittest.TestCase):
                 )
 
             mount_frontend.assert_not_called()
+
+
+    def test_frontend_mount_uses_the_native_build_path_by_default(self) -> None:
+        from app.factory import _mount_frontend
+
+        application = MagicMock()
+        with patch.dict("os.environ", {}, clear=True):
+            _mount_frontend(application)
+
+        application.frontend.assert_called_once_with(
+            "/",
+            directory=Path("frontend/dist/moedeiro/browser"),
+            fallback="index.html",
+        )
 
     def test_serves_the_frontend_and_falls_back_to_its_index_for_client_routes(self) -> None:
         with TemporaryDirectory() as temporary_directory:

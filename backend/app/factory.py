@@ -95,7 +95,7 @@ def _create_totp_authenticator(settings: Settings) -> TotpAuthenticator:
 
 
 def _mount_frontend(application: FastAPI) -> None:
-    frontend_directory = Path(os.environ.get("FRONTEND_DIST_PATH", "/app/frontend"))
+    frontend_directory = Path(os.environ.get("FRONTEND_DIST_PATH", "frontend/dist/moedeiro/browser"))
 
     application.frontend(
         "/",
