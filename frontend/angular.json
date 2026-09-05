@@ -38,6 +38,9 @@
             "index": "src/index.html",
             "polyfills": [
               "zone.js"
+            ],
+            "allowedCommonJsDependencies": [
+              "qrcode"
             ]
           },
           "configurations": {

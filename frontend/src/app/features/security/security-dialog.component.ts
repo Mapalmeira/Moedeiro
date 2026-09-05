@@ -99,9 +99,6 @@ import { IconComponent } from '../../shared/ui/icon.component';
             } @else if (totpStatus() === 'unknown') {
               <div class="totp-status-state totp-status-state--error">
                 @if (totpStatusErrorMessage()) { <app-form-message [text]="totpStatusErrorMessage()!" /> }
-                <button class="ui-button ui-button--plain totp-status-retry" type="button" (click)="loadTotpStatus()">
-                  {{ i18n.t('security.totp.retry') }}
-                </button>
               </div>
             } @else if (totpStatus() === 'enabled') {
               <form class="security-form totp-form" [formGroup]="disableTotpForm" (ngSubmit)="disableTotp()" novalidate>
@@ -203,7 +200,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
       position: fixed; z-index: 51; top: 50%; left: 50%; width: min(760px, calc(100vw - 28px));
       max-height: calc(100dvh - 30px); overflow: auto; transform: translate(-50%, -50%);
       border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); color: var(--text);
-      box-shadow: 7px 7px 0 var(--shadow-color);
+      box-shadow: var(--dialog-shadow);
     }
     .security-dialog {
       --token-accent: var(--blue);
@@ -232,7 +229,6 @@ import { IconComponent } from '../../shared/ui/icon.component';
     .totp-status-state { min-height: 78px; display: flex; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--form-gap); border: 2px solid color-mix(in srgb, var(--blue-strong) 56%, var(--line)); border-radius: var(--radius-card); background: var(--surface); color: var(--text-muted); font-size: .86rem; font-weight: 700; box-shadow: 3px 3px 0 var(--shadow-color); }
     .totp-status-state--error { display: grid; justify-items: end; }
     .totp-status-spinner { width: 18px; height: 18px; border: 2px solid color-mix(in srgb, var(--blue) 28%, var(--line)); border-top-color: var(--blue); border-radius: 50%; animation: totp-spin .7s linear infinite; }
-    .totp-status-retry { min-height: 40px; padding-inline: var(--form-gap); }
     @keyframes totp-spin { to { transform: rotate(360deg); } }
     .setup-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto auto; column-gap: var(--form-gap); row-gap: var(--field-gap); align-items: stretch; }
     .setup-row .field { display: contents; }
@@ -244,7 +240,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
     .totp-setup__side { position: relative; min-width: 0; min-height: 100%; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: var(--form-gap); }
     .totp-setup__fields { grid-row: 1; display: grid; gap: var(--space-12); min-width: 0; align-self: center; }
     .totp-setup__action { grid-row: 2; align-self: end; padding-top: 0; }
-    .qr-wrap { box-sizing: border-box; display: grid; place-items: center; min-height: 280px; height: 100%; padding: var(--form-gap); border: 2px solid var(--blue-strong); border-radius: var(--radius-card); background: var(--surface); box-shadow: 4px 4px 0 var(--shadow-color); }
+    .qr-wrap { box-sizing: border-box; display: grid; place-items: center; min-height: 280px; height: 100%; padding: var(--form-gap); border: 2px solid var(--blue-strong); border-radius: var(--radius-card); background: var(--surface); box-shadow: var(--surface-shadow); }
     .qr-wrap img { display: block; width: 220px; height: 220px; max-width: 100%; image-rendering: pixelated; }
     .qr-loading { color: var(--text); font-size: 1.4rem; }
     .secret-block, .totp-code-field { position: relative; display: grid; gap: var(--field-gap); min-width: 0; }

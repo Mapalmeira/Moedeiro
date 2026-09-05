@@ -20,13 +20,12 @@
   --page: #ffffff;
   --line: #cdd2d8;
   --line-strong: #111111;
-  --shadow-color: #111111;
-  --shadow-hard: 6px 6px 0 var(--shadow-color);
+  --shadow-color: var(--line-strong);
   --focus-accent: var(--green);
   --radius-card: 8px;
   --radius-sm: 6px;
 
-  /* Spacing scale. Keep component spacing on this scale instead of ad-hoc px values. */
+  /* Spacing scale. */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -38,22 +37,40 @@
   --space-10: 40px;
   --space-12: 48px;
 
-  /* Semantic spacing used by forms and feedback. */
+  /* Semantic spacing. */
   --field-gap: var(--space-2);
   --form-gap: var(--space-4);
   --section-gap: var(--space-5);
   --inline-gap: var(--space-3);
   --title-icon-gap: var(--form-gap);
 
-  /* Physical button feedback. Projected controls lose 2px of shadow when pressed. */
+  /* Shared control typography and dimensions. */
+  --control-height: 46px;
+  --sidebar-control-height: 54px;
+  --control-font-size: .9rem;
+  --control-font-weight: 720;
+  --control-line-height: 1.2;
+  --control-icon-size: 30px;
+
+  /* Projected shadows. The shadow uses the same color as the strong border. */
   --button-shadow: 4px 4px 0 var(--shadow-color);
   --button-shadow-pressed: 2px 2px 0 var(--shadow-color);
   --compact-button-shadow: 3px 3px 0 var(--shadow-color);
   --compact-button-shadow-pressed: 1px 1px 0 var(--shadow-color);
-  --choice-shadow: 2px 2px 0 var(--shadow-color);
+  --selection-shadow: 3px 3px 0 var(--shadow-color);
+  --selection-shadow-transparent: 3px 3px 0 transparent;
+  --icon-shadow: 2px 2px 0 var(--shadow-color);
+  --surface-shadow: 4px 4px 0 var(--shadow-color);
+  --menu-shadow: var(--surface-shadow);
+  --shadow-hard: 6px 6px 0 var(--shadow-color);
+  --dialog-shadow: 7px 7px 0 var(--shadow-color);
 
   --space-page: clamp(18px, 4vw, 56px);
+
+  /* Motion families: actions press quickly; selections/disclosures transition without moving. */
   --motion-press: 80ms;
+  --motion-selection: 160ms;
+  --motion-disclosure: 160ms;
   --press-offset: 2px;
 }
 
@@ -66,7 +83,7 @@
   --page: #101318;
   --line: #3c4550;
   --line-strong: #687482;
-  --shadow-color: #313a45;
+  --shadow-color: var(--line-strong);
   --green: #25cf78;
   --green-strong: #22a864;
   --green-soft: #173126;

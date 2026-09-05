@@ -10,13 +10,14 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
   host: { '[class.language-selector--field]': 'appearance() === "field"' },
   template: `
     <div class="language-selector">
-      <button class="language-selector__trigger" type="button" (click)="open.set(!open())"
+      <button class="language-selector__trigger ui-select-trigger" type="button" (click)="open.set(!open())"
+        [class.ui-action-press]="appearance() === 'compact'"
         [attr.aria-label]="i18n.t('common.language')" [attr.aria-expanded]="open()">
         <span class="language-selector__language-icon" aria-hidden="true">
           <app-icon name="languages" [size]="18" />
         </span>
         <span class="language-selector__name">{{ languageName(selectedLanguage()) }}</span>
-        <app-icon class="language-selector__chevron" name="chevron-down" [size]="16" />
+        <app-icon class="language-selector__chevron ui-select-chevron" name="chevron-down" [size]="16" />
       </button>
 
       @if (open()) {
@@ -42,82 +43,62 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
     </div>
   `,
   styles: `
-    :host { display: inline-block; }
+    :host { display: inline-block; width: 190px; }
     :host.language-selector--field { display: block; width: 100%; }
-    .language-selector { position: relative; }
+    .language-selector { position: relative; width: 100%; }
     .language-selector__trigger {
-      min-width: 158px;
-      min-height: 44px;
+      width: 100%;
+      min-width: 0;
+      height: var(--control-height);
+      min-height: var(--control-height);
       display: grid;
       grid-template-columns: 28px minmax(0, 1fr) 16px;
       align-items: center;
       gap: var(--space-2);
       padding: var(--space-2) var(--space-3);
-      border: 2px solid var(--line-strong);
-      border-radius: 6px;
-      background: var(--surface);
-      color: var(--text);
-      box-shadow: var(--compact-button-shadow);
       text-align: left;
-      font-size: .88rem;
-      font-weight: 720;
-      line-height: 1.4;
-      transition: transform var(--motion-press) ease, box-shadow var(--motion-press) ease, background var(--motion-press) ease;
     }
     :host.language-selector--field .language-selector__trigger {
-      width: 100%;
-      min-height: 46px;
-      min-width: 0;
+      min-height: var(--control-height);
       padding: var(--space-2) var(--space-3);
       box-shadow: none;
-      border-color: var(--line);
-      font-size: .9rem;
     }
-    .language-selector__trigger:hover { background: var(--surface-muted); }
-    .language-selector__trigger:active {
-      transform: translate(var(--press-offset), var(--press-offset));
-      box-shadow: var(--compact-button-shadow-pressed);
-    }
-    :host.language-selector--field .language-selector__trigger:active { box-shadow: none; }
     .language-selector__language-icon {
       width: 28px;
       height: 28px;
       display: inline-grid;
       place-items: center;
-      border: 1px solid var(--line);
+      border: 2px solid var(--line-strong);
       border-radius: 5px;
       background: var(--surface-muted);
       color: var(--text);
+      box-shadow: none;
     }
     :host.language-selector--field .language-selector__language-icon {
-      border-color: transparent;
-      background: transparent;
       width: 24px;
       height: 24px;
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
     }
     .language-selector__name {
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      line-height: 1.45;
-      padding-block: 1px 2px;
     }
-    .language-selector__chevron { transition: transform 130ms ease; }
-    .language-selector__trigger[aria-expanded='true'] .language-selector__chevron { transform: rotate(180deg); }
     .language-selector__menu {
       position: absolute;
       z-index: 90;
       top: calc(100% + var(--space-2));
-      right: 0;
-      width: max(190px, 100%);
+      left: 0;
+      width: 100%;
       padding: var(--space-1);
       border: 2px solid var(--line-strong);
       border-radius: 7px;
       background: var(--surface);
-      box-shadow: 4px 4px 0 var(--shadow-color);
+      box-shadow: var(--menu-shadow);
     }
-    :host.language-selector--field .language-selector__menu { left: 0; right: auto; width: 100%; }
     .language-selector__menu button {
       width: 100%;
       min-height: 44px;
@@ -131,9 +112,9 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
       background: transparent;
       color: var(--text);
       text-align: left;
-      font-size: .9rem;
+      font-size: var(--control-font-size);
       font-weight: 650;
-      line-height: 1.25;
+      line-height: var(--control-line-height);
     }
     .language-selector__option-main {
       min-width: 0;
@@ -151,11 +132,10 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .language-selector__menu button:hover { background: var(--surface-muted); }
-    .language-selector__option--selected { background: var(--green-soft) !important; }
+    .language-selector__menu button:not(.language-selector__option--selected):hover { background: var(--surface-muted); }
+    .language-selector__option--selected, .language-selector__option--selected:hover { background: var(--green-soft); }
     @media (max-width: 520px) {
-      .language-selector__trigger { min-width: 144px; }
-      .language-selector__menu { width: 184px; }
+      :host:not(.language-selector--field) { width: 176px; }
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

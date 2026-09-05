@@ -7,7 +7,7 @@ import { Ledger, LedgerPayload } from '../../core/ledgers/ledger.models';
 import { LedgerService } from '../../core/ledgers/ledger.service';
 import { bestContrastingForeground } from '../../shared/ledger/ledger-appearance';
 import { LedgerIconComponent } from '../../shared/ledger/ledger-icon.component';
-import { decodeUnicodeLedgerIcon, encodeUnicodeLedgerIcon, isEncodedUnicodeLedgerIcon } from '../../shared/ledger/ledger-icon-value';
+import { decodeLucideLedgerIcon, decodeUnicodeLedgerIcon, encodeLucideLedgerIcon, encodeUnicodeLedgerIcon, isEncodedLucideLedgerIcon, isEncodedUnicodeLedgerIcon } from '../../shared/ledger/ledger-icon-value';
 import { LUCIDE_ICON_CATALOG, resolveLucideIcon } from '../../shared/ledger/lucide-icon-catalog';
 import { FieldErrorComponent } from '../../shared/ui/field-error.component';
 import { FormMessageComponent } from '../../shared/ui/form-message.component';
@@ -15,7 +15,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
 
 const LEDGER_NAME_MAX_LENGTH = 50;
 const COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
-const DEFAULT_ICON = 'WalletCards';
+const DEFAULT_ICON = 'lucide:WalletCards';
 const DEFAULT_COLOR = '#21E683';
 const ICON_RESULT_LIMIT = 160;
 
@@ -72,26 +72,26 @@ type IconMode = 'lucide' | 'unicode';
                 <div class="icon-control-slot">
                   @if (iconMode() === 'lucide') {
                     <div class="lucide-picker">
-                      <button type="button" class="lucide-picker__trigger" (click)="toggleIconPicker()"
+                      <button type="button" class="lucide-picker__trigger ui-select-trigger" (click)="toggleIconPicker()"
                         [attr.aria-expanded]="iconPickerOpen()" [attr.aria-label]="i18n.t('ledgers.editor.icon')">
                         <span class="lucide-picker__selected-icon"><app-ledger-icon [icon]="form.controls.icon.value" [size]="22" /></span>
                         <span class="lucide-picker__selected-label">{{ selectedLucideLabel() }}</span>
-                        <app-icon name="chevron-down" [size]="17" />
+                        <app-icon class="ui-select-chevron" name="chevron-down" [size]="17" />
                       </button>
 
                       @if (iconPickerOpen()) {
-                        <div class="lucide-picker__panel">
-                          <label class="icon-search">
+                        <div class="lucide-picker__panel ui-dropdown-panel">
+                          <label class="icon-search ui-dropdown-search">
                             <app-icon name="search" [size]="18" />
                             <input type="search" [value]="iconSearch()" (input)="setIconSearchFromEvent($event)"
-                              [placeholder]="i18n.t('ledgers.editor.searchIcons')" autofocus />
+                              [attr.aria-label]="i18n.t('ledgers.editor.icon')" autofocus />
                           </label>
                           <div class="icon-grid" role="listbox" [attr.aria-label]="i18n.t('ledgers.editor.icon')">
                             @for (entry of visibleIcons(); track entry.id) {
-                              <button type="button" class="ui-choice icon-choice" role="option" [attr.aria-selected]="form.controls.icon.value === entry.id"
-                                [class.ui-choice--selected]="form.controls.icon.value === entry.id" (click)="selectLucideIcon(entry.id)"
+                              <button type="button" class="ui-choice icon-choice" role="option" [attr.aria-selected]="selectedLucideId() === entry.id"
+                                [class.ui-choice--selected]="selectedLucideId() === entry.id" (click)="selectLucideIcon(entry.id)"
                                 [title]="entry.label">
-                                <app-ledger-icon [icon]="entry.id" [size]="22" />
+                                <app-ledger-icon [icon]="'lucide:' + entry.id" [size]="22" />
                                 <span>{{ entry.label }}</span>
                               </button>
                             }
@@ -101,7 +101,7 @@ type IconMode = 'lucide' | 'unicode';
                     </div>
                   } @else {
                     <label class="field unicode-field">
-                      <input type="text" [value]="form.controls.icon.value" maxlength="50" autocomplete="off"
+                      <input type="text" [value]="form.controls.icon.value" autocomplete="off"
                         (input)="setUnicodeIconFromEvent($event)" [placeholder]="i18n.t('ledgers.editor.unicode')" />
                     </label>
                   }
@@ -139,19 +139,20 @@ type IconMode = 'lucide' | 'unicode';
       position: fixed; z-index: 51; top: 50%; left: 50%; width: min(760px, calc(100vw - 28px));
       max-height: calc(100dvh - 30px); overflow: auto; transform: translate(-50%, -50%);
       border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); color: var(--text);
-      box-shadow: 7px 7px 0 var(--shadow-color);
+      box-shadow: var(--dialog-shadow);
     }
     .dialog__header { display: flex; align-items: center; justify-content: space-between; gap: var(--form-gap); padding: 17px 19px; border-bottom: 2px solid var(--line); }
     .dialog__title { display: flex; align-items: center; gap: var(--title-icon-gap); }
     .dialog__title h2 { margin: 0; font-size: 1.22rem; letter-spacing: -.01em; }
-    .title-icon { width: 46px; height: 46px; display: grid; place-items: center; flex: 0 0 46px; border: 2px solid var(--line-strong); border-radius: 5px; background: var(--green); color: #060606; box-shadow: 2px 2px 0 var(--shadow-color); }
+    .title-icon { width: 46px; height: 46px; display: grid; place-items: center; flex: 0 0 46px; border: 2px solid var(--line-strong); border-radius: 5px; background: var(--green); color: #060606; box-shadow: var(--icon-shadow); }
     form { display: grid; gap: var(--section-gap); padding: var(--space-5); }
     .editor-grid { display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(220px, .78fr); gap: var(--space-6); align-items: stretch; }
     .editor-fields { display: grid; gap: var(--space-4); min-width: 0; align-content: start; }
     .appearance-field { display: grid; gap: var(--field-gap); min-width: 0; }
     .field-label { font-size: .9rem; font-weight: 780; }
     .color-row { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: var(--space-3); align-items: stretch; }
-    .color-picker { box-sizing: border-box; width: 70px; height: 46px; padding: 4px; border: 2px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); box-shadow: none; }
+    .color-picker { box-sizing: border-box; width: 70px; height: 46px; padding: 4px; border: 2px solid var(--line-strong); border-radius: var(--radius-sm); outline: none; background: var(--surface); box-shadow: none; }
+    .color-picker:focus, .color-picker:focus-visible { border-color: var(--green-strong); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 32%, transparent); }
     .color-picker::-webkit-color-swatch-wrapper { padding: 0; }
     .color-picker::-webkit-color-swatch { border: 0; border-radius: 3px; }
     .color-picker::-moz-color-swatch { border: 0; border-radius: 3px; }
@@ -160,25 +161,20 @@ type IconMode = 'lucide' | 'unicode';
     .mode-switch__button { width: 100%; min-height: 46px; font-weight: 760; }
     .icon-control-slot { position: relative; min-height: 46px; margin-top: var(--space-2); }
     .lucide-picker { position: relative; }
-    .lucide-picker__trigger { width: 100%; height: 46px; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); padding: 0 var(--space-3) 0 var(--space-2); border: 2px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); text-align: left; font-weight: 650; }
-    .lucide-picker__trigger:hover { background: var(--surface-muted); }
-    .lucide-picker__trigger[aria-expanded='true'] { box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 32%, transparent); }
-    .lucide-picker__selected-icon { width: 32px; height: 32px; display: grid; place-items: center; border: 1.5px solid var(--line-strong); border-radius: 5px; background: var(--surface-muted); }
+    .lucide-picker__trigger { width: 100%; height: 46px; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); padding: 0 var(--space-3) 0 var(--space-2); text-align: left; font-weight: 650; }
+    .lucide-picker__selected-icon { width: 32px; height: 32px; display: grid; place-items: center; overflow: hidden; border: 1.5px solid var(--line-strong); border-radius: 5px; background: var(--surface-muted); }
     .lucide-picker__selected-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .lucide-picker__panel { position: absolute; z-index: 70; left: 0; right: 0; bottom: calc(100% + var(--space-2)); display: grid; gap: var(--space-2); padding: var(--space-2); border: 2px solid var(--line-strong); border-radius: 7px; background: var(--surface); box-shadow: 5px 5px 0 var(--shadow-color); }
-    .icon-search { height: 44px; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-2); padding: 0 var(--space-3); border: 2px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); }
-    .icon-search:focus-within { border-color: var(--green-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 32%, transparent); }
-    .icon-search input { min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; }
+    .lucide-picker__panel { position: absolute; z-index: 70; left: 0; right: 0; bottom: calc(100% + var(--space-2)); }
     .icon-grid { max-height: min(196px, 28dvh); overflow: auto; overscroll-behavior: contain; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); padding: var(--space-1); }
     .icon-choice { min-width: 0; min-height: 68px; display: grid; justify-items: center; align-content: center; gap: var(--space-1); padding: var(--space-2); }
     .icon-choice span { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .7rem; font-weight: 680; }
     .unicode-field { gap: 0; }
     .unicode-field input { font-size: .96rem; line-height: 1.2; text-align: center; }
     .unicode-field input::placeholder { color: var(--text-muted); font-size: .8rem; font-weight: 560; }
-    .preview-panel { position: sticky; top: var(--space-5); align-self: stretch; min-height: 0; margin-top: var(--space-6); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; justify-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface-muted); box-shadow: 4px 4px 0 var(--shadow-color); }
+    .preview-panel { position: sticky; top: var(--space-5); align-self: stretch; min-height: 0; margin-top: var(--space-6); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; justify-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface-muted); box-shadow: var(--surface-shadow); }
     .preview-label { justify-self: start; color: var(--text); }
     .preview-stage { width: 100%; min-height: 0; display: grid; place-items: center; align-self: stretch; }
-    .preview-token { width: 124px; height: 124px; display: grid; place-items: center; border: 2px solid var(--line-strong); border-radius: 12px; box-shadow: 4px 4px 0 var(--shadow-color); }
+    .preview-token { width: 124px; height: 124px; display: grid; place-items: center; overflow: hidden; border: 2px solid var(--line-strong); border-radius: 12px; box-shadow: var(--surface-shadow); }
     .preview-name { max-width: 100%; overflow-wrap: anywhere; text-align: center; font-size: 1.02rem; }
     .dialog__footer { display: flex; justify-content: flex-end; padding-top: var(--space-1); }
     .dialog__footer .ui-button { min-width: 190px; }
@@ -218,7 +214,7 @@ export class LedgerEditorDialogComponent {
 
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(LEDGER_NAME_MAX_LENGTH)]],
-    icon: [DEFAULT_ICON, [Validators.required, Validators.maxLength(50)]],
+    icon: [DEFAULT_ICON, [Validators.required, Validators.maxLength(100)]],
     color_code: [DEFAULT_COLOR, [Validators.required, Validators.pattern(COLOR_PATTERN)]],
   });
 
@@ -234,8 +230,9 @@ export class LedgerEditorDialogComponent {
     );
   });
   readonly visibleIcons = computed(() => this.matchingIcons().slice(0, ICON_RESULT_LIMIT));
+  readonly selectedLucideId = computed(() => decodeLucideLedgerIcon(this.previewIcon()));
   readonly selectedLucideLabel = computed(() => {
-    const selected = this.previewIcon();
+    const selected = this.selectedLucideId();
     return LUCIDE_ICON_CATALOG.find((entry) => entry.id === selected)?.label ?? selected;
   });
 
@@ -273,10 +270,10 @@ export class LedgerEditorDialogComponent {
     this.iconMode.set(mode);
     this.iconSearch.set('');
     this.errorMessage.set(null);
-    if (mode === 'lucide' && !resolveLucideIcon(this.form.controls.icon.value)) {
+    if (mode === 'lucide' && !resolveLucideIcon(decodeLucideLedgerIcon(this.form.controls.icon.value))) {
       this.form.controls.icon.setValue(DEFAULT_ICON);
       this.previewIcon.set(DEFAULT_ICON);
-    } else if (mode === 'unicode' && resolveLucideIcon(this.form.controls.icon.value)) {
+    } else if (mode === 'unicode' && isEncodedLucideLedgerIcon(this.form.controls.icon.value)) {
       this.form.controls.icon.setValue('💰');
       this.previewIcon.set(encodeUnicodeLedgerIcon('💰'));
     }
@@ -284,9 +281,10 @@ export class LedgerEditorDialogComponent {
   }
 
   selectLucideIcon(icon: string): void {
-    this.form.controls.icon.setValue(icon);
+    const encodedIcon = encodeLucideLedgerIcon(icon);
+    this.form.controls.icon.setValue(encodedIcon);
     this.form.controls.icon.markAsDirty();
-    this.previewIcon.set(icon);
+    this.previewIcon.set(encodedIcon);
     this.iconPickerOpen.set(false);
     this.iconSearch.set('');
   }
@@ -386,7 +384,7 @@ export class LedgerEditorDialogComponent {
 
   private iconValid(): boolean {
     const value = this.form.controls.icon.value;
-    return this.iconMode() === 'lucide' ? resolveLucideIcon(value) !== null : this.unicodeIconValid(value);
+    return this.iconMode() === 'lucide' ? isEncodedLucideLedgerIcon(value) && resolveLucideIcon(decodeLucideLedgerIcon(value)) !== null : this.unicodeIconValid(value);
   }
 
   private unicodeIconValid(value: string): boolean {
@@ -398,12 +396,13 @@ export class LedgerEditorDialogComponent {
     const storedIcon = ledger?.icon ?? DEFAULT_ICON;
     const color = (ledger?.color_code ?? DEFAULT_COLOR).toUpperCase();
     const encodedUnicode = isEncodedUnicodeLedgerIcon(storedIcon);
-    const mode: IconMode = !encodedUnicode && resolveLucideIcon(storedIcon) ? 'lucide' : 'unicode';
+    const encodedLucide = isEncodedLucideLedgerIcon(storedIcon);
+    const mode: IconMode = encodedLucide ? 'lucide' : 'unicode';
     const editorIcon = mode === 'unicode' ? decodeUnicodeLedgerIcon(storedIcon) : storedIcon;
 
     this.form.reset({
       name: ledger?.name ?? '',
-      icon: editorIcon || '💰',
+      icon: editorIcon || (encodedUnicode ? '💰' : DEFAULT_ICON),
       color_code: color,
     });
     this.iconMode.set(mode);

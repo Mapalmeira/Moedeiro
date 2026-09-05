@@ -25,11 +25,10 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .ui-button--green { --focus-accent: var(--green); background: linear-gradient(90deg, #31d36c, #3ad273); }
 .ui-button--yellow { --focus-accent: var(--yellow); background: linear-gradient(90deg, #ffd514, #ffd322); }
 .ui-button--blue { --focus-accent: var(--blue); background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 82%, white), var(--blue)); color: #07111f; }
-.ui-button--plain { background: var(--surface); color: var(--text); box-shadow: none; }
 
-/* Shared selectable control used by preferences and ledger appearance editors. */
+/* Selection controls retain their state and never use physical press motion. */
 .ui-choice {
-  min-height: 46px;
+  min-height: var(--control-height);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -40,18 +39,55 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   background: var(--surface);
   color: var(--text);
   font: inherit;
-  font-size: .9rem;
-  font-weight: 720;
-  box-shadow: 2px 2px 0 transparent;
-  transition:
-    transform var(--motion-press) ease,
-    box-shadow var(--motion-press) ease,
-    background var(--motion-press) ease,
-    border-color var(--motion-press) ease;
+  font-size: var(--control-font-size);
+  font-weight: var(--control-font-weight);
+  line-height: var(--control-line-height);
+  box-shadow: var(--selection-shadow-transparent);
+  transition: box-shadow var(--motion-selection) ease, background var(--motion-selection) ease, border-color var(--motion-selection) ease;
 }
-.ui-choice:not(:disabled):hover { background: var(--surface-muted); }
-.ui-choice--selected { background: var(--green-soft); box-shadow: var(--choice-shadow); }
-.ui-choice:not(:disabled):active { transform: translate(var(--press-offset), var(--press-offset)); box-shadow: 0 0 0 transparent; }
+.ui-choice:not(:disabled):not(.ui-choice--selected):hover { background: var(--surface-muted); }
+.ui-choice--selected,
+.ui-choice--selected:hover { background: var(--green-soft); box-shadow: var(--selection-shadow); }
+
+/* Shared dropdown/select trigger. It never moves unless explicitly marked as an action. */
+.ui-select-trigger {
+  min-height: var(--control-height);
+  border: 2px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: none;
+  font-size: var(--control-font-size);
+  font-weight: var(--control-font-weight);
+  line-height: var(--control-line-height);
+  transition: background var(--motion-selection) ease, border-color var(--motion-selection) ease, box-shadow var(--motion-selection) ease;
+}
+.ui-select-trigger:hover { background: var(--surface-muted); }
+.ui-select-trigger:not(.ui-action-press)[aria-expanded='true'] {
+  border-color: var(--green-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 32%, transparent);
+}
+.ui-select-chevron {
+  transform: rotate(0deg);
+  transform-origin: 50% 50%;
+  transition: transform var(--motion-disclosure) ease;
+}
+.ui-select-trigger[aria-expanded='true'] .ui-select-chevron,
+.search-select--open .ui-select-chevron { transform: rotate(180deg); }
+
+/* Flag for controls that perform an action and should physically press. */
+.ui-action-press {
+  box-shadow: var(--compact-button-shadow);
+  transition: transform var(--motion-press) ease, box-shadow var(--motion-press) ease, background var(--motion-press) ease, border-color var(--motion-press) ease;
+}
+.ui-action-press[aria-expanded='true'] {
+  border-color: var(--line-strong);
+  box-shadow: var(--compact-button-shadow);
+}
+.ui-action-press:not(:disabled):active {
+  transform: translate(var(--press-offset), var(--press-offset));
+  box-shadow: var(--compact-button-shadow-pressed);
+}
 
 .icon-button {
   display: grid;

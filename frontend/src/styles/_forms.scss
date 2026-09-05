@@ -69,3 +69,50 @@
   color: var(--danger);
   font-weight: 850;
 }
+
+
+/* Shared searchable dropdown anatomy used by time zone and Lucide selectors. */
+.ui-dropdown-panel {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 2px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: var(--menu-shadow);
+}
+
+.ui-dropdown-search {
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  border: 2px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  transition: box-shadow .12s ease, border-color .12s ease;
+}
+.ui-dropdown-search:focus-within {
+  border-color: var(--green-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 32%, transparent);
+}
+.ui-dropdown-search > app-icon { color: var(--text-muted); }
+.ui-dropdown-search input {
+  min-width: 0;
+  width: 100%;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--control-font-size);
+  font-weight: 500;
+  line-height: var(--control-line-height);
+}
+.ui-dropdown-search input::placeholder { color: color-mix(in srgb, var(--text-muted) 76%, transparent); }
+.ui-dropdown-search input::-webkit-search-cancel-button { display: none; }

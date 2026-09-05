@@ -8,7 +8,7 @@ import { IconComponent } from './icon.component';
   standalone: true,
   imports: [IconComponent],
   template: `
-    <button class="theme-toggle" type="button" (click)="theme.toggle()"
+    <button class="theme-toggle ui-select-trigger ui-action-press" type="button" (click)="theme.toggle()"
       [attr.aria-label]="theme.theme() === 'dark' ? i18n.t('theme.useLight') : i18n.t('theme.useDark')"
       [attr.title]="theme.theme() === 'dark' ? i18n.t('theme.useLight') : i18n.t('theme.useDark')">
       <app-icon name="sun" [size]="17" />
@@ -19,21 +19,16 @@ import { IconComponent } from './icon.component';
     </button>
   `,
   styles: `
+    :host { display: inline-block; }
     .theme-toggle {
-      min-height: 44px;
+      height: var(--control-height);
+      min-height: var(--control-height);
       display: inline-flex;
       align-items: center;
       gap: var(--space-2);
       padding: var(--space-2) var(--space-3);
-      border: 2px solid var(--line-strong);
-      border-radius: 6px;
-      background: var(--surface);
-      color: var(--text);
-      box-shadow: var(--compact-button-shadow);
-      transition: transform var(--motion-press) ease, box-shadow var(--motion-press) ease, background var(--motion-press) ease;
+      box-shadow: var(--selection-shadow);
     }
-    .theme-toggle:hover { background: var(--surface-muted); }
-    .theme-toggle:active { transform: translate(var(--press-offset), var(--press-offset)); box-shadow: var(--compact-button-shadow-pressed); }
     .switch-track {
       width: 36px;
       height: 20px;
@@ -41,7 +36,7 @@ import { IconComponent } from './icon.component';
       border: 2px solid var(--line-strong);
       border-radius: 999px;
       background: var(--surface-muted);
-      transition: background .16s ease, border-color .16s ease;
+      transition: background var(--motion-selection) ease, border-color var(--motion-selection) ease;
     }
     .switch-track > span {
       display: block;
@@ -49,7 +44,7 @@ import { IconComponent } from './icon.component';
       height: 12px;
       border-radius: 50%;
       background: var(--text);
-      transition: transform .16s ease, background .16s ease;
+      transition: transform var(--motion-selection) ease, background var(--motion-selection) ease;
     }
     .switch-track--dark { background: var(--surface); }
     .switch-track--dark > span { transform: translateX(16px); }

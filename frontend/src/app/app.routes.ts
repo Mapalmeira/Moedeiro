@@ -18,6 +18,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/ledgers/ledger-home.component').then((m) => m.LedgerHomeComponent),
       },
       {
+        path: 'ledgers/:ledgerUuid/:section',
+        loadComponent: () => import('./features/ledgers/ledger-page.component').then((m) => m.LedgerPageComponent),
+      },
+      {
         path: 'ledgers/:ledgerUuid',
         loadComponent: () => import('./features/ledgers/ledger-page.component').then((m) => m.LedgerPageComponent),
       },

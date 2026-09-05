@@ -37,7 +37,6 @@ import { LedgerEditorDialogComponent } from './ledger-editor-dialog.component';
 
         @if (loadError()) {
           <app-form-message [text]="loadError()!" />
-          <button class="retry-button" type="button" (click)="load()">{{ i18n.t('ledgers.retry') }}</button>
         } @else if (loading()) {
           <div class="state-row"><span class="spinner" aria-hidden="true"></span><span>{{ i18n.t('ledgers.loading') }}</span></div>
         } @else if (filteredLedgers().length === 0) {
@@ -95,12 +94,12 @@ import { LedgerEditorDialogComponent } from './ledger-editor-dialog.component';
     :host { display: block; width: 100%; }
     .ledger-card {
       --token-accent: var(--green); --token-accent-strong: var(--green-strong); --focus-accent: var(--green);
-      width: min(900px, 100%); margin: 0 auto; border: 2px solid var(--line-strong); border-radius: var(--radius-card);
+      width: min(760px, 100%); margin: 0 auto; border: 2px solid var(--line-strong); border-radius: var(--radius-card);
       background: var(--surface); color: var(--text); box-shadow: var(--shadow-hard); overflow: visible;
     }
     .ledger-card__header { display: flex; align-items: center; justify-content: space-between; gap: var(--section-gap); padding: var(--space-5); border-bottom: 2px solid var(--line); }
     .ledger-card__title { display: flex; align-items: center; gap: var(--title-icon-gap); min-width: 0; }
-    .ledger-card__title-icon { width: 46px; height: 46px; display: grid; place-items: center; flex: 0 0 46px; border: 2px solid var(--line-strong); border-radius: 5px; background: var(--green); color: #060606; box-shadow: 2px 2px 0 var(--shadow-color); }
+    .ledger-card__title-icon { width: 46px; height: 46px; display: grid; place-items: center; flex: 0 0 46px; border: 2px solid var(--line-strong); border-radius: 5px; background: var(--green); color: #060606; box-shadow: var(--icon-shadow); }
     h1 { margin: 0; font-size: clamp(1.25rem, 2vw, 1.48rem); letter-spacing: -.015em; }
     .create-button { flex: 0 0 auto; min-height: 43px; padding-inline: var(--space-4); }
     .ledger-card__body { display: grid; gap: var(--form-gap); padding: var(--space-5); }
@@ -108,28 +107,27 @@ import { LedgerEditorDialogComponent } from './ledger-editor-dialog.component';
     .search-box:focus-within { border-color: var(--green-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 32%, transparent); }
     .search-box input { min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; }
     .ledger-list { display: grid; gap: var(--space-2); min-width: 0; }
-    .ledger-row { position: relative; min-height: 66px; display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border: 2px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); outline: none; transition: border-color var(--motion-press) ease, background var(--motion-press) ease, box-shadow var(--motion-press) ease, transform var(--motion-press) ease; cursor: pointer; }
-    .ledger-row:hover { border-color: var(--line-strong); background: var(--surface-muted); }
+    .ledger-row { position: relative; min-height: 66px; display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; gap: var(--title-icon-gap); padding: var(--space-2) var(--space-3); border: 2px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); box-shadow: var(--selection-shadow-transparent); outline: none; transition: border-color var(--motion-selection) ease, background var(--motion-selection) ease, box-shadow var(--motion-selection) ease; cursor: pointer; }
+    .ledger-row:not(.ledger-row--selected):hover { border-color: var(--line-strong); background: var(--surface-muted); }
     .ledger-row:focus-visible { border-color: var(--green-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 30%, transparent); }
-    .ledger-row.ledger-row--selected { border-color: var(--line-strong); background: color-mix(in srgb, var(--green-soft) 72%, var(--surface)); box-shadow: 3px 3px 0 var(--shadow-color); }
-    .ledger-row__token { width: 46px; height: 46px; display: grid; place-items: center; border: 2px solid var(--line-strong); border-radius: 5px; box-shadow: 2px 2px 0 var(--shadow-color); }
+    .ledger-row.ledger-row--selected { border-color: var(--line-strong); background: var(--green-soft); box-shadow: var(--selection-shadow); }
+    .ledger-row__token { width: 46px; height: 46px; display: grid; place-items: center; overflow: hidden; border: 2px solid var(--line-strong); border-radius: 5px; box-shadow: var(--icon-shadow); }
     .ledger-row__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .98rem; }
     .ledger-row__actions { position: relative; }
     .more-button { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1.5px solid transparent; border-radius: 5px; background: transparent; color: var(--text); }
     .more-button:hover, .more-button[aria-expanded='true'] { border-color: var(--line); background: var(--surface); }
-    .row-menu { position: absolute; z-index: 12; top: calc(100% + 6px); right: 0; width: 172px; padding: 6px; border: 2px solid var(--line-strong); border-radius: 7px; background: var(--surface); box-shadow: 4px 4px 0 var(--shadow-color); }
+    .row-menu { position: absolute; z-index: 12; top: calc(100% + 6px); right: 0; width: 172px; padding: 6px; border: 2px solid var(--line-strong); border-radius: 7px; background: var(--surface); box-shadow: var(--menu-shadow); }
     .row-menu button { width: 100%; min-height: 40px; display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: var(--space-2); padding: 4px 7px; border: 0; border-radius: 4px; background: transparent; color: var(--text); text-align: left; font-size: .9rem; font-weight: 720; }
     .row-menu button:hover { background: var(--surface-muted); }
     .row-menu button + button { margin-top: 2px; }
-    .row-menu__icon { width: 26px; height: 26px; display: grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 4px; box-shadow: 1px 1px 0 var(--shadow-color); }
-    .row-menu__icon--blue { background: var(--blue); color: #07111f; }
+    .row-menu__icon { width: 26px; height: 26px; display: grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 4px; box-shadow: var(--icon-shadow); }
+    .row-menu__icon--blue { background: var(--blue); color: #ffffff; }
     .row-menu__icon--danger { background: var(--danger-token); color: var(--on-danger-token); }
     .state-row, .empty-state { min-height: 160px; display: grid; place-items: center; align-content: center; gap: var(--space-3); color: var(--text-muted); text-align: center; }
     .state-row { grid-template-columns: auto auto; }
     .empty-state__icon { width: 48px; height: 48px; display: grid; place-items: center; border: 2px solid var(--line); border-radius: 8px; background: var(--surface-muted); }
     .spinner { width: 20px; height: 20px; border: 2px solid color-mix(in srgb, var(--green) 28%, var(--line)); border-top-color: var(--green-strong); border-radius: 50%; animation: spin .7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .retry-button { justify-self: start; min-height: 38px; padding: 0 var(--space-4); border: 2px solid var(--line-strong); border-radius: 4px; background: var(--surface); color: var(--text); font-weight: 760; }
     .ledger-card__footer { display: flex; justify-content: flex-end; padding: var(--space-4) var(--space-5) var(--space-5); border-top: 1px solid var(--line); }
     .enter-button { min-width: 210px; }
     @media (max-width: 600px) {
@@ -264,7 +262,7 @@ export class LedgerHomeComponent {
     const ledger = this.selectedLedger();
     if (!ledger || this.entering()) return;
     this.entering.set(true);
-    void this.router.navigate(['/ledgers', ledger.uuid]).finally(() => this.entering.set(false));
+    void this.router.navigate(['/ledgers', ledger.uuid, 'home']).finally(() => this.entering.set(false));
   }
 
   foreground(color: string): string {

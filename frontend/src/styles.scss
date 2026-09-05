@@ -24,7 +24,7 @@ a { color: var(--link); }
   border: 2px solid var(--line-strong);
   border-radius: 5px;
   color: #050505;
-  box-shadow: 2px 2px 0 var(--shadow-color);
+  box-shadow: var(--icon-shadow);
 }
 .title-icon--green { background: var(--green); }
 .title-icon--yellow { background: var(--yellow); }

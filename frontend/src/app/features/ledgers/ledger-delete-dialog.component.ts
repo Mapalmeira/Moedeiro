@@ -52,12 +52,12 @@ import { IconComponent } from '../../shared/ui/icon.component';
       position: fixed; z-index: 61; top: 50%; left: 50%; width: min(520px, calc(100vw - 28px));
       max-height: calc(100dvh - 30px); overflow: auto; transform: translate(-50%, -50%);
       border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); color: var(--text);
-      box-shadow: 7px 7px 0 var(--shadow-color);
+      box-shadow: var(--dialog-shadow);
     }
     .dialog__header { display: flex; align-items: center; justify-content: space-between; gap: var(--form-gap); padding: 17px 19px; border-bottom: 2px solid var(--line); }
     .dialog__title { display: flex; align-items: center; gap: var(--title-icon-gap); }
     .dialog__title h2 { margin: 0; font-size: 1.22rem; }
-    .title-icon { width: 40px; height: 40px; display: grid; place-items: center; border: 1.5px solid var(--danger); border-radius: 5px; background: var(--danger-token); color: var(--on-danger-token); box-shadow: 2px 2px 0 var(--shadow-color); }
+    .title-icon { width: 40px; height: 40px; display: grid; place-items: center; border: 1.5px solid var(--danger); border-radius: 5px; background: var(--danger-token); color: var(--on-danger-token); box-shadow: var(--icon-shadow); }
     .dialog__body { display: grid; gap: var(--section-gap); padding: var(--space-5); }
     p { margin: 0; color: var(--text-muted); line-height: 1.55; }
     .dialog__footer { display: flex; justify-content: flex-end; }

@@ -1,12 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { catchError, finalize, of, switchMap, tap } from 'rxjs';
+import { finalize } from 'rxjs';
 import { ApiErrorService } from '../../../core/api/api-error';
 import { AuthService } from '../../../core/auth/auth.service';
 import { I18nService } from '../../../core/i18n/i18n.service';
-import { PreferenceDefaultsService } from '../../../core/preferences/preference-defaults.service';
-import { PreferencesService } from '../../../core/preferences/preferences.service';
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -169,8 +167,6 @@ export class AuthLandingComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly apiErrors = inject(ApiErrorService);
-  private readonly preferences = inject(PreferencesService);
-  private readonly preferenceDefaults = inject(PreferenceDefaultsService);
   readonly i18n = inject(I18nService);
 
   readonly showLoginPassword = signal(false);
@@ -229,50 +225,22 @@ export class AuthLandingComponent {
     this.registrationError.set(null);
     this.registrationSuccess.set(false);
     const value = this.registrationForm.getRawValue();
-    const initialPreferences = this.preferenceDefaults.infer();
-    let accountCreated = false;
 
     this.auth.register({
       invitation_code: normalizeCrockfordCode(value.invitation_code),
       name: value.name,
       password: value.password,
-    }).pipe(
-      tap(() => {
-        accountCreated = true;
-        this.registrationSuccess.set(true);
-      }),
-      // PUT /api/user/preferences is authenticated. After creating the account,
-      // sign in normally with the credentials the user just supplied, persist
-      // the browser-derived initial preferences, and keep that session as the
-      // user's first signed-in session.
-      switchMap(() => this.auth.login({
-        name: value.name,
-        password: value.password,
-        remember: false,
-        totp_code: null,
-      })),
-      switchMap(() => this.preferences.save(initialPreferences).pipe(
-        // Preference initialization must not invalidate an account that was
-        // already created and authenticated. /home will retry on a 404.
-        catchError(() => of(initialPreferences)),
-      )),
-      finalize(() => this.loadingRegistration.set(false)),
-    ).subscribe({
+    }).pipe(finalize(() => this.loadingRegistration.set(false))).subscribe({
       next: () => {
+        // Registration only creates the account. Authentication remains an
+        // explicit user action through the login form.
+        this.loginForm.controls.name.setValue(value.name);
+        this.loginForm.controls.password.reset('');
         this.registrationForm.reset({ invitation_code: '', name: '', password: '', confirm_password: '' });
         this.showRegistrationPassword.set(false);
-        void this.router.navigateByUrl('/home', { state: { accountCreated: true } });
+        this.registrationSuccess.set(true);
       },
       error: (error: unknown) => {
-        if (accountCreated) {
-          // Registration itself succeeded, but the automatic first sign-in did
-          // not. Keep the success state and prepare the regular login form.
-          this.loginForm.controls.name.setValue(value.name);
-          this.loginForm.controls.password.reset('');
-          this.registrationForm.reset({ invitation_code: '', name: '', password: '', confirm_password: '' });
-          this.showRegistrationPassword.set(false);
-          return;
-        }
         this.registrationError.set(this.apiErrors.message(error, 'errors.registrationFailed'));
       },
     });

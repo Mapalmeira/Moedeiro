@@ -42,6 +42,10 @@ export class LedgerService {
   }
 
   private replace(next: Ledger): void {
-    this.ledgerState.update((current) => current.map((ledger) => ledger.uuid === next.uuid ? next : ledger));
+    this.ledgerState.update((current) => {
+      const index = current.findIndex((ledger) => ledger.uuid === next.uuid);
+      if (index === -1) return [next, ...current];
+      return current.map((ledger) => ledger.uuid === next.uuid ? next : ledger);
+    });
   }
 }

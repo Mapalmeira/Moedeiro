@@ -1,3 +1,7 @@
+export interface AuthenticationSession {
+  name: string;
+}
+
 export interface LoginRequest {
   name: string;
   password: string;
