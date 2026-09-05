@@ -142,6 +142,14 @@ class SettingsTest(unittest.TestCase):
                 with self.assertRaises(ValidationError):
                     Settings.model_validate(values)
 
+    def test_treats_empty_trusted_proxy_ip_as_unset(self) -> None:
+        for value in ("", "   "):
+            with self.subTest(value=value):
+                settings = Settings.from_environment(
+                    {**self.environment, "TRUSTED_PROXY_IP": value}
+                )
+
+                self.assertIsNone(settings.trusted_proxy_ip)
 
 if __name__ == "__main__":
     unittest.main()

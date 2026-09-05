@@ -77,6 +77,13 @@ class Settings(BaseModel):
             "totp_encryption_key": "TOTP_ENCRYPTION_KEY",
         }
         for field_name, variable_name in optional_variable_names.items():
-            if variable_name in source and (field_name != "trusted_proxy_ip" or source[variable_name].strip()):
+            if variable_name in source:
                 values[field_name] = source[variable_name]
+
+        trusted_proxy_ip = source.get("TRUSTED_PROXY_IP")
+        if trusted_proxy_ip is not None:
+            if trusted_proxy_ip.strip():
+                values["trusted_proxy_ip"] = trusted_proxy_ip
+            else:
+                values.pop("trusted_proxy_ip", None)
         return cls.model_validate(values)
