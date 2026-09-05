@@ -10,5 +10,5 @@ class UserPreferencesRepository(ABC):
         pass
 
     @abstractmethod
-    def save(self, user_uuid: UUID, language: Language | None, date_format: DateFormat | None, time_format: TimeFormat | None, number_format: NumberFormat | None, theme: Theme | None, timezone: Timezone | None) -> UserPreferences:
+    def save(self, user_uuid: UUID, language: Language, date_format: DateFormat, time_format: TimeFormat, number_format: NumberFormat, theme: Theme, timezone: Timezone) -> UserPreferences:
         pass

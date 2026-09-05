@@ -161,7 +161,7 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         recovery_uuid = uuid4().bytes
         self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, NULL, NULL)", (mfa_uuid, self.user_uuid, b"encrypted"))
         self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, 40, NULL)", (recovery_uuid, self.user_uuid, b"c" * 32))
-        self.connection.execute("INSERT INTO user_preferences VALUES (?, NULL, NULL, NULL, NULL, 'DARK', 'UTC')", (self.user_uuid,))
+        self.connection.execute("INSERT INTO user_preferences VALUES (?, 'pt-BR', 'DMY', 'H24', 'COMMA', 'DARK', 'UTC')", (self.user_uuid,))
 
         self.connection.execute("DELETE FROM user_account WHERE uuid = ?", (self.user_uuid,))
 

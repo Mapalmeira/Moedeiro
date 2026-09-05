@@ -41,12 +41,12 @@ class UserPreferencesRoutesTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()
 
-    def test_get_returns_empty_preferences_before_the_first_save(self) -> None:
+    def test_get_returns_default_preferences_before_the_first_save(self) -> None:
         preferences = get_preferences(self.request, self.user)
 
-        self.assertIsNone(preferences.language)
-        self.assertIsNone(preferences.date_format)
-        self.assertIsNone(preferences.timezone)
+        self.assertEqual(preferences.language, "pt-BR")
+        self.assertEqual(preferences.date_format, "DMY")
+        self.assertEqual(preferences.timezone, "UTC")
 
     def test_put_replaces_preferences_and_get_returns_the_saved_values(self) -> None:
         saved = save_preferences(
@@ -61,16 +61,16 @@ class UserPreferencesRoutesTest(unittest.TestCase):
             self.request,
             self.user,
         )
-        replaced = save_preferences(UserPreferencesPayload(language="en", theme="LIGHT"), self.request, self.user)
+        replaced = save_preferences(UserPreferencesPayload(language="en", date_format="MDY", time_format="H12", number_format="DOT", theme="LIGHT", timezone="America/New_York"), self.request, self.user)
 
         self.assertEqual(saved.language, "pt-BR")
         self.assertEqual(replaced.language, "en")
         self.assertEqual(saved.theme, "DARK")
-        self.assertIsNone(replaced.date_format)
+        self.assertEqual(replaced.date_format, "MDY")
         self.assertEqual(get_preferences(self.request, self.user), replaced)
 
     def test_request_rejects_an_invalid_theme_or_empty_format(self) -> None:
-        for values in ({"language": "pt"}, {"theme": "SYSTEM"}, {"date_format": "DD/MM/YYYY"}, {"timezone": "Unknown/Timezone"}):
+        for values in ({"language": "pt"}, {"theme": "SYSTEM"}, {"date_format": "DD/MM/YYYY"}, {"timezone": "Unknown/Timezone"}, {"language": None}, {"date_format": None}, {"time_format": None}, {"number_format": None}, {"theme": None}, {"timezone": None}, {}):
             with self.subTest(values=values):
                 with self.assertRaises(ValidationError):
                     UserPreferencesPayload(**values)

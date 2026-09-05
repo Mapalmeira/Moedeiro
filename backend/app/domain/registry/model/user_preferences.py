@@ -25,9 +25,9 @@ Timezone = Annotated[str, Field(min_length=1, max_length=50), AfterValidator(_va
 
 class UserPreferences(BaseModel):
     user_uuid: UUID
-    language: Language | None = None
-    date_format: DateFormat | None = None
-    time_format: TimeFormat | None = None
-    number_format: NumberFormat | None = None
-    theme: Theme | None = None
-    timezone: Timezone | None = None
+    language: Language = "pt-BR"
+    date_format: DateFormat = "DMY"
+    time_format: TimeFormat = "H24"
+    number_format: NumberFormat = "COMMA"
+    theme: Theme = "LIGHT"
+    timezone: Timezone = "UTC"

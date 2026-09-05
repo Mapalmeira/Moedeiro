@@ -6,12 +6,12 @@ from app.domain.registry.model.user_preferences import DateFormat, Language, Num
 
 
 class UserPreferencesPayload(BaseModel):
-    language: Language | None = None
-    date_format: DateFormat | None = None
-    time_format: TimeFormat | None = None
-    number_format: NumberFormat | None = None
-    theme: Theme | None = None
-    timezone: Timezone | None = None
+    language: Language
+    date_format: DateFormat
+    time_format: TimeFormat
+    number_format: NumberFormat
+    theme: Theme
+    timezone: Timezone
 
     @classmethod
     def from_preferences(cls, preferences: UserPreferences) -> Self:

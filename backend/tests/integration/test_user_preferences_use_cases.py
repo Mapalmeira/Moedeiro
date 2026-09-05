@@ -26,26 +26,26 @@ class UserPreferencesUseCasesTest(unittest.TestCase):
     def open_registry(self) -> SqliteRegistryUnitOfWork:
         return SqliteRegistryUnitOfWork(self.database)
 
-    def test_get_returns_empty_preferences_until_the_user_saves_them(self) -> None:
+    def test_get_returns_default_preferences_until_the_user_saves_them(self) -> None:
         preferences = get_user_preferences(self.open_registry, self.user.uuid)
 
         self.assertEqual(preferences.user_uuid, self.user.uuid)
-        self.assertIsNone(preferences.language)
-        self.assertIsNone(preferences.date_format)
-        self.assertIsNone(preferences.theme)
+        self.assertEqual(preferences.language, "pt-BR")
+        self.assertEqual(preferences.date_format, "DMY")
+        self.assertEqual(preferences.theme, "LIGHT")
 
     def test_save_replaces_the_complete_preference_set(self) -> None:
         saved = save_user_preferences(self.open_registry, self.user.uuid, "pt-BR", "DMY", "H24", "COMMA", "DARK", "America/Fortaleza")
-        replaced = save_user_preferences(self.open_registry, self.user.uuid, "en", None, "H12", "DOT", "LIGHT", "America/New_York")
+        replaced = save_user_preferences(self.open_registry, self.user.uuid, "en", "MDY", "H12", "DOT", "LIGHT", "America/New_York")
 
         self.assertEqual(saved.language, "pt-BR")
         self.assertEqual(saved.theme, "DARK")
-        self.assertIsNone(replaced.date_format)
+        self.assertEqual(replaced.date_format, "MDY")
         self.assertEqual(get_user_preferences(self.open_registry, self.user.uuid), replaced)
 
     def test_save_rejects_an_unknown_user(self) -> None:
         with self.assertRaises(UserNotFoundError):
-            save_user_preferences(self.open_registry, uuid4(), None, None, None, None, None, None)
+            save_user_preferences(self.open_registry, uuid4(), "pt-BR", "DMY", "H24", "COMMA", "LIGHT", "UTC")
 
 
 if __name__ == "__main__":

@@ -15,12 +15,12 @@ def get_user_preferences(unit_of_work_factory: Callable[[], RegistryUnitOfWork],
 def save_user_preferences(
     unit_of_work_factory: Callable[[], RegistryUnitOfWork],
     user_uuid: UUID,
-    language: Language | None,
-    date_format: DateFormat | None,
-    time_format: TimeFormat | None,
-    number_format: NumberFormat | None,
-    theme: Theme | None,
-    timezone: Timezone | None,
+    language: Language,
+    date_format: DateFormat,
+    time_format: TimeFormat,
+    number_format: NumberFormat,
+    theme: Theme,
+    timezone: Timezone,
 ) -> UserPreferences:
     with unit_of_work_factory() as unit_of_work:
         if unit_of_work.user_repository.get(user_uuid) is None:

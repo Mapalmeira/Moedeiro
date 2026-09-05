@@ -15,7 +15,7 @@ class SqliteUserPreferencesRepository(UserPreferencesRepository):
         row = self.connection.execute(f"SELECT {self._columns} FROM user_preferences WHERE user_uuid = ?", (user_uuid.bytes,)).fetchone()
         return None if row is None else UserPreferences.model_validate(dict(row))
 
-    def save(self, user_uuid: UUID, language: Language | None, date_format: DateFormat | None, time_format: TimeFormat | None, number_format: NumberFormat | None, theme: Theme | None, timezone: Timezone | None) -> UserPreferences:
+    def save(self, user_uuid: UUID, language: Language, date_format: DateFormat, time_format: TimeFormat, number_format: NumberFormat, theme: Theme, timezone: Timezone) -> UserPreferences:
         preferences = UserPreferences(user_uuid=user_uuid, language=language, date_format=date_format, time_format=time_format, number_format=number_format, theme=theme, timezone=timezone)
         self.connection.execute(
             "INSERT INTO user_preferences(user_uuid, language, date_format, time_format, number_format, theme, timezone) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_uuid) DO UPDATE SET language = excluded.language, date_format = excluded.date_format, time_format = excluded.time_format, number_format = excluded.number_format, theme = excluded.theme, timezone = excluded.timezone",
