@@ -11,3 +11,7 @@ Start with [Installation](docs/installation.md). The remaining guides explain th
 * [Administrative CLI](docs/cli.md) covers invitations, users, recovery, MFA, and maintenance.
 * [Security and concurrency](docs/security.md) describes the protection model and why the service has separate resource limits.
 * [Domain model](docs/domain.md) explains the main entities and their relationships.
+
+# Third-party assets
+
+Language flag graphics are provided by [Twemoji](https://github.com/jdecked/twemoji), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

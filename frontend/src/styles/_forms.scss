@@ -1,0 +1,71 @@
+.field {
+  --field-focus: var(--token-accent, var(--green));
+  --field-focus-strong: var(--token-accent-strong, var(--green-strong));
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  align-content: start;
+  align-self: start;
+  gap: var(--field-gap);
+  font-weight: 650;
+  font-size: .9rem;
+}
+
+.field input,
+.field select {
+  box-sizing: border-box;
+  width: 100%;
+  height: 46px;
+  min-height: 46px;
+  padding: 0 13px;
+  border: 2px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 450;
+  transition: box-shadow .12s ease, border-color .12s ease, background .12s ease;
+}
+
+.field input::placeholder { color: color-mix(in srgb, var(--text-muted) 70%, transparent); }
+.field input:focus,
+.field select:focus {
+  border-color: var(--field-focus-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--field-focus) 32%, transparent);
+}
+
+.input-with-action { position: relative; }
+.input-with-action input { padding-right: 50px; }
+.icon-action {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 38px;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  border-radius: 4px;
+}
+.icon-action:hover { background: var(--surface-muted); }
+
+.checkbox { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 500; cursor: pointer; }
+.checkbox input { width: 18px; height: 18px; margin: 0; accent-color: var(--green-strong); }
+
+.field-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: .76rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.required-mark {
+  margin-left: 2px;
+  color: var(--danger);
+  font-weight: 850;
+}

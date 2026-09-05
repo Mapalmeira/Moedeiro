@@ -1,0 +1,46 @@
+button, a { -webkit-tap-highlight-color: transparent; }
+button { font: inherit; }
+button:not(:disabled), a { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .58; }
+
+.ui-button {
+  position: relative;
+  min-height: 47px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--inline-gap);
+  padding: 0 18px;
+  border: 2px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  color: #050505;
+  font-weight: 800;
+  box-shadow: 4px 4px 0 var(--shadow-color);
+  transition: transform var(--motion-press) ease, box-shadow var(--motion-press) ease;
+}
+.ui-button:not(:disabled):active { transform: translate(var(--press-offset), var(--press-offset)); box-shadow: 2px 2px 0 var(--shadow-color); }
+.ui-button--full { width: 100%; }
+.ui-button--full app-icon { position: absolute; right: 17px; }
+.ui-button--green { --focus-accent: var(--green); background: linear-gradient(90deg, #31d36c, #3ad273); }
+.ui-button--yellow { --focus-accent: var(--yellow); background: linear-gradient(90deg, #ffd514, #ffd322); }
+.ui-button--blue { --focus-accent: var(--blue); background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 82%, white), var(--blue)); color: #07111f; }
+.ui-button--plain { background: var(--surface); color: var(--text); box-shadow: none; }
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.ui-button--danger {
+  --focus-accent: var(--danger-token);
+  background: var(--danger-token);
+  color: var(--on-danger-token);
+}

@@ -1,0 +1,224 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, HostListener, inject, input, output, signal } from '@angular/core';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { finalize } from 'rxjs';
+import { ApiErrorService } from '../../../core/api/api-error';
+import { AuthService } from '../../../core/auth/auth.service';
+import { I18nService } from '../../../core/i18n/i18n.service';
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  TOTP_PATTERN,
+  USER_NAME_MAX_LENGTH,
+  USER_NAME_PATTERN,
+} from '../../../shared/forms/backend-validators';
+import { CrockfordCodeInputDirective, normalizeCrockfordCode } from '../../../shared/forms/crockford-code-input.directive';
+import { NoWhitespaceInputDirective } from '../../../shared/forms/no-whitespace-input.directive';
+import { FieldErrorComponent } from '../../../shared/ui/field-error.component';
+import { FormMessageComponent } from '../../../shared/ui/form-message.component';
+import { IconComponent } from '../../../shared/ui/icon.component';
+
+@Component({
+  selector: 'app-password-recovery-dialog',
+  standalone: true,
+  imports: [ReactiveFormsModule, CrockfordCodeInputDirective, NoWhitespaceInputDirective, FieldErrorComponent, FormMessageComponent, IconComponent],
+  template: `
+    @if (open()) {
+      <div class="dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
+      <section class="dialog" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('auth.recovery.title')">
+        <header class="dialog__header">
+          <div class="dialog__title">
+            <span class="title-icon title-icon--green"><app-icon name="key" [size]="22" /></span>
+            <h2>{{ i18n.t('auth.recovery.title') }}</h2>
+          </div>
+          <button class="icon-button" type="button" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
+            <app-icon name="x" [size]="19" />
+          </button>
+        </header>
+
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+          <label class="field">
+            <span>{{ i18n.t('auth.username') }} <span class="required-mark" aria-hidden="true">*</span></span>
+            <input appNoWhitespace formControlName="name" autocomplete="username" />
+            <app-field-error [text]="usernameError(form.controls.name)" />
+          </label>
+
+          <label class="field">
+            <span>{{ i18n.t('auth.recovery.code') }} <span class="required-mark" aria-hidden="true">*</span></span>
+            <input appCrockfordCode formControlName="recovery_code" autocomplete="off" />
+            <app-field-error [text]="codeError(form.controls.recovery_code)" />
+          </label>
+
+          <label class="field">
+            <span>{{ i18n.t('auth.recovery.newPassword') }} <span class="required-mark" aria-hidden="true">*</span></span>
+            <div class="input-with-action">
+              <input appNoWhitespace [type]="showPassword() ? 'text' : 'password'" formControlName="new_password" autocomplete="new-password" />
+              <button type="button" class="icon-action" (click)="showPassword.set(!showPassword())"
+                [attr.aria-label]="showPassword() ? i18n.t('auth.password.hide') : i18n.t('auth.password.show')">
+                <app-icon [name]="showPassword() ? 'eye-off' : 'eye'" />
+              </button>
+            </div>
+            <app-field-error [text]="passwordError(form.controls.new_password)" />
+          </label>
+
+          <label class="field">
+            <span>{{ i18n.t('auth.recovery.confirmPassword') }} <span class="required-mark" aria-hidden="true">*</span></span>
+            <input appNoWhitespace type="password" formControlName="confirm_password" autocomplete="new-password" />
+            <app-field-error [text]="confirmPasswordError()" />
+          </label>
+
+          @if (totpRequired()) {
+            <label class="field">
+              <span>{{ i18n.t('auth.totp') }} <span class="required-mark" aria-hidden="true">*</span></span>
+              <input inputmode="numeric" autocomplete="one-time-code" formControlName="totp_code" maxlength="6" />
+              <app-field-error [text]="totpError(form.controls.totp_code)" />
+            </label>
+          }
+
+          @if (errorMessage()) { <app-form-message [text]="errorMessage()!" /> }
+          @if (successMessage()) { <app-form-message kind="success" [text]="successMessage()!" /> }
+
+          <button class="ui-button ui-button--green ui-button--full" type="submit"
+            [disabled]="form.invalid || passwordMismatch() || loading() || completed()">
+            <span>{{ loading() ? i18n.t('auth.recovery.updating') : i18n.t('auth.recovery.submit') }}</span>
+            <app-icon name="arrow-right" />
+          </button>
+        </form>
+      </section>
+    }
+  `,
+  styles: `
+    .dialog-backdrop { position: fixed; inset: 0; z-index: 70; background: rgb(0 0 0 / .30); backdrop-filter: blur(2px); }
+    .dialog { position: fixed; z-index: 71; top: 50%; left: 50%; width: min(550px, calc(100vw - 28px)); max-height: calc(100dvh - 30px); overflow: auto; transform: translate(-50%, -50%); border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); color: var(--text); box-shadow: 8px 8px 0 var(--shadow-color); }
+    .dialog__header { display: flex; align-items: center; justify-content: space-between; gap: var(--form-gap); padding: 18px var(--space-5); border-bottom: 1px solid var(--line); }
+    .dialog__title { display: flex; align-items: center; gap: var(--inline-gap); }
+    .dialog__title h2 { margin: 0; font-size: 1.22rem; }
+    form { display: grid; gap: var(--form-gap); padding: var(--space-5); }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class PasswordRecoveryDialogComponent {
+  private readonly fb = inject(FormBuilder);
+  private readonly auth = inject(AuthService);
+  private readonly apiErrors = inject(ApiErrorService);
+  readonly i18n = inject(I18nService);
+
+  readonly open = input(false);
+  readonly close = output<void>();
+  readonly loading = signal(false);
+  readonly completed = signal(false);
+  readonly errorMessage = signal<string | null>(null);
+  readonly successMessage = signal<string | null>(null);
+  readonly totpRequired = signal(false);
+  readonly showPassword = signal(false);
+
+  readonly form = this.fb.nonNullable.group({
+    name: ['', [Validators.required, Validators.maxLength(USER_NAME_MAX_LENGTH), Validators.pattern(USER_NAME_PATTERN)]],
+    recovery_code: ['', Validators.required],
+    new_password: ['', [Validators.required, Validators.minLength(PASSWORD_MIN_LENGTH), Validators.maxLength(PASSWORD_MAX_LENGTH)]],
+    confirm_password: ['', [Validators.required, Validators.maxLength(PASSWORD_MAX_LENGTH)]],
+    totp_code: [''],
+  });
+
+  ngOnChanges(): void {
+    if (this.open()) this.reset();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.open()) this.requestClose();
+  }
+
+  requestClose(): void {
+    if (this.loading()) return;
+    this.close.emit();
+  }
+
+  passwordMismatch(): boolean {
+    const value = this.form.getRawValue();
+    return !!value.confirm_password && value.new_password !== value.confirm_password;
+  }
+
+  submit(): void {
+    if (this.form.invalid || this.passwordMismatch() || this.loading() || this.completed()) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    this.loading.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    const value = this.form.getRawValue();
+    this.auth.recoverPassword({
+      name: value.name,
+      recovery_code: normalizeCrockfordCode(value.recovery_code),
+      new_password: value.new_password,
+      totp_code: value.totp_code.trim() || null,
+    }).pipe(finalize(() => this.loading.set(false))).subscribe({
+      next: () => {
+        this.successMessage.set(this.i18n.t('auth.recovery.success'));
+        this.completed.set(true);
+        this.form.disable();
+      },
+      error: (error: unknown) => {
+        if (error instanceof HttpErrorResponse && error.status === 401 && error.error?.detail === 'TOTP required') {
+          this.totpRequired.set(true);
+          this.form.controls.totp_code.setValidators([Validators.required, Validators.pattern(TOTP_PATTERN)]);
+          this.form.controls.totp_code.updateValueAndValidity();
+        }
+        this.errorMessage.set(this.apiErrors.message(error, 'errors.recoveryFailed'));
+      },
+    });
+  }
+
+  usernameError(control: AbstractControl): string | null {
+    if (!this.shouldShowError(control)) return null;
+        if (control.hasError('maxlength')) return this.i18n.t('validation.username.max', { max: USER_NAME_MAX_LENGTH });
+    if (control.hasError('pattern')) return this.i18n.t('validation.username.characters');
+    return null;
+  }
+
+  passwordError(control: AbstractControl): string | null {
+    if (!this.shouldShowError(control)) return null;
+        if (control.hasError('minlength')) return this.i18n.t('validation.password.min', { min: PASSWORD_MIN_LENGTH });
+    if (control.hasError('maxlength')) return this.i18n.t('validation.password.max', { max: PASSWORD_MAX_LENGTH });
+    return null;
+  }
+
+  codeError(control: AbstractControl): string | null {
+    if (!this.shouldShowError(control)) return null;
+        if (control.hasError('crockfordCode')) return this.i18n.t('validation.code.invalid');
+    return null;
+  }
+
+  totpError(control: AbstractControl): string | null {
+    if (!this.shouldShowError(control)) return null;
+        if (control.hasError('pattern')) return this.i18n.t('validation.totp.invalid');
+    return null;
+  }
+
+  confirmPasswordError(): string | null {
+    const control = this.form.controls.confirm_password;
+    if (!this.shouldShowError(control)) return null;
+        if (control.hasError('maxlength')) return this.i18n.t('validation.password.max', { max: PASSWORD_MAX_LENGTH });
+    if (this.passwordMismatch()) return this.i18n.t('auth.register.passwordMismatch');
+    return null;
+  }
+
+  private shouldShowError(control: AbstractControl): boolean {
+    return control.invalid && control.dirty;
+  }
+
+  private reset(): void {
+    this.form.enable();
+    this.form.reset({ name: '', recovery_code: '', new_password: '', confirm_password: '', totp_code: '' });
+    this.form.controls.totp_code.clearValidators();
+    this.form.controls.totp_code.updateValueAndValidity({ emitEvent: false });
+    this.loading.set(false);
+    this.completed.set(false);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+    this.totpRequired.set(false);
+    this.showPassword.set(false);
+  }
+}

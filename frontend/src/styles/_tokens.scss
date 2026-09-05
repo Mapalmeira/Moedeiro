@@ -1,0 +1,75 @@
+:root {
+  --green: #21e683;
+  --green-strong: #10a956;
+  --green-soft: #eafaf0;
+  --yellow: #ffd51a;
+  --yellow-strong: #c99c00;
+  --yellow-soft: #fff9df;
+  --blue: #488dfc;
+  --blue-strong: #2467d5;
+  --blue-soft: #edf4ff;
+  --danger: #d62828;
+  --danger-soft: #fff0f0;
+  --danger-token: #c5222d;
+  --on-danger-token: #ffffff;
+  --text: #0a0a0a;
+  --text-muted: #4b5563;
+  --link: #087a3c;
+  --surface: #ffffff;
+  --surface-muted: #f6f7f8;
+  --page: #ffffff;
+  --line: #cdd2d8;
+  --line-strong: #111111;
+  --shadow-color: #111111;
+  --shadow-hard: 6px 6px 0 var(--shadow-color);
+  --focus-accent: var(--green);
+  --radius-card: 8px;
+  --radius-sm: 6px;
+
+  /* Spacing scale. Keep component spacing on this scale instead of ad-hoc px values. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Semantic spacing used by forms and feedback. */
+  --field-gap: var(--space-2);
+  --form-gap: var(--space-4);
+  --section-gap: var(--space-5);
+  --inline-gap: var(--space-3);
+
+  --space-page: clamp(18px, 4vw, 56px);
+  --motion-press: 80ms;
+  --press-offset: 2px;
+}
+
+:root[data-theme='dark'] {
+  --text: #d8dee7;
+  --text-muted: #929daa;
+  --link: #62d99a;
+  --surface: #181c21;
+  --surface-muted: #22272e;
+  --page: #101318;
+  --line: #3c4550;
+  --line-strong: #687482;
+  --shadow-color: #313a45;
+  --green: #25cf78;
+  --green-strong: #22a864;
+  --green-soft: #173126;
+  --yellow: #e5bd24;
+  --yellow-strong: #b8961b;
+  --yellow-soft: #302b16;
+  --blue: #488dfc;
+  --blue-strong: #4e88e8;
+  --blue-soft: #17263d;
+  --danger: #ef7777;
+  --danger-soft: #351d20;
+  --danger-token: #c93440;
+  --on-danger-token: #fff7f7;
+}

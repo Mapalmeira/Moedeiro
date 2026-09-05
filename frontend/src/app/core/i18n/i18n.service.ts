@@ -1,0 +1,280 @@
+import { DOCUMENT } from '@angular/common';
+import { inject, Injectable, signal } from '@angular/core';
+
+export type AppLanguage = 'pt-BR' | 'en';
+
+const pt = {
+  'auth.subtitle': 'Entre ou crie sua conta.',
+  'auth.login.title': 'Login',
+  'auth.username': 'Usuário',
+  'auth.password': 'Senha',
+  'auth.password.show': 'Mostrar senha',
+  'auth.password.hide': 'Ocultar senha',
+  'auth.remember': 'Lembrar de mim',
+  'auth.forgotPassword': 'Esqueci minha senha',
+  'auth.signIn': 'Entrar',
+  'auth.signingIn': 'Entrando…',
+  'auth.totp': 'Código do autenticador',
+  'auth.invite.label': 'Código de convite',
+  'auth.register.title': 'Criar conta',
+  'auth.register.confirmPassword': 'Confirmar senha',
+  'auth.register.creating': 'Criando…',
+  'auth.register.success': 'Conta criada com sucesso.',
+  'auth.register.passwordMismatch': 'As senhas não coincidem.',
+  'auth.recovery.title': 'Recuperar senha',
+  'auth.recovery.code': 'Código de recuperação',
+  'auth.recovery.newPassword': 'Nova senha',
+  'auth.recovery.confirmPassword': 'Confirmar nova senha',
+  'auth.recovery.submit': 'Definir nova senha',
+  'auth.recovery.updating': 'Atualizando…',
+  'auth.recovery.success': 'Senha atualizada.',
+  'auth.passwordChanged': 'Senha alterada. Entre novamente.',
+  'common.close': 'Fechar',
+  'common.language': 'Idioma',
+  'common.theme': 'Tema',
+  'language.pt': 'Português',
+  'language.en': 'English',
+  'theme.light': 'Claro',
+  'theme.dark': 'Escuro',
+  'theme.useLight': 'Usar tema claro',
+  'theme.useDark': 'Usar tema escuro',
+  'shell.welcome': 'Bem-vindo de volta!',
+  'shell.settings': 'Configurações',
+  'shell.preferences': 'Preferências',
+  'shell.security': 'Segurança',
+  'shell.logout': 'Sair',
+  'shell.loggingOut': 'Saindo…',
+  'preferences.title': 'Preferências',
+  'preferences.dateFormat': 'Data',
+  'preferences.timeFormat': 'Hora',
+  'preferences.numberFormat': 'Números',
+  'preferences.timezone': 'Fuso horário',
+  'preferences.timezoneNoResults': 'Nenhum fuso encontrado.',
+  'preferences.save': 'Salvar preferências',
+  'preferences.saving': 'Salvando…',
+  'security.title': 'Segurança',
+  'security.password.title': 'Senha',
+  'security.password.logoutWarning': 'Alterar a senha encerra todas as sessões, incluindo esta.',
+  'security.currentPassword': 'Senha atual',
+  'security.newPassword': 'Nova senha',
+  'security.confirmPassword': 'Confirmar nova senha',
+  'security.password.change': 'Alterar senha',
+  'security.password.changing': 'Alterando…',
+  'security.totp.title': 'Autenticação em duas etapas (TOTP)',
+  'security.totp.configure': 'Configurar TOTP',
+  'security.totp.disable': 'Desativar TOTP',
+  'security.totp.preparing': 'Preparando…',
+  'security.totp.checking': 'Verificando TOTP…',
+  'security.totp.retry': 'Tentar novamente',
+  'security.totp.start': 'Gerar configuração',
+  'security.totp.qrAlt': 'QR code para configurar o autenticador',
+  'security.totp.secret': 'Chave secreta',
+  'security.totp.copySecret': 'Copiar chave secreta',
+  'security.totp.showSecret': 'Mostrar chave secreta',
+  'security.totp.hideSecret': 'Ocultar chave secreta',
+  'security.totp.copy': 'Copiar',
+  'security.totp.copied': 'Copiado',
+  'security.totp.confirm': 'Confirmar TOTP',
+  'security.totp.confirming': 'Confirmando…',
+  'security.totp.enabled': 'TOTP ativado com sucesso.',
+  'security.totp.disabling': 'Desativando…',
+  'security.totp.disabled': 'TOTP desativado.',
+  'validation.required': 'Campo obrigatório.',
+  'validation.username.max': 'Use no máximo {max} caracteres.',
+  'validation.username.characters': 'Use apenas letras, números e . _ ~ -',
+  'validation.password.min': 'Use pelo menos {min} caracteres.',
+  'validation.password.max': 'Use no máximo {max} caracteres.',
+  'validation.code.invalid': 'Use um código válido de 16 caracteres.',
+  'validation.totp.invalid': 'Use exatamente 6 dígitos.',
+  'errors.generic': 'Não foi possível concluir a operação.',
+  'errors.serverUnreachable': 'Não foi possível alcançar o servidor.',
+  'errors.invalidField': 'Revise o campo “{field}”.',
+  'errors.sessionExpired': 'Sua sessão não é mais válida. Entre novamente.',
+  'errors.totpRequired': 'Informe o código do autenticador para continuar.',
+  'errors.invalidTotp': 'O código do autenticador não foi aceito.',
+  'errors.totpAlreadyUsed': 'Esse código já foi usado. Aguarde o próximo código do autenticador.',
+  'errors.invitationUnavailable': 'Esse convite não está disponível ou expirou.',
+  'errors.usernameUnavailable': 'Esse nome de usuário não está disponível.',
+  'errors.passwordConflict': 'A senha foi alterada em outra sessão. Tente novamente.',
+  'errors.loginFailed': 'Falha ao entrar. Tente novamente.',
+  'errors.tooManyRequests': 'Muitas tentativas em pouco tempo. Tente novamente mais tarde.',
+  'errors.temporarilyUnavailable': 'O serviço está temporariamente ocupado. Tente novamente mais tarde.',
+  'errors.registrationFailed': 'Não foi possível criar a conta.',
+  'errors.recoveryFailed': 'Não foi possível recuperar a senha.',
+  'errors.logoutFailed': 'Não foi possível encerrar a sessão.',
+  'errors.preferencesLoadFailed': 'Não foi possível carregar as preferências.',
+  'errors.preferencesSaveFailed': 'Não foi possível salvar as preferências.',
+  'errors.themeSaveFailed': 'Não foi possível confirmar a alteração do tema. A preferência mais recente foi recarregada.',
+  'errors.passwordChangeFailed': 'Não foi possível alterar a senha.',
+  'errors.totpStatusFailed': 'Não foi possível consultar o status do TOTP.',
+  'errors.totpSetupFailed': 'Não foi possível iniciar a configuração do TOTP.',
+  'errors.totpConfirmFailed': 'Não foi possível confirmar o TOTP.',
+  'errors.totpDisableFailed': 'Não foi possível desativar o TOTP.',
+  'errors.invalidCurrentPassword': 'A senha atual não foi aceita.',
+  'errors.totpAlreadyEnabled': 'O TOTP já está ativo nesta conta.',
+  'errors.totpNotEnabled': 'O TOTP não está ativo nesta conta.',
+  'errors.invalidTotpSetup': 'A configuração do TOTP expirou ou não é mais válida.',
+} as const;
+
+export type TranslationKey = keyof typeof pt;
+
+const en: Record<TranslationKey, string> = {
+  'auth.subtitle': 'Sign in or create your account.',
+  'auth.login.title': 'Sign in',
+  'auth.username': 'Username',
+  'auth.password': 'Password',
+  'auth.password.show': 'Show password',
+  'auth.password.hide': 'Hide password',
+  'auth.remember': 'Remember me',
+  'auth.forgotPassword': 'Forgot my password',
+  'auth.signIn': 'Sign in',
+  'auth.signingIn': 'Signing in…',
+  'auth.totp': 'Authenticator code',
+  'auth.invite.label': 'Invitation code',
+  'auth.register.title': 'Create account',
+  'auth.register.confirmPassword': 'Confirm password',
+  'auth.register.creating': 'Creating…',
+  'auth.register.success': 'Account created successfully.',
+  'auth.register.passwordMismatch': 'Passwords do not match.',
+  'auth.recovery.title': 'Recover password',
+  'auth.recovery.code': 'Recovery code',
+  'auth.recovery.newPassword': 'New password',
+  'auth.recovery.confirmPassword': 'Confirm new password',
+  'auth.recovery.submit': 'Set new password',
+  'auth.recovery.updating': 'Updating…',
+  'auth.recovery.success': 'Password updated.',
+  'auth.passwordChanged': 'Password changed. Sign in again.',
+  'common.close': 'Close',
+  'common.language': 'Language',
+  'common.theme': 'Theme',
+  'language.pt': 'Português',
+  'language.en': 'English',
+  'theme.light': 'Light',
+  'theme.dark': 'Dark',
+  'theme.useLight': 'Use light theme',
+  'theme.useDark': 'Use dark theme',
+  'shell.welcome': 'Welcome back!',
+  'shell.settings': 'Settings',
+  'shell.preferences': 'Preferences',
+  'shell.security': 'Security',
+  'shell.logout': 'Sign out',
+  'shell.loggingOut': 'Signing out…',
+  'preferences.title': 'Preferences',
+  'preferences.dateFormat': 'Date',
+  'preferences.timeFormat': 'Time',
+  'preferences.numberFormat': 'Numbers',
+  'preferences.timezone': 'Time zone',
+  'preferences.timezoneNoResults': 'No time zone found.',
+  'preferences.save': 'Save preferences',
+  'preferences.saving': 'Saving…',
+  'security.title': 'Security',
+  'security.password.title': 'Password',
+  'security.password.logoutWarning': 'Changing the password signs out every session, including this one.',
+  'security.currentPassword': 'Current password',
+  'security.newPassword': 'New password',
+  'security.confirmPassword': 'Confirm new password',
+  'security.password.change': 'Change password',
+  'security.password.changing': 'Changing…',
+  'security.totp.title': 'Two-step authentication (TOTP)',
+  'security.totp.configure': 'Configure TOTP',
+  'security.totp.disable': 'Disable TOTP',
+  'security.totp.preparing': 'Preparing…',
+  'security.totp.checking': 'Checking TOTP…',
+  'security.totp.retry': 'Try again',
+  'security.totp.start': 'Generate setup',
+  'security.totp.qrAlt': 'QR code for authenticator setup',
+  'security.totp.secret': 'Secret key',
+  'security.totp.copySecret': 'Copy secret key',
+  'security.totp.showSecret': 'Show secret key',
+  'security.totp.hideSecret': 'Hide secret key',
+  'security.totp.copy': 'Copy',
+  'security.totp.copied': 'Copied',
+  'security.totp.confirm': 'Confirm TOTP',
+  'security.totp.confirming': 'Confirming…',
+  'security.totp.enabled': 'TOTP enabled successfully.',
+  'security.totp.disabling': 'Disabling…',
+  'security.totp.disabled': 'TOTP disabled.',
+  'validation.required': 'Required field.',
+  'validation.username.max': 'Use at most {max} characters.',
+  'validation.username.characters': 'Use only letters, numbers and . _ ~ -',
+  'validation.password.min': 'Use at least {min} characters.',
+  'validation.password.max': 'Use at most {max} characters.',
+  'validation.code.invalid': 'Use a valid 16-character code.',
+  'validation.totp.invalid': 'Use exactly 6 digits.',
+  'errors.generic': 'The operation could not be completed.',
+  'errors.serverUnreachable': 'The server could not be reached.',
+  'errors.invalidField': 'Review the “{field}” field.',
+  'errors.sessionExpired': 'Your session is no longer valid. Sign in again.',
+  'errors.totpRequired': 'Enter the authenticator code to continue.',
+  'errors.invalidTotp': 'The authenticator code was not accepted.',
+  'errors.totpAlreadyUsed': 'This code was already used. Wait for the next authenticator code.',
+  'errors.invitationUnavailable': 'This invitation is unavailable or expired.',
+  'errors.usernameUnavailable': 'This username is not available.',
+  'errors.passwordConflict': 'The password changed in another session. Try again.',
+  'errors.loginFailed': 'Sign-in failed. Try again.',
+  'errors.tooManyRequests': 'Too many attempts in a short time. Try again later.',
+  'errors.temporarilyUnavailable': 'The service is temporarily busy. Try again later.',
+  'errors.registrationFailed': 'The account could not be created.',
+  'errors.recoveryFailed': 'The password could not be recovered.',
+  'errors.logoutFailed': 'The session could not be ended.',
+  'errors.preferencesLoadFailed': 'Preferences could not be loaded.',
+  'errors.preferencesSaveFailed': 'Preferences could not be saved.',
+  'errors.themeSaveFailed': 'The theme change could not be confirmed. The latest preference was reloaded.',
+  'errors.passwordChangeFailed': 'The password could not be changed.',
+  'errors.totpStatusFailed': 'TOTP status could not be checked.',
+  'errors.totpSetupFailed': 'TOTP setup could not be started.',
+  'errors.totpConfirmFailed': 'TOTP could not be confirmed.',
+  'errors.totpDisableFailed': 'TOTP could not be disabled.',
+  'errors.invalidCurrentPassword': 'The current password was not accepted.',
+  'errors.totpAlreadyEnabled': 'TOTP is already enabled for this account.',
+  'errors.totpNotEnabled': 'TOTP is not enabled for this account.',
+  'errors.invalidTotpSetup': 'The TOTP setup expired or is no longer valid.',
+};
+
+const dictionaries: Record<AppLanguage, Record<TranslationKey, string>> = { 'pt-BR': pt, en };
+
+@Injectable({ providedIn: 'root' })
+export class I18nService {
+  private readonly document = inject(DOCUMENT);
+  private readonly storageKey = 'moedeiro-language';
+  readonly language = signal<AppLanguage>(this.initialLanguage());
+
+  constructor() {
+    this.applyDocumentLanguage(this.language());
+  }
+
+  t(key: TranslationKey, params?: Record<string, string | number>): string {
+    let value = dictionaries[this.language()][key] ?? pt[key];
+    if (!params) return value;
+    for (const [name, replacement] of Object.entries(params)) {
+      value = value.replaceAll(`{${name}}`, String(replacement));
+    }
+    return value;
+  }
+
+  setLanguage(language: AppLanguage): void {
+    if (language === this.language()) return;
+    this.language.set(language);
+    this.applyDocumentLanguage(language);
+    try {
+      localStorage.setItem(this.storageKey, language);
+    } catch {
+      // Language still changes for the current page when storage is unavailable.
+    }
+  }
+
+  private initialLanguage(): AppLanguage {
+    try {
+      const stored = localStorage.getItem(this.storageKey);
+      if (stored === 'pt-BR' || stored === 'en') return stored;
+    } catch {
+      // Fall back to the browser language.
+    }
+    const browserLanguage = typeof navigator !== 'undefined' ? navigator.language : 'pt-BR';
+    return browserLanguage.toLowerCase().startsWith('pt') ? 'pt-BR' : 'en';
+  }
+
+  private applyDocumentLanguage(language: AppLanguage): void {
+    this.document.documentElement.lang = language === 'en' ? 'en' : 'pt-BR';
+  }
+}
