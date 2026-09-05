@@ -16,7 +16,7 @@ import { IconComponent, IconName } from './icon.component';
   `,
   styles: `
     :host { display: flex; flex-direction: column; min-width: 0; padding: clamp(22px, 3vw, 30px); border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); box-shadow: var(--shadow-hard); }
-    .auth-card__header { display: flex; align-items: center; gap: var(--form-gap); }
+    .auth-card__header { display: flex; align-items: center; gap: var(--title-icon-gap); }
     .auth-card__header h2 { margin: 0; font-size: clamp(1.08rem, 1.7vw, 1.28rem); line-height: 1.2; }
     .auth-card__icon { display: inline-grid; place-items: center; width: 46px; height: 46px; flex: 0 0 46px; border: 2px solid var(--line-strong); border-radius: 5px; background: var(--card-accent); color: #060606; box-shadow: 2px 2px 0 var(--shadow-color); }
     .auth-card__divider { height: 1px; margin: var(--section-gap) 0 var(--space-6); background: var(--line-strong); opacity: .8; }

@@ -57,7 +57,7 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
       border-radius: 6px;
       background: var(--surface);
       color: var(--text);
-      box-shadow: 3px 3px 0 var(--shadow-color);
+      box-shadow: var(--compact-button-shadow);
       text-align: left;
       font-size: .88rem;
       font-weight: 720;
@@ -76,7 +76,7 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
     .language-selector__trigger:hover { background: var(--surface-muted); }
     .language-selector__trigger:active {
       transform: translate(var(--press-offset), var(--press-offset));
-      box-shadow: 1px 1px 0 var(--shadow-color);
+      box-shadow: var(--compact-button-shadow-pressed);
     }
     :host.language-selector--field .language-selector__trigger:active { box-shadow: none; }
     .language-selector__language-icon {

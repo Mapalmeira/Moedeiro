@@ -29,11 +29,11 @@ import { IconComponent } from './icon.component';
       border-radius: 6px;
       background: var(--surface);
       color: var(--text);
-      box-shadow: 3px 3px 0 var(--shadow-color);
+      box-shadow: var(--compact-button-shadow);
       transition: transform var(--motion-press) ease, box-shadow var(--motion-press) ease, background var(--motion-press) ease;
     }
     .theme-toggle:hover { background: var(--surface-muted); }
-    .theme-toggle:active { transform: translate(var(--press-offset), var(--press-offset)); box-shadow: 1px 1px 0 var(--shadow-color); }
+    .theme-toggle:active { transform: translate(var(--press-offset), var(--press-offset)); box-shadow: var(--compact-button-shadow-pressed); }
     .switch-track {
       width: 36px;
       height: 20px;

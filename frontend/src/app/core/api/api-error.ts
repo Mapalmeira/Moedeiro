@@ -42,6 +42,7 @@ export class ApiErrorService {
       'TOTP already enabled': 'errors.totpAlreadyEnabled',
       'TOTP not enabled': 'errors.totpNotEnabled',
       'Invalid or expired TOTP setup': 'errors.invalidTotpSetup',
+      'Ledger not found': 'errors.ledgerNotFound',
     };
 
     // Não expomos se usuário, senha ou segundo fator foi o dado incorreto.

@@ -16,16 +16,42 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   background: var(--surface);
   color: #050505;
   font-weight: 800;
-  box-shadow: 4px 4px 0 var(--shadow-color);
+  box-shadow: var(--button-shadow);
   transition: transform var(--motion-press) ease, box-shadow var(--motion-press) ease;
 }
-.ui-button:not(:disabled):active { transform: translate(var(--press-offset), var(--press-offset)); box-shadow: 2px 2px 0 var(--shadow-color); }
+.ui-button:not(:disabled):active { transform: translate(var(--press-offset), var(--press-offset)); box-shadow: var(--button-shadow-pressed); }
 .ui-button--full { width: 100%; }
 .ui-button--full app-icon { position: absolute; right: 17px; }
 .ui-button--green { --focus-accent: var(--green); background: linear-gradient(90deg, #31d36c, #3ad273); }
 .ui-button--yellow { --focus-accent: var(--yellow); background: linear-gradient(90deg, #ffd514, #ffd322); }
 .ui-button--blue { --focus-accent: var(--blue); background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 82%, white), var(--blue)); color: #07111f; }
 .ui-button--plain { background: var(--surface); color: var(--text); box-shadow: none; }
+
+/* Shared selectable control used by preferences and ledger appearance editors. */
+.ui-choice {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 720;
+  box-shadow: 2px 2px 0 transparent;
+  transition:
+    transform var(--motion-press) ease,
+    box-shadow var(--motion-press) ease,
+    background var(--motion-press) ease,
+    border-color var(--motion-press) ease;
+}
+.ui-choice:not(:disabled):hover { background: var(--surface-muted); }
+.ui-choice--selected { background: var(--green-soft); box-shadow: var(--choice-shadow); }
+.ui-choice:not(:disabled):active { transform: translate(var(--press-offset), var(--press-offset)); box-shadow: 0 0 0 transparent; }
 
 .icon-button {
   display: grid;

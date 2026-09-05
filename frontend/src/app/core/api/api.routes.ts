@@ -20,4 +20,8 @@ export const API_ROUTES = {
     root: '/api/totp',
   },
   userPreferences: '/api/user/preferences',
+  ledgers: {
+    root: '/api/ledgers',
+    one: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}`,
+  },
 } as const;

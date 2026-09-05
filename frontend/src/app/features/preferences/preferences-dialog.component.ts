@@ -41,13 +41,13 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
               <section class="preference-field">
                 <span class="preference-label">{{ i18n.t('common.theme') }}</span>
                 <div class="choice-grid choice-grid--2">
-                  <button type="button" class="choice-card choice-card--with-icon"
-                    [class.choice-card--selected]="form.controls.theme.value === 'LIGHT'"
+                  <button type="button" class="ui-choice choice-card choice-card--with-icon"
+                    [class.ui-choice--selected]="form.controls.theme.value === 'LIGHT'"
                     (click)="setTheme('LIGHT')">
                     <app-icon name="sun" [size]="18" /><span>{{ i18n.t('theme.light') }}</span>
                   </button>
-                  <button type="button" class="choice-card choice-card--with-icon"
-                    [class.choice-card--selected]="form.controls.theme.value === 'DARK'"
+                  <button type="button" class="ui-choice choice-card choice-card--with-icon"
+                    [class.ui-choice--selected]="form.controls.theme.value === 'DARK'"
                     (click)="setTheme('DARK')">
                     <app-icon name="moon" [size]="18" /><span>{{ i18n.t('theme.dark') }}</span>
                   </button>
@@ -58,9 +58,9 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
             <section class="preference-field">
               <span class="preference-label">{{ i18n.t('preferences.dateFormat') }}</span>
               <div class="choice-grid choice-grid--3">
-                <button type="button" class="choice-card choice-card--example" [class.choice-card--selected]="form.controls.date_format.value === 'DMY'" (click)="form.controls.date_format.setValue('DMY')">31/12/2026</button>
-                <button type="button" class="choice-card choice-card--example" [class.choice-card--selected]="form.controls.date_format.value === 'MDY'" (click)="form.controls.date_format.setValue('MDY')">12/31/2026</button>
-                <button type="button" class="choice-card choice-card--example" [class.choice-card--selected]="form.controls.date_format.value === 'YMD'" (click)="form.controls.date_format.setValue('YMD')">2026/12/31</button>
+                <button type="button" class="ui-choice choice-card choice-card--example" [class.ui-choice--selected]="form.controls.date_format.value === 'DMY'" (click)="form.controls.date_format.setValue('DMY')">31/12/2026</button>
+                <button type="button" class="ui-choice choice-card choice-card--example" [class.ui-choice--selected]="form.controls.date_format.value === 'MDY'" (click)="form.controls.date_format.setValue('MDY')">12/31/2026</button>
+                <button type="button" class="ui-choice choice-card choice-card--example" [class.ui-choice--selected]="form.controls.date_format.value === 'YMD'" (click)="form.controls.date_format.setValue('YMD')">2026/12/31</button>
               </div>
             </section>
 
@@ -68,16 +68,16 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
               <section class="preference-field">
                 <span class="preference-label">{{ i18n.t('preferences.timeFormat') }}</span>
                 <div class="choice-grid choice-grid--2">
-                  <button type="button" class="choice-card choice-card--example" [class.choice-card--selected]="form.controls.time_format.value === 'H12'" (click)="form.controls.time_format.setValue('H12')">07:45 PM</button>
-                  <button type="button" class="choice-card choice-card--example" [class.choice-card--selected]="form.controls.time_format.value === 'H24'" (click)="form.controls.time_format.setValue('H24')">19:45</button>
+                  <button type="button" class="ui-choice choice-card choice-card--example" [class.ui-choice--selected]="form.controls.time_format.value === 'H12'" (click)="form.controls.time_format.setValue('H12')">07:45 PM</button>
+                  <button type="button" class="ui-choice choice-card choice-card--example" [class.ui-choice--selected]="form.controls.time_format.value === 'H24'" (click)="form.controls.time_format.setValue('H24')">19:45</button>
                 </div>
               </section>
 
               <section class="preference-field">
                 <span class="preference-label">{{ i18n.t('preferences.numberFormat') }}</span>
                 <div class="choice-grid choice-grid--2">
-                  <button type="button" class="choice-card choice-card--example" [class.choice-card--selected]="form.controls.number_format.value === 'COMMA'" (click)="form.controls.number_format.setValue('COMMA')">1.234,56</button>
-                  <button type="button" class="choice-card choice-card--example" [class.choice-card--selected]="form.controls.number_format.value === 'DOT'" (click)="form.controls.number_format.setValue('DOT')">1,234.56</button>
+                  <button type="button" class="ui-choice choice-card choice-card--example" [class.ui-choice--selected]="form.controls.number_format.value === 'COMMA'" (click)="form.controls.number_format.setValue('COMMA')">1.234,56</button>
+                  <button type="button" class="ui-choice choice-card choice-card--example" [class.ui-choice--selected]="form.controls.number_format.value === 'DOT'" (click)="form.controls.number_format.setValue('DOT')">1,234.56</button>
                 </div>
               </section>
             </div>
@@ -113,7 +113,7 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
       box-shadow: 7px 7px 0 var(--shadow-color);
     }
     .dialog__header { display: flex; align-items: center; justify-content: space-between; gap: var(--form-gap); padding: 17px 19px; border-bottom: 2px solid var(--line); }
-    .dialog__title { display: flex; align-items: center; gap: var(--inline-gap); }
+    .dialog__title { display: flex; align-items: center; gap: var(--title-icon-gap); }
     .dialog__title h2 { margin: 0; font-size: 1.22rem; letter-spacing: -.01em; }
     .dialog__title .title-icon { width: 40px; height: 40px; }
     form { display: grid; gap: 0; padding: 0 var(--space-5) var(--space-5); }
@@ -125,14 +125,6 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
     .choice-grid { display: grid; gap: var(--space-2); }
     .choice-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .choice-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .choice-card {
-      min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); padding: var(--space-2) var(--space-3);
-      border: 2px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text);
-      font: inherit; font-size: .9rem; font-weight: 720;
-      transition: border-color .1s ease, background .1s ease, box-shadow .1s ease, transform var(--motion-press) ease;
-    }
-    .choice-card:not(:disabled):hover { border-color: var(--line-strong); background: var(--surface-muted); }
-    .choice-card--selected { border-color: var(--green-strong); background: var(--green-soft); box-shadow: 2px 2px 0 var(--shadow-color); }
     .choice-card--with-icon { justify-content: flex-start; padding-left: var(--form-gap); }
     .choice-card--example { font-variant-numeric: tabular-nums; letter-spacing: .01em; }
     .dialog__footer { display: flex; justify-content: flex-end; padding-top: var(--section-gap); }

@@ -9,9 +9,19 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/landing/auth-landing.component').then((m) => m.AuthLandingComponent),
   },
   {
-    path: 'home',
+    path: '',
     canActivate: [authGuard],
     loadComponent: () => import('./layouts/authenticated-layout/authenticated-layout.component').then((m) => m.AuthenticatedLayoutComponent),
+    children: [
+      {
+        path: 'home',
+        loadComponent: () => import('./features/ledgers/ledger-home.component').then((m) => m.LedgerHomeComponent),
+      },
+      {
+        path: 'ledgers/:ledgerUuid',
+        loadComponent: () => import('./features/ledgers/ledger-page.component').then((m) => m.LedgerPageComponent),
+      },
+    ],
   },
   { path: '**', redirectTo: '' },
 ];

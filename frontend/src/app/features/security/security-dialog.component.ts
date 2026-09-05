@@ -211,7 +211,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
       --focus-accent: var(--blue);
     }
     .dialog__header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: var(--form-gap); padding: 17px 19px; border-bottom: 2px solid var(--line); background: var(--surface); }
-    .dialog__title { display: flex; align-items: center; gap: var(--inline-gap); }
+    .dialog__title { display: flex; align-items: center; gap: var(--title-icon-gap); }
     .dialog__title h2 { margin: 0; font-size: 1.22rem; letter-spacing: -.01em; }
     .title-icon { width: 40px; height: 40px; }
     .dialog__body { padding: 0 var(--space-5) 22px; }
