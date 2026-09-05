@@ -2,7 +2,7 @@
 
 Moedeiro serves plain HTTP. When exposing Moedeiro outside the host, Uvicorn should listen on localhost or a private container network, while a reverse proxy provides the public HTTPS endpoint.
 
-Because the TCP connection seen by Moedeiro usually comes from the reverse proxy, IP-based rate limits need the proxy to forward the original client address. Moedeiro accepts forwarded client information only from the address configured through the `TRUSTED_PROXY_IP` enviroment variable, which must match the source address that Moedeiro actually sees for connections from proxieis.
+Because the TCP connection seen by Moedeiro usually comes from the reverse proxy, IP-based rate limits need the proxy to forward the original client address. Moedeiro accepts forwarded client information only from the address configured through the `TRUSTED_PROXY_IP` environment variable, which must match the source address that Moedeiro actually sees for connections from proxies.
 
 Forwarded headers cannot be trusted from arbitrary peers because they are supplied by the requester. If Moedeiro accepted X-Forwarded-For from any connection, a client could provide a different address on each request and bypass IP-based rate limits. Restricting forwarded client information to one trusted proxy makes that proxy responsible for determining the client address before passing it to Moedeiro.
 

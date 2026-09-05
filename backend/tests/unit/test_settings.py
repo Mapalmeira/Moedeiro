@@ -25,13 +25,17 @@ class SettingsTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()
 
-    def test_reads_every_required_path_from_the_environment(self) -> None:
-        settings = Settings.from_environment(self.environment)
+    def test_reads_path_overrides_from_the_environment(self) -> None:
+        frontend_dist_path = self.directory / "frontend"
+        environment = {**self.environment, "FRONTEND_DIST_PATH": str(frontend_dist_path)}
+
+        settings = Settings.from_environment(environment)
 
         self.assertEqual(settings.registry_schema_path, self.registry_schema_path)
         self.assertEqual(settings.ledger_schema_path, self.ledger_schema_path)
         self.assertEqual(settings.registry_db_path, self.directory / "registry/registry.sqlite")
         self.assertEqual(settings.ledger_dbs_dir, self.directory / "ledgers")
+        self.assertEqual(settings.frontend_dist_path, frontend_dist_path)
         self.assertEqual(settings.registration_ip_attempts_rate_limit, "5/hour")
         self.assertEqual(settings.login_ip_attempts_rate_limit, "5/minute")
         self.assertEqual(settings.password_recovery_ip_attempts_rate_limit, "5/hour")
@@ -45,6 +49,23 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.max_query_points, 500)
         self.assertIsNone(settings.trusted_proxy_ip)
         self.assertFalse(settings.allow_insecure_http)
+
+    def test_uses_built_in_paths_when_environment_overrides_are_absent(self) -> None:
+        settings = Settings.from_environment({})
+        project_root = Path(__file__).resolve().parents[3]
+
+        self.assertEqual(
+            settings.registry_schema_path,
+            project_root / "backend/app/infrastructure/persistence/sqlite/registry/schema/registry_schema.sql",
+        )
+        self.assertEqual(
+            settings.ledger_schema_path,
+            project_root / "backend/app/infrastructure/persistence/sqlite/ledger/schema/ledger_schema.sql",
+        )
+        self.assertEqual(settings.registry_db_path, project_root / "data/registry/registry.sqlite")
+        self.assertEqual(settings.ledger_dbs_dir, project_root / "data/ledgers")
+        self.assertEqual(settings.frontend_dist_path, project_root / "frontend/dist/moedeiro/browser")
+        self.assertIsNone(settings.totp_encryption_key)
 
     def test_reads_security_limits_from_the_environment(self) -> None:
         environment = {
@@ -102,16 +123,17 @@ class SettingsTest(unittest.TestCase):
                 with self.assertRaises((ValueError, ValidationError)):
                     Settings.from_environment({**self.environment, variable: value})
 
-    def test_rejects_a_missing_or_empty_environment_variable(self) -> None:
-        for value in (None, ""):
-            with self.subTest(value=value):
-                environment = dict(self.environment)
-                if value is None:
-                    del environment["REGISTRY_DB_PATH"]
-                else:
-                    environment["REGISTRY_DB_PATH"] = value
-                with self.assertRaisesRegex(ValueError, "REGISTRY_DB_PATH must be defined"):
-                    Settings.from_environment(environment)
+    def test_rejects_empty_path_environment_overrides(self) -> None:
+        for variable in (
+            "REGISTRY_SCHEMA_PATH",
+            "LEDGER_SCHEMA_PATH",
+            "REGISTRY_DB_PATH",
+            "LEDGER_DBS_DIR",
+            "FRONTEND_DIST_PATH",
+        ):
+            with self.subTest(variable=variable):
+                with self.assertRaisesRegex(ValueError, f"{variable} must not be empty"):
+                    Settings.from_environment({**self.environment, variable: "   "})
 
     def test_rejects_missing_schema_files(self) -> None:
         environment = dict(self.environment)

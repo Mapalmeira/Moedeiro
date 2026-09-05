@@ -8,13 +8,23 @@ from limits import parse
 from pydantic import BaseModel, ConfigDict, Field, FilePath, field_validator, model_validator
 
 
+_APP_ROOT = Path(__file__).resolve().parent
+_PROJECT_ROOT = _APP_ROOT.parent.parent
+_DEFAULT_REGISTRY_SCHEMA_PATH = _APP_ROOT / "infrastructure/persistence/sqlite/registry/schema/registry_schema.sql"
+_DEFAULT_LEDGER_SCHEMA_PATH = _APP_ROOT / "infrastructure/persistence/sqlite/ledger/schema/ledger_schema.sql"
+_DEFAULT_REGISTRY_DB_PATH = _PROJECT_ROOT / "data/registry/registry.sqlite"
+_DEFAULT_LEDGER_DBS_DIR = _PROJECT_ROOT / "data/ledgers"
+_DEFAULT_FRONTEND_DIST_PATH = _PROJECT_ROOT / "frontend/dist/moedeiro/browser"
+
+
 class Settings(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    registry_schema_path: FilePath
-    ledger_schema_path: FilePath
-    registry_db_path: Path
-    ledger_dbs_dir: Path
+    registry_schema_path: FilePath = _DEFAULT_REGISTRY_SCHEMA_PATH
+    ledger_schema_path: FilePath = _DEFAULT_LEDGER_SCHEMA_PATH
+    registry_db_path: Path = _DEFAULT_REGISTRY_DB_PATH
+    ledger_dbs_dir: Path = _DEFAULT_LEDGER_DBS_DIR
+    frontend_dist_path: Path = _DEFAULT_FRONTEND_DIST_PATH
     registration_ip_attempts_rate_limit: str = Field(default="5/hour", min_length=1)
     login_ip_attempts_rate_limit: str = Field(default="5/minute", min_length=1)
     password_recovery_ip_attempts_rate_limit: str = Field(default="5/hour", min_length=1)
@@ -48,18 +58,23 @@ class Settings(BaseModel):
     @classmethod
     def from_environment(cls, environment: Mapping[str, str] | None = None) -> Self:
         source = os.environ if environment is None else environment
-        variable_names = {
+        values: dict[str, str] = {}
+
+        path_variable_names = {
             "registry_schema_path": "REGISTRY_SCHEMA_PATH",
             "ledger_schema_path": "LEDGER_SCHEMA_PATH",
             "registry_db_path": "REGISTRY_DB_PATH",
             "ledger_dbs_dir": "LEDGER_DBS_DIR",
+            "frontend_dist_path": "FRONTEND_DIST_PATH",
         }
-        values: dict[str, str] = {}
-        for field_name, variable_name in variable_names.items():
-            value = source.get(variable_name)
-            if value is None or not value.strip():
-                raise ValueError(f"{variable_name} must be defined")
+        for field_name, variable_name in path_variable_names.items():
+            if variable_name not in source:
+                continue
+            value = source[variable_name]
+            if not value.strip():
+                raise ValueError(f"{variable_name} must not be empty")
             values[field_name] = value
+
         optional_variable_names = {
             "registration_ip_attempts_rate_limit": "REGISTRATION_IP_ATTEMPTS_RATE_LIMIT",
             "login_ip_attempts_rate_limit": "LOGIN_IP_ATTEMPTS_RATE_LIMIT",

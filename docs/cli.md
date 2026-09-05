@@ -18,19 +18,15 @@ With Podman:
 podman exec moedeiro moedeiro-cli --help
 ```
 
-For a native installation, activate the same Python environment and provide the same application settings used by the service:
+For a native installation using the standard repository layout, activate the Python environment and run the CLI from `backend`:
 
 ```sh
 source .venv/bin/activate
-
-export REGISTRY_SCHEMA_PATH="$PWD/backend/app/infrastructure/persistence/sqlite/registry/schema/registry_schema.sql"
-export LEDGER_SCHEMA_PATH="$PWD/backend/app/infrastructure/persistence/sqlite/ledger/schema/ledger_schema.sql"
-export REGISTRY_DB_PATH=/srv/moedeiro/registry/registry.sqlite
-export LEDGER_DBS_DIR=/srv/moedeiro/ledgers
-export TOTP_ENCRYPTION_KEY="$(cat /etc/moedeiro/totp.key)"
-
-python -m app.cli --help
+cd backend
+python -B -m app.cli --help
 ```
+
+The CLI uses the same built-in storage defaults as the service. If the service overrides `REGISTRY_DB_PATH` or `LEDGER_DBS_DIR`, provide those same overrides to the CLI so both operate on the same data. The CLI does not require `TOTP_ENCRYPTION_KEY`.
 
 ## Inviting users
 

@@ -88,16 +88,16 @@ class ApplicationFactoryTest(unittest.TestCase):
             mount_frontend.assert_not_called()
 
 
-    def test_frontend_mount_uses_the_native_build_path_by_default(self) -> None:
+    def test_frontend_mount_uses_the_configured_build_path(self) -> None:
         from app.factory import _mount_frontend
 
         application = MagicMock()
-        with patch.dict("os.environ", {}, clear=True):
-            _mount_frontend(application)
+        frontend_directory = ROOT.parent / "frontend/dist/moedeiro/browser"
+        _mount_frontend(application, frontend_directory)
 
         application.frontend.assert_called_once_with(
             "/",
-            directory=Path("frontend/dist/moedeiro/browser"),
+            directory=frontend_directory,
             fallback="index.html",
         )
 
@@ -115,18 +115,15 @@ class ApplicationFactoryTest(unittest.TestCase):
                 ledger_schema_path=LEDGER_SCHEMA_PATH,
                 registry_db_path=directory / "registry/registry.sqlite",
                 ledger_dbs_dir=directory / "ledgers",
+                frontend_dist_path=frontend_directory,
             )
 
-            with patch.dict(
-                "os.environ",
-                {"FRONTEND_DIST_PATH": str(frontend_directory)},
-            ):
-                application = create_app(
-                    settings,
-                    totp_authenticator=FakeTotpAuthenticator(),
-                    credential_operation_executor=FakeCredentialOperationExecutor(),
-                    mount_frontend=True,
-                )
+            application = create_app(
+                settings,
+                totp_authenticator=FakeTotpAuthenticator(),
+                credential_operation_executor=FakeCredentialOperationExecutor(),
+                mount_frontend=True,
+            )
 
             with TestClient(application) as client:
                 index_response = client.get("/")

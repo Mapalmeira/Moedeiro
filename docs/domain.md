@@ -20,6 +20,12 @@
 
 * **User invitation** is an expiring, single-use credential that authorizes user registration.
 
+## Shared value objects
+
+* **Color** represents an RGB color used to customize the appearance of ledgers and ledger entities.
+
+* **Icon** represents an icon used to customize appearance. Its value is prefixed with its type: `lucide:IconName` for a Lucide icon or `unicode:...` for one to three Unicode characters. The complete value, including the prefix, must contain between 1 and 100 characters.
+
 ## Ledger entities
 
 * **Currency** defines how integer amounts are displayed: name, optional prefix/suffix, and decimal places. Amounts are stored as integers in the currency's smallest configured unit; Moedeiro does not perform automatic currency conversion.

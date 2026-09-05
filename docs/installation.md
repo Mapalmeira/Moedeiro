@@ -10,18 +10,7 @@ Every installation has three persistent elements:
 
 ## Preparation
 
-### 1. Create the data directories
-
-Create directories for the registry and ledger data:
-
-```sh
-mkdir -p /srv/moedeiro/registry
-mkdir -p /srv/moedeiro/ledgers
-```
-
-These directories hold the persistent application data and must remain available throughout Moedeiro's lifecycle.
-
-### 2. Generate the TOTP encryption key
+### 1. Generate the TOTP encryption key
 
 Create a directory for the key and generate it:
 
@@ -32,6 +21,19 @@ chmod 600 /etc/moedeiro/totp.key
 ```
 
 The key encrypts TOTP seeds stored in the registry. If the key is lost, the stored TOTP seeds can no longer be decrypted. An administrator must revoke the affected users' TOTP enrollments, after which those users may enroll TOTP again.
+
+### 2. Prepare persistent container storage
+
+Choose a host directory for persistent registry and ledger data. The examples in this documentation use `/srv/moedeiro`:
+
+```sh
+mkdir -p /srv/moedeiro/registry
+mkdir -p /srv/moedeiro/ledgers
+```
+
+These directories are mounted into the container's `/data` paths and must remain available throughout Moedeiro's lifecycle.
+
+You may use a different host path by changing the corresponding volume mounts in the container configuration.
 
 ## Container installation
 
@@ -47,7 +49,7 @@ With Docker:
 
 ```sh
 docker build \
-  --file backend/app/Containerfile \
+  --file Containerfile \
   --tag moedeiro:local \
   .
 ```
@@ -56,7 +58,7 @@ With Podman:
 
 ```sh
 podman build \
-  --file backend/app/Containerfile \
+  --file Containerfile \
   --tag moedeiro:local \
   .
 ```
@@ -161,9 +163,9 @@ systemctl --user status moedeiro
 
 ## Native installation
 
-A native installation runs Moedeiro directly in a Python environment. The host provides Python dependencies and process supervision.
+A native installation runs Moedeiro directly on the host. Building the web interface requires Node.js 24 with npm 11, while the service itself requires Python 3.14 and the Python dependencies listed by the backend.
 
-Create a virtual environment and install the requirements:
+Create a virtual environment and install the backend requirements:
 
 ```sh
 python3 -m venv .venv
@@ -171,20 +173,31 @@ source .venv/bin/activate
 pip install -r backend/app/requirements.txt
 ```
 
-Set the application environment:
+Install the locked frontend dependencies and create the production bundle:
 
 ```sh
-export REGISTRY_SCHEMA_PATH="$PWD/backend/app/infrastructure/persistence/sqlite/registry/schema/registry_schema.sql"
-export LEDGER_SCHEMA_PATH="$PWD/backend/app/infrastructure/persistence/sqlite/ledger/schema/ledger_schema.sql"
+(cd frontend && npm ci && npm run build:production)
+```
+
+The bundle is written to `frontend/dist/moedeiro/browser`. Rebuild it after changing the frontend before restarting the service.
+
+Set the TOTP encryption key:
+
+```sh
+export TOTP_ENCRYPTION_KEY="$(cat /etc/moedeiro/totp.key)"
+```
+
+If a native installation should keep its databases outside the repository, override the storage paths. For example:
+
+```sh
 export REGISTRY_DB_PATH=/srv/moedeiro/registry/registry.sqlite
 export LEDGER_DBS_DIR=/srv/moedeiro/ledgers
-export TOTP_ENCRYPTION_KEY="$(cat /etc/moedeiro/totp.key)"
 ```
 
 Start Uvicorn on the desired host address and port:
 
 ```sh
-uvicorn --app-dir backend app.main:app --host 127.0.0.1 --port 8000
+python -B -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
 ```
 
 ## Database migrations
