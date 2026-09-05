@@ -38,7 +38,7 @@ def main(arguments: Sequence[str] | None = None, settings: Settings | None = Non
 
 
 def _create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="moedeiro")
+    parser = argparse.ArgumentParser(prog="moedeiro-cli")
     resources = parser.add_subparsers(dest="resource", required=True)
     invitation = resources.add_parser("invitation")
     _add_invitation_actions(invitation)
@@ -84,7 +84,7 @@ def _handle_invitation(arguments: argparse.Namespace, databases: SqliteDatabases
 
 def _create_invitation(databases: SqliteDatabases, timestamp: int, expiration_seconds: int) -> int:
     code = create_user_invitation(databases.open_registry, timestamp, expiration_seconds)
-    print(f"/registration#invite={code}")
+    print(code)
     return 0
 
 
@@ -108,7 +108,7 @@ def _create_recovery_code(databases: SqliteDatabases, timestamp: int, user_uuid:
     except UserNotFoundError:
         print("User not found")
         return 1
-    print(f"/recover#code={code}")
+    print(code)
     return 0
 
 

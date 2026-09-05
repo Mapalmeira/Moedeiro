@@ -31,14 +31,14 @@ class InvitationCliTest(unittest.TestCase):
 
     @patch("app.cli.time.time", return_value=100)
     @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(10)))
-    def test_create_prints_relative_registration_link_and_persists_one_hour_expiration(self, token_bytes, current_time) -> None:
+    def test_create_prints_code_and_persists_one_hour_expiration(self, token_bytes, current_time) -> None:
         output = StringIO()
 
         with redirect_stdout(output):
             exit_code = main(["invitation", "create"], self.settings)
 
         self.assertEqual(exit_code, 0)
-        self.assertEqual(output.getvalue(), "/registration#invite=000G40R40M30E209\n")
+        self.assertEqual(output.getvalue(), "000G40R40M30E209\n")
         databases = self.create_databases()
         with databases.open_registry() as unit_of_work:
             invitations = unit_of_work.user_invitation_repository.list_all("created_at", True)

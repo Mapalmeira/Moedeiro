@@ -107,15 +107,13 @@ class UserDeletionCliTest(unittest.TestCase):
 
     @patch("app.cli.time.time", return_value=100)
     @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(10)))
-    def test_recover_password_emits_a_link_without_exposing_recovery_code_administration(self, token_bytes, current_time) -> None:
+    def test_recover_password_emits_a_code_without_exposing_recovery_code_administration(self, token_bytes, current_time) -> None:
         output = StringIO()
 
         with redirect_stdout(output):
             self.assertEqual(main(["user", "recover-password", str(self.user.uuid)], self.settings), 0)
 
-        link = output.getvalue().strip()
-        self.assertTrue(link.startswith("/recover#code="))
-        code = link.removeprefix("/recover#code=")
+        code = output.getvalue().strip()
         self.assertEqual(len(code), 16)
         with self.databases.open_registry() as unit_of_work:
             recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid, 20)
