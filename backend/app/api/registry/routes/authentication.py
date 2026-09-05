@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from app.api.dependencies.authentication import REMEMBER_COOKIE, SESSION_COOKIE, clear_authentication_cookies, delete_remember_cookie, require_authenticated_user, set_remember_cookie, set_session_cookie
 from app.api.dependencies.credential_operation import execute_credential_operation
 from app.api.dependencies.rate_limit import check_rate_limit
-from app.api.registry.schema.authentication import LoginRequest
+from app.api.registry.schema.authentication import AuthenticationSessionResponse, LoginRequest
 from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError, InvalidTotpCodeError, TotpCodeAlreadyUsedError, TotpRequiredError, UserNotFoundError
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.use_cases.authentication import login, logout, refresh_session
@@ -51,9 +51,10 @@ async def login_user(payload: LoginRequest, request: Request, response: Response
         set_remember_cookie(response, remember_token, secure)
 
 
-@router.get("/session", status_code=status.HTTP_204_NO_CONTENT)
-def validate_session(request: Request) -> None:
-    require_authenticated_user(request)
+@router.get("/session", response_model=AuthenticationSessionResponse)
+def validate_session(request: Request) -> AuthenticationSessionResponse:
+    user = require_authenticated_user(request)
+    return AuthenticationSessionResponse(name=user.name)
 
 
 @router.post("/refresh", status_code=status.HTTP_204_NO_CONTENT)

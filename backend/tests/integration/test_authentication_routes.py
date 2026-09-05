@@ -188,7 +188,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
 
         result = validate_session(self.request({"moedeiro_session": token}))
 
-        self.assertIsNone(result)
+        self.assertEqual(result.name, "Alice")
         with self.application.state.databases.open_registry() as unit_of_work:
             sessions = unit_of_work.auth_session_repository.list_by_user(self.user.uuid)
         self.assertIsNotNone(sessions[0].last_activity_at)
@@ -255,18 +255,20 @@ class AuthenticationRoutesTest(unittest.TestCase):
         with self.assertRaises(HTTPException):
             refresh(self.request({"moedeiro_remember": remember_token}), Response())
 
-    def test_authentication_routes_are_exposed_without_response_bodies(self) -> None:
+    def test_authentication_routes_expose_the_expected_response_bodies(self) -> None:
         paths = self.application.openapi()["paths"]
 
         for path, method in (
             ("/api/authentication/login", "post"),
-            ("/api/authentication/session", "get"),
             ("/api/authentication/refresh", "post"),
             ("/api/authentication/logout", "post"),
         ):
             with self.subTest(path=path):
                 response = paths[path][method]["responses"]["204"]
                 self.assertNotIn("content", response)
+
+        session_response = paths["/api/authentication/session"]["get"]["responses"]["200"]
+        self.assertIn("application/json", session_response["content"])
 
 
 if __name__ == "__main__":

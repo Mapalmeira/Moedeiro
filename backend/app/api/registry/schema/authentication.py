@@ -9,3 +9,7 @@ class LoginRequest(BaseModel):
     password: Password
     totp_code: TotpCode | None = None
     remember: bool = False
+
+
+class AuthenticationSessionResponse(BaseModel):
+    name: UserName
