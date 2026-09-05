@@ -14,6 +14,7 @@ from app.domain.registry.model.recovery_code import DEFAULT_EXPIRATION_TIMEOUT_S
 from app.domain.registry.model.user_invitation import DEFAULT_EXPIRATION_TIMEOUT_SECONDS, UserInvitation
 from app.infrastructure.security.password_hasher import Argon2PasswordHasher
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
+from app.server import DEFAULT_HOST, DEFAULT_PORT, start as start_server
 from app.settings import Settings
 
 
@@ -21,6 +22,9 @@ def main(arguments: Sequence[str] | None = None, settings: Settings | None = Non
     parser = _create_parser()
     parsed = parser.parse_args(arguments)
     selected_settings = Settings.from_environment() if settings is None else settings
+    if parsed.resource == "start":
+        return start_server(selected_settings, parsed.host, parsed.port)
+
     databases = SqliteDatabases(
         selected_settings.registry_db_path,
         selected_settings.registry_schema_path,
@@ -38,13 +42,16 @@ def main(arguments: Sequence[str] | None = None, settings: Settings | None = Non
 
 
 def _create_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="moedeiro-cli")
+    parser = argparse.ArgumentParser(prog="moedeiro")
     resources = parser.add_subparsers(dest="resource", required=True)
-    invitation = resources.add_parser("invitation")
+    start = resources.add_parser("start", help="Start the Moedeiro service")
+    start.add_argument("--host", default=DEFAULT_HOST)
+    start.add_argument("--port", type=_port, default=DEFAULT_PORT)
+    invitation = resources.add_parser("invitation", help="Manage user invitations")
     _add_invitation_actions(invitation)
-    cleanup = resources.add_parser("cleanup")
+    cleanup = resources.add_parser("cleanup", help="Remove inactive registry records")
     cleanup.add_argument("--days", type=_nonnegative_int, required=True)
-    user = resources.add_parser("user")
+    user = resources.add_parser("user", help="Manage users")
     _add_user_actions(user)
     return parser
 
@@ -184,6 +191,13 @@ def _status(invitation: UserInvitation, timestamp: int) -> str:
         return "EXPIRED"
     return "ACTIVE"
 
+
+
+def _port(value: str) -> int:
+    parsed = int(value)
+    if not 1 <= parsed <= 65535:
+        raise argparse.ArgumentTypeError("port must be between 1 and 65535")
+    return parsed
 
 def _positive_int(value: str) -> int:
     parsed = int(value)

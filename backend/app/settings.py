@@ -61,8 +61,6 @@ class Settings(BaseModel):
         values: dict[str, str] = {}
 
         path_variable_names = {
-            "registry_schema_path": "REGISTRY_SCHEMA_PATH",
-            "ledger_schema_path": "LEDGER_SCHEMA_PATH",
             "registry_db_path": "REGISTRY_DB_PATH",
             "ledger_dbs_dir": "LEDGER_DBS_DIR",
             "frontend_dist_path": "FRONTEND_DIST_PATH",

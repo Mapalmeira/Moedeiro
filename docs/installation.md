@@ -163,15 +163,17 @@ systemctl --user status moedeiro
 
 ## Native installation
 
-A native installation runs Moedeiro directly on the host. Building the web interface requires Node.js 24 with npm 11, while the service itself requires Python 3.14 and the Python dependencies listed by the backend.
+A native installation runs Moedeiro directly on the host. Building the web interface requires Node.js 24 with npm 11, while the service itself requires Python 3.14.
 
-Create a virtual environment and install the backend requirements:
+Create a virtual environment and install the backend package in editable mode from the repository root:
 
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r backend/app/requirements.txt
+python -m pip install --editable ./backend
 ```
+
+This installs the backend dependencies and the `moedeiro` command while keeping the installed package linked to the repository checkout. The native storage and frontend defaults therefore resolve against the standard repository layout.
 
 Install the locked frontend dependencies and create the production bundle:
 
@@ -187,10 +189,16 @@ Set the TOTP encryption key:
 export TOTP_ENCRYPTION_KEY="$(cat /etc/moedeiro/totp.key)"
 ```
 
-Start Uvicorn on the desired host address and port:
+Start Moedeiro:
 
 ```sh
-python -B -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
+moedeiro start
+```
+
+The service remains attached to the current process. The native default is `127.0.0.1:8000`. To select another address or port:
+
+```sh
+moedeiro start --host 127.0.0.1 --port 8080
 ```
 
 ## Database migrations
@@ -213,16 +221,10 @@ Configure environment variables according to the installation method:
 
 See [Environment settings](environment.md) for the available settings, their defaults, and their effects.
 
-## Verify the installation and next steps
+## Next steps
 
-Request the health endpoint using the host address and port selected for the installation. For example:
-
-```sh
-curl --include http://127.0.0.1:8080/health
-```
-
-The expected response is HTTP `204`.
+Use the [Command line interface](cli.md) for operator tasks such as creating invitations, managing users, and cleaning inactive records.
 
 FastAPI's interactive API reference is available from the running service at `/docs`.
 
-Moedeiro is then ready for the rest of the host networking configuration. See [Reverse proxy](reverse-proxy.md) for an HTTPS deployment through a reverse proxy.
+If Moedeiro will be exposed through an HTTPS reverse proxy, continue with [Reverse proxy](reverse-proxy.md).

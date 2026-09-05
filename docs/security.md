@@ -6,7 +6,7 @@ Passwords are stored as Argon2 hashes. Argon2 is intentionally costly so that a 
 
 TOTP is an optional second factor. When enabled for a user, a valid TOTP code is required to log in, change the password, recover the password, and disable TOTP. Its seed must remain available to the server so that submitted codes can be verified, which is why it is encrypted rather than hashed. The encryption key is kept outside SQLite. Verification accepts the adjacent time window for clock tolerance and records the last accepted counter so the same code cannot be replayed.
 
-Users can disable TOTP by confirming their current password and a valid TOTP code. An administrator can also revoke a user's MFA enrollment through the administrative CLI when the user no longer has access to the authenticator. Administrative revocation also invalidates that user's active and remembered sessions.
+Users can disable TOTP by confirming their current password and a valid TOTP code. An administrator can also revoke a user's MFA enrollment through the administrative `moedeiro` command when the user no longer has access to the authenticator. Administrative revocation also invalidates that user's active and remembered sessions.
 
 Registration requires a one-time invitation. Password recovery likewise uses a time-limited, one-time code created by an operator. For users with TOTP enabled, password recovery also requires a valid TOTP code. A successful password recovery invalidates all active and remembered sessions for the user.
 

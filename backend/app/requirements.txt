@@ -1,6 +1,0 @@
-argon2-cffi
-cryptography
-fastapi
-limits
-pydantic
-uvicorn

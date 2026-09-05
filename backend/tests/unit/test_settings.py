@@ -11,13 +11,7 @@ class SettingsTest(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary_directory = TemporaryDirectory()
         self.directory = Path(self.temporary_directory.name)
-        self.registry_schema_path = self.directory / "registry.sql"
-        self.ledger_schema_path = self.directory / "ledger.sql"
-        self.registry_schema_path.write_text("SELECT 1", encoding="utf-8")
-        self.ledger_schema_path.write_text("SELECT 1", encoding="utf-8")
         self.environment = {
-            "REGISTRY_SCHEMA_PATH": str(self.registry_schema_path),
-            "LEDGER_SCHEMA_PATH": str(self.ledger_schema_path),
             "REGISTRY_DB_PATH": str(self.directory / "registry/registry.sqlite"),
             "LEDGER_DBS_DIR": str(self.directory / "ledgers"),
         }
@@ -31,8 +25,15 @@ class SettingsTest(unittest.TestCase):
 
         settings = Settings.from_environment(environment)
 
-        self.assertEqual(settings.registry_schema_path, self.registry_schema_path)
-        self.assertEqual(settings.ledger_schema_path, self.ledger_schema_path)
+        project_root = Path(__file__).resolve().parents[3]
+        self.assertEqual(
+            settings.registry_schema_path,
+            project_root / "backend/app/infrastructure/persistence/sqlite/registry/schema/registry_schema.sql",
+        )
+        self.assertEqual(
+            settings.ledger_schema_path,
+            project_root / "backend/app/infrastructure/persistence/sqlite/ledger/schema/ledger_schema.sql",
+        )
         self.assertEqual(settings.registry_db_path, self.directory / "registry/registry.sqlite")
         self.assertEqual(settings.ledger_dbs_dir, self.directory / "ledgers")
         self.assertEqual(settings.frontend_dist_path, frontend_dist_path)
@@ -125,8 +126,6 @@ class SettingsTest(unittest.TestCase):
 
     def test_rejects_empty_path_environment_overrides(self) -> None:
         for variable in (
-            "REGISTRY_SCHEMA_PATH",
-            "LEDGER_SCHEMA_PATH",
             "REGISTRY_DB_PATH",
             "LEDGER_DBS_DIR",
             "FRONTEND_DIST_PATH",
@@ -135,12 +134,24 @@ class SettingsTest(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, f"{variable} must not be empty"):
                     Settings.from_environment({**self.environment, variable: "   "})
 
-    def test_rejects_missing_schema_files(self) -> None:
-        environment = dict(self.environment)
-        environment["LEDGER_SCHEMA_PATH"] = str(self.directory / "missing.sql")
+    def test_schema_paths_are_internal_and_not_environment_overrides(self) -> None:
+        settings = Settings.from_environment(
+            {
+                **self.environment,
+                "REGISTRY_SCHEMA_PATH": str(self.directory / "other-registry.sql"),
+                "LEDGER_SCHEMA_PATH": str(self.directory / "other-ledger.sql"),
+            }
+        )
+        project_root = Path(__file__).resolve().parents[3]
 
-        with self.assertRaises(ValidationError):
-            Settings.from_environment(environment)
+        self.assertEqual(
+            settings.registry_schema_path,
+            project_root / "backend/app/infrastructure/persistence/sqlite/registry/schema/registry_schema.sql",
+        )
+        self.assertEqual(
+            settings.ledger_schema_path,
+            project_root / "backend/app/infrastructure/persistence/sqlite/ledger/schema/ledger_schema.sql",
+        )
 
     def test_rejects_data_paths_with_the_wrong_existing_type(self) -> None:
         registry_directory = self.directory / "registry-path"
@@ -155,8 +166,6 @@ class SettingsTest(unittest.TestCase):
         for field, value in invalid_values:
             with self.subTest(field=field):
                 values = {
-                    "registry_schema_path": self.registry_schema_path,
-                    "ledger_schema_path": self.ledger_schema_path,
                     "registry_db_path": self.directory / "registry.sqlite",
                     "ledger_dbs_dir": self.directory / "ledgers",
                 }

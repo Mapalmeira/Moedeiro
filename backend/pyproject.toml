@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "moedeiro"
+version = "1.0.0"
+requires-python = ">=3.14"
+dependencies = [
+    "argon2-cffi",
+    "cryptography",
+    "fastapi",
+    "limits",
+    "pydantic",
+    "uvicorn",
+]
+
+[project.scripts]
+moedeiro = "app.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+namespaces = true
+
+[tool.setuptools.package-data]
+app = [
+    "infrastructure/persistence/sqlite/registry/schema/*.sql",
+    "infrastructure/persistence/sqlite/ledger/schema/*.sql",
+]

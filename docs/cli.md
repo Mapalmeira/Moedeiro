@@ -1,41 +1,40 @@
-# Administrative CLI
+# Command line interface
 
-Moedeiro provides an administrative CLI for operations that require operator access, such as issuing invitations, creating users directly, recovering accounts, revoking MFA, deleting users, and removing inactive records. The CLI operates on the same registry and ledger storage as the running service.
+Installing the backend provides one `moedeiro` command. It controls the native service and also exposes operator-only administrative operations against the same registry and ledger storage.
 
-## Running the CLI
+## Running the command
 
-The `moedeiro-cli` command is included in the container image.
-
-With Docker Compose:
+For a native installation, activate the virtual environment first:
 
 ```sh
-docker compose exec moedeiro moedeiro-cli --help
+source .venv/bin/activate
+moedeiro --help
+```
+
+Because the backend is installed as a Python package, `moedeiro` can be run from the repository root or any other working directory.
+
+Inside a Docker Compose deployment:
+
+```sh
+docker compose exec moedeiro moedeiro --help
 ```
 
 With Podman:
 
 ```sh
-podman exec moedeiro moedeiro-cli --help
+podman exec moedeiro moedeiro --help
 ```
 
-For a native installation using the standard repository layout, activate the Python environment and run the CLI from `backend`:
-
-```sh
-source .venv/bin/activate
-cd backend
-python -B -m app.cli --help
-```
-
-The CLI uses the same built-in storage defaults as the service. If the service overrides `REGISTRY_DB_PATH` or `LEDGER_DBS_DIR`, provide those same overrides to the CLI so both operate on the same data. The CLI does not require `TOTP_ENCRYPTION_KEY`.
+If a native installation intentionally overrides `REGISTRY_DB_PATH` or `LEDGER_DBS_DIR`, those overrides must also be present when running administrative subcommands so that they operate on the same databases as the service.
 
 ## Inviting users
 
 User registration requires an invitation issued by an operator:
 
 ```text
-moedeiro-cli invitation create [--expiration-seconds SECONDS]
-moedeiro-cli invitation list
-moedeiro-cli invitation revoke UUID
+moedeiro invitation create [--expiration-seconds SECONDS]
+moedeiro invitation list
+moedeiro invitation revoke UUID
 ```
 
 `invitation create` prints a one-time invitation code that can be sent to the intended user. Invitations expire after one hour by default and can be consumed once. A different lifetime can be specified with `--expiration-seconds`.
@@ -48,14 +47,14 @@ Treat invitation codes as temporary credentials and share them through an approp
 
 ## Managing users
 
-Administrative user operations are available under `moedeiro-cli user`:
+Administrative user operations are available under `moedeiro user`:
 
 ```text
-moedeiro-cli user create NAME
-moedeiro-cli user list
-moedeiro-cli user recover-password UUID [--expiration-seconds SECONDS]
-moedeiro-cli user disable-mfa UUID
-moedeiro-cli user delete UUID
+moedeiro user create NAME
+moedeiro user list
+moedeiro user recover-password UUID [--expiration-seconds SECONDS]
+moedeiro user disable-mfa UUID
+moedeiro user delete UUID
 ```
 
 `user create` creates an account directly and prompts for the password and its confirmation without placing the password on the command line.
@@ -73,13 +72,13 @@ moedeiro-cli user delete UUID
 Inactive registry records can be removed with:
 
 ```text
-moedeiro-cli cleanup --days DAYS
+moedeiro cleanup --days DAYS
 ```
 
-The retention period determines how long inactive records remain in the registry. For example:
+For example:
 
 ```sh
-moedeiro-cli cleanup --days 30
+moedeiro cleanup --days 30
 ```
 
 removes records that have been inactive for at least 30 days.
