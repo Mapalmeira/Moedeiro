@@ -46,6 +46,10 @@ class InvalidTotpCodeError(Exception):
     pass
 
 
+class TotpCodeAlreadyUsedError(Exception):
+    pass
+
+
 class InvalidTotpSetupError(Exception):
     pass
 

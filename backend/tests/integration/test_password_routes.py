@@ -37,7 +37,8 @@ class PasswordRoutesTest(unittest.TestCase):
         )
         self.password_hasher = FakePasswordHasher()
         self.rate_limiter = FakeRateLimiter()
-        self.application = create_app(settings, self.password_hasher, self.rate_limiter, FakeTotpAuthenticator(), FakeCredentialOperationExecutor())
+        self.totp_authenticator = FakeTotpAuthenticator()
+        self.application = create_app(settings, self.password_hasher, self.rate_limiter, self.totp_authenticator, FakeCredentialOperationExecutor())
         with self.application.state.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", self.password_hasher.hash("current password"), 10)
             unit_of_work.commit()
@@ -104,6 +105,34 @@ class PasswordRoutesTest(unittest.TestCase):
 
         asyncio.run(change_current_password(ChangePasswordRequest(current_password="current password", new_password="replacement password", totp_code="123456"), request, Response(), require_authenticated_user(request)))
 
+    def test_change_reports_when_the_totp_code_was_already_used(self) -> None:
+        request = self.session_request()
+        self.enable_totp()
+        self.totp_authenticator.fixed_counter = 7
+        login(
+            self.application.state.databases.open_registry,
+            self.password_hasher,
+            "Alice",
+            "current password",
+            False,
+            int(time.time()),
+            totp_authenticator=self.totp_authenticator,
+            totp_code="123456",
+        )
+
+        with self.assertRaises(HTTPException) as raised:
+            asyncio.run(
+                change_current_password(
+                    ChangePasswordRequest(current_password="current password", new_password="replacement password", totp_code="123456"),
+                    request,
+                    Response(),
+                    require_authenticated_user(request),
+                )
+            )
+
+        self.assertEqual(raised.exception.status_code, 409)
+        self.assertEqual(raised.exception.detail, "TOTP code already used")
+
     def test_change_rejects_an_invalid_current_password_without_ending_the_session(self) -> None:
         request = self.session_request()
 
@@ -167,6 +196,33 @@ class PasswordRoutesTest(unittest.TestCase):
                 self.assertEqual(raised.exception.status_code, 401)
                 self.assertEqual(raised.exception.detail, "Invalid credentials")
         self.assertEqual(self.password_hasher.passwords, ["another password"] * 3)
+
+    def test_recovery_reports_when_the_totp_code_was_already_used(self) -> None:
+        code = create_recovery_code(self.application.state.databases.open_registry, self.user.uuid, int(time.time()))
+        self.enable_totp()
+        self.totp_authenticator.fixed_counter = 7
+        login(
+            self.application.state.databases.open_registry,
+            self.password_hasher,
+            "Alice",
+            "current password",
+            False,
+            int(time.time()),
+            totp_authenticator=self.totp_authenticator,
+            totp_code="123456",
+        )
+
+        with self.assertRaises(HTTPException) as raised:
+            asyncio.run(
+                recover_password(
+                    ResetPasswordRequest(name="Alice", recovery_code=code, new_password="replacement password", totp_code="123456"),
+                    self.request(),
+                    Response(),
+                )
+            )
+
+        self.assertEqual(raised.exception.status_code, 409)
+        self.assertEqual(raised.exception.detail, "TOTP code already used")
 
     def test_recovery_rate_limit_precedes_lookup_and_hashing(self) -> None:
         code = create_recovery_code(self.application.state.databases.open_registry, self.user.uuid, 20)

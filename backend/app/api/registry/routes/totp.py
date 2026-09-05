@@ -8,7 +8,7 @@ from app.api.dependencies.authentication import require_authenticated_user
 from app.api.dependencies.credential_operation import execute_credential_operation
 from app.api.dependencies.rate_limit import check_rate_limit
 from app.api.registry.schema.totp import ConfirmTotpRequest, DisableTotpRequest, StartTotpSetupRequest, StartTotpSetupResponse, TotpStatusResponse
-from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, InvalidTotpSetupError, TotpAlreadyEnabledError, TotpNotEnabledError
+from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, InvalidTotpSetupError, TotpAlreadyEnabledError, TotpCodeAlreadyUsedError, TotpNotEnabledError
 from app.application.registry.use_cases.totp import confirm_totp_setup, disable_totp, is_totp_enabled, start_totp_setup
 from app.domain.registry.model.user import User
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
@@ -81,6 +81,8 @@ async def remove_totp(payload: DisableTotpRequest, request: Request, user: Annot
                 int(time.time()),
             ),
         )
+    except TotpCodeAlreadyUsedError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="TOTP code already used") from error
     except (InvalidCurrentPasswordError, InvalidTotpCodeError) as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from error
     except TotpNotEnabledError as error:

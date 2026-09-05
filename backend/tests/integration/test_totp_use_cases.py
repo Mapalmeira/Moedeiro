@@ -3,7 +3,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, InvalidTotpSetupError, TotpAlreadyEnabledError, TotpNotEnabledError, TotpRequiredError
+from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, InvalidTotpSetupError, TotpAlreadyEnabledError, TotpCodeAlreadyUsedError, TotpNotEnabledError, TotpRequiredError
 from app.application.registry.use_cases.authentication import login
 from app.application.registry.use_cases.mfa import disable_mfa
 from app.application.registry.use_cases.password import change_password
@@ -131,7 +131,7 @@ class TotpUseCasesTest(unittest.TestCase):
 
         login(self.open_registry, self.password_hasher, "Alice", "current password", False, 30, totp_authenticator=self.totp_authenticator, totp_code="123456")
 
-        with self.assertRaises(InvalidTotpCodeError):
+        with self.assertRaises(TotpCodeAlreadyUsedError):
             login(self.open_registry, self.password_hasher, "Alice", "current password", False, 31, totp_authenticator=self.totp_authenticator, totp_code="123456")
 
     def test_user_can_disable_totp_with_the_current_password_and_totp_code_without_ending_sessions(self) -> None:

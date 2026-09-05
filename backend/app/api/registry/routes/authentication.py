@@ -7,7 +7,7 @@ from app.api.dependencies.authentication import REMEMBER_COOKIE, SESSION_COOKIE,
 from app.api.dependencies.credential_operation import execute_credential_operation
 from app.api.dependencies.rate_limit import check_rate_limit
 from app.api.registry.schema.authentication import LoginRequest
-from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError, InvalidTotpCodeError, TotpRequiredError, UserNotFoundError
+from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError, InvalidTotpCodeError, TotpCodeAlreadyUsedError, TotpRequiredError, UserNotFoundError
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.use_cases.authentication import login, logout, refresh_session
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
@@ -39,6 +39,8 @@ async def login_user(payload: LoginRequest, request: Request, response: Response
         )
     except TotpRequiredError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="TOTP required") from error
+    except TotpCodeAlreadyUsedError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="TOTP code already used") from error
     except (UserNotFoundError, InvalidTotpCodeError, InvalidCredentialsError) as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from error
     secure = not _settings(request).allow_insecure_http

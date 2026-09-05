@@ -119,6 +119,20 @@ class TotpRoutesTest(unittest.TestCase):
             self.assertIsNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))
             self.assertEqual(len(unit_of_work.auth_session_repository.list_by_user(self.user.uuid)), session_count)
 
+    def test_totp_disable_reports_when_the_totp_code_was_already_used(self) -> None:
+        setup_request = self.request()
+        user = require_authenticated_user(setup_request)
+        asyncio.run(start_setup(StartTotpSetupRequest(current_password="current password"), setup_request, user))
+        confirm_setup(ConfirmTotpRequest(code="123456"), setup_request, user)
+        self.totp_authenticator.fixed_counter = 7
+        request = self.request("123456")
+
+        with self.assertRaises(HTTPException) as raised:
+            asyncio.run(remove_totp(DisableTotpRequest(current_password="current password", code="123456"), request, user))
+
+        self.assertEqual(raised.exception.status_code, 409)
+        self.assertEqual(raised.exception.detail, "TOTP code already used")
+
     def test_totp_disable_returns_one_generic_error_for_an_invalid_password_or_code(self) -> None:
         setup_request = self.request()
         user = require_authenticated_user(setup_request)

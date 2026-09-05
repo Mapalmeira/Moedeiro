@@ -8,7 +8,7 @@ from app.api.dependencies.authentication import clear_authentication_cookies, re
 from app.api.dependencies.credential_operation import execute_credential_operation
 from app.api.dependencies.rate_limit import check_rate_limit
 from app.api.registry.schema.password import ChangePasswordRequest, ResetPasswordRequest
-from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, PasswordUpdateConflictError, RecoveryCodeNotAvailableError, TotpRequiredError, UserNotFoundError
+from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, PasswordUpdateConflictError, RecoveryCodeNotAvailableError, TotpCodeAlreadyUsedError, TotpRequiredError, UserNotFoundError
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.use_cases.password import change_password, recover_password as recover_password_use_case
 from app.domain.registry.model.user import User
@@ -43,6 +43,8 @@ async def change_current_password(
         )
     except TotpRequiredError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="TOTP required") from error
+    except TotpCodeAlreadyUsedError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="TOTP code already used") from error
     except InvalidTotpCodeError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid TOTP code") from error
     except InvalidCurrentPasswordError as error:
@@ -75,6 +77,8 @@ async def recover_password(payload: ResetPasswordRequest, request: Request, resp
         )
     except TotpRequiredError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="TOTP required") from error
+    except TotpCodeAlreadyUsedError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="TOTP code already used") from error
     except InvalidTotpCodeError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid TOTP code") from error
     except (UserNotFoundError, RecoveryCodeNotAvailableError) as error:

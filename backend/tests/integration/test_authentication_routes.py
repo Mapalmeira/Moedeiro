@@ -34,7 +34,8 @@ class AuthenticationRoutesTest(unittest.TestCase):
         self.password_hasher = FakePasswordHasher()
         self.rate_limiter = FakeRateLimiter()
         self.credential_operation_executor = FakeCredentialOperationExecutor()
-        self.application = create_app(settings, self.password_hasher, self.rate_limiter, FakeTotpAuthenticator(), self.credential_operation_executor)
+        self.totp_authenticator = FakeTotpAuthenticator()
+        self.application = create_app(settings, self.password_hasher, self.rate_limiter, self.totp_authenticator, self.credential_operation_executor)
         with self.application.state.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", self.password_hasher.hash("correct password"), 10)
             unit_of_work.commit()
@@ -131,6 +132,20 @@ class AuthenticationRoutesTest(unittest.TestCase):
 
         self.assertEqual(raised.exception.status_code, 401)
         self.assertEqual(raised.exception.detail, "Invalid credentials")
+
+    def test_login_reports_when_a_valid_totp_code_was_already_used(self) -> None:
+        with self.application.state.databases.open_registry() as unit_of_work:
+            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 10)
+            unit_of_work.commit()
+        self.totp_authenticator.fixed_counter = 7
+
+        asyncio.run(login_user(LoginRequest(name="Alice", password="correct password", totp_code="123456"), self.request(), Response()))
+
+        with self.assertRaises(HTTPException) as raised:
+            asyncio.run(login_user(LoginRequest(name="Alice", password="correct password", totp_code="123456"), self.request(), Response()))
+
+        self.assertEqual(raised.exception.status_code, 409)
+        self.assertEqual(raised.exception.detail, "TOTP code already used")
 
     def test_login_rate_limit_is_checked_before_password_verification(self) -> None:
         self.rate_limiter.rejected_namespace = "login-ip-attempts"

@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from uuid import UUID
 
-from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, InvalidTotpSetupError, TotpAlreadyEnabledError, TotpNotEnabledError, TotpRequiredError
+from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, InvalidTotpSetupError, TotpAlreadyEnabledError, TotpCodeAlreadyUsedError, TotpNotEnabledError, TotpRequiredError
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.totp_authenticator import TotpAuthenticator
 from app.application.registry.unit_of_work import RegistryUnitOfWork
@@ -64,5 +64,7 @@ def verify_totp(unit_of_work: RegistryUnitOfWork, totp_authenticator: TotpAuthen
     if totp_authenticator is None:
         raise InvalidTotpCodeError
     counter = totp_authenticator.verify(totp_authenticator.decrypt_secret(method.secret_encrypted), code, timestamp)
-    if counter is None or not unit_of_work.mfa_method_repository.use_totp_counter(method.uuid, counter):
+    if counter is None:
         raise InvalidTotpCodeError
+    if not unit_of_work.mfa_method_repository.use_totp_counter(method.uuid, counter):
+        raise TotpCodeAlreadyUsedError
