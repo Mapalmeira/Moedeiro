@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "moedeiro-web": {
+    "moedeiro": {
       "projectType": "application",
       "root": "",
       "sourceRoot": "src",
@@ -34,7 +34,7 @@
             "styles": [
               "src/styles.scss"
             ],
-            "outputPath": "dist/moedeiro-web",
+            "outputPath": "dist/moedeiro",
             "index": "src/index.html",
             "polyfills": [
               "zone.js"
@@ -71,10 +71,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "moedeiro-web:build:production"
+              "buildTarget": "moedeiro:build:production"
             },
             "development": {
-              "buildTarget": "moedeiro-web:build:development"
+              "buildTarget": "moedeiro:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -84,7 +84,7 @@
           "options": {
             "runner": "vitest",
             "tsConfig": "tsconfig.spec.json",
-            "buildTarget": "moedeiro-web:build:development"
+            "buildTarget": "moedeiro:build:development"
           }
         }
       }
