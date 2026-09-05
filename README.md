@@ -6,7 +6,7 @@ The service is deliberately small to operate. It runs as one FastAPI process and
 
 Start with [Installation](docs/installation.md). The remaining guides explain the operational decisions that matter after the service is running:
 
-* [Optional environment variables](docs/environment.md) explains runtime tuning.
+* [Environment variables](docs/environment.md) explains additional runtime configuration.
 * [Reverse proxy](docs/reverse-proxy.md) explains HTTPS and trustworthy client addresses for rate limiting.
 * [Administrative CLI](docs/cli.md) covers invitations, users, recovery, MFA, and maintenance.
 * [Security and concurrency](docs/security.md) describes the protection model and why the service has separate resource limits.
