@@ -26,5 +26,7 @@ namespaces = true
 [tool.setuptools.package-data]
 app = [
     "infrastructure/persistence/sqlite/registry/schema/*.sql",
+    "infrastructure/persistence/sqlite/registry/schema/migrations/*.sql",
     "infrastructure/persistence/sqlite/ledger/schema/*.sql",
+    "infrastructure/persistence/sqlite/ledger/schema/migrations/*.sql",
 ]
