@@ -7,15 +7,21 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from app.api.dependencies.authentication import require_authenticated_user
 from app.api.dependencies.credential_operation import execute_credential_operation
 from app.api.dependencies.rate_limit import check_rate_limit
-from app.api.registry.schema.totp import ConfirmTotpRequest, DisableTotpRequest, StartTotpSetupRequest, StartTotpSetupResponse
+from app.api.registry.schema.totp import ConfirmTotpRequest, DisableTotpRequest, StartTotpSetupRequest, StartTotpSetupResponse, TotpStatusResponse
 from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, InvalidTotpSetupError, TotpAlreadyEnabledError, TotpNotEnabledError
-from app.application.registry.use_cases.totp import confirm_totp_setup, disable_totp, start_totp_setup
+from app.application.registry.use_cases.totp import confirm_totp_setup, disable_totp, is_totp_enabled, start_totp_setup
 from app.domain.registry.model.user import User
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
 from app.settings import Settings
 
 
 router = APIRouter(prefix="/api/totp", tags=["totp"])
+
+
+@router.get("", response_model=TotpStatusResponse)
+def get_totp_status(request: Request, user: Annotated[User, Depends(require_authenticated_user)]) -> TotpStatusResponse:
+    enabled = is_totp_enabled(_databases(request).open_registry, user.uuid)
+    return TotpStatusResponse(enabled=enabled)
 
 
 @router.post("/setup", response_model=StartTotpSetupResponse)

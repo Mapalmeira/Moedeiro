@@ -4,6 +4,10 @@ from app.domain.registry.model.totp import TotpCode
 from app.domain.registry.model.user import Password
 
 
+class TotpStatusResponse(BaseModel):
+    enabled: bool
+
+
 class StartTotpSetupRequest(BaseModel):
     current_password: Password
 

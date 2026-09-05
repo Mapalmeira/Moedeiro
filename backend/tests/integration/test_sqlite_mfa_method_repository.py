@@ -20,6 +20,16 @@ class SqliteMfaMethodRepositoryTest(RegistryRepositoryTestCase):
 
         self.assertEqual(self.mfa_repository.get_totp_by_user(user.uuid), method)
 
+    def test_is_totp_enabled_requires_a_confirmed_method_owned_by_the_user(self) -> None:
+        user = self.create_user()
+        other_user = self.create_user()
+        pending = self.mfa_repository.create(user.uuid, "TOTP", b"pending", 30)
+        self.mfa_repository.create(other_user.uuid, "TOTP", b"other", 30, 40)
+
+        self.assertFalse(self.mfa_repository.is_totp_enabled(user.uuid))
+        self.assertTrue(self.mfa_repository.confirm(pending.uuid, 40, 1))
+        self.assertTrue(self.mfa_repository.is_totp_enabled(user.uuid))
+
     def test_confirm_activates_a_pending_method_only_once(self) -> None:
         method = self.mfa_repository.create(self.create_user().uuid, "TOTP", b"encrypted-secret", 30)
 

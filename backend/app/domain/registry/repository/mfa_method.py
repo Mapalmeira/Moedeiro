@@ -18,6 +18,10 @@ class MfaMethodRepository(ABC):
         pass
 
     @abstractmethod
+    def is_totp_enabled(self, user_uuid: UUID) -> bool:
+        pass
+
+    @abstractmethod
     def confirm(self, uuid: UUID, confirmed_at: int, last_used_counter: int) -> bool:
         pass
 

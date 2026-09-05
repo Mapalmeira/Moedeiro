@@ -27,6 +27,13 @@ class SqliteMfaMethodRepository(MfaMethodRepository):
         row = self.connection.execute(f"SELECT {self._columns} FROM mfa_method WHERE user_uuid = ? AND type = 'TOTP'", (user_uuid.bytes,)).fetchone()
         return None if row is None else self._to_model(row)
 
+    def is_totp_enabled(self, user_uuid: UUID) -> bool:
+        row = self.connection.execute(
+            "SELECT EXISTS(SELECT 1 FROM mfa_method WHERE user_uuid = ? AND type = 'TOTP' AND confirmed_at IS NOT NULL)",
+            (user_uuid.bytes,),
+        ).fetchone()
+        return bool(row[0])
+
     def confirm(self, uuid: UUID, confirmed_at: int, last_used_counter: int) -> bool:
         cursor = self.connection.execute("UPDATE mfa_method SET confirmed_at = ?, last_used_counter = ? WHERE uuid = ? AND confirmed_at IS NULL AND created_at <= ?", (confirmed_at, last_used_counter, uuid.bytes, confirmed_at))
         return cursor.rowcount == 1

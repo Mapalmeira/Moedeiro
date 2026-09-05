@@ -7,7 +7,7 @@ from app.application.registry.exceptions import InvalidCurrentPasswordError, Inv
 from app.application.registry.use_cases.authentication import login
 from app.application.registry.use_cases.mfa import disable_mfa
 from app.application.registry.use_cases.password import change_password
-from app.application.registry.use_cases.totp import confirm_totp_setup, disable_totp, start_totp_setup
+from app.application.registry.use_cases.totp import confirm_totp_setup, disable_totp, is_totp_enabled, start_totp_setup
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.repository.mfa_method import SqliteMfaMethodRepository
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
@@ -37,6 +37,15 @@ class TotpUseCasesTest(unittest.TestCase):
     def enable(self) -> None:
         start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
         confirm_totp_setup(self.open_registry, self.totp_authenticator, self.user, "123456", 20)
+
+    def test_totp_status_is_false_without_a_confirmed_method_and_true_after_confirmation(self) -> None:
+        self.assertFalse(is_totp_enabled(self.open_registry, self.user.uuid))
+
+        start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
+        self.assertFalse(is_totp_enabled(self.open_registry, self.user.uuid))
+
+        confirm_totp_setup(self.open_registry, self.totp_authenticator, self.user, "123456", 20)
+        self.assertTrue(is_totp_enabled(self.open_registry, self.user.uuid))
 
     def test_enabling_totp_persists_the_encrypted_secret_without_creating_recovery_codes(self) -> None:
         self.enable()

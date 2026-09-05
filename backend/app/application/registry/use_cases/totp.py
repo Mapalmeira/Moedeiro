@@ -9,6 +9,10 @@ from app.domain.registry.model.totp import TotpCode
 from app.domain.registry.model.user import Password, User
 
 
+def is_totp_enabled(unit_of_work_factory: Callable[[], RegistryUnitOfWork], user_uuid: UUID) -> bool:
+    with unit_of_work_factory() as unit_of_work:
+        return unit_of_work.mfa_method_repository.is_totp_enabled(user_uuid)
+
 def start_totp_setup(unit_of_work_factory: Callable[[], RegistryUnitOfWork], password_hasher: PasswordHasher, totp_authenticator: TotpAuthenticator, user: User, current_password: Password, timestamp: int) -> str:
     if not password_hasher.verify(user.password_hash, current_password):
         raise InvalidCurrentPasswordError

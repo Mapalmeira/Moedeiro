@@ -5,9 +5,10 @@ import time
 import unittest
 
 from fastapi import HTTPException, Request
+from fastapi.testclient import TestClient
 
 from app.api.dependencies.authentication import require_authenticated_user
-from app.api.registry.routes.totp import confirm_setup, remove_totp, start_setup
+from app.api.registry.routes.totp import confirm_setup, get_totp_status, remove_totp, start_setup
 from app.api.registry.schema.totp import ConfirmTotpRequest, DisableTotpRequest, StartTotpSetupRequest
 from app.application.registry.exceptions import TotpRequiredError
 from app.application.registry.use_cases.authentication import login
@@ -50,6 +51,25 @@ class TotpRoutesTest(unittest.TestCase):
         assert result is not None
         token, _ = result
         return Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": [(b"cookie", f"moedeiro_session={token}".encode("ascii"))]})
+
+    def test_get_status_reports_disabled_before_confirmation_and_enabled_after_confirmation(self) -> None:
+        request = self.request()
+        user = require_authenticated_user(request)
+
+        self.assertFalse(get_totp_status(request, user).enabled)
+        asyncio.run(start_setup(StartTotpSetupRequest(current_password="current password"), request, user))
+        self.assertFalse(get_totp_status(request, user).enabled)
+        confirm_setup(ConfirmTotpRequest(code="123456"), request, user)
+        self.assertTrue(get_totp_status(request, user).enabled)
+
+    def test_get_status_route_is_exposed_and_requires_authentication(self) -> None:
+        operation = self.application.openapi()["paths"]["/api/totp"]["get"]
+
+        self.assertIn("200", operation["responses"])
+        with TestClient(self.application) as client:
+            response = client.get("/api/totp")
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json(), {"detail": "Invalid session"})
 
     def test_setup_then_enable_confirms_totp_without_creating_recovery_codes(self) -> None:
         request = self.request()
