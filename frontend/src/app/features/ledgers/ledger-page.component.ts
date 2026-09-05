@@ -43,17 +43,13 @@ const LEDGER_SECTION_ITEMS: LedgerSectionItem[] = [
   template: `
     <div class="ledger-shell">
       @if (isMobile() && mobileSidebarOpen()) {
-        <button class="mobile-overlay" type="button" (click)="mobileSidebarOpen.set(false)" [attr.aria-label]="i18n.t('ledgerShell.collapse')"></button>
+        <button class="mobile-overlay" type="button" (click)="closeMobileNavigation()" [attr.aria-label]="i18n.t('ledgerShell.collapse')"></button>
       }
 
       <aside class="ledger-sidebar" [class.ledger-sidebar--mobile-open]="mobileSidebarOpen()">
         <div class="ledger-sidebar__inner">
           <header class="ledger-sidebar__brand-row">
             <app-brand-logo variant="sidebar" />
-            <button class="sidebar-close-button" type="button" (click)="closeMobileNavigation()"
-              [attr.aria-label]="i18n.t('ledgerShell.collapse')">
-              <app-icon name="panel-close" [size]="18" />
-            </button>
           </header>
 
           <nav class="ledger-nav" [attr.aria-label]="i18n.t('ledgerShell.navigation')">
@@ -178,15 +174,8 @@ const LEDGER_SECTION_ITEMS: LedgerSectionItem[] = [
       overflow: hidden;
     }
     .ledger-sidebar__inner { min-height: 100dvh; display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-5) var(--space-4); }
-    .ledger-sidebar__brand-row { position: relative; min-height: 44px; width: 100%; }
-    .ledger-sidebar__brand-row app-brand-logo { width: 100%; height: 44px; }
-    .sidebar-close-button {
-      position: absolute; right: 0; top: 50%; transform: translateY(-50%);
-      display: none; place-items: center; width: 40px; height: 40px; padding: 0; border: 2px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text);
-      box-shadow: var(--compact-button-shadow); transition: box-shadow var(--motion-press) ease, background var(--motion-press) ease;
-    }
-    .sidebar-close-button:hover { background: var(--surface-muted); }
-    .sidebar-close-button:active { transform: translate(var(--press-offset), calc(-50% + var(--press-offset))); box-shadow: var(--compact-button-shadow-pressed); }
+    .ledger-sidebar__brand-row { min-height: 50px; width: 100%; }
+    .ledger-sidebar__brand-row app-brand-logo { width: 100%; height: 50px; }
     .mobile-nav-button {
       display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 2px solid var(--line-strong);
       border-radius: 6px; background: var(--surface); color: var(--text);
@@ -266,7 +255,6 @@ const LEDGER_SECTION_ITEMS: LedgerSectionItem[] = [
         box-shadow: 6px 0 20px color-mix(in srgb, var(--shadow-color) 24%, transparent);
       }
       .ledger-sidebar.ledger-sidebar--mobile-open { transform: translateX(0); }
-      .sidebar-close-button { display: grid; }
       .mobile-nav-button { display: grid; width: 48px; height: 48px; flex: 0 0 48px; }
       .ledger-main { padding: var(--space-5); }
       .mobile-overlay { position: fixed; inset: 0; display: block; z-index: 30; background: color-mix(in srgb, #000 26%, transparent); }
@@ -351,8 +339,12 @@ export class LedgerPageComponent {
   }
 
   openMobileNavigation(): void {
-    if (this.mobileActionPending()) return;
-    this.mobileSidebarOpen.set(true);
+    if (!this.isMobile() || this.mobileSidebarOpen() || this.mobileActionPending()) return;
+    this.mobileActionPending.set(true);
+    window.setTimeout(() => {
+      this.mobileSidebarOpen.set(true);
+      this.mobileActionPending.set(false);
+    }, MOBILE_NAV_ACTION_DELAY_MS);
   }
 
   closeMobileNavigation(): void {
