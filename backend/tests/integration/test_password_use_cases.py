@@ -196,7 +196,7 @@ class PasswordUseCasesTest(unittest.TestCase):
 
         recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", code, "replacement password", "123456", 30)
 
-    def test_recover_password_distinguishes_an_unknown_user_from_an_unavailable_code(self) -> None:
+    def test_recover_password_hashes_new_password_for_unknown_users_and_unavailable_codes(self) -> None:
         code = create_recovery_code(self.open_registry, self.user.uuid, 20)
         self.password_hasher.passwords.clear()
 
@@ -205,7 +205,7 @@ class PasswordUseCasesTest(unittest.TestCase):
         with self.assertRaises(RecoveryCodeNotAvailableError):
             recover_password(self.open_registry, self.password_hasher, self.totp_authenticator, "Alice", "0" * 16, "replacement password", None, 30)
 
-        self.assertEqual(self.password_hasher.passwords, [])
+        self.assertEqual(self.password_hasher.passwords, ["replacement password", "replacement password"])
 
     @patch.object(SqliteUserRepository, "update_password", return_value=False)
     def test_recover_password_rolls_back_code_consumption_when_password_update_fails(self, update_password) -> None:

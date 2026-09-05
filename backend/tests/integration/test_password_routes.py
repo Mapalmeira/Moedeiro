@@ -166,7 +166,7 @@ class PasswordRoutesTest(unittest.TestCase):
                     asyncio.run(recover_password(ResetPasswordRequest(name=name, recovery_code=candidate, new_password="another password"), self.request(), Response()))
                 self.assertEqual(raised.exception.status_code, 401)
                 self.assertEqual(raised.exception.detail, "Invalid credentials")
-        self.assertEqual(self.password_hasher.passwords, [])
+        self.assertEqual(self.password_hasher.passwords, ["another password"] * 3)
 
     def test_recovery_rate_limit_precedes_lookup_and_hashing(self) -> None:
         code = create_recovery_code(self.application.state.databases.open_registry, self.user.uuid, 20)
