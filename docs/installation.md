@@ -19,7 +19,7 @@ mkdir -p /srv/moedeiro/registry
 mkdir -p /srv/moedeiro/ledgers
 ```
 
-These directories hold the persistent application data and must remain available despite Moedeiro's lifecycle.
+These directories hold the persistent application data and must remain available throughout Moedeiro's lifecycle.
 
 ### 2. Generate the TOTP encryption key
 
@@ -35,13 +35,15 @@ The key encrypts TOTP seeds stored in the registry. If the key is lost, the stor
 
 ## Container installation
 
-Moedeiro container can be installed with either Docker Compose or Podman Quadlet. Choose one container runtime for the installation and follow only the corresponding section below.
+Moedeiro can be installed with either Docker Compose or Podman Quadlet. Choose one container runtime and follow the corresponding section below.
 
 ### Container image
 
 A pre-built image is available on Docker Hub as `mapalmeira/moedeiro`.
 
-Build the image locally with Docker or Podman if you wish:
+Build the image locally with your chosen container runtime if you wish.
+
+With Docker:
 
 ```sh
 docker build \
@@ -50,6 +52,8 @@ docker build \
   .
 ```
 
+With Podman:
+
 ```sh
 podman build \
   --file backend/app/Containerfile \
@@ -57,7 +61,7 @@ podman build \
   .
 ```
 
-### Docker Compose Installation
+### Docker Compose installation
 
 Edit `compose.yaml` for the host where Moedeiro will run.
 
@@ -67,12 +71,14 @@ Set the image:
 image: mapalmeira/moedeiro:VERSION
 ```
 
-Set the host port and/or host address:
+Set the host port:
 
 ```yaml
 ports:
   - "8080:8000"
 ```
+
+A host address can also be specified:
 
 ```yaml
 ports:
@@ -85,17 +91,17 @@ Start Moedeiro while supplying the TOTP encryption key:
 TOTP_ENCRYPTION_KEY="$(cat /etc/moedeiro/totp.key)" docker compose up --detach
 ```
 
-Check the container status with:
+Check the container status:
 
 ```sh
 docker compose ps moedeiro
 ```
 
-### Podman Quadlet Installation
+### Podman Quadlet installation
 
 Quadlet runs Moedeiro as a systemd-managed Podman container.
 
-First, add the TOTP encryption key to Podman:
+Add the TOTP encryption key to Podman:
 
 ```sh
 podman secret create moedeiro_totp_encryption_key /etc/moedeiro/totp.key
@@ -128,7 +134,13 @@ Set the image:
 Image=mapalmeira/moedeiro:VERSION
 ```
 
-Set the host port and/or host address:
+Set the host port:
+
+```ini
+PublishPort=8080:8000
+```
+
+A host address can also be specified:
 
 ```ini
 PublishPort=127.0.0.1:8080:8000
@@ -141,10 +153,10 @@ systemctl --user daemon-reload
 systemctl --user start moedeiro
 ```
 
-Check the service status with:
+Check the service status:
 
 ```sh
-systemctl --user status moedeiro.service
+systemctl --user status moedeiro
 ```
 
 ## Native installation
@@ -162,21 +174,17 @@ pip install -r backend/app/requirements.txt
 Set the application environment:
 
 ```sh
-export PYTHONPATH="$PWD/backend"
-
 export REGISTRY_SCHEMA_PATH="$PWD/backend/app/infrastructure/persistence/sqlite/registry/schema/registry_schema.sql"
 export LEDGER_SCHEMA_PATH="$PWD/backend/app/infrastructure/persistence/sqlite/ledger/schema/ledger_schema.sql"
-
 export REGISTRY_DB_PATH=/srv/moedeiro/registry/registry.sqlite
 export LEDGER_DBS_DIR=/srv/moedeiro/ledgers
-
 export TOTP_ENCRYPTION_KEY="$(cat /etc/moedeiro/totp.key)"
 ```
 
 Start Uvicorn on the desired host address and port:
 
 ```sh
-uvicorn app.main:app --host 127.0.0.1 --port 8000
+uvicorn --app-dir backend app.main:app --host 127.0.0.1 --port 8000
 ```
 
 ## Application settings
@@ -187,7 +195,7 @@ See [Environment settings](environment.md) for the available settings, their def
 
 ## Verify the installation and next steps
 
-Request the health endpoint using the host address and port selected for the installation:
+Request the health endpoint using the host address and port selected for the installation. For example:
 
 ```sh
 curl --include http://127.0.0.1:8080/health
