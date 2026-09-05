@@ -281,6 +281,29 @@ import { IconComponent } from '../../shared/ui/icon.component';
         display: block;
         white-space: normal;
       }
+      .secret-value {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: minmax(46px, auto) 42px;
+      }
+      .secret-value code {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        width: 100%;
+        min-height: 46px;
+        padding-inline: 13px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      .secret-visibility-button, .copy-button {
+        grid-row: 2;
+        width: auto;
+        min-width: 0;
+        min-height: 42px;
+        border-top: 2px solid var(--blue-strong);
+      }
+      .secret-visibility-button { grid-column: 1; border-left: 0; }
+      .copy-button { grid-column: 2; border-left: 2px solid var(--blue-strong); }
     }
     @media (max-width: 620px) {
       .password-grid, .form-grid, .setup-row, .password-actions { grid-template-columns: 1fr; }
@@ -291,9 +314,6 @@ import { IconComponent } from '../../shared/ui/icon.component';
       .setup-row .field > app-field-error { grid-column: 1; grid-row: 3; }
       .setup-row .security-action-button { grid-column: 1; grid-row: 4; width: 100%; min-width: 0; margin-top: var(--space-1); }
       .section-actions .security-action-button { width: 100%; min-width: 0; }
-      .secret-value { grid-template-columns: minmax(0, 1fr) 44px 44px; }
-      .secret-value code { grid-column: auto; }
-      .secret-visibility-button, .copy-button { grid-column: auto; width: 44px; min-width: 44px; min-height: 42px; border-top: 0; border-left: 2px solid var(--blue-strong); }
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

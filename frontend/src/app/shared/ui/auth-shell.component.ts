@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { I18nService } from '../../core/i18n/i18n.service';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { BrandLogoComponent } from '../brand/brand-logo.component';
 import { LanguageSelectorComponent } from './language-selector.component';
 import { ThemeToggleComponent } from './theme-toggle.component';
@@ -18,7 +17,6 @@ import { ThemeToggleComponent } from './theme-toggle.component';
       <div class="auth-shell__body">
         <header class="auth-shell__header">
           <app-brand-logo />
-          <p>{{ i18n.t('auth.subtitle') }}</p>
         </header>
         <div class="auth-shell__content"><ng-content /></div>
       </div>
@@ -60,14 +58,8 @@ import { ThemeToggleComponent } from './theme-toggle.component';
       align-self: end;
       display: grid;
       justify-items: center;
-      gap: var(--space-2);
       margin-bottom: var(--space-8);
       text-align: center;
-    }
-    .auth-shell__header p {
-      margin: 0;
-      color: var(--text-muted);
-      font-size: clamp(1rem, 1.7vw, 1.2rem);
     }
     .auth-shell__content {
       grid-row: 2;
@@ -87,6 +79,4 @@ import { ThemeToggleComponent } from './theme-toggle.component';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AuthShellComponent {
-  readonly i18n = inject(I18nService);
-}
+export class AuthShellComponent {}

@@ -21,7 +21,6 @@ import { IconComponent } from '../../shared/ui/icon.component';
       <header class="top-area">
         <div class="top-area__brand">
           <app-brand-logo />
-          <strong>{{ i18n.t('shell.welcome') }}</strong>
         </div>
 
         <div class="settings-wrap">
@@ -71,8 +70,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
       place-items: center;
       margin-bottom: var(--space-8);
     }
-    .top-area__brand { display: grid; justify-items: center; gap: 8px; text-align: center; }
-    .top-area__brand strong { font-size: 1rem; }
+    .top-area__brand { display: grid; justify-items: center; text-align: center; }
     .settings-wrap { position: absolute; top: 28px; right: var(--space-page); z-index: 10; }
     .settings-button { display: grid; place-items: center; width: 42px; height: 42px; padding: 0; border: 2px solid var(--line-strong); border-radius: 6px; background: var(--surface); color: var(--text); box-shadow: var(--compact-button-shadow); transition: transform var(--motion-press) ease, box-shadow var(--motion-press) ease, background var(--motion-press) ease; }
     .settings-button:hover { background: var(--surface-muted); }

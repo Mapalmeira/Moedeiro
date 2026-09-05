@@ -4,7 +4,6 @@ import { inject, Injectable, signal } from '@angular/core';
 export type AppLanguage = 'pt-BR' | 'en';
 
 const pt = {
-  'auth.subtitle': 'Entre ou crie sua conta.',
   'auth.login.title': 'Login',
   'auth.username': 'Usuário',
   'auth.password': 'Senha',
@@ -38,7 +37,6 @@ const pt = {
   'theme.dark': 'Escuro',
   'theme.useLight': 'Usar tema claro',
   'theme.useDark': 'Usar tema escuro',
-  'shell.welcome': 'Bem-vindo de volta!',
   'shell.settings': 'Configurações',
   'shell.preferences': 'Preferências',
   'shell.security': 'Segurança',
@@ -156,7 +154,6 @@ const pt = {
 export type TranslationKey = keyof typeof pt;
 
 const en: Record<TranslationKey, string> = {
-  'auth.subtitle': 'Sign in or create your account.',
   'auth.login.title': 'Sign in',
   'auth.username': 'Username',
   'auth.password': 'Password',
@@ -190,7 +187,6 @@ const en: Record<TranslationKey, string> = {
   'theme.dark': 'Dark',
   'theme.useLight': 'Use light theme',
   'theme.useDark': 'Use dark theme',
-  'shell.welcome': 'Welcome back!',
   'shell.settings': 'Settings',
   'shell.preferences': 'Preferences',
   'shell.security': 'Security',
