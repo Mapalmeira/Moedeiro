@@ -9,6 +9,7 @@ DateFormat = Literal["DMY", "MDY", "YMD"]
 TimeFormat = Literal["H12", "H24"]
 NumberFormat = Literal["COMMA", "DOT"]
 Theme = Literal["LIGHT", "DARK"]
+Language = Literal["pt-BR", "en"]
 
 
 def _validate_timezone(value: str) -> str:
@@ -24,6 +25,7 @@ Timezone = Annotated[str, Field(min_length=1, max_length=50), AfterValidator(_va
 
 class UserPreferences(BaseModel):
     user_uuid: UUID
+    language: Language | None = None
     date_format: DateFormat | None = None
     time_format: TimeFormat | None = None
     number_format: NumberFormat | None = None

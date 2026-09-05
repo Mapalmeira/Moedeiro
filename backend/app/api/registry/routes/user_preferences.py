@@ -21,6 +21,7 @@ def save_preferences(payload: UserPreferencesPayload, request: Request, user: Au
         preferences = save_user_preferences(
             request.app.state.databases.open_registry,
             user.uuid,
+            payload.language,
             payload.date_format,
             payload.time_format,
             payload.number_format,

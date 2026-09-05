@@ -124,8 +124,8 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 41, 51, NULL)", (uuid4().bytes, self.user_uuid, b"d" * 32))
 
     def test_enforces_user_preference_limits(self) -> None:
-        self.connection.execute("INSERT INTO user_preferences VALUES (?, 'DMY', 'H24', 'COMMA', 'DARK', 'UTC')", (self.user_uuid,))
-        invalid_updates = (("date_format", "INVALID"), ("time_format", "INVALID"), ("number_format", "INVALID"), ("theme", "SYSTEM"), ("timezone", ""), ("timezone", "x" * 51))
+        self.connection.execute("INSERT INTO user_preferences VALUES (?, 'pt-BR', 'DMY', 'H24', 'COMMA', 'DARK', 'UTC')", (self.user_uuid,))
+        invalid_updates = (("language", "pt"), ("date_format", "INVALID"), ("time_format", "INVALID"), ("number_format", "INVALID"), ("theme", "SYSTEM"), ("timezone", ""), ("timezone", "x" * 51))
         for column, value in invalid_updates:
             with self.subTest(column=column):
                 with self.assertRaises(sqlite3.IntegrityError):
@@ -161,7 +161,7 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         recovery_uuid = uuid4().bytes
         self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, NULL, NULL)", (mfa_uuid, self.user_uuid, b"encrypted"))
         self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, 40, NULL)", (recovery_uuid, self.user_uuid, b"c" * 32))
-        self.connection.execute("INSERT INTO user_preferences VALUES (?, NULL, NULL, NULL, 'DARK', 'UTC')", (self.user_uuid,))
+        self.connection.execute("INSERT INTO user_preferences VALUES (?, NULL, NULL, NULL, NULL, 'DARK', 'UTC')", (self.user_uuid,))
 
         self.connection.execute("DELETE FROM user_account WHERE uuid = ?", (self.user_uuid,))
 

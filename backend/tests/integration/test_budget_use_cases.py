@@ -89,7 +89,7 @@ class BudgetUseCasesTest(unittest.TestCase):
         self.assertEqual(len(list_budget_page(self.open_ledger, 1, 200, "name", True)), 1)
 
     def test_create_rejects_more_than_twenty_account_selectors_before_looking_them_up(self) -> None:
-        with self.assertRaisesRegex(ValueError, "cannot select more than 20 accounts"):
+        with self.assertRaisesRegex(ValueError, "cannot select more than 50 accounts"):
             self.create(account_uuids=[uuid4() for _ in range(MAX_BUDGET_ACCOUNTS + 1)])
 
         self.assertEqual(list_budget_page(self.open_ledger, 1, 200, "name", True), [])

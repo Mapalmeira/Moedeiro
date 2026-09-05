@@ -67,6 +67,7 @@ CREATE TABLE recovery_code (
 
 CREATE TABLE user_preferences (
     user_uuid BLOB PRIMARY KEY,
+    language TEXT CHECK (language IS NULL OR language IN ('pt-BR', 'en')),
     date_format TEXT CHECK (date_format IS NULL OR date_format IN ('DMY', 'MDY', 'YMD')),
     time_format TEXT CHECK (time_format IS NULL OR time_format IN ('H12', 'H24')),
     number_format TEXT CHECK (number_format IS NULL OR number_format IN ('COMMA', 'DOT')),

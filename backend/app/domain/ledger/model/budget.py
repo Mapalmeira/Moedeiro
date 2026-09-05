@@ -9,7 +9,7 @@ from app.domain.appearance import Icon, RgbColorCode
 BudgetName = Annotated[str, Field(min_length=1, max_length=50)]
 BudgetDescription = Annotated[str, Field(min_length=1, max_length=300)]
 BudgetAmount = Annotated[int, Field(ge=0)]
-MAX_BUDGET_ACCOUNTS = 20
+MAX_BUDGET_ACCOUNTS = 50
 
 
 class Budget(BaseModel):
