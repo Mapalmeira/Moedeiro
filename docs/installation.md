@@ -187,6 +187,14 @@ Start Uvicorn on the desired host address and port:
 uvicorn --app-dir backend app.main:app --host 127.0.0.1 --port 8000
 ```
 
+## Database migrations
+
+Moedeiro checks the schema version of the registry and ledger databases when it starts. Supported older schemas are migrated automatically.
+
+Before modifying a database, Moedeiro creates a backup of its current state in a `backups` directory alongside the persistent data. This provides a recovery point if a schema migration fails or an upgrade needs to be rolled back.
+
+Databases created by a newer, incompatible version of Moedeiro are rejected during startup.
+
 ## Application settings
 
 Moedeiro provides built-in defaults for its optional settings. Any installation method can override them through the environment when different behavior is required.
@@ -202,5 +210,7 @@ curl --include http://127.0.0.1:8080/health
 ```
 
 The expected response is HTTP `204`.
+
+FastAPI's interactive API reference is available from the running service at `/docs`.
 
 Moedeiro is then ready for the rest of the host networking configuration. See [Reverse proxy](reverse-proxy.md) for an HTTPS deployment through a reverse proxy.
