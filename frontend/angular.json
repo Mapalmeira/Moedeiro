@@ -78,11 +78,16 @@
             }
           },
           "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "runner": "vitest",
+            "tsConfig": "tsconfig.spec.json",
+            "buildTarget": "moedeiro-web:build:development"
+          }
         }
       }
     }
-  },
-  "cli": {
-    "analytics": false
   }
 }

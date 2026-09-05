@@ -6,7 +6,9 @@
     "start": "ng serve",
     "build": "ng build",
     "build:production": "ng build --configuration production",
-    "watch": "ng build --watch --configuration development"
+    "watch": "ng build --watch --configuration development",
+    "test": "ng test --watch=false",
+    "test:watch": "ng test"
   },
   "dependencies": {
     "@angular/common": "22.1.5",
@@ -27,7 +29,9 @@
     "@angular/cli": "22.1.6",
     "@angular/compiler-cli": "22.1.5",
     "typescript": "6.0.3",
-    "@types/qrcode": "1.5.6"
+    "@types/qrcode": "1.5.6",
+    "vitest": "^4.1.11",
+    "jsdom": "^30.0.1"
   },
   "engines": {
     "node": "^22.22.3 || ^24.15.0 || >=26.0.0"
