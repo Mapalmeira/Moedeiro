@@ -1,31 +1,19 @@
 services:
-  backend:
-    build:
-      context: .
-      dockerfile: backend/app/Containerfile
-    image: moedeiro-backend:latest
+  moedeiro:
+    image: mapalmeira/moedeiro:VERSION
+    restart: on-failure
+
+    ports:
+      - "8080:8000"
+
     environment:
-      REGISTRATION_IP_ATTEMPTS_RATE_LIMIT: ${REGISTRATION_IP_ATTEMPTS_RATE_LIMIT:-5/hour}
-      LOGIN_IP_ATTEMPTS_RATE_LIMIT: ${LOGIN_IP_ATTEMPTS_RATE_LIMIT:-5/minute}
-      PASSWORD_RECOVERY_IP_ATTEMPTS_RATE_LIMIT: ${PASSWORD_RECOVERY_IP_ATTEMPTS_RATE_LIMIT:-5/hour}
-      TOTP_SETUP_IP_ATTEMPTS_RATE_LIMIT: ${TOTP_SETUP_IP_ATTEMPTS_RATE_LIMIT:-5/hour}
-      REFRESH_IP_ATTEMPTS_RATE_LIMIT: ${REFRESH_IP_ATTEMPTS_RATE_LIMIT:-10/minute}
-      AUTHENTICATED_USER_OPERATIONS_RATE_LIMIT: ${AUTHENTICATED_USER_OPERATIONS_RATE_LIMIT:-50/minute}
-      SYNC_ROUTE_CONCURRENCY: ${SYNC_ROUTE_CONCURRENCY:-40}
-      CREDENTIAL_OPERATION_CONCURRENCY: ${CREDENTIAL_OPERATION_CONCURRENCY:-8}
-      PASSWORD_HASH_CONCURRENCY: ${PASSWORD_HASH_CONCURRENCY:-2}
-      MAX_PAGE_SIZE: ${MAX_PAGE_SIZE:-200}
-      MAX_QUERY_POINTS: ${MAX_QUERY_POINTS:-500}
-      TRUSTED_PROXY_IP: ${TRUSTED_PROXY_IP:-}
-      ALLOW_INSECURE_HTTP: ${ALLOW_INSECURE_HTTP:-false}
-      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:?TOTP_ENCRYPTION_KEY must be defined}
+      TOTP_ENCRYPTION_KEY: "${TOTP_ENCRYPTION_KEY:?TOTP_ENCRYPTION_KEY must be defined}"
+
     volumes:
-      - registry_data:/data/registry
-      - ledger_data:/data/ledgers
+      - type: bind
+        source: /srv/moedeiro/registry
+        target: /data/registry
 
-volumes:
-  # Registry database sqlite file
-  registry_data:
-
-  # Directory containing the individual ledger sqlite databases.
-  ledger_data:
+      - type: bind
+        source: /srv/moedeiro/ledgers
+        target: /data/ledgers
