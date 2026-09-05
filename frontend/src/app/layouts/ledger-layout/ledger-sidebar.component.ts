@@ -1,0 +1,183 @@
+import { ChangeDetectionStrategy, Component, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { RouterLink, RouterLinkActive } from '@angular/router';
+import type { Ledger } from '../../core/ledgers/ledger.models';
+import { I18nService } from '../../core/i18n/i18n.service';
+import { BrandLogoComponent } from '../../shared/brand/brand-logo.component';
+import { bestContrastingForeground } from '../../shared/ledger/ledger-appearance';
+import { LedgerIconComponent } from '../../shared/ledger/ledger-icon.component';
+import { AccountMenuComponent } from '../../shared/ui/account-menu.component';
+import { IconComponent } from '../../shared/ui/icon.component';
+import { LEDGER_SECTION_ITEMS } from './ledger-sections';
+
+@Component({
+  selector: 'app-ledger-sidebar',
+  standalone: true,
+  imports: [RouterLink, RouterLinkActive, BrandLogoComponent, LedgerIconComponent, AccountMenuComponent, IconComponent],
+  template: `
+    <div class="ledger-sidebar__inner">
+      <header class="ledger-sidebar__brand-row">
+        <app-brand-logo variant="sidebar" />
+      </header>
+
+      <nav class="ledger-nav" [attr.aria-label]="i18n.t('ledgerShell.navigation')">
+        @for (item of navItems; track item.key) {
+          <a
+            class="ledger-nav__item"
+            [routerLink]="['/ledgers', ledgerUuid(), item.key]"
+            routerLinkActive="ledger-nav__item--active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            ariaCurrentWhenActive="page"
+            (click)="sectionSelected.emit()">
+            <span class="ledger-nav__icon"
+              [class.ledger-nav__icon--green]="item.tone === 'green'"
+              [class.ledger-nav__icon--yellow]="item.tone === 'yellow'"
+              [class.ledger-nav__icon--blue]="item.tone === 'blue'"
+              [class.ledger-nav__icon--neutral]="item.tone === 'neutral'">
+              <app-icon [name]="item.icon" [size]="18" />
+            </span>
+            <span class="ledger-nav__label">{{ i18n.t(item.labelKey) }}</span>
+          </a>
+        }
+      </nav>
+
+      <div class="ledger-sidebar__spacer"></div>
+
+      <div class="ledger-sidebar__footer">
+        @if (ledger(); as currentLedger) {
+          <div class="ledger-switcher" (click)="$event.stopPropagation()">
+            <button class="ledger-switcher__trigger ui-select-trigger ui-action-press" type="button"
+              (click)="toggleLedgerMenu($event)" [attr.aria-expanded]="ledgerMenuOpen()" [attr.title]="currentLedger.name">
+              <span class="ledger-switcher__icon" [style.background]="currentLedger.color_code" [style.color]="ledgerForeground()">
+                <app-ledger-icon [icon]="currentLedger.icon" [size]="20" />
+              </span>
+              <strong class="ledger-switcher__name">{{ currentLedger.name }}</strong>
+              <app-icon class="ledger-switcher__chevron ui-select-chevron" name="chevron-down" [size]="16" />
+            </button>
+
+            @if (ledgerMenuOpen()) {
+              <div class="ledger-switcher__dropdown" role="menu">
+                <button type="button" role="menuitem" (click)="editCurrentLedger()">
+                  <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--edit"><app-icon name="pencil" [size]="17" /></span>
+                  <span>{{ i18n.t('ledgers.edit') }}</span>
+                </button>
+                <button type="button" role="menuitem" (click)="leaveCurrentLedger()">
+                  <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--leave"><app-icon name="logout" [size]="17" /></span>
+                  <span>{{ i18n.t('ledgerShell.leave') }}</span>
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        <app-account-menu
+          [userName]="userName()"
+          [loggingOut]="loggingOut()"
+          placement="up"
+          [fullWidth]="true"
+          (preferences)="preferences.emit()"
+          (security)="security.emit()"
+          (logout)="logout.emit()" />
+      </div>
+    </div>
+  `,
+  styles: `
+    :host { display: block; min-height: 100%; }
+    .ledger-sidebar__inner { min-height: 100dvh; display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-5) var(--space-4); }
+    .ledger-sidebar__brand-row { min-height: 50px; width: 100%; }
+    .ledger-sidebar__brand-row app-brand-logo { width: 100%; height: 50px; }
+    .ledger-nav { display: grid; gap: var(--space-2); }
+    .ledger-nav__item {
+      min-height: 52px; display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: var(--space-3);
+      padding: var(--space-2) var(--space-3); border: 2px solid transparent; border-radius: 6px; background: transparent; color: var(--text); box-shadow: var(--selection-shadow-transparent);
+      text-align: left; text-decoration: none; font-size: var(--control-font-size); font-weight: var(--control-font-weight); line-height: var(--control-line-height); transition: box-shadow var(--motion-selection) ease, background var(--motion-selection) ease, border-color var(--motion-selection) ease;
+    }
+    .ledger-nav__item:not(.ledger-nav__item--active):hover { background: var(--surface-muted); }
+    .ledger-nav__item--active { border-color: var(--line-strong); background: var(--green-soft); color: var(--text); box-shadow: var(--selection-shadow); }
+    .ledger-nav__icon { width: var(--control-icon-size); height: var(--control-icon-size); display: grid; place-items: center; border: 2px solid var(--line-strong); border-radius: 5px; box-shadow: var(--icon-shadow); }
+    .ledger-nav__icon--green { background: var(--green); color: #07130c; }
+    .ledger-nav__icon--yellow { background: var(--yellow); color: #171200; }
+    .ledger-nav__icon--blue { background: var(--blue); color: #ffffff; }
+    .ledger-nav__icon--neutral { background: var(--surface-muted); color: var(--text); }
+    .ledger-nav__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ledger-sidebar__spacer { flex: 1 1 auto; }
+    .ledger-sidebar__footer { display: grid; gap: var(--space-3); }
+    .ledger-switcher { position: relative; min-width: 0; }
+    .ledger-switcher__trigger {
+      width: 100%; min-width: 0; min-height: var(--sidebar-control-height); display: grid;
+      grid-template-columns: var(--control-icon-size) minmax(0, 1fr) 16px; align-items: center; gap: var(--space-3);
+      padding: var(--space-2) var(--space-3); text-align: left;
+    }
+    .ledger-switcher__icon {
+      width: var(--control-icon-size); height: var(--control-icon-size); display: grid; place-items: center; overflow: hidden;
+      border: 2px solid var(--line-strong); border-radius: 5px; box-shadow: var(--icon-shadow);
+    }
+    .ledger-switcher__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; }
+    .ledger-switcher__chevron { justify-self: end; }
+    .ledger-switcher__dropdown {
+      position: absolute; z-index: 90; left: 0; right: 0; bottom: calc(100% + var(--space-2));
+      padding: var(--space-2); border: 2px solid var(--line-strong); border-radius: 8px;
+      background: var(--surface); box-shadow: var(--compact-button-shadow);
+    }
+    .ledger-switcher__dropdown button {
+      width: 100%; min-height: var(--control-height); display: grid; grid-template-columns: var(--control-icon-size) minmax(0, 1fr);
+      align-items: center; gap: var(--space-3); padding: var(--space-2); border: 0; border-radius: 5px;
+      background: transparent; color: var(--text); text-align: left; font-size: var(--control-font-size);
+      font-weight: var(--control-font-weight); line-height: var(--control-line-height);
+    }
+    .ledger-switcher__dropdown button:hover { background: var(--surface-muted); }
+    .ledger-switcher__dropdown button + button { margin-top: var(--space-1); }
+    .ledger-switcher__menu-icon {
+      width: var(--control-icon-size); height: var(--control-icon-size); display: grid; place-items: center;
+      border: 2px solid var(--line-strong); border-radius: 5px; box-shadow: var(--icon-shadow);
+    }
+    .ledger-switcher__menu-icon--edit { background: var(--blue); color: #ffffff; }
+    .ledger-switcher__menu-icon--leave { background: var(--yellow); color: #171200; }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class LedgerSidebarComponent {
+  readonly i18n = inject(I18nService);
+
+  readonly ledgerUuid = input.required<string>();
+  readonly ledger = input<Ledger | null>(null);
+  readonly userName = input<string | null>(null);
+  readonly loggingOut = input(false);
+  readonly sectionSelected = output<void>();
+  readonly editLedger = output<void>();
+  readonly leaveLedger = output<void>();
+  readonly preferences = output<void>();
+  readonly security = output<void>();
+  readonly logout = output<void>();
+
+  readonly navItems = LEDGER_SECTION_ITEMS;
+  readonly ledgerMenuOpen = signal(false);
+  readonly ledgerForeground = computed(() => {
+    const currentLedger = this.ledger();
+    return currentLedger ? bestContrastingForeground(currentLedger.color_code).foreground : 'var(--text)';
+  });
+
+  @HostListener('document:click')
+  closeLedgerMenu(): void {
+    this.ledgerMenuOpen.set(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.ledgerMenuOpen.set(false);
+  }
+
+  toggleLedgerMenu(event: Event): void {
+    event.stopPropagation();
+    this.ledgerMenuOpen.update((value) => !value);
+  }
+
+  editCurrentLedger(): void {
+    this.ledgerMenuOpen.set(false);
+    this.editLedger.emit();
+  }
+
+  leaveCurrentLedger(): void {
+    this.ledgerMenuOpen.set(false);
+    this.leaveLedger.emit();
+  }
+}

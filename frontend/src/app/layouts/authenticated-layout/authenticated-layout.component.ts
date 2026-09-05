@@ -1,8 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { filter, finalize } from 'rxjs';
-import { ApiErrorService } from '../../core/api/api-error';
-import { AuthService } from '../../core/auth/auth.service';
+import { filter } from 'rxjs';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { PreferencesService } from '../../core/preferences/preferences.service';
 import { ThemeService } from '../../core/theme/theme.service';
@@ -11,6 +10,7 @@ import { SecurityDialogComponent } from '../../features/security/security-dialog
 import { BrandLogoComponent } from '../../shared/brand/brand-logo.component';
 import { AccountMenuComponent } from '../../shared/ui/account-menu.component';
 import { FormMessageComponent } from '../../shared/ui/form-message.component';
+import { AuthenticatedShellService } from './authenticated-shell.service';
 
 @Component({
   selector: 'app-authenticated-layout',
@@ -26,21 +26,21 @@ import { FormMessageComponent } from '../../shared/ui/form-message.component';
 
           <div class="account-wrap">
             <app-account-menu
-              [userName]="currentUserName()"
-              [loggingOut]="loggingOut()"
+              [userName]="shell.currentUserName()"
+              [loggingOut]="shell.loggingOut()"
               [fullWidth]="true"
-              (preferences)="preferencesOpen.set(true)"
-              (security)="securityOpen.set(true)"
-              (logout)="logout()" />
+              (preferences)="shell.openPreferences()"
+              (security)="shell.openSecurity()"
+              (logout)="shell.logout()" />
           </div>
         </header>
       }
 
       <section class="content-area" [class.content-area--ledger]="isLedgerRoute()"><router-outlet /></section>
 
-      @if (logoutError()) { <div class="floating-message"><app-form-message [text]="logoutError()!" /></div> }
-      <app-preferences-dialog [open]="preferencesOpen()" (close)="preferencesOpen.set(false)" />
-      <app-security-dialog [open]="securityOpen()" (close)="securityOpen.set(false)" />
+      @if (shell.logoutError()) { <div class="floating-message"><app-form-message [text]="shell.logoutError()!" /></div> }
+      <app-preferences-dialog [open]="shell.preferencesOpen()" (close)="shell.closePreferences()" />
+      <app-security-dialog [open]="shell.securityOpen()" (close)="shell.closeSecurity()" />
     </main>
   `,
   styles: `
@@ -79,19 +79,21 @@ import { FormMessageComponent } from '../../shared/ui/form-message.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AuthenticatedLayoutComponent {
-  private readonly auth = inject(AuthService);
   private readonly preferences = inject(PreferencesService);
-  private readonly apiErrors = inject(ApiErrorService);
   private readonly theme = inject(ThemeService);
   private readonly router = inject(Router);
+  readonly shell = inject(AuthenticatedShellService);
   readonly i18n = inject(I18nService);
 
-  readonly preferencesOpen = signal(false);
-  readonly securityOpen = signal(false);
-  readonly loggingOut = signal(false);
-  readonly logoutError = signal<string | null>(null);
-  readonly isLedgerRoute = signal(this.router.url.startsWith('/ledgers/'));
-  readonly currentUserName = this.auth.currentUserName.asReadonly();
+  private readonly navigationEnd = toSignal(
+    this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)),
+    { initialValue: null },
+  );
+
+  readonly isLedgerRoute = computed(() => {
+    this.navigationEnd();
+    return this.router.url.startsWith('/ledgers/');
+  });
 
   constructor() {
     this.preferences.getOrInitialize().subscribe({
@@ -101,19 +103,5 @@ export class AuthenticatedLayoutComponent {
       },
     });
 
-    this.router.events.pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd)).subscribe((event) => {
-      this.isLedgerRoute.set(event.urlAfterRedirects.startsWith('/ledgers/'));
-    });
-
-  }
-
-  logout(): void {
-    if (this.loggingOut()) return;
-    this.loggingOut.set(true);
-    this.logoutError.set(null);
-    this.auth.logout().pipe(finalize(() => this.loggingOut.set(false))).subscribe({
-      next: () => void this.auth.finishLogout(),
-      error: (error) => this.logoutError.set(this.apiErrors.message(error, 'errors.logoutFailed')),
-    });
   }
 }

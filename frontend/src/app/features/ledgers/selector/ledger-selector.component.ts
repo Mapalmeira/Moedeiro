@@ -1,19 +1,19 @@
 import { ChangeDetectionStrategy, Component, HostListener, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
-import { ApiErrorService } from '../../core/api/api-error';
-import { I18nService } from '../../core/i18n/i18n.service';
-import { Ledger } from '../../core/ledgers/ledger.models';
-import { LedgerService } from '../../core/ledgers/ledger.service';
-import { bestContrastingForeground } from '../../shared/ledger/ledger-appearance';
-import { LedgerIconComponent } from '../../shared/ledger/ledger-icon.component';
-import { FormMessageComponent } from '../../shared/ui/form-message.component';
-import { IconComponent } from '../../shared/ui/icon.component';
-import { LedgerDeleteDialogComponent } from './ledger-delete-dialog.component';
-import { LedgerEditorDialogComponent } from './ledger-editor-dialog.component';
+import { ApiErrorService } from '../../../core/api/api-error';
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { Ledger } from '../../../core/ledgers/ledger.models';
+import { LedgerService } from '../../../core/ledgers/ledger.service';
+import { bestContrastingForeground } from '../../../shared/ledger/ledger-appearance';
+import { LedgerIconComponent } from '../../../shared/ledger/ledger-icon.component';
+import { FormMessageComponent } from '../../../shared/ui/form-message.component';
+import { IconComponent } from '../../../shared/ui/icon.component';
+import { LedgerDeleteDialogComponent } from '../ledger-delete-dialog.component';
+import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
 
 @Component({
-  selector: 'app-ledger-home',
+  selector: 'app-ledger-selector',
   standalone: true,
   imports: [FormMessageComponent, IconComponent, LedgerIconComponent, LedgerEditorDialogComponent, LedgerDeleteDialogComponent],
   template: `
@@ -141,7 +141,7 @@ import { LedgerEditorDialogComponent } from './ledger-editor-dialog.component';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LedgerHomeComponent {
+export class LedgerSelectorComponent {
   private readonly ledgers = inject(LedgerService);
   private readonly apiErrors = inject(ApiErrorService);
   private readonly router = inject(Router);

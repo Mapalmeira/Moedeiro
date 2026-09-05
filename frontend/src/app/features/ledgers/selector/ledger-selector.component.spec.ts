@@ -3,11 +3,11 @@ import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiErrorService } from '../../core/api/api-error';
-import { I18nService } from '../../core/i18n/i18n.service';
-import { Ledger } from '../../core/ledgers/ledger.models';
-import { LedgerService } from '../../core/ledgers/ledger.service';
-import { LedgerHomeComponent } from './ledger-home.component';
+import { ApiErrorService } from '../../../core/api/api-error';
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { Ledger } from '../../../core/ledgers/ledger.models';
+import { LedgerService } from '../../../core/ledgers/ledger.service';
+import { LedgerSelectorComponent } from './ledger-selector.component';
 
 const ledger: Ledger = {
   uuid: '11111111-1111-1111-1111-111111111111',
@@ -17,7 +17,7 @@ const ledger: Ledger = {
   last_accessed_at: 1,
 };
 
-describe('LedgerHomeComponent', () => {
+describe('LedgerSelectorComponent', () => {
   const ledgerState = signal<Ledger[]>([ledger]);
   const ledgerService = {
     ledgers: ledgerState.asReadonly(),
@@ -42,8 +42,8 @@ describe('LedgerHomeComponent', () => {
     });
   });
 
-  function createComponent(): LedgerHomeComponent {
-    return TestBed.runInInjectionContext(() => new LedgerHomeComponent());
+  function createComponent(): LedgerSelectorComponent {
+    return TestBed.runInInjectionContext(() => new LedgerSelectorComponent());
   }
 
   it('navigates to the English home section for the selected ledger', async () => {

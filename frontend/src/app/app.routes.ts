@@ -1,5 +1,8 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/auth/auth.guard';
+import { LedgerContextService } from './core/ledgers/ledger-context.service';
+import { AuthenticatedShellService } from './layouts/authenticated-layout/authenticated-shell.service';
+import { LEDGER_LAYOUT_ROUTES } from './layouts/ledger-layout/ledger-layout.routes';
 
 export const routes: Routes = [
   {
@@ -11,19 +14,18 @@ export const routes: Routes = [
   {
     path: '',
     canActivate: [authGuard],
+    providers: [AuthenticatedShellService],
     loadComponent: () => import('./layouts/authenticated-layout/authenticated-layout.component').then((m) => m.AuthenticatedLayoutComponent),
     children: [
       {
         path: 'home',
-        loadComponent: () => import('./features/ledgers/ledger-home.component').then((m) => m.LedgerHomeComponent),
-      },
-      {
-        path: 'ledgers/:ledgerUuid/:section',
-        loadComponent: () => import('./features/ledgers/ledger-page.component').then((m) => m.LedgerPageComponent),
+        loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent),
       },
       {
         path: 'ledgers/:ledgerUuid',
-        loadComponent: () => import('./features/ledgers/ledger-page.component').then((m) => m.LedgerPageComponent),
+        providers: [LedgerContextService],
+        loadComponent: () => import('./layouts/ledger-layout/ledger-layout.component').then((m) => m.LedgerLayoutComponent),
+        children: LEDGER_LAYOUT_ROUTES,
       },
     ],
   },
