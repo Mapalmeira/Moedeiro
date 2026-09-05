@@ -27,7 +27,7 @@ COPY backend/app/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY backend /app/backend
-COPY --chmod=755 backend/bin/moedeiro /usr/local/bin/moedeiro
+COPY --chmod=755 backend/bin/moedeiro-cli /usr/local/bin/moedeiro-cli
 COPY --from=frontend-build /app/frontend/dist/moedeiro-web/browser /app/frontend
 
 ENV PYTHONPATH=/app/backend
