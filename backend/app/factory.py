@@ -31,7 +31,7 @@ from app.infrastructure.security.rate_limiter import RateLimiter
 from app.settings import Settings
 
 
-def create_app(settings: Settings | None = None, password_hasher: PasswordHasher | None = None, rate_limiter: RateLimiter | None = None, totp_authenticator: TotpAuthenticator | None = None, credential_operation_executor: CredentialOperationExecutor | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, password_hasher: PasswordHasher | None = None, rate_limiter: RateLimiter | None = None, totp_authenticator: TotpAuthenticator | None = None, credential_operation_executor: CredentialOperationExecutor | None = None, *, mount_frontend: bool = True) -> FastAPI:
     selected_settings = Settings.from_environment() if settings is None else settings
     databases = SqliteDatabases(
         selected_settings.registry_db_path,
@@ -66,7 +66,8 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
     application.include_router(registration_router)
     application.include_router(totp_router)
     application.include_router(user_preferences_router)
-    _mount_frontend(application)
+    if mount_frontend:
+        _mount_frontend(application)
     return application
 
 

@@ -30,7 +30,7 @@ class ApplicationFactoryTest(unittest.TestCase):
             rate_limiter = FakeRateLimiter()
             totp_authenticator = FakeTotpAuthenticator()
             credential_operation_executor = FakeCredentialOperationExecutor()
-            application = create_app(settings, password_hasher, rate_limiter, totp_authenticator, credential_operation_executor)
+            application = create_app(settings, password_hasher, rate_limiter, totp_authenticator, credential_operation_executor, mount_frontend=False)
 
             self.assertIs(application.state.settings, settings)
             self.assertIsInstance(application.state.databases, SqliteDatabases)
@@ -57,7 +57,7 @@ class ApplicationFactoryTest(unittest.TestCase):
                 ledger_dbs_dir=directory / "ledgers",
                 sync_route_concurrency=12,
             )
-            application = create_app(settings, totp_authenticator=FakeTotpAuthenticator(), credential_operation_executor=FakeCredentialOperationExecutor())
+            application = create_app(settings, totp_authenticator=FakeTotpAuthenticator(), credential_operation_executor=FakeCredentialOperationExecutor(), mount_frontend=False)
 
             async def assert_limit() -> None:
                 from anyio.to_thread import current_default_thread_limiter
@@ -66,6 +66,26 @@ class ApplicationFactoryTest(unittest.TestCase):
                     self.assertEqual(current_default_thread_limiter().total_tokens, 12)
 
             asyncio.run(assert_limit())
+
+    def test_create_app_can_skip_frontend_mounting(self) -> None:
+        with TemporaryDirectory() as temporary_directory:
+            directory = Path(temporary_directory)
+            settings = Settings(
+                registry_schema_path=REGISTRY_SCHEMA_PATH,
+                ledger_schema_path=LEDGER_SCHEMA_PATH,
+                registry_db_path=directory / "registry/registry.sqlite",
+                ledger_dbs_dir=directory / "ledgers",
+            )
+
+            with patch("app.factory._mount_frontend") as mount_frontend:
+                create_app(
+                    settings,
+                    totp_authenticator=FakeTotpAuthenticator(),
+                    credential_operation_executor=FakeCredentialOperationExecutor(),
+                    mount_frontend=False,
+                )
+
+            mount_frontend.assert_not_called()
 
     def test_serves_the_frontend_and_falls_back_to_its_index_for_client_routes(self) -> None:
         with TemporaryDirectory() as temporary_directory:
@@ -91,13 +111,14 @@ class ApplicationFactoryTest(unittest.TestCase):
                     settings,
                     totp_authenticator=FakeTotpAuthenticator(),
                     credential_operation_executor=FakeCredentialOperationExecutor(),
+                    mount_frontend=True,
                 )
 
             with TestClient(application) as client:
                 index_response = client.get("/")
                 javascript_response = client.get("/main.js")
                 client_route_response = client.get(
-                    "/cadastro",
+                    "/home",
                     headers={"Accept": "text/html"},
                 )
 

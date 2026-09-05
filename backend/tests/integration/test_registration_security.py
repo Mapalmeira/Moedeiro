@@ -30,7 +30,7 @@ class RegistrationSecurityTest(unittest.TestCase):
             ledger_dbs_dir=directory / "ledgers",
             registration_ip_attempts_rate_limit="2/hour",
         )
-        self.application = create_app(settings, totp_authenticator=FakeTotpAuthenticator(), credential_operation_executor=FakeCredentialOperationExecutor())
+        self.application = create_app(settings, totp_authenticator=FakeTotpAuthenticator(), credential_operation_executor=FakeCredentialOperationExecutor(), mount_frontend=False)
 
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()

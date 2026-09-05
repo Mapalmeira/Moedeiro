@@ -35,7 +35,7 @@ class RegistrationRoutesTest(unittest.TestCase):
         )
         self.password_hasher = FakePasswordHasher()
         self.rate_limiter = FakeRateLimiter()
-        self.application = create_app(settings, self.password_hasher, self.rate_limiter, FakeTotpAuthenticator(), FakeCredentialOperationExecutor())
+        self.application = create_app(settings, self.password_hasher, self.rate_limiter, FakeTotpAuthenticator(), FakeCredentialOperationExecutor(), mount_frontend=False)
         self.request = Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": []})
 
     def tearDown(self) -> None:

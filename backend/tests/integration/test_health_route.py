@@ -28,6 +28,7 @@ class HealthRouteTest(unittest.TestCase):
                 FakeRateLimiter(),
                 FakeTotpAuthenticator(),
                 FakeCredentialOperationExecutor(),
+                mount_frontend=False,
             )
 
             self.assertIsNone(health_check())

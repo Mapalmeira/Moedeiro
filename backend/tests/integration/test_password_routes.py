@@ -38,7 +38,7 @@ class PasswordRoutesTest(unittest.TestCase):
         self.password_hasher = FakePasswordHasher()
         self.rate_limiter = FakeRateLimiter()
         self.totp_authenticator = FakeTotpAuthenticator()
-        self.application = create_app(settings, self.password_hasher, self.rate_limiter, self.totp_authenticator, FakeCredentialOperationExecutor())
+        self.application = create_app(settings, self.password_hasher, self.rate_limiter, self.totp_authenticator, FakeCredentialOperationExecutor(), mount_frontend=False)
         with self.application.state.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", self.password_hasher.hash("current password"), 10)
             unit_of_work.commit()

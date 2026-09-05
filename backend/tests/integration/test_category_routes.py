@@ -36,6 +36,7 @@ class CategoryRoutesTest(unittest.TestCase):
             FakeRateLimiter(),
             FakeTotpAuthenticator(),
             FakeCredentialOperationExecutor(),
+            mount_frontend=False,
         )
         with self.application.state.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 10)
