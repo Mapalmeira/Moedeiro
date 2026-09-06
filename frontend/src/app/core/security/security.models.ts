@@ -1,7 +1,9 @@
-export type TotpStatus = 'unknown' | 'disabled' | 'enabled';
+export type TotpStatus = 'unknown' | 'ENABLED' | 'DISABLED' | 'PENDING';
 
-export interface TotpStatusResponse {
-  enabled: boolean;
+export interface TotpResponse {
+  state: Exclude<TotpStatus, 'unknown'>;
+  provisioning_uri: string | null;
+  expires_at: number | null;
 }
 
 export interface ChangePasswordRequest {
@@ -12,11 +14,6 @@ export interface ChangePasswordRequest {
 
 export interface StartTotpSetupRequest {
   current_password: string;
-}
-
-export interface StartTotpSetupResponse {
-  provisioning_uri: string;
-  setup_expires_at: number;
 }
 
 export interface ConfirmTotpRequest {

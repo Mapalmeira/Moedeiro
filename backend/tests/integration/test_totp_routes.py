@@ -4,11 +4,11 @@ from tempfile import TemporaryDirectory
 import time
 import unittest
 
-from fastapi import HTTPException, Request
+from fastapi import HTTPException, Request, Response
 from fastapi.testclient import TestClient
 
 from app.api.dependencies.authentication import require_authenticated_user
-from app.api.registry.routes.totp import confirm_setup, get_totp_status, remove_totp, start_setup
+from app.api.registry.routes.totp import confirm_setup, get_status, remove_totp, start_setup
 from app.api.registry.schema.totp import ConfirmTotpRequest, DisableTotpRequest, StartTotpSetupRequest
 from app.application.registry.exceptions import TotpRequiredError
 from app.application.registry.use_cases.authentication import login
@@ -56,15 +56,22 @@ class TotpRoutesTest(unittest.TestCase):
         request = self.request()
         user = require_authenticated_user(request)
 
-        self.assertFalse(get_totp_status(request, user).enabled)
+        self.assertEqual(get_status(Response(), request, user).state, "DISABLED")
         setup = asyncio.run(start_setup(StartTotpSetupRequest(current_password="current password"), request, user))
-        pending_status = get_totp_status(request, user)
-        self.assertFalse(pending_status.enabled)
-        self.assertGreaterEqual(setup.setup_expires_at, int(time.time()) + 599)
-        self.assertLessEqual(setup.setup_expires_at, int(time.time()) + 600)
+        response = Response()
+        pending_status = get_status(response, request, user)
+        self.assertEqual(pending_status.state, "PENDING")
+        self.assertEqual(pending_status.provisioning_uri, setup.provisioning_uri)
+        self.assertEqual(pending_status.expires_at, setup.expires_at)
+        self.assertEqual(response.headers["Cache-Control"], "no-store")
+        assert setup.expires_at is not None
+        self.assertGreaterEqual(setup.expires_at, int(time.time()) + 599)
+        self.assertLessEqual(setup.expires_at, int(time.time()) + 600)
         confirm_setup(ConfirmTotpRequest(code="123456"), request, user)
-        enabled_status = get_totp_status(request, user)
-        self.assertTrue(enabled_status.enabled)
+        enabled_status = get_status(Response(), request, user)
+        self.assertEqual(enabled_status.state, "ENABLED")
+        self.assertIsNone(enabled_status.provisioning_uri)
+        self.assertIsNone(enabled_status.expires_at)
 
     def test_get_status_route_is_exposed_and_requires_authentication(self) -> None:
         operation = self.application.openapi()["paths"]["/api/totp"]["get"]

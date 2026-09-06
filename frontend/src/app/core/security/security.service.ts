@@ -7,9 +7,8 @@ import {
   ConfirmTotpRequest,
   DisableTotpRequest,
   StartTotpSetupRequest,
-  StartTotpSetupResponse,
   TotpStatus,
-  TotpStatusResponse,
+  TotpResponse,
 } from './security.models';
 
 @Injectable({ providedIn: 'root' })
@@ -22,15 +21,15 @@ export class SecurityService {
     return this.http.post<void>(API_ROUTES.password.change, payload, { withCredentials: true });
   }
 
-  getTotpStatus(): Observable<TotpStatusResponse> {
+  getTotpStatus(): Observable<TotpResponse> {
     this.totpStatus.set('unknown');
-    return this.http.get<TotpStatusResponse>(API_ROUTES.totp.root, { withCredentials: true }).pipe(
-      tap(({ enabled }) => this.totpStatus.set(enabled ? 'enabled' : 'disabled')),
+    return this.http.get<TotpResponse>(API_ROUTES.totp.root, { withCredentials: true }).pipe(
+      tap(({ state }) => this.totpStatus.set(state)),
     );
   }
 
-  startTotpSetup(payload: StartTotpSetupRequest): Observable<StartTotpSetupResponse> {
-    return this.http.post<StartTotpSetupResponse>(API_ROUTES.totp.setup, payload, { withCredentials: true });
+  startTotpSetup(payload: StartTotpSetupRequest): Observable<TotpResponse> {
+    return this.http.post<TotpResponse>(API_ROUTES.totp.setup, payload, { withCredentials: true });
   }
 
   confirmTotp(payload: ConfirmTotpRequest): Observable<void> {
@@ -46,11 +45,11 @@ export class SecurityService {
   }
 
   markTotpEnabled(): void {
-    this.totpStatus.set('enabled');
+    this.totpStatus.set('ENABLED');
   }
 
   markTotpDisabled(): void {
-    this.totpStatus.set('disabled');
+    this.totpStatus.set('DISABLED');
   }
 
   resetSessionState(): void {

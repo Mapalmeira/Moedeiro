@@ -7,7 +7,7 @@ from app.application.registry.exceptions import InvalidCurrentPasswordError, Inv
 from app.application.registry.use_cases.authentication import login
 from app.application.registry.use_cases.mfa import disable_mfa
 from app.application.registry.use_cases.password import change_password
-from app.application.registry.use_cases.totp import confirm_totp_setup, disable_totp, is_totp_enabled, start_totp_setup
+from app.application.registry.use_cases.totp import confirm_totp_setup, disable_totp, get_totp_status, start_totp_setup
 from app.domain.registry.model.mfa_method import TOTP_SETUP_TTL_SECONDS
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.repository.mfa_method import SqliteMfaMethodRepository
@@ -39,14 +39,17 @@ class TotpUseCasesTest(unittest.TestCase):
         start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
         confirm_totp_setup(self.open_registry, self.totp_authenticator, self.user, "123456", 20)
 
+    def is_totp_enabled(self) -> bool:
+        return get_totp_status(self.open_registry, self.totp_authenticator, self.user, 20).state == "ENABLED"
+
     def test_totp_status_is_false_without_a_confirmed_method_and_true_after_confirmation(self) -> None:
-        self.assertFalse(is_totp_enabled(self.open_registry, self.user.uuid))
+        self.assertFalse(self.is_totp_enabled())
 
         start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
-        self.assertFalse(is_totp_enabled(self.open_registry, self.user.uuid))
+        self.assertFalse(self.is_totp_enabled())
 
         confirm_totp_setup(self.open_registry, self.totp_authenticator, self.user, "123456", 20)
-        self.assertTrue(is_totp_enabled(self.open_registry, self.user.uuid))
+        self.assertTrue(self.is_totp_enabled())
 
     def test_enabling_totp_persists_the_encrypted_secret_without_creating_recovery_codes(self) -> None:
         self.enable()
@@ -115,14 +118,14 @@ class TotpUseCasesTest(unittest.TestCase):
     def test_pending_setup_can_be_confirmed_just_before_expiration(self) -> None:
         start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
         confirm_totp_setup(self.open_registry, self.totp_authenticator, self.user, "123456", 20 + TOTP_SETUP_TTL_SECONDS - 1)
-        self.assertTrue(is_totp_enabled(self.open_registry, self.user.uuid))
+        self.assertTrue(self.is_totp_enabled())
 
     def test_setup_persists_the_pending_expiration(self) -> None:
-        _, method = start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
+        status = start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
 
-        self.assertEqual(method.expires_unconfirmed_at, 20 + TOTP_SETUP_TTL_SECONDS)
+        self.assertEqual(status.expires_at, 20 + TOTP_SETUP_TTL_SECONDS)
         with self.open_registry() as unit_of_work:
-            self.assertEqual(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid), method)
+            self.assertEqual(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid).expires_unconfirmed_at, status.expires_at)
 
     def test_expired_setup_is_rejected_without_decrypting_or_verifying_the_secret(self) -> None:
         for elapsed in (TOTP_SETUP_TTL_SECONDS, TOTP_SETUP_TTL_SECONDS + 1):
@@ -140,13 +143,13 @@ class TotpUseCasesTest(unittest.TestCase):
         restarted_at = 20 + TOTP_SETUP_TTL_SECONDS
         start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", restarted_at)
         confirm_totp_setup(self.open_registry, self.totp_authenticator, self.user, "123456", restarted_at + 1)
-        self.assertTrue(is_totp_enabled(self.open_registry, self.user.uuid))
+        self.assertTrue(self.is_totp_enabled())
 
     def test_confirmed_setup_does_not_expire(self) -> None:
         self.enable()
         with self.assertRaises(TotpAlreadyEnabledError):
             confirm_totp_setup(self.open_registry, self.totp_authenticator, self.user, "123456", 20 + TOTP_SETUP_TTL_SECONDS)
-        self.assertTrue(is_totp_enabled(self.open_registry, self.user.uuid))
+        self.assertTrue(self.is_totp_enabled())
 
     def test_confirmation_before_creation_is_rejected_without_deleting_setup(self) -> None:
         start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
