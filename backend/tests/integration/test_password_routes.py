@@ -65,7 +65,7 @@ class PasswordRoutesTest(unittest.TestCase):
 
     def enable_totp(self) -> None:
         with self.application.state.databases.open_registry() as unit_of_work:
-            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 10)
+            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 610, 10)
             unit_of_work.commit()
 
     def test_change_requires_an_authenticated_short_session(self) -> None:

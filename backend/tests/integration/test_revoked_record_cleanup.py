@@ -29,8 +29,8 @@ class InactiveRecordCleanupTest(unittest.TestCase):
         with self.open_registry() as unit_of_work:
             old_user = unit_of_work.user_repository.create("Old", "hash", 1)
             recent_user = unit_of_work.user_repository.create("Recent", "hash", 1)
-            old = unit_of_work.mfa_method_repository.create(old_user.uuid, "TOTP", b"old", cutoff - TOTP_SETUP_TTL_SECONDS)
-            recent = unit_of_work.mfa_method_repository.create(recent_user.uuid, "TOTP", b"recent", cutoff - TOTP_SETUP_TTL_SECONDS + 1)
+            old = unit_of_work.mfa_method_repository.create(old_user.uuid, "TOTP", b"old", 1, cutoff)
+            recent = unit_of_work.mfa_method_repository.create(recent_user.uuid, "TOTP", b"recent", 1, cutoff + 1)
             unit_of_work.commit()
         self.assertEqual(remove_inactive_records(self.open_registry, timestamp, 30), 1)
         with self.open_registry() as unit_of_work:
@@ -87,8 +87,8 @@ class InactiveRecordCleanupTest(unittest.TestCase):
             expired_session = unit_of_work.auth_session_repository.create(user.uuid, b"s" * 32, 1, cutoff, 1)
             inactive_session = unit_of_work.auth_session_repository.create(user.uuid, b"i" * 32, 1, timestamp, 1)
             expired_remember_session = unit_of_work.remember_session_repository.create(user.uuid, b"r" * 32, 1, cutoff)
-            pending_method = unit_of_work.mfa_method_repository.create(user.uuid, "TOTP", b"pending", cutoff - TOTP_SETUP_TTL_SECONDS)
-            confirmed_method = unit_of_work.mfa_method_repository.create(confirmed_user.uuid, "TOTP", b"confirmed", 1, 2)
+            pending_method = unit_of_work.mfa_method_repository.create(user.uuid, "TOTP", b"pending", 1, cutoff)
+            confirmed_method = unit_of_work.mfa_method_repository.create(confirmed_user.uuid, "TOTP", b"confirmed", 1, 601, 2)
             unit_of_work.commit()
 
         deleted_count = remove_inactive_records(self.open_registry, timestamp, 30)

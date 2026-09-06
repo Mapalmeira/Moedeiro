@@ -47,6 +47,7 @@ CREATE TABLE mfa_method (
     type TEXT NOT NULL CHECK (type IN ('TOTP')),
     secret_encrypted BLOB NOT NULL,
     created_at INTEGER NOT NULL CHECK (created_at >= 0),
+    expires_unconfirmed_at INTEGER NOT NULL CHECK (expires_unconfirmed_at > created_at),
     confirmed_at INTEGER CHECK (confirmed_at IS NULL OR confirmed_at >= created_at),
     last_used_counter INTEGER,
 
@@ -115,4 +116,4 @@ CREATE INDEX remember_session_user_idx ON remember_session(user_uuid);
 CREATE INDEX remember_session_expires_idx ON remember_session(expires_at);
 CREATE INDEX user_invitation_consumed_idx ON user_invitation(consumed_at) WHERE consumed_at IS NOT NULL;
 CREATE INDEX user_invitation_expires_idx ON user_invitation(expires_at);
-CREATE INDEX mfa_method_unconfirmed_idx ON mfa_method(created_at) WHERE confirmed_at IS NULL;
+CREATE INDEX mfa_method_unconfirmed_idx ON mfa_method(expires_unconfirmed_at) WHERE confirmed_at IS NULL;

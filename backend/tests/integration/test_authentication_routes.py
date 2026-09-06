@@ -111,7 +111,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
 
     def test_login_requests_totp_then_accepts_the_same_credentials_with_the_code(self) -> None:
         with self.application.state.databases.open_registry() as unit_of_work:
-            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 10)
+            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 610, 10)
             unit_of_work.commit()
 
         with self.assertRaises(HTTPException) as raised:
@@ -124,7 +124,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
 
     def test_login_does_not_distinguish_an_invalid_totp_from_other_invalid_credentials(self) -> None:
         with self.application.state.databases.open_registry() as unit_of_work:
-            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 10)
+            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 610, 10)
             unit_of_work.commit()
 
         with self.assertRaises(HTTPException) as raised:
@@ -135,7 +135,7 @@ class AuthenticationRoutesTest(unittest.TestCase):
 
     def test_login_reports_when_a_valid_totp_code_was_already_used(self) -> None:
         with self.application.state.databases.open_registry() as unit_of_work:
-            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 10)
+            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 610, 10)
             unit_of_work.commit()
         self.totp_authenticator.fixed_counter = 7
 

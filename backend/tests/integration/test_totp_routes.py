@@ -57,10 +57,14 @@ class TotpRoutesTest(unittest.TestCase):
         user = require_authenticated_user(request)
 
         self.assertFalse(get_totp_status(request, user).enabled)
-        asyncio.run(start_setup(StartTotpSetupRequest(current_password="current password"), request, user))
-        self.assertFalse(get_totp_status(request, user).enabled)
+        setup = asyncio.run(start_setup(StartTotpSetupRequest(current_password="current password"), request, user))
+        pending_status = get_totp_status(request, user)
+        self.assertFalse(pending_status.enabled)
+        self.assertGreaterEqual(setup.setup_expires_at, int(time.time()) + 599)
+        self.assertLessEqual(setup.setup_expires_at, int(time.time()) + 600)
         confirm_setup(ConfirmTotpRequest(code="123456"), request, user)
-        self.assertTrue(get_totp_status(request, user).enabled)
+        enabled_status = get_totp_status(request, user)
+        self.assertTrue(enabled_status.enabled)
 
     def test_get_status_route_is_exposed_and_requires_authentication(self) -> None:
         operation = self.application.openapi()["paths"]["/api/totp"]["get"]

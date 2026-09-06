@@ -27,8 +27,9 @@ def get_totp_status(request: Request, user: Annotated[User, Depends(require_auth
 @router.post("/setup", response_model=StartTotpSetupResponse)
 async def start_setup(payload: StartTotpSetupRequest, request: Request, user: Annotated[User, Depends(require_authenticated_user)]) -> StartTotpSetupResponse:
     check_rate_limit(request, _settings(request).totp_setup_ip_attempts_rate_limit, "totp-setup-ip-attempts")
+    timestamp = int(time.time())
     try:
-        provisioning_uri = await execute_credential_operation(
+        provisioning_uri, method = await execute_credential_operation(
             request,
             partial(
                 start_totp_setup,
@@ -37,14 +38,14 @@ async def start_setup(payload: StartTotpSetupRequest, request: Request, user: An
                 request.app.state.totp_authenticator,
                 user,
                 payload.current_password,
-                int(time.time()),
+                timestamp,
             ),
         )
     except InvalidCurrentPasswordError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid current password") from error
     except TotpAlreadyEnabledError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="TOTP already enabled") from error
-    return StartTotpSetupResponse(provisioning_uri=provisioning_uri)
+    return StartTotpSetupResponse(provisioning_uri=provisioning_uri, setup_expires_at=method.expires_unconfirmed_at)
 
 
 @router.post("/confirm", status_code=status.HTTP_204_NO_CONTENT)

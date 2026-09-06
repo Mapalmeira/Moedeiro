@@ -5,7 +5,7 @@ from app.application.registry.exceptions import InvalidCurrentPasswordError, Inv
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.totp_authenticator import TotpAuthenticator
 from app.application.registry.unit_of_work import RegistryUnitOfWork
-from app.domain.registry.model.mfa_method import TOTP_SETUP_TTL_SECONDS
+from app.domain.registry.model.mfa_method import MfaMethod, totp_setup_expires_at
 from app.domain.registry.model.totp import TotpCode
 from app.domain.registry.model.user import Password, User
 
@@ -14,19 +14,21 @@ def is_totp_enabled(unit_of_work_factory: Callable[[], RegistryUnitOfWork], user
     with unit_of_work_factory() as unit_of_work:
         return unit_of_work.mfa_method_repository.is_totp_enabled(user_uuid)
 
-def start_totp_setup(unit_of_work_factory: Callable[[], RegistryUnitOfWork], password_hasher: PasswordHasher, totp_authenticator: TotpAuthenticator, user: User, current_password: Password, timestamp: int) -> str:
+
+def start_totp_setup(unit_of_work_factory: Callable[[], RegistryUnitOfWork], password_hasher: PasswordHasher, totp_authenticator: TotpAuthenticator, user: User, current_password: Password, timestamp: int) -> tuple[str, MfaMethod]:
     if not password_hasher.verify(user.password_hash, current_password):
         raise InvalidCurrentPasswordError
     secret = totp_authenticator.create_secret()
+    setup_expires_at = totp_setup_expires_at(timestamp)
     with unit_of_work_factory() as unit_of_work:
         method = unit_of_work.mfa_method_repository.get_totp_by_user(user.uuid)
         if method is not None and method.confirmed_at is not None:
             raise TotpAlreadyEnabledError
         if method is not None:
             unit_of_work.mfa_method_repository.delete(method.uuid)
-        unit_of_work.mfa_method_repository.create(user.uuid, "TOTP", totp_authenticator.encrypt_secret(secret), timestamp)
+        method = unit_of_work.mfa_method_repository.create(user.uuid, "TOTP", totp_authenticator.encrypt_secret(secret), timestamp, setup_expires_at)
         unit_of_work.commit()
-    return totp_authenticator.provisioning_uri(secret, user.name)
+    return totp_authenticator.provisioning_uri(secret, user.name), method
 
 
 def confirm_totp_setup(unit_of_work_factory: Callable[[], RegistryUnitOfWork], totp_authenticator: TotpAuthenticator, user: User, code: TotpCode, timestamp: int) -> None:
@@ -38,9 +40,7 @@ def confirm_totp_setup(unit_of_work_factory: Callable[[], RegistryUnitOfWork], t
             raise TotpAlreadyEnabledError
         if timestamp < method.created_at:
             raise InvalidTotpSetupError
-        if timestamp - method.created_at >= TOTP_SETUP_TTL_SECONDS:
-            unit_of_work.mfa_method_repository.delete(method.uuid)
-            unit_of_work.commit()
+        if timestamp >= method.expires_unconfirmed_at:
             raise InvalidTotpSetupError
         counter = totp_authenticator.verify(totp_authenticator.decrypt_secret(method.secret_encrypted), code, timestamp)
         if counter is None:

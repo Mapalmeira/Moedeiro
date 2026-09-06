@@ -109,15 +109,15 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
 
     def test_enforces_mfa_type(self) -> None:
         method_uuid = uuid4().bytes
-        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, NULL, NULL)", (method_uuid, self.user_uuid, b"encrypted"))
+        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, 630, NULL, NULL)", (method_uuid, self.user_uuid, b"encrypted"))
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute("UPDATE mfa_method SET type = 'SMS' WHERE uuid = ?", (method_uuid,))
 
     def test_enforces_one_mfa_method_of_each_type_per_user(self) -> None:
-        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, NULL, NULL)", (uuid4().bytes, self.user_uuid, b"first"))
+        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, 630, NULL, NULL)", (uuid4().bytes, self.user_uuid, b"first"))
 
         with self.assertRaises(sqlite3.IntegrityError):
-            self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 40, NULL, NULL)", (uuid4().bytes, self.user_uuid, b"second"))
+            self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 40, 640, NULL, NULL)", (uuid4().bytes, self.user_uuid, b"second"))
 
     def test_enforces_recovery_code_usage_timestamp_expiration_and_one_active_code(self) -> None:
         code_uuid = uuid4().bytes
@@ -152,6 +152,9 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.connection.execute(f"UPDATE {table} SET expires_at = created_at")
 
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, 30, NULL, NULL)", (uuid4().bytes, self.user_uuid, b"invalid"))
+
     def test_auth_session_inactivity_timeout_must_be_positive(self) -> None:
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute("UPDATE auth_session SET inactivity_timeout_seconds = 0")
@@ -169,7 +172,7 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
     def test_deleting_user_cascades_authentication_records_and_grants(self) -> None:
         mfa_uuid = uuid4().bytes
         recovery_uuid = uuid4().bytes
-        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, NULL, NULL)", (mfa_uuid, self.user_uuid, b"encrypted"))
+        self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, 630, NULL, NULL)", (mfa_uuid, self.user_uuid, b"encrypted"))
         self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, 40, NULL)", (recovery_uuid, self.user_uuid, b"c" * 32))
         self.connection.execute("INSERT INTO user_preferences VALUES (?, 'pt-BR', 'DMY', 'H24', 'COMMA', 'DARK', 'UTC')", (self.user_uuid,))
 

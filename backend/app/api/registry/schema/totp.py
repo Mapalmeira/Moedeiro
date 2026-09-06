@@ -14,6 +14,7 @@ class StartTotpSetupRequest(BaseModel):
 
 class StartTotpSetupResponse(BaseModel):
     provisioning_uri: str
+    setup_expires_at: int
 
 
 class ConfirmTotpRequest(BaseModel):

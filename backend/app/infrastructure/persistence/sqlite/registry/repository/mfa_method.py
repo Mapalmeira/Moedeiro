@@ -1,21 +1,21 @@
 import sqlite3
 from uuid import UUID, uuid4
 
-from app.domain.registry.model.mfa_method import MfaMethod, MfaMethodType, TOTP_SETUP_TTL_SECONDS
+from app.domain.registry.model.mfa_method import MfaMethod, MfaMethodType
 from app.domain.registry.repository.mfa_method import MfaMethodRepository
 
 
 class SqliteMfaMethodRepository(MfaMethodRepository):
-    _columns = "uuid, user_uuid, type, secret_encrypted, created_at, confirmed_at, last_used_counter"
+    _columns = "uuid, user_uuid, type, secret_encrypted, created_at, expires_unconfirmed_at, confirmed_at, last_used_counter"
 
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, user_uuid: UUID, type: MfaMethodType, secret_encrypted: bytes, created_at: int, confirmed_at: int | None = None, last_used_counter: int | None = None) -> MfaMethod:
-        method = MfaMethod(uuid=uuid4(), user_uuid=user_uuid, type=type, secret_encrypted=secret_encrypted, created_at=created_at, confirmed_at=confirmed_at, last_used_counter=last_used_counter)
+    def create(self, user_uuid: UUID, type: MfaMethodType, secret_encrypted: bytes, created_at: int, expires_unconfirmed_at: int, confirmed_at: int | None = None, last_used_counter: int | None = None) -> MfaMethod:
+        method = MfaMethod(uuid=uuid4(), user_uuid=user_uuid, type=type, secret_encrypted=secret_encrypted, created_at=created_at, expires_unconfirmed_at=expires_unconfirmed_at, confirmed_at=confirmed_at, last_used_counter=last_used_counter)
         self.connection.execute(
-            "INSERT INTO mfa_method(uuid, user_uuid, type, secret_encrypted, created_at, confirmed_at, last_used_counter) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (method.uuid.bytes, method.user_uuid.bytes, method.type, method.secret_encrypted, method.created_at, method.confirmed_at, method.last_used_counter),
+            "INSERT INTO mfa_method(uuid, user_uuid, type, secret_encrypted, created_at, expires_unconfirmed_at, confirmed_at, last_used_counter) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (method.uuid.bytes, method.user_uuid.bytes, method.type, method.secret_encrypted, method.created_at, method.expires_unconfirmed_at, method.confirmed_at, method.last_used_counter),
         )
         return method
 
@@ -35,7 +35,7 @@ class SqliteMfaMethodRepository(MfaMethodRepository):
         return bool(row[0])
 
     def confirm(self, uuid: UUID, confirmed_at: int, last_used_counter: int) -> bool:
-        cursor = self.connection.execute("UPDATE mfa_method SET confirmed_at = ?, last_used_counter = ? WHERE uuid = ? AND confirmed_at IS NULL AND created_at <= ? AND created_at > ?", (confirmed_at, last_used_counter, uuid.bytes, confirmed_at, confirmed_at - TOTP_SETUP_TTL_SECONDS))
+        cursor = self.connection.execute("UPDATE mfa_method SET confirmed_at = ?, last_used_counter = ? WHERE uuid = ? AND confirmed_at IS NULL AND created_at <= ? AND expires_unconfirmed_at > ?", (confirmed_at, last_used_counter, uuid.bytes, confirmed_at, confirmed_at))
         return cursor.rowcount == 1
 
     def use_totp_counter(self, uuid: UUID, counter: int) -> bool:
@@ -46,7 +46,7 @@ class SqliteMfaMethodRepository(MfaMethodRepository):
         return cursor.rowcount == 1
 
     def delete_unconfirmed_before(self, timestamp: int) -> int:
-        cursor = self.connection.execute("DELETE FROM mfa_method WHERE confirmed_at IS NULL AND created_at <= ?", (timestamp,))
+        cursor = self.connection.execute("DELETE FROM mfa_method WHERE confirmed_at IS NULL AND expires_unconfirmed_at <= ?", (timestamp,))
         return cursor.rowcount
 
     def delete(self, uuid: UUID) -> None:

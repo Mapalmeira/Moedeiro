@@ -6,7 +6,7 @@ from app.domain.registry.model.mfa_method import MfaMethod, MfaMethodType
 
 class MfaMethodRepository(ABC):
     @abstractmethod
-    def create(self, user_uuid: UUID, type: MfaMethodType, secret_encrypted: bytes, created_at: int, confirmed_at: int | None = None, last_used_counter: int | None = None) -> MfaMethod:
+    def create(self, user_uuid: UUID, type: MfaMethodType, secret_encrypted: bytes, created_at: int, expires_unconfirmed_at: int, confirmed_at: int | None = None, last_used_counter: int | None = None) -> MfaMethod:
         pass
 
     @abstractmethod

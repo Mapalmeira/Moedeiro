@@ -117,7 +117,14 @@ class TotpUseCasesTest(unittest.TestCase):
         confirm_totp_setup(self.open_registry, self.totp_authenticator, self.user, "123456", 20 + TOTP_SETUP_TTL_SECONDS - 1)
         self.assertTrue(is_totp_enabled(self.open_registry, self.user.uuid))
 
-    def test_expired_setup_is_deleted_without_decrypting_or_verifying_the_secret(self) -> None:
+    def test_setup_persists_the_pending_expiration(self) -> None:
+        _, method = start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
+
+        self.assertEqual(method.expires_unconfirmed_at, 20 + TOTP_SETUP_TTL_SECONDS)
+        with self.open_registry() as unit_of_work:
+            self.assertEqual(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid), method)
+
+    def test_expired_setup_is_rejected_without_decrypting_or_verifying_the_secret(self) -> None:
         for elapsed in (TOTP_SETUP_TTL_SECONDS, TOTP_SETUP_TTL_SECONDS + 1):
             with self.subTest(elapsed=elapsed):
                 start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)
@@ -126,7 +133,7 @@ class TotpUseCasesTest(unittest.TestCase):
                         confirm_totp_setup(self.open_registry, self.totp_authenticator, self.user, "123456", 20 + elapsed)
                     decrypt.assert_not_called()
                 with self.open_registry() as unit_of_work:
-                    self.assertIsNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))
+                    self.assertIsNotNone(unit_of_work.mfa_method_repository.get_totp_by_user(self.user.uuid))
 
     def test_restart_after_expiration_gets_a_fresh_confirmation_window(self) -> None:
         start_totp_setup(self.open_registry, self.password_hasher, self.totp_authenticator, self.user, "current password", 20)

@@ -43,7 +43,7 @@ class PasswordUseCasesTest(unittest.TestCase):
 
     def enable_totp(self) -> None:
         with self.open_registry() as unit_of_work:
-            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 10)
+            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 610, 10)
             unit_of_work.commit()
 
     def test_change_password_updates_the_hash_and_revokes_every_session(self) -> None:
