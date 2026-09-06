@@ -25,10 +25,10 @@ class Settings(BaseModel):
     registry_db_path: Path = _DEFAULT_REGISTRY_DB_PATH
     ledger_dbs_dir: Path = _DEFAULT_LEDGER_DBS_DIR
     frontend_dist_path: Path = _DEFAULT_FRONTEND_DIST_PATH
-    registration_ip_attempts_rate_limit: str = Field(default="5/hour", min_length=1)
+    registration_ip_attempts_rate_limit: str = Field(default="10/hour", min_length=1)
     login_ip_attempts_rate_limit: str = Field(default="5/minute", min_length=1)
-    password_recovery_ip_attempts_rate_limit: str = Field(default="5/hour", min_length=1)
-    totp_setup_ip_attempts_rate_limit: str = Field(default="5/hour", min_length=1)
+    password_recovery_ip_attempts_rate_limit: str = Field(default="10/hour", min_length=1)
+    totp_setup_ip_attempts_rate_limit: str = Field(default="5/minute", min_length=1)
     refresh_ip_attempts_rate_limit: str = Field(default="10/minute", min_length=1)
     authenticated_user_operations_rate_limit: str = Field(default="50/minute", min_length=1)
     sync_route_concurrency: int = Field(default=40, gt=0)

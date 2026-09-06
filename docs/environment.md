@@ -56,10 +56,10 @@ These values use the `limits` rate syntax, such as `5/minute` or `5/hour`. Each 
 
 | Variable                                   | Default     | Protects                                       |
 | ------------------------------------------ | ----------- | ---------------------------------------------- |
-| `REGISTRATION_IP_ATTEMPTS_RATE_LIMIT`      | `5/hour`    | Registration attempts from one client IP.      |
+| `REGISTRATION_IP_ATTEMPTS_RATE_LIMIT`      | `10/hour`   | Registration attempts from one client IP.      |
 | `LOGIN_IP_ATTEMPTS_RATE_LIMIT`             | `5/minute`  | Login attempts from one client IP.             |
-| `PASSWORD_RECOVERY_IP_ATTEMPTS_RATE_LIMIT` | `5/hour`    | Password recovery attempts from one client IP. |
-| `TOTP_SETUP_IP_ATTEMPTS_RATE_LIMIT`        | `5/hour`    | TOTP setup attempts from one client IP.        |
+| `PASSWORD_RECOVERY_IP_ATTEMPTS_RATE_LIMIT` | `10/hour`   | Password recovery attempts from one client IP. |
+| `TOTP_SETUP_IP_ATTEMPTS_RATE_LIMIT`        | `5/minute`  | TOTP setup attempts from one client IP.        |
 | `REFRESH_IP_ATTEMPTS_RATE_LIMIT`           | `10/minute` | Session refresh attempts from one client IP.   |
 | `AUTHENTICATED_USER_OPERATIONS_RATE_LIMIT` | `50/minute` | Requests made by one authenticated user.       |
 
