@@ -49,7 +49,7 @@ import { AuthenticatedShellService } from './authenticated-shell.service';
       min-height: 100dvh;
       display: grid;
       grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
-      padding: 24px var(--space-page) 60px;
+      padding: var(--space-5) var(--space-page);
     }
     .app-page--ledger { display: block; padding: 0; }
     .top-area { grid-row: 1; align-self: end; display: grid; place-items: center; margin-bottom: var(--space-8); }
@@ -61,7 +61,7 @@ import { AuthenticatedShellService } from './authenticated-shell.service';
     @media (max-width: 700px) {
       .app-page:not(.app-page--ledger) {
         grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
-        padding: 76px var(--space-page) 32px;
+        padding: 76px var(--space-page) var(--space-5);
       }
       .top-area { align-self: end; margin-bottom: var(--space-6); }
       .account-wrap { top: var(--space-4); }

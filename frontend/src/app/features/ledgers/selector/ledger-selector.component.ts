@@ -94,6 +94,7 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
     :host { display: grid; justify-items: center; width: 100%; }
     .ledger-card {
       --token-accent: var(--green); --token-accent-strong: var(--green-strong); --focus-accent: var(--green);
+      --ledger-list-min-height: 160px;
       width: min(760px, calc(100% - var(--hard-shadow-offset))); margin-inline-end: var(--hard-shadow-offset); margin-block-end: var(--hard-shadow-offset); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-card);
       background: var(--surface); color: var(--text); overflow: visible;
     }
@@ -103,7 +104,7 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
     .create-button { flex: 0 0 auto; padding-inline: var(--space-4); }
     .ledger-card__body { display: grid; gap: var(--form-gap); padding: var(--space-5); }
     .search-box { height: var(--control-height); }
-    .ledger-list { display: grid; gap: var(--space-2); min-width: 0; }
+    .ledger-list { display: grid; min-height: var(--ledger-list-min-height); align-content: start; gap: var(--space-2); min-width: 0; }
     .ledger-row { position: relative; min-height: var(--list-row-height); display: grid; grid-template-columns: calc(var(--title-icon-size) + var(--icon-shadow-offset)) minmax(0, 1fr) auto; align-items: center; gap: var(--title-icon-gap); padding: var(--space-2) var(--space-3); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); box-shadow: var(--selection-shadow-transparent); outline: none; transition: border-color var(--motion-selection) ease, background var(--motion-selection) ease, box-shadow var(--motion-selection) ease; cursor: pointer; }
     .ledger-row:not(.ledger-row--selected):hover { border-color: var(--line-strong); background: var(--surface-muted); }
     .ledger-row:focus-visible { border-color: var(--green-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 30%, transparent); }
@@ -118,7 +119,7 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
     .row-menu button + button { margin-top: var(--space-1); }
     .row-menu__icon--blue { background: var(--blue); color: var(--on-blue); }
     .row-menu__icon--danger { background: var(--danger-token); color: var(--on-danger-token); }
-    .state-row, .empty-state { min-height: 160px; display: grid; place-items: center; align-content: center; gap: var(--space-3); color: var(--text-muted); text-align: center; }
+    .state-row, .empty-state { min-height: var(--ledger-list-min-height); display: grid; place-items: center; align-content: center; gap: var(--space-3); color: var(--text-muted); text-align: center; }
     .state-row { grid-template-columns: auto auto; justify-content: center; }
     .empty-state__icon { width: var(--touch-target-size); height: var(--touch-target-size); display: grid; place-items: center; border: var(--border-width) solid var(--line); border-radius: var(--radius-card); background: var(--surface-muted); }
     .ledger-card__footer { display: flex; justify-content: flex-end; padding: var(--space-4) var(--space-5) var(--space-5); border-top: 1px solid var(--line); }
