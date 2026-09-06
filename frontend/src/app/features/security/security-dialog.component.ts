@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, HostListener, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -42,23 +43,20 @@ import { IconComponent } from '../../shared/ui/icon.component';
           <section class="security-section">
             <h3>{{ i18n.t('security.password.title') }}</h3>
 
-            <div class="notice-token">
-              <app-icon name="info" [size]="18" />
-              <span>{{ i18n.t('security.password.logoutWarning') }}</span>
-            </div>
+            <app-form-message kind="info" [text]="i18n.t('security.password.logoutWarning')" />
 
             <form class="security-form" [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate>
               <div class="password-grid" [class.password-grid--totp]="totpStatus() === 'enabled'">
-                <label class="field password-grid__current">
+                <label class="field password-grid__current" [class.ui-field-feedback--rejected]="passwordCurrentRejected()">
                   <span>{{ i18n.t('security.currentPassword') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                  <input appNoWhitespace type="password" autocomplete="current-password" formControlName="current_password" required />
+                  <input appNoWhitespace type="password" autocomplete="current-password" formControlName="current_password" required (input)="clearCredentialRejections()" (animationend)="clearCredentialRejections()" />
                   <app-field-error [text]="passwordError(passwordForm.controls.current_password)" />
                 </label>
 
                 @if (totpStatus() === 'enabled') {
-                  <label class="field">
+                  <label class="field" [class.ui-field-feedback--rejected]="totpCodeRejection() === 'password'">
                     <span>{{ i18n.t('auth.totp') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                    <input inputmode="numeric" autocomplete="one-time-code" formControlName="totp_code" maxlength="6" required />
+                    <input inputmode="numeric" autocomplete="one-time-code" formControlName="totp_code" maxlength="6" required (input)="clearTotpCodeRejection()" (animationend)="clearTotpCodeRejection()" />
                     <app-field-error [text]="totpError(passwordForm.controls.totp_code)" />
                   </label>
                 }
@@ -91,6 +89,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
             <h3>{{ i18n.t('security.totp.title') }}</h3>
 
             @if (totpInfoMessage()) { <app-form-message kind="info" [text]="totpInfoMessage()!" /> }
+            @if (totpWarningMessage()) { <app-form-message kind="warning" [text]="totpWarningMessage()!" /> }
             @if (totpSuccessMessage()) { <app-form-message kind="success" [text]="totpSuccessMessage()!" /> }
 
             @if (loadingTotpStatus()) {
@@ -105,15 +104,15 @@ import { IconComponent } from '../../shared/ui/icon.component';
             } @else if (totpStatus() === 'enabled') {
               <form class="security-form totp-form" [formGroup]="disableTotpForm" (ngSubmit)="disableTotp()" novalidate>
                 <div class="form-grid">
-                  <label class="field">
+                  <label class="field" [class.ui-field-feedback--rejected]="disableCredentialsRejected()">
                     <span>{{ i18n.t('security.currentPassword') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                    <input appNoWhitespace type="password" autocomplete="current-password" formControlName="current_password" required />
+                    <input appNoWhitespace type="password" autocomplete="current-password" formControlName="current_password" required (input)="clearCredentialRejections()" (animationend)="clearCredentialRejections()" />
                     <app-field-error [text]="passwordError(disableTotpForm.controls.current_password)" />
                   </label>
 
-                  <label class="field">
+                  <label class="field" [class.ui-field-feedback--rejected]="disableCredentialsRejected()">
                     <span>{{ i18n.t('auth.totp') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                    <input inputmode="numeric" autocomplete="one-time-code" formControlName="code" maxlength="6" required />
+                    <input inputmode="numeric" autocomplete="one-time-code" formControlName="code" maxlength="6" required (input)="clearCredentialRejections()" (animationend)="clearCredentialRejections()" />
                     <app-field-error [text]="totpError(disableTotpForm.controls.code)" />
                   </label>
                 </div>
@@ -130,9 +129,9 @@ import { IconComponent } from '../../shared/ui/icon.component';
               @if (!provisioningUri()) {
                 <form class="security-form totp-form" [formGroup]="setupForm" (ngSubmit)="startTotpSetup()" novalidate>
                   <div class="setup-row">
-                    <label class="field">
+                    <label class="field" [class.ui-field-feedback--rejected]="setupPasswordRejected()">
                       <span>{{ i18n.t('security.currentPassword') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                      <input appNoWhitespace type="password" autocomplete="current-password" formControlName="current_password" required />
+                      <input appNoWhitespace type="password" autocomplete="current-password" formControlName="current_password" required (input)="clearCredentialRejections()" (animationend)="clearCredentialRejections()" />
                       <app-field-error [text]="passwordError(setupForm.controls.current_password)" />
                     </label>
 
@@ -171,9 +170,9 @@ import { IconComponent } from '../../shared/ui/icon.component';
                       </div>
 
                       <div class="totp-code-stack">
-                        <label class="field totp-code-field">
+                        <label class="field totp-code-field" [class.ui-field-feedback--rejected]="totpCodeRejection() === 'confirm'">
                           <span>{{ i18n.t('auth.totp') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                          <input inputmode="numeric" autocomplete="one-time-code" formControlName="code" maxlength="6" required />
+                          <input inputmode="numeric" autocomplete="one-time-code" formControlName="code" maxlength="6" required (input)="clearTotpCodeRejection()" (animationend)="clearTotpCodeRejection()" />
                           <app-field-error [text]="totpError(confirmTotpForm.controls.code)" />
                         </label>
                         @if (totpErrorMessage()) {
@@ -210,11 +209,9 @@ import { IconComponent } from '../../shared/ui/icon.component';
     }
     .dialog__header { position: sticky; top: 0; z-index: 2; background: var(--surface); }
     .dialog__body { padding: 0 var(--space-5) var(--space-5); }
-    .security-section { padding: var(--section-gap) 0; border-bottom: 1px solid var(--line); }
+    .security-section { display: grid; gap: var(--form-gap); padding: var(--section-gap) 0; border-bottom: var(--border-width) solid var(--line); }
     .security-section:last-child { border-bottom: 0; padding-bottom: 0; }
-    .security-section h3 { margin: 0 0 var(--form-gap); font-size: 1rem; letter-spacing: -.005em; }
-    .notice-token { display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--form-gap); padding: var(--space-3); border: var(--border-width) solid var(--blue-strong); border-radius: var(--radius-sm); background: var(--blue-soft); font-size: .84rem; font-weight: 650; line-height: 1.35; }
-    .notice-token app-icon { flex: 0 0 auto; color: var(--blue-strong); }
+    .security-section h3 { margin: 0; font-size: 1rem; letter-spacing: -.005em; }
     .security-form, .confirm-form { display: grid; gap: var(--form-gap); }
     .password-grid, .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--form-gap); }
     .password-grid__current { grid-column: 1 / -1; }
@@ -334,7 +331,12 @@ export class SecurityDialogComponent {
   readonly totpErrorMessage = signal<string | null>(null);
   readonly totpStatusErrorMessage = signal<string | null>(null);
   readonly totpInfoMessage = signal<string | null>(null);
+  readonly totpWarningMessage = signal<string | null>(null);
   readonly totpSuccessMessage = signal<string | null>(null);
+  readonly totpCodeRejection = signal<'password' | 'confirm' | null>(null);
+  readonly passwordCurrentRejected = signal(false);
+  readonly setupPasswordRejected = signal(false);
+  readonly disableCredentialsRejected = signal(false);
   readonly totpStatus = this.security.totpStatus;
   readonly provisioningUri = signal<string | null>(null);
   readonly totpSecret = signal('');
@@ -429,6 +431,7 @@ export class SecurityDialogComponent {
     if (this.passwordForm.invalid || this.passwordMismatch() || this.changingPassword()) return;
     this.changingPassword.set(true);
     this.passwordErrorMessage.set(null);
+    this.clearCredentialRejections();
     const value = this.passwordForm.getRawValue();
 
     this.security.changePassword({
@@ -437,7 +440,11 @@ export class SecurityDialogComponent {
       totp_code: value.totp_code.trim() || null,
     }).pipe(finalize(() => this.changingPassword.set(false))).subscribe({
       next: () => void this.auth.finishLogout({ passwordChanged: true }),
-      error: (error: unknown) => this.passwordErrorMessage.set(this.apiErrors.message(error, 'errors.passwordChangeFailed')),
+      error: (error: unknown) => {
+        if (this.isInvalidTotpCode(error)) this.rejectTotpCode('password');
+        else if (this.hasErrorDetail(error, 'Invalid current password')) this.passwordCurrentRejected.set(true);
+        else this.passwordErrorMessage.set(this.apiErrors.message(error, 'errors.passwordChangeFailed'));
+      },
     });
   }
 
@@ -445,6 +452,7 @@ export class SecurityDialogComponent {
     if (this.setupForm.invalid || this.startingTotp()) return;
     this.startingTotp.set(true);
     this.clearTotpMessages();
+    this.clearCredentialRejections();
 
     this.security.startTotpSetup(this.setupForm.getRawValue()).pipe(finalize(() => this.startingTotp.set(false))).subscribe({
       next: (response) => {
@@ -455,7 +463,8 @@ export class SecurityDialogComponent {
         void this.renderQrCode(response.provisioning_uri);
       },
       error: (error: unknown) => {
-        this.totpErrorMessage.set(this.apiErrors.message(error, 'errors.totpSetupFailed'));
+        if (this.hasErrorDetail(error, 'Invalid current password')) this.setupPasswordRejected.set(true);
+        else this.totpErrorMessage.set(this.apiErrors.message(error, 'errors.totpSetupFailed'));
       },
     });
   }
@@ -470,7 +479,10 @@ export class SecurityDialogComponent {
         this.resetTotpFormsAndProvisioning();
         this.totpInfoMessage.set(this.i18n.t('security.totp.enabled'));
       },
-      error: (error: unknown) => this.totpErrorMessage.set(this.apiErrors.message(error, 'errors.totpConfirmFailed')),
+      error: (error: unknown) => {
+        if (this.isInvalidTotpCode(error)) this.rejectTotpCode('confirm');
+        else this.totpErrorMessage.set(this.apiErrors.message(error, 'errors.totpConfirmFailed'));
+      },
     });
   }
 
@@ -478,6 +490,7 @@ export class SecurityDialogComponent {
     if (this.totpStatus() !== 'enabled' || this.disableTotpForm.invalid || this.disablingTotp()) return;
     this.disablingTotp.set(true);
     this.clearTotpMessages();
+    this.clearCredentialRejections();
 
     this.security.disableTotp(this.disableTotpForm.getRawValue()).pipe(finalize(() => this.disablingTotp.set(false))).subscribe({
       next: () => {
@@ -485,7 +498,8 @@ export class SecurityDialogComponent {
         this.totpSuccessMessage.set(this.i18n.t('security.totp.disabled'));
       },
       error: (error: unknown) => {
-        this.totpErrorMessage.set(this.apiErrors.message(error, 'errors.totpDisableFailed'));
+        if (this.hasErrorDetail(error, 'Invalid credentials')) this.disableCredentialsRejected.set(true);
+        else this.totpErrorMessage.set(this.apiErrors.message(error, 'errors.totpDisableFailed'));
       },
     });
   }
@@ -526,6 +540,16 @@ export class SecurityDialogComponent {
   totpSetupExpiryMessage(): string | null {
     const time = this.totpSetupRemainingTime();
     return time === null ? null : this.i18n.t('security.totp.expiresIn', { time });
+  }
+
+  clearTotpCodeRejection(): void {
+    this.totpCodeRejection.set(null);
+  }
+
+  clearCredentialRejections(): void {
+    this.passwordCurrentRejected.set(false);
+    this.setupPasswordRejected.set(false);
+    this.disableCredentialsRejected.set(false);
   }
 
 
@@ -579,6 +603,7 @@ export class SecurityDialogComponent {
   private clearTotpMessages(): void {
     this.totpErrorMessage.set(null);
     this.totpInfoMessage.set(null);
+    this.totpWarningMessage.set(null);
     this.totpSuccessMessage.set(null);
   }
 
@@ -594,6 +619,8 @@ export class SecurityDialogComponent {
     this.setupSecondsRemaining.set(null);
     this.secretCopied.set(false);
     this.secretVisible.set(false);
+    this.clearTotpCodeRejection();
+    this.clearCredentialRejections();
   }
 
   private resetDialog(): void {
@@ -624,7 +651,7 @@ export class SecurityDialogComponent {
     }
 
     this.resetTotpFormsAndProvisioning();
-    this.totpInfoMessage.set(this.i18n.t('security.totp.expired'));
+    this.totpWarningMessage.set(this.i18n.t('security.totp.expired'));
   }
 
   private stopSetupExpiryCountdown(): void {
@@ -632,5 +659,17 @@ export class SecurityDialogComponent {
       clearInterval(this.setupExpiryTimer);
       this.setupExpiryTimer = null;
     }
+  }
+
+  private rejectTotpCode(field: 'password' | 'confirm'): void {
+    this.totpCodeRejection.set(field);
+  }
+
+  private isInvalidTotpCode(error: unknown): boolean {
+    return error instanceof HttpErrorResponse && error.error?.detail === 'Invalid TOTP code';
+  }
+
+  private hasErrorDetail(error: unknown, detail: string): boolean {
+    return error instanceof HttpErrorResponse && error.error?.detail === detail;
   }
 }

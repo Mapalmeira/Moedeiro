@@ -33,7 +33,6 @@ export class ApiErrorService {
     const known: Partial<Record<string, TranslationKey>> = {
       'Invalid session': 'errors.sessionExpired',
       'TOTP required': 'errors.totpRequired',
-      'Invalid TOTP code': 'errors.invalidTotp',
       'TOTP code already used': 'errors.totpAlreadyUsed',
       'Invitation not available': 'errors.invitationUnavailable',
       'User name not available': 'errors.usernameUnavailable',

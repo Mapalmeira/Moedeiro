@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -40,17 +41,17 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
       <section class="auth-layout">
         <app-auth-card [title]="i18n.t('auth.login.title')" icon="user" accent="green">
           <form class="login-form" [formGroup]="loginForm" (ngSubmit)="submitLogin()" novalidate>
-            <label class="field">
+            <label class="field" [class.ui-field-feedback--rejected]="loginCredentialsRejected()">
               <span>{{ i18n.t('auth.username') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <input appNoWhitespace autocomplete="username" formControlName="name" required />
+              <input appNoWhitespace autocomplete="username" formControlName="name" required (input)="clearLoginCredentialsRejection()" (animationend)="clearLoginCredentialsRejection()" />
               <app-field-error [text]="usernameError(loginForm.controls.name)" />
             </label>
 
-            <label class="field">
+            <label class="field" [class.ui-field-feedback--rejected]="loginCredentialsRejected()">
               <span>{{ i18n.t('auth.password') }} <span class="required-mark" aria-hidden="true">*</span></span>
               <div class="input-with-action">
                 <input appNoWhitespace [type]="showLoginPassword() ? 'text' : 'password'" autocomplete="current-password"
-                  formControlName="password" required />
+                  formControlName="password" required (input)="clearLoginCredentialsRejection()" (animationend)="clearLoginCredentialsRejection()" />
                 <button type="button" class="icon-action" (click)="showLoginPassword.set(!showLoginPassword())"
                   [attr.aria-label]="showLoginPassword() ? i18n.t('auth.password.hide') : i18n.t('auth.password.show')">
                   <app-icon [name]="showLoginPassword() ? 'eye-off' : 'eye'" />
@@ -59,9 +60,9 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
               <app-field-error [text]="passwordError(loginForm.controls.password)" />
             </label>
 
-            <label class="field">
+            <label class="field" [class.ui-field-feedback--rejected]="loginCredentialsRejected()">
               <span>{{ i18n.t('auth.totp') }}</span>
-              <input inputmode="numeric" autocomplete="one-time-code" formControlName="totp_code" maxlength="6" />
+              <input inputmode="numeric" autocomplete="one-time-code" formControlName="totp_code" maxlength="6" (input)="clearLoginCredentialsRejection()" (animationend)="clearLoginCredentialsRejection()" />
               <app-field-error [text]="totpError(loginForm.controls.totp_code)" />
             </label>
 
@@ -172,6 +173,7 @@ export class AuthLandingComponent {
   readonly loadingLogin = signal(false);
   readonly loadingRegistration = signal(false);
   readonly loginError = signal<string | null>(null);
+  readonly loginCredentialsRejected = signal(false);
   readonly registrationError = signal<string | null>(null);
   readonly registrationCompleted = signal(false);
   readonly passwordChanged = signal(history.state?.passwordChanged === true);
@@ -201,6 +203,7 @@ export class AuthLandingComponent {
 
     this.loadingLogin.set(true);
     this.loginError.set(null);
+    this.clearLoginCredentialsRejection();
     const value = this.loginForm.getRawValue();
     this.auth.login({
       name: value.name,
@@ -210,11 +213,20 @@ export class AuthLandingComponent {
     }).pipe(finalize(() => this.loadingLogin.set(false))).subscribe({
       next: () => void this.router.navigateByUrl('/home'),
       error: (error: unknown) => {
-        // Invalid credentials/TOTP stay indistinguishable. A valid but already-used
-        // TOTP code is actionable, so the backend exposes it separately.
-        this.loginError.set(this.apiErrors.message(error, 'errors.loginFailed'));
+        // Credential/TOTP failures remain indistinguishable, so reject the
+        // credential set without exposing which value was rejected.
+        if (this.hasErrorDetail(error, 'Invalid credentials')) this.loginCredentialsRejected.set(true);
+        else this.loginError.set(this.apiErrors.message(error, 'errors.loginFailed'));
       },
     });
+  }
+
+  clearLoginCredentialsRejection(): void {
+    this.loginCredentialsRejected.set(false);
+  }
+
+  private hasErrorDetail(error: unknown, detail: string): boolean {
+    return error instanceof HttpErrorResponse && error.error?.detail === detail;
   }
 
   submitRegistration(): void {

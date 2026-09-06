@@ -35,6 +35,22 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--field-focus) 32%, transparent);
 }
 
+/* Server-side credential rejections are transient feedback, rather than form
+   messages that compete with validation guidance. */
+.ui-field-feedback--rejected > :is(input, select),
+.ui-field-feedback--rejected > .input-with-action > input {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+.ui-field-feedback--rejected > :is(input, select, .input-with-action) {
+  animation: ui-field-rejection var(--motion-feedback) ease;
+}
+@keyframes ui-field-rejection {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(calc(var(--press-offset) * -1)); }
+  40%, 80% { transform: translateX(var(--press-offset)); }
+}
+
 .input-with-action { position: relative; }
 .input-with-action input { padding-right: calc(var(--icon-button-size) + var(--space-3)); }
 .icon-action {
