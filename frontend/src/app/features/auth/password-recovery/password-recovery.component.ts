@@ -39,16 +39,17 @@ import { IconComponent } from '../../../shared/ui/icon.component';
         </header>
 
         <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-          <label class="field">
+          <label class="field" [class.ui-field-feedback--rejected]="recoveryCredentialsRejected()">
             <span>{{ i18n.t('auth.username') }} <span class="required-mark" aria-hidden="true">*</span></span>
-            <input appNoWhitespace formControlName="name" autocomplete="username" />
+            <input appNoWhitespace formControlName="name" autocomplete="username" (input)="clearRecoveryCredentialsRejection()" (animationend)="clearRecoveryCredentialsRejection()" [attr.aria-invalid]="recoveryCredentialsRejected()" [attr.aria-describedby]="recoveryCredentialsRejected() ? 'recovery-credentials-feedback' : null" />
             <app-field-error [text]="usernameError(form.controls.name)" />
           </label>
 
-          <label class="field">
+          <label class="field" [class.ui-field-feedback--rejected]="recoveryCredentialsRejected()">
             <span>{{ i18n.t('auth.recovery.code') }} <span class="required-mark" aria-hidden="true">*</span></span>
-            <input appCrockfordCode formControlName="recovery_code" autocomplete="off" />
+            <input appCrockfordCode formControlName="recovery_code" autocomplete="off" (input)="clearRecoveryCredentialsRejection()" (animationend)="clearRecoveryCredentialsRejection()" [attr.aria-invalid]="recoveryCredentialsRejected()" [attr.aria-describedby]="recoveryCredentialsRejected() ? 'recovery-credentials-feedback' : null" />
             <app-field-error [text]="codeError(form.controls.recovery_code)" />
+            <app-field-error messageId="recovery-credentials-feedback" [visuallyHidden]="true" [text]="recoveryCredentialsFeedback()" />
           </label>
 
           <label class="field">
@@ -70,10 +71,11 @@ import { IconComponent } from '../../../shared/ui/icon.component';
           </label>
 
           @if (totpRequired()) {
-            <label class="field">
+            <label class="field" [class.ui-field-feedback--attention]="totpRequiredAttention()">
               <span>{{ i18n.t('auth.totp') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <input inputmode="numeric" autocomplete="one-time-code" formControlName="totp_code" maxlength="6" />
+              <input inputmode="numeric" autocomplete="one-time-code" formControlName="totp_code" maxlength="6" (input)="clearTotpRequiredAttention()" (animationend)="clearTotpRequiredAttention()" [attr.aria-invalid]="totpRequiredAttention()" [attr.aria-describedby]="totpRequiredAttention() ? 'recovery-totp-required-feedback' : null" />
               <app-field-error [text]="totpError(form.controls.totp_code)" />
+              <app-field-error messageId="recovery-totp-required-feedback" [visuallyHidden]="true" [text]="totpRequiredFeedback()" />
             </label>
           }
 
@@ -110,6 +112,8 @@ export class PasswordRecoveryDialogComponent {
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
   readonly totpRequired = signal(false);
+  readonly totpRequiredAttention = signal(false);
+  readonly recoveryCredentialsRejected = signal(false);
   readonly showPassword = signal(false);
 
   readonly form = this.fb.nonNullable.group({
@@ -148,6 +152,7 @@ export class PasswordRecoveryDialogComponent {
     this.loading.set(true);
     this.errorMessage.set(null);
     this.successMessage.set(null);
+    this.clearRecoveryCredentialsRejection();
     const value = this.form.getRawValue();
     this.auth.recoverPassword({
       name: value.name,
@@ -163,10 +168,11 @@ export class PasswordRecoveryDialogComponent {
       error: (error: unknown) => {
         if (error instanceof HttpErrorResponse && error.status === 401 && error.error?.detail === 'TOTP required') {
           this.totpRequired.set(true);
+          this.totpRequiredAttention.set(true);
           this.form.controls.totp_code.setValidators([Validators.required, Validators.pattern(TOTP_PATTERN)]);
           this.form.controls.totp_code.updateValueAndValidity();
-        }
-        this.errorMessage.set(this.apiErrors.message(error, 'errors.recoveryFailed'));
+        } else if (error instanceof HttpErrorResponse && error.error?.detail === 'Invalid credentials') this.recoveryCredentialsRejected.set(true);
+        else this.errorMessage.set(this.apiErrors.message(error, 'errors.recoveryFailed'));
       },
     });
   }
@@ -197,6 +203,22 @@ export class PasswordRecoveryDialogComponent {
     return null;
   }
 
+  clearTotpRequiredAttention(): void {
+    this.totpRequiredAttention.set(false);
+  }
+
+  totpRequiredFeedback(): string | null {
+    return this.totpRequiredAttention() ? this.i18n.t('errors.totpRequired') : null;
+  }
+
+  clearRecoveryCredentialsRejection(): void {
+    this.recoveryCredentialsRejected.set(false);
+  }
+
+  recoveryCredentialsFeedback(): string | null {
+    return this.recoveryCredentialsRejected() ? this.i18n.t('errors.recoveryFailed') : null;
+  }
+
   confirmPasswordError(): string | null {
     const control = this.form.controls.confirm_password;
     if (!this.shouldShowError(control)) return null;
@@ -219,6 +241,8 @@ export class PasswordRecoveryDialogComponent {
     this.errorMessage.set(null);
     this.successMessage.set(null);
     this.totpRequired.set(false);
+    this.totpRequiredAttention.set(false);
+    this.recoveryCredentialsRejected.set(false);
     this.showPassword.set(false);
   }
 }

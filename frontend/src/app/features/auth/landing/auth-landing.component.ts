@@ -10,6 +10,7 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   OPTIONAL_TOTP_PATTERN,
+  TOTP_PATTERN,
   USER_NAME_MAX_LENGTH,
   USER_NAME_PATTERN,
 } from '../../../shared/forms/backend-validators';
@@ -43,7 +44,7 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
           <form class="login-form" [formGroup]="loginForm" (ngSubmit)="submitLogin()" novalidate>
             <label class="field" [class.ui-field-feedback--rejected]="loginCredentialsRejected()">
               <span>{{ i18n.t('auth.username') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <input appNoWhitespace autocomplete="username" formControlName="name" required (input)="clearLoginCredentialsRejection()" (animationend)="clearLoginCredentialsRejection()" />
+              <input appNoWhitespace autocomplete="username" formControlName="name" required (input)="clearLoginCredentialsRejection()" (animationend)="clearLoginCredentialsRejection()" [attr.aria-invalid]="loginCredentialsRejected()" [attr.aria-describedby]="loginCredentialsRejected() ? 'login-credentials-feedback' : null" />
               <app-field-error [text]="usernameError(loginForm.controls.name)" />
             </label>
 
@@ -51,7 +52,7 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
               <span>{{ i18n.t('auth.password') }} <span class="required-mark" aria-hidden="true">*</span></span>
               <div class="input-with-action">
                 <input appNoWhitespace [type]="showLoginPassword() ? 'text' : 'password'" autocomplete="current-password"
-                  formControlName="password" required (input)="clearLoginCredentialsRejection()" (animationend)="clearLoginCredentialsRejection()" />
+                  formControlName="password" required (input)="clearLoginCredentialsRejection()" (animationend)="clearLoginCredentialsRejection()" [attr.aria-invalid]="loginCredentialsRejected()" [attr.aria-describedby]="loginCredentialsRejected() ? 'login-credentials-feedback' : null" />
                 <button type="button" class="icon-action" (click)="showLoginPassword.set(!showLoginPassword())"
                   [attr.aria-label]="showLoginPassword() ? i18n.t('auth.password.hide') : i18n.t('auth.password.show')">
                   <app-icon [name]="showLoginPassword() ? 'eye-off' : 'eye'" />
@@ -60,9 +61,9 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
               <app-field-error [text]="passwordError(loginForm.controls.password)" />
             </label>
 
-            <label class="field" [class.ui-field-feedback--rejected]="loginCredentialsRejected()">
+            <label class="field" [class.ui-field-feedback--rejected]="loginCredentialsRejected()" [class.ui-field-feedback--attention]="loginTotpRequired()">
               <span>{{ i18n.t('auth.totp') }}</span>
-              <input inputmode="numeric" autocomplete="one-time-code" formControlName="totp_code" maxlength="6" (input)="clearLoginCredentialsRejection()" (animationend)="clearLoginCredentialsRejection()" />
+              <input inputmode="numeric" autocomplete="one-time-code" formControlName="totp_code" maxlength="6" (input)="clearLoginCredentialsRejection(); clearLoginTotpRequired()" (animationend)="clearLoginCredentialsRejection(); clearLoginTotpRequired()" [attr.aria-invalid]="loginCredentialsRejected() || loginTotpRequired()" [attr.aria-describedby]="loginCredentialsRejected() || loginTotpRequired() ? 'login-credentials-feedback' : null" />
               <app-field-error [text]="totpError(loginForm.controls.totp_code)" />
             </label>
 
@@ -77,6 +78,7 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
               } @else if (passwordChanged()) {
                 <app-form-message kind="success" [text]="i18n.t('auth.passwordChanged')" />
               }
+              <app-field-error messageId="login-credentials-feedback" [visuallyHidden]="true" [text]="loginCredentialsFeedback()" />
             </div>
 
             <button class="ui-button ui-button--green ui-button--full" type="submit" [disabled]="loginForm.invalid || loadingLogin()">
@@ -88,10 +90,11 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
 
         <app-auth-card [title]="i18n.t('auth.register.title')" icon="mail" accent="yellow">
           <form class="registration-form" [formGroup]="registrationForm" (ngSubmit)="submitRegistration()" novalidate>
-            <label class="field">
+            <label class="field" [class.ui-field-feedback--rejected]="registrationInvitationRejected()">
               <span>{{ i18n.t('auth.invite.label') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <input appCrockfordCode formControlName="invitation_code" autocomplete="off" required />
+              <input appCrockfordCode formControlName="invitation_code" autocomplete="off" required (input)="clearRegistrationInvitationRejection()" (animationend)="clearRegistrationInvitationRejection()" [attr.aria-invalid]="registrationInvitationRejected()" [attr.aria-describedby]="registrationInvitationRejected() ? 'registration-invitation-feedback' : null" />
               <app-field-error [text]="codeError(registrationForm.controls.invitation_code)" />
+              <app-field-error messageId="registration-invitation-feedback" [visuallyHidden]="true" [text]="registrationInvitationFeedback()" />
             </label>
 
             <label class="field">
@@ -174,7 +177,9 @@ export class AuthLandingComponent {
   readonly loadingRegistration = signal(false);
   readonly loginError = signal<string | null>(null);
   readonly loginCredentialsRejected = signal(false);
+  readonly loginTotpRequired = signal(false);
   readonly registrationError = signal<string | null>(null);
+  readonly registrationInvitationRejected = signal(false);
   readonly registrationCompleted = signal(false);
   readonly passwordChanged = signal(history.state?.passwordChanged === true);
   readonly recoveryOpen = signal(false);
@@ -204,6 +209,7 @@ export class AuthLandingComponent {
     this.loadingLogin.set(true);
     this.loginError.set(null);
     this.clearLoginCredentialsRejection();
+    this.clearLoginTotpRequired();
     const value = this.loginForm.getRawValue();
     this.auth.login({
       name: value.name,
@@ -216,6 +222,11 @@ export class AuthLandingComponent {
         // Credential/TOTP failures remain indistinguishable, so reject the
         // credential set without exposing which value was rejected.
         if (this.hasErrorDetail(error, 'Invalid credentials')) this.loginCredentialsRejected.set(true);
+        else if (this.hasErrorDetail(error, 'TOTP required')) {
+          this.loginTotpRequired.set(true);
+          this.loginForm.controls.totp_code.setValidators([Validators.required, Validators.pattern(TOTP_PATTERN)]);
+          this.loginForm.controls.totp_code.updateValueAndValidity();
+        }
         else this.loginError.set(this.apiErrors.message(error, 'errors.loginFailed'));
       },
     });
@@ -223,6 +234,23 @@ export class AuthLandingComponent {
 
   clearLoginCredentialsRejection(): void {
     this.loginCredentialsRejected.set(false);
+  }
+
+  loginCredentialsFeedback(): string | null {
+    if (this.loginTotpRequired()) return this.i18n.t('errors.totpRequired');
+    return this.loginCredentialsRejected() ? this.i18n.t('errors.loginFailed') : null;
+  }
+
+  clearLoginTotpRequired(): void {
+    this.loginTotpRequired.set(false);
+  }
+
+  clearRegistrationInvitationRejection(): void {
+    this.registrationInvitationRejected.set(false);
+  }
+
+  registrationInvitationFeedback(): string | null {
+    return this.registrationInvitationRejected() ? this.i18n.t('errors.invitationUnavailable') : null;
   }
 
   private hasErrorDetail(error: unknown, detail: string): boolean {
@@ -234,6 +262,7 @@ export class AuthLandingComponent {
 
     this.loadingRegistration.set(true);
     this.registrationError.set(null);
+    this.clearRegistrationInvitationRejection();
     this.clearRegistrationCompletion();
     const value = this.registrationForm.getRawValue();
 
@@ -253,7 +282,8 @@ export class AuthLandingComponent {
         this.registrationCompletionTimer = setTimeout(() => this.clearRegistrationCompletion(), 2_000);
       },
       error: (error: unknown) => {
-        this.registrationError.set(this.apiErrors.message(error, 'errors.registrationFailed'));
+        if (this.hasErrorDetail(error, 'Invitation not available')) this.registrationInvitationRejected.set(true);
+        else this.registrationError.set(this.apiErrors.message(error, 'errors.registrationFailed'));
       },
     });
   }
