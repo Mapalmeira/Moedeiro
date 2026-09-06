@@ -8,11 +8,6 @@ from app.domain.ledger.repository.account import AccountRepository
 
 
 class SqliteAccountRepository(AccountRepository):
-    _SORT_COLUMNS = {
-        "name": "account_name",
-        "note": "note",
-    }
-
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
@@ -89,20 +84,14 @@ class SqliteAccountRepository(AccountRepository):
             (account.color_code, account.uuid.bytes),
         )
 
-    def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[Account]:
-        sort_column = self._get_sort_column(sort_key)
-        direction = "ASC" if ascending else "DESC"
-        offset = (page_number - 1) * page_size
+    def list_all(self) -> list[Account]:
         rows = self.connection.execute(
-            f"""
-            SELECT uuid, account_name AS name, note, currency_uuid, icon, color_code
-            FROM account
-            ORDER BY {sort_column} {direction}, uuid ASC
-            LIMIT ? OFFSET ?
-            """,
-            (page_size, offset),
+            "SELECT uuid, account_name AS name, note, currency_uuid, icon, color_code FROM account ORDER BY rowid ASC"
         ).fetchall()
         return [self._to_model(row) for row in rows]
+
+    def count(self) -> int:
+        return int(self.connection.execute("SELECT COUNT(*) FROM account").fetchone()[0])
 
     def is_in_use(self, uuid: UUID) -> bool:
         row = self.connection.execute(
@@ -126,10 +115,3 @@ class SqliteAccountRepository(AccountRepository):
         if account is None:
             return None
         return Account.model_validate({**account.model_dump(), **changes})
-
-    @classmethod
-    def _get_sort_column(cls, sort_key: str) -> str:
-        try:
-            return cls._SORT_COLUMNS[sort_key]
-        except KeyError as error:
-            raise ValueError(f"Invalid account sort key: {sort_key}") from error

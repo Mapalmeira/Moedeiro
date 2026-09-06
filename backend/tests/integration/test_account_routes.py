@@ -48,7 +48,7 @@ class AccountRoutesTest(unittest.TestCase):
         self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="lucide:WalletCards", color_code="#102030"), self.request, self.user)
         self.currency = create_ledger_currency(
             self.ledger.uuid,
-            CreateCurrencyRequest(name="Real", prefix="R$", suffix=None, decimal_places=2, icon="lucide:CircleDollarSign", color_code="#AABBCC"),
+            CreateCurrencyRequest(name="Route Real", prefix="R$", suffix=None, decimal_places=2, icon="lucide:CircleDollarSign", color_code="#AABBCC"),
             self.request,
             self.user,
         )
@@ -90,23 +90,21 @@ class AccountRoutesTest(unittest.TestCase):
         self.assertEqual(unavailable_name.exception.status_code, 409)
         self.assertEqual(unavailable_name.exception.detail, "Account name unavailable")
 
-    def test_list_applies_pagination_and_ordering(self) -> None:
-        charlie = self.create_account("Charlie")
-        alpha = self.create_account("Alpha")
-        bravo = self.create_account("Bravo")
+    def test_list_returns_the_entire_collection_without_page_limits(self) -> None:
+        initial = list_ledger_accounts(self.ledger.uuid, self.request, self.user)
+        created = [self.create_account(name) for name in ("Charlie", "Alpha", "Bravo", "Delta")]
+        self.assertEqual(list_ledger_accounts(self.ledger.uuid, self.request, self.user), initial + created)
 
-        descending = list_ledger_accounts(self.ledger.uuid, self.request, self.user, 1, 3, "name", False)
-        second_page = list_ledger_accounts(self.ledger.uuid, self.request, self.user, 2, 1, "name", True)
-
-        self.assertEqual(descending, [charlie, bravo, alpha])
-        self.assertEqual(second_page, [bravo])
-
-    def test_list_rejects_a_page_larger_than_the_configured_limit(self) -> None:
+    def test_creation_limit_can_be_reused_after_deletion(self) -> None:
+        initial = list_ledger_accounts(self.ledger.uuid, self.request, self.user)
+        created = [self.create_account(f"Item {index}") for index in range(300 - len(initial))]
         with self.assertRaises(HTTPException) as raised:
-            list_ledger_accounts(self.ledger.uuid, self.request, self.user, 1, 4, "name", True)
-
-        self.assertEqual(raised.exception.status_code, 422)
-        self.assertEqual(raised.exception.detail, "page_size must be less than or equal to 3")
+            self.create_account("Overflow")
+        self.assertEqual(raised.exception.status_code, 409)
+        self.assertEqual(raised.exception.detail, "Account limit reached")
+        delete_ledger_account(self.ledger.uuid, created[-1].uuid, self.request, self.user)
+        self.create_account("Replacement")
+        self.assertEqual(len(list_ledger_accounts(self.ledger.uuid, self.request, self.user)), 300)
 
     def test_update_changes_mutable_fields_without_changing_currency(self) -> None:
         created = self.create_account()
@@ -164,7 +162,7 @@ class AccountRoutesTest(unittest.TestCase):
     def test_another_user_cannot_discover_or_change_ledger_accounts(self) -> None:
         account = self.create_account()
         operations = (
-            lambda: list_ledger_accounts(self.ledger.uuid, self.request, self.other_user, 1, 3, "name", True),
+            lambda: list_ledger_accounts(self.ledger.uuid, self.request, self.other_user),
             lambda: get_ledger_account(self.ledger.uuid, account.uuid, self.request, self.other_user),
             lambda: update_ledger_account(
                 self.ledger.uuid,
@@ -204,9 +202,8 @@ class AccountRoutesTest(unittest.TestCase):
 
         self.assertIn("201", collection["post"]["responses"])
         self.assertIn("200", collection["get"]["responses"])
-        page_size = next(parameter for parameter in collection["get"]["parameters"] if parameter["name"] == "page_size")
-        self.assertEqual(page_size["schema"]["minimum"], 1)
-        self.assertNotIn("maximum", page_size["schema"])
+        query_parameters = [p for p in collection["get"]["parameters"] if p["in"] == "query"]
+        self.assertEqual(query_parameters, [])
         self.assertIn("200", member["get"]["responses"])
         self.assertIn("200", member["put"]["responses"])
         self.assertNotIn("content", member["delete"]["responses"]["204"])

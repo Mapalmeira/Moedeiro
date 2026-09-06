@@ -6,7 +6,7 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from app.application.ledger.exceptions import AccountInUseError, AccountNameUnavailableError, AccountNotFoundError, CurrencyNotFoundError
-from app.application.ledger.use_cases.account import create_account, delete_account, get_account, list_account_page, update_account
+from app.application.ledger.use_cases.account import create_account, delete_account, get_account, list_accounts, update_account
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
 
@@ -41,7 +41,7 @@ class AccountUseCasesTest(unittest.TestCase):
         with self.assertRaises(CurrencyNotFoundError):
             create_account(self.open_ledger, "Checking", None, uuid4(), "lucide:WalletCards", b"\x40\x50\x60")
 
-        self.assertEqual(list_account_page(self.open_ledger, 1, 200, "name", True), [])
+        self.assertEqual(list_accounts(self.open_ledger), [])
 
     def test_create_rejects_an_unavailable_name(self) -> None:
         self.create()
@@ -53,19 +53,15 @@ class AccountUseCasesTest(unittest.TestCase):
         with self.assertRaises(ValidationError):
             create_account(self.open_ledger, "", None, self.currency.uuid, "lucide:WalletCards", b"\x40\x50\x60")
 
-        self.assertEqual(list_account_page(self.open_ledger, 1, 200, "name", True), [])
+        self.assertEqual(list_accounts(self.open_ledger), [])
 
     def test_get_raises_for_an_unknown_account(self) -> None:
         with self.assertRaises(AccountNotFoundError):
             get_account(self.open_ledger, uuid4())
 
-    def test_list_page_delegates_ordering_and_pagination(self) -> None:
-        charlie = self.create("Charlie")
-        alpha = self.create("Alpha")
-        bravo = self.create("Bravo")
-
-        self.assertEqual(list_account_page(self.open_ledger, 1, 2, "name", True), [alpha, bravo])
-        self.assertEqual(list_account_page(self.open_ledger, 1, 1, "name", False), [charlie])
+    def test_list_returns_every_item_in_insertion_order(self) -> None:
+        created = [self.create(name) for name in ("Charlie", "Alpha", "Bravo")]
+        self.assertEqual(list_accounts(self.open_ledger), created)
 
     def test_update_changes_mutable_fields_but_preserves_currency(self) -> None:
         account = self.create()

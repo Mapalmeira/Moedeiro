@@ -84,6 +84,20 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
         self.assertEqual(row["storage_type"], "blob")
         self.assertEqual(row["size"], 16)
 
+    def test_currency_names_are_unique(self) -> None:
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute(
+                "INSERT INTO currency VALUES (?, 'Real', NULL, NULL, 2, 'unicode:$', ?)",
+                (uuid4().bytes, b"\x80\x80\x80"),
+            )
+
+    def test_schema_has_no_collection_size_triggers(self) -> None:
+        triggers = self.connection.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'trigger' ORDER BY name"
+        ).fetchall()
+
+        self.assertEqual(triggers, [])
+
     def test_enforces_ledger_metadata_schema_version_and_creation_timestamp(self) -> None:
         for column, value in (("schema_version", 0), ("created_at", -1)):
             with self.subTest(column=column):

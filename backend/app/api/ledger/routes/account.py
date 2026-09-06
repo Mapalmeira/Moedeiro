@@ -1,14 +1,13 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.dependencies.authentication import AuthenticatedUser
 from app.api.dependencies.ledger import ledger_unit_of_work_factory
-from app.api.dependencies.pagination import validate_requested_page
-from app.api.ledger.schema.account import AccountResponse, AccountSortKey, CreateAccountRequest, UpdateAccountRequest
-from app.application.ledger.exceptions import AccountInUseError, AccountNameUnavailableError, AccountNotFoundError, CurrencyNotFoundError
-from app.application.ledger.use_cases.account import create_account, delete_account, get_account, list_account_page, update_account
+from app.api.ledger.schema.account import AccountResponse, CreateAccountRequest, UpdateAccountRequest
+from app.application.ledger.exceptions import AccountInUseError, AccountLimitReachedError, AccountNameUnavailableError, AccountNotFoundError, CurrencyNotFoundError
+from app.application.ledger.use_cases.account import create_account, delete_account, get_account, list_accounts, update_account
 
 
 router = APIRouter(prefix="/api/ledgers/{ledger_uuid}/accounts", tags=["accounts"])
@@ -29,6 +28,8 @@ def create_ledger_account(ledger_uuid: UUID, payload: CreateAccountRequest, requ
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Currency not found") from error
     except AccountNameUnavailableError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Account name unavailable") from error
+    except AccountLimitReachedError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Account limit reached") from error
     return AccountResponse.from_account(account)
 
 
@@ -37,13 +38,8 @@ def list_ledger_accounts(
     ledger_uuid: UUID,
     request: Request,
     user: AuthenticatedUser,
-    page_number: Annotated[int, Query(ge=1)],
-    page_size: Annotated[int, Query(ge=1)],
-    sort_key: AccountSortKey = "name",
-    ascending: bool = True,
 ) -> list[AccountResponse]:
-    validate_requested_page(request, page_number, page_size)
-    accounts = list_account_page(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), page_number, page_size, sort_key, ascending)
+    accounts = list_accounts(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid))
     return [AccountResponse.from_account(account) for account in accounts]
 
 

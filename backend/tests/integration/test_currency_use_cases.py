@@ -5,8 +5,8 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.application.ledger.exceptions import CurrencyInUseError, CurrencyNotFoundError
-from app.application.ledger.use_cases.currency import create_currency, delete_currency, get_currency, list_currency_page, update_currency
+from app.application.ledger.exceptions import CurrencyInUseError, CurrencyNameUnavailableError, CurrencyNotFoundError
+from app.application.ledger.use_cases.currency import create_currency, delete_currency, get_currency, list_currencies, update_currency
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
 
@@ -59,22 +59,23 @@ class CurrencyUseCasesTest(unittest.TestCase):
                 b"\x10\x20\x30",
             )
 
-        self.assertEqual(list_currency_page(self.open_ledger, 1, 200, "name", True), [])
+        self.assertEqual(list_currencies(self.open_ledger), [])
+
+    def test_create_rejects_an_unavailable_name(self) -> None:
+        self.create("Real")
+
+        with self.assertRaises(CurrencyNameUnavailableError):
+            self.create("Real")
+
+        self.assertEqual([currency.name for currency in list_currencies(self.open_ledger)], ["Real"])
 
     def test_get_raises_for_an_unknown_currency(self) -> None:
         with self.assertRaises(CurrencyNotFoundError):
             get_currency(self.open_ledger, uuid4())
 
-    def test_list_all_and_page_delegate_ordering_and_pagination(self) -> None:
-        charlie = self.create("Charlie")
-        alpha = self.create("Alpha")
-        bravo = self.create("Bravo")
-
-        self.assertEqual(list_currency_page(self.open_ledger, 1, 200, "name", True), [alpha, bravo, charlie])
-        self.assertEqual(
-            list_currency_page(self.open_ledger, 1, 2, "name", True),
-            [alpha, bravo],
-        )
+    def test_list_returns_every_item_in_insertion_order(self) -> None:
+        created = [self.create(name) for name in ("Charlie", "Alpha", "Bravo")]
+        self.assertEqual(list_currencies(self.open_ledger), created)
 
     def test_update_changes_mutable_fields_but_preserves_decimal_places(self) -> None:
         currency = self.create()
@@ -108,6 +109,23 @@ class CurrencyUseCasesTest(unittest.TestCase):
                 "lucide:Banknote",
                 b"\xaa\xbb\xcc",
             )
+
+    def test_update_rejects_an_unavailable_name(self) -> None:
+        first = self.create("Real")
+        second = self.create("Dollar")
+
+        with self.assertRaises(CurrencyNameUnavailableError):
+            update_currency(
+                self.open_ledger,
+                second.uuid,
+                first.name,
+                "$",
+                None,
+                "lucide:Banknote",
+                b"\xaa\xbb\xcc",
+            )
+
+        self.assertEqual(get_currency(self.open_ledger, second.uuid), second)
 
     def test_delete_removes_an_unused_currency(self) -> None:
         currency = self.create()

@@ -30,8 +30,10 @@ class LedgerRepositoryTestCase(unittest.TestCase):
         self.connection.close()
         self.temporary_directory.cleanup()
 
-    def create_currency(self, name: str = "Real") -> Currency:
+    def create_currency(self, name: str | None = None) -> Currency:
         repository = SqliteCurrencyRepository(self.connection)
+        if name is None:
+            name = f"Currency {repository.count() + 1}"
         return repository.create(name, "R$", None, 2, "unicode:R$", b"\x80\x80\x80")
 
     def create_category(self, name: str = "Food", parent: Category | None = None) -> Category:

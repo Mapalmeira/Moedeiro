@@ -47,13 +47,11 @@ class AccountRepository(ABC):
         pass
 
     @abstractmethod
-    def list_page(
-        self,
-        page_number: int,
-        page_size: int,
-        sort_key: str,
-        ascending: bool,
-    ) -> list[Account]:
+    def list_all(self) -> list[Account]:
+        pass
+
+    @abstractmethod
+    def count(self) -> int:
         pass
 
     @abstractmethod

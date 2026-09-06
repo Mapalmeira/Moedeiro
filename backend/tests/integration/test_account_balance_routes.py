@@ -50,7 +50,7 @@ class AccountBalanceRoutesTest(unittest.TestCase):
         self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="lucide:WalletCards", color_code="#102030"), self.request, self.user)
         self.currency = create_ledger_currency(
             self.ledger.uuid,
-            CreateCurrencyRequest(name="Real", prefix="R$", suffix=None, decimal_places=2, icon="lucide:CircleDollarSign", color_code="#AABBCC"),
+            CreateCurrencyRequest(name="Route Real", prefix="R$", suffix=None, decimal_places=2, icon="lucide:CircleDollarSign", color_code="#AABBCC"),
             self.request,
             self.user,
         )

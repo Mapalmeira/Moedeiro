@@ -79,20 +79,10 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(updated.color_code, b"\xff\x80\x00")
         self.assertEqual(updated.currency_uuid, account.currency_uuid)
 
-    def test_list_page_orders_and_rejects_identity_sorting(self) -> None:
-        """Neither entity nor currency UUID is exposed as a sort option."""
-        for name in ("Charlie", "Alpha", "Bravo"):
-            self.repository.create(name, None, self.currency.uuid, "lucide:WalletCards", b"\x80\x80\x80")
-
-        page = self.repository.list_page(2, 1, "name", True)
-        all_accounts = self.repository.list_page(1, 200, "name", False)
-
-        self.assertEqual([account.name for account in page], ["Bravo"])
-        self.assertEqual([account.name for account in all_accounts], ["Charlie", "Bravo", "Alpha"])
-        for sort_key in ("uuid", "currency_uuid"):
-            with self.subTest(sort_key=sort_key):
-                with self.assertRaises(ValueError):
-                    self.repository.list_page(1, 200, sort_key, True)
+    def test_list_all_and_count_include_every_item(self) -> None:
+        created = [self.create_account(name) for name in ("Charlie", "Alpha", "Bravo")]
+        self.assertEqual(self.repository.list_all(), created)
+        self.assertEqual(self.repository.count(), 3)
 
     def test_is_in_use_detects_financial_movements_and_budgets(self) -> None:
         movement_account = self.create_account("Movement", self.currency)
@@ -124,7 +114,7 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
 
         self.connection.rollback()
 
-        self.assertEqual(self.repository.list_page(1, 200, "name", True), [])
+        self.assertEqual(self.repository.list_all(), [])
 
 
 if __name__ == "__main__":

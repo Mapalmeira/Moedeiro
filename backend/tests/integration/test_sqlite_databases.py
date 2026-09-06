@@ -119,20 +119,20 @@ class SqliteDatabasesTest(unittest.TestCase):
         self.assertEqual(path, self.ledger_dbs_dir / f"{ledger_uuid}.sqlite")
         with self.databases.open_ledger(path) as unit_of_work:
             metadata = unit_of_work.ledger_metadata_repository.get()
-            currencies = unit_of_work.currency_repository.list_page(1, 100, "name", True)
+            currencies = unit_of_work.currency_repository.list_all()
             assert metadata is not None
         self.assertEqual(
             [
                 (currency.name, currency.prefix, currency.suffix, currency.decimal_places, currency.icon, currency.color_code)
-                for currency in currencies
+                for currency in sorted(currencies, key=lambda currency: currency.name)
             ],
             [
-                ("Bitcoin", "₿", None, 8, "unicode:₿", bytes.fromhex("F7931A")),
+                ("Bitcoin", None, "BTC", 8, "unicode:₿", bytes.fromhex("F7931A")),
                 ("Dollar", "$", None, 2, "unicode:$", bytes.fromhex("2E7D32")),
                 ("Euro", "€", None, 2, "unicode:€", bytes.fromhex("003399")),
                 ("Iene", "¥", None, 0, "unicode:¥", bytes.fromhex("BC002D")),
                 ("Libra", "£", None, 2, "unicode:£", bytes.fromhex("5B2C6F")),
-                ("Real", "R$", None, 2, "unicode:R$", bytes.fromhex("009B3A")),
+                ("Real", "R$", None, 2, "unicode:R$", bytes.fromhex("FFD51A")),
             ],
         )
         self.assertEqual(metadata.ledger_uuid, ledger_uuid)

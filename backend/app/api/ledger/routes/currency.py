@@ -1,14 +1,13 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, HTTPException, Request, status
 
 from app.api.dependencies.authentication import AuthenticatedUser
 from app.api.dependencies.ledger import ledger_unit_of_work_factory
-from app.api.dependencies.pagination import validate_requested_page
-from app.api.ledger.schema.currency import CreateCurrencyRequest, CurrencyResponse, CurrencySortKey, UpdateCurrencyRequest
-from app.application.ledger.exceptions import CurrencyInUseError, CurrencyNotFoundError
-from app.application.ledger.use_cases.currency import create_currency, delete_currency, get_currency, list_currency_page, update_currency
+from app.api.ledger.schema.currency import CreateCurrencyRequest, CurrencyResponse, UpdateCurrencyRequest
+from app.application.ledger.exceptions import CurrencyInUseError, CurrencyLimitReachedError, CurrencyNameUnavailableError, CurrencyNotFoundError
+from app.application.ledger.use_cases.currency import create_currency, delete_currency, get_currency, list_currencies, update_currency
 
 
 router = APIRouter(prefix="/api/ledgers/{ledger_uuid}/currencies", tags=["currencies"])
@@ -21,15 +20,20 @@ def create_ledger_currency(
     request: Request,
     user: AuthenticatedUser,
 ) -> CurrencyResponse:
-    currency = create_currency(
-        ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
-        payload.name,
-        payload.prefix,
-        payload.suffix,
-        payload.decimal_places,
-        payload.icon,
-        bytes.fromhex(payload.color_code[1:]),
-    )
+    try:
+        currency = create_currency(
+            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            payload.name,
+            payload.prefix,
+            payload.suffix,
+            payload.decimal_places,
+            payload.icon,
+            bytes.fromhex(payload.color_code[1:]),
+        )
+    except CurrencyLimitReachedError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Currency limit reached") from error
+    except CurrencyNameUnavailableError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Currency name unavailable") from error
     return CurrencyResponse.from_currency(currency)
 
 
@@ -38,19 +42,8 @@ def list_ledger_currencies(
     ledger_uuid: UUID,
     request: Request,
     user: AuthenticatedUser,
-    page_number: Annotated[int, Query(ge=1)],
-    page_size: Annotated[int, Query(ge=1)],
-    sort_key: CurrencySortKey = "name",
-    ascending: bool = True,
 ) -> list[CurrencyResponse]:
-    validate_requested_page(request, page_number, page_size)
-    currencies = list_currency_page(
-        ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
-        page_number,
-        page_size,
-        sort_key,
-        ascending,
-    )
+    currencies = list_currencies(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid))
     return [CurrencyResponse.from_currency(currency) for currency in currencies]
 
 
@@ -91,6 +84,8 @@ def update_ledger_currency(
         )
     except CurrencyNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Currency not found") from error
+    except CurrencyNameUnavailableError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Currency name unavailable") from error
     return CurrencyResponse.from_currency(currency)
 
 

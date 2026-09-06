@@ -1,3 +1,6 @@
+from app.domain.ledger.limits import AccountLimitReachedError, CurrencyLimitReachedError
+
+
 class LedgerNotFoundError(Exception):
     pass
 
@@ -7,6 +10,10 @@ class CurrencyNotFoundError(Exception):
 
 
 class CurrencyInUseError(Exception):
+    pass
+
+
+class CurrencyNameUnavailableError(Exception):
     pass
 
 

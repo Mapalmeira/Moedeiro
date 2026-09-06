@@ -22,6 +22,10 @@ class CurrencyRepository(ABC):
         pass
 
     @abstractmethod
+    def get_by_name(self, name: str) -> Currency | None:
+        pass
+
+    @abstractmethod
     def update_name(self, uuid: UUID, value: str) -> None:
         pass
 
@@ -42,7 +46,11 @@ class CurrencyRepository(ABC):
         pass
 
     @abstractmethod
-    def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[Currency]:
+    def list_all(self) -> list[Currency]:
+        pass
+
+    @abstractmethod
+    def count(self) -> int:
         pass
 
     @abstractmethod

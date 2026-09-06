@@ -7,13 +7,6 @@ from app.domain.ledger.repository.currency import CurrencyRepository
 
 
 class SqliteCurrencyRepository(CurrencyRepository):
-    _SORT_COLUMNS = {
-        "name": "currency_name",
-        "prefix": "prefix",
-        "suffix": "suffix",
-        "decimal_places": "decimal_places",
-    }
-
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
@@ -29,6 +22,15 @@ class SqliteCurrencyRepository(CurrencyRepository):
         row = self.connection.execute(
             "SELECT uuid, currency_name AS name, prefix, suffix, decimal_places, icon, color_code FROM currency WHERE uuid = ?",
             (uuid.bytes,),
+        ).fetchone()
+        if row is None:
+            return None
+        return self._to_model(row)
+
+    def get_by_name(self, name: str) -> Currency | None:
+        row = self.connection.execute(
+            "SELECT uuid, currency_name AS name, prefix, suffix, decimal_places, icon, color_code FROM currency WHERE currency_name = ?",
+            (name,),
         ).fetchone()
         if row is None:
             return None
@@ -79,20 +81,14 @@ class SqliteCurrencyRepository(CurrencyRepository):
             (currency.color_code, currency.uuid.bytes),
         )
 
-    def list_page(self, page_number: int, page_size: int, sort_key: str, ascending: bool) -> list[Currency]:
-        sort_column = self._get_sort_column(sort_key)
-        direction = "ASC" if ascending else "DESC"
-        offset = (page_number - 1) * page_size
+    def list_all(self) -> list[Currency]:
         rows = self.connection.execute(
-            f"""
-            SELECT uuid, currency_name AS name, prefix, suffix, decimal_places, icon, color_code
-            FROM currency
-            ORDER BY {sort_column} {direction}, uuid ASC
-            LIMIT ? OFFSET ?
-            """,
-            (page_size, offset),
+            "SELECT uuid, currency_name AS name, prefix, suffix, decimal_places, icon, color_code FROM currency ORDER BY rowid ASC"
         ).fetchall()
         return [self._to_model(row) for row in rows]
+
+    def count(self) -> int:
+        return int(self.connection.execute("SELECT COUNT(*) FROM currency").fetchone()[0])
 
     def is_in_use(self, uuid: UUID) -> bool:
         row = self.connection.execute(
@@ -116,10 +112,3 @@ class SqliteCurrencyRepository(CurrencyRepository):
         if currency is None:
             return None
         return Currency.model_validate({**currency.model_dump(), **changes})
-
-    @classmethod
-    def _get_sort_column(cls, sort_key: str) -> str:
-        try:
-            return cls._SORT_COLUMNS[sort_key]
-        except KeyError as error:
-            raise ValueError(f"Invalid currency sort key: {sort_key}") from error

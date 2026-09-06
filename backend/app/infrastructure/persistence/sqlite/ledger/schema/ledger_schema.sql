@@ -8,7 +8,7 @@ CREATE TABLE ledger_metadata (
 
 CREATE TABLE currency (
     uuid BLOB PRIMARY KEY,
-    currency_name TEXT NOT NULL CHECK (length(currency_name) BETWEEN 1 AND 30),
+    currency_name TEXT NOT NULL UNIQUE CHECK (length(currency_name) BETWEEN 1 AND 30),
     suffix TEXT CHECK (suffix IS NULL OR length(suffix) <= 10),
     prefix TEXT CHECK (prefix IS NULL OR length(prefix) <= 10),
     decimal_places INTEGER NOT NULL CHECK (decimal_places BETWEEN 0 AND 20),

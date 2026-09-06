@@ -1,10 +1,13 @@
 from collections.abc import Callable
 from uuid import UUID
 
-from app.application.ledger.exceptions import AccountInUseError, AccountNameUnavailableError, AccountNotFoundError, CurrencyNotFoundError
+from app.application.ledger.exceptions import AccountInUseError, AccountLimitReachedError, AccountNameUnavailableError, AccountNotFoundError, CurrencyNotFoundError
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
 from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.account import Account, AccountName, AccountNote
+
+
+from app.domain.ledger.limits import MAXIMUM_ACCOUNTS
 
 
 def create_account(
@@ -16,6 +19,8 @@ def create_account(
     color_code: RgbColorCode,
 ) -> Account:
     with unit_of_work_factory() as unit_of_work:
+        if unit_of_work.account_repository.count() >= MAXIMUM_ACCOUNTS:
+            raise AccountLimitReachedError
         if unit_of_work.currency_repository.get(currency_uuid) is None:
             raise CurrencyNotFoundError
         if unit_of_work.account_repository.get_by_name(name) is not None:
@@ -33,15 +38,9 @@ def get_account(unit_of_work_factory: Callable[[], LedgerUnitOfWork], account_uu
         return account
 
 
-def list_account_page(
-    unit_of_work_factory: Callable[[], LedgerUnitOfWork],
-    page_number: int,
-    page_size: int,
-    sort_key: str,
-    ascending: bool,
-) -> list[Account]:
+def list_accounts(unit_of_work_factory: Callable[[], LedgerUnitOfWork]) -> list[Account]:
     with unit_of_work_factory() as unit_of_work:
-        return unit_of_work.account_repository.list_page(page_number, page_size, sort_key, ascending)
+        return unit_of_work.account_repository.list_all()
 
 
 def update_account(

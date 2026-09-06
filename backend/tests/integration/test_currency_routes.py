@@ -52,7 +52,7 @@ class CurrencyRoutesTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()
 
-    def create_currency(self, name: str = "Real", decimal_places: int = 2):
+    def create_currency(self, name: str = "Test currency", decimal_places: int = 2):
         return create_ledger_currency(
             self.ledger.uuid,
             CreateCurrencyRequest(
@@ -75,26 +75,30 @@ class CurrencyRoutesTest(unittest.TestCase):
         self.assertEqual(response, created)
         self.assertEqual(response.color_code, "#AABBCC")
 
-    def test_list_all_and_page_apply_the_requested_order(self) -> None:
-        defaults = list_ledger_currencies(self.ledger.uuid, self.request, self.user, 1, 3, "name", True)
-        defaults += list_ledger_currencies(self.ledger.uuid, self.request, self.user, 2, 3, "name", True)
-        charlie = self.create_currency("Charlie")
-        alpha = self.create_currency("Alpha")
-        bravo = self.create_currency("Bravo")
-        expected = defaults + [charlie, alpha, bravo]
+    def test_create_returns_conflict_for_an_unavailable_name(self) -> None:
+        self.create_currency("Unique test currency")
 
-        all_currencies = list_ledger_currencies(self.ledger.uuid, self.request, self.user, 1, 3, "name", False)
-        page = list_ledger_currencies(self.ledger.uuid, self.request, self.user, 2, 1, "name", True)
-
-        self.assertEqual(all_currencies, sorted(expected, key=lambda currency: currency.name, reverse=True)[:3])
-        self.assertEqual(page, sorted(expected, key=lambda currency: currency.name)[1:2])
-
-    def test_list_rejects_a_page_larger_than_the_configured_limit(self) -> None:
         with self.assertRaises(HTTPException) as raised:
-            list_ledger_currencies(self.ledger.uuid, self.request, self.user, 1, 4, "name", True)
+            self.create_currency("Unique test currency")
 
-        self.assertEqual(raised.exception.status_code, 422)
-        self.assertEqual(raised.exception.detail, "page_size must be less than or equal to 3")
+        self.assertEqual(raised.exception.status_code, 409)
+        self.assertEqual(raised.exception.detail, "Currency name unavailable")
+
+    def test_list_returns_the_entire_collection_without_page_limits(self) -> None:
+        initial = list_ledger_currencies(self.ledger.uuid, self.request, self.user)
+        created = [self.create_currency(name) for name in ("Charlie", "Alpha", "Bravo", "Delta")]
+        self.assertEqual(list_ledger_currencies(self.ledger.uuid, self.request, self.user), initial + created)
+
+    def test_creation_limit_can_be_reused_after_deletion(self) -> None:
+        initial = list_ledger_currencies(self.ledger.uuid, self.request, self.user)
+        created = [self.create_currency(f"Item {index}") for index in range(300 - len(initial))]
+        with self.assertRaises(HTTPException) as raised:
+            self.create_currency("Overflow")
+        self.assertEqual(raised.exception.status_code, 409)
+        self.assertEqual(raised.exception.detail, "Currency limit reached")
+        delete_ledger_currency(self.ledger.uuid, created[-1].uuid, self.request, self.user)
+        self.create_currency("Replacement")
+        self.assertEqual(len(list_ledger_currencies(self.ledger.uuid, self.request, self.user)), 300)
 
     def test_update_preserves_decimal_places(self) -> None:
         created = self.create_currency(decimal_places=3)
@@ -110,6 +114,22 @@ class CurrencyRoutesTest(unittest.TestCase):
         self.assertEqual(updated.name, "Brazilian Real")
         self.assertEqual(updated.decimal_places, 3)
         self.assertEqual(updated.color_code, "#010203")
+
+    def test_update_returns_conflict_for_an_unavailable_name(self) -> None:
+        first = self.create_currency("First test currency")
+        second = self.create_currency("Second test currency")
+
+        with self.assertRaises(HTTPException) as raised:
+            update_ledger_currency(
+                self.ledger.uuid,
+                second.uuid,
+                UpdateCurrencyRequest(name=first.name, prefix=None, suffix=None, icon="lucide:Banknote", color_code="#010203"),
+                self.request,
+                self.user,
+            )
+
+        self.assertEqual(raised.exception.status_code, 409)
+        self.assertEqual(raised.exception.detail, "Currency name unavailable")
 
     def test_delete_returns_not_found_after_removing_an_unused_currency(self) -> None:
         created = self.create_currency()
@@ -136,7 +156,7 @@ class CurrencyRoutesTest(unittest.TestCase):
         currency = self.create_currency()
 
         operations = (
-            lambda: list_ledger_currencies(self.ledger.uuid, self.request, self.other_user, 1, 3, "name", True),
+            lambda: list_ledger_currencies(self.ledger.uuid, self.request, self.other_user),
             lambda: get_ledger_currency(self.ledger.uuid, currency.uuid, self.request, self.other_user),
             lambda: update_ledger_currency(
                 self.ledger.uuid,
@@ -187,9 +207,8 @@ class CurrencyRoutesTest(unittest.TestCase):
         self.assertIn("201", collection["post"]["responses"])
         self.assertIn("200", collection["get"]["responses"])
         self.assertNotIn("/api/ledgers/{ledger_uuid}/currencies/page", paths)
-        page_size = next(parameter for parameter in collection["get"]["parameters"] if parameter["name"] == "page_size")
-        self.assertEqual(page_size["schema"]["minimum"], 1)
-        self.assertNotIn("maximum", page_size["schema"])
+        query_parameters = [p for p in collection["get"]["parameters"] if p["in"] == "query"]
+        self.assertEqual(query_parameters, [])
         self.assertIn("200", member["get"]["responses"])
         self.assertIn("200", member["put"]["responses"])
         self.assertNotIn("content", member["delete"]["responses"]["204"])

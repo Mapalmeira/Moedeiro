@@ -1,10 +1,13 @@
 from collections.abc import Callable
 from uuid import UUID
 
-from app.application.ledger.exceptions import CurrencyInUseError, CurrencyNotFoundError
+from app.application.ledger.exceptions import CurrencyInUseError, CurrencyLimitReachedError, CurrencyNameUnavailableError, CurrencyNotFoundError
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
 from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.currency import Currency
+
+
+from app.domain.ledger.limits import MAXIMUM_CURRENCIES
 
 
 def create_currency(
@@ -17,6 +20,10 @@ def create_currency(
     color_code: RgbColorCode,
 ) -> Currency:
     with unit_of_work_factory() as unit_of_work:
+        if unit_of_work.currency_repository.count() >= MAXIMUM_CURRENCIES:
+            raise CurrencyLimitReachedError
+        if unit_of_work.currency_repository.get_by_name(name) is not None:
+            raise CurrencyNameUnavailableError
         currency = unit_of_work.currency_repository.create(
             name,
             prefix,
@@ -40,20 +47,9 @@ def get_currency(
         return currency
 
 
-def list_currency_page(
-    unit_of_work_factory: Callable[[], LedgerUnitOfWork],
-    page_number: int,
-    page_size: int,
-    sort_key: str,
-    ascending: bool,
-) -> list[Currency]:
+def list_currencies(unit_of_work_factory: Callable[[], LedgerUnitOfWork]) -> list[Currency]:
     with unit_of_work_factory() as unit_of_work:
-        return unit_of_work.currency_repository.list_page(
-            page_number,
-            page_size,
-            sort_key,
-            ascending,
-        )
+        return unit_of_work.currency_repository.list_all()
 
 
 def update_currency(
@@ -79,6 +75,9 @@ def update_currency(
                 "color_code": color_code,
             }
         )
+        currency_with_name = unit_of_work.currency_repository.get_by_name(updated_currency.name)
+        if currency_with_name is not None and currency_with_name.uuid != currency.uuid:
+            raise CurrencyNameUnavailableError
         unit_of_work.currency_repository.update_name(currency_uuid, updated_currency.name)
         unit_of_work.currency_repository.update_prefix(currency_uuid, updated_currency.prefix)
         unit_of_work.currency_repository.update_suffix(currency_uuid, updated_currency.suffix)

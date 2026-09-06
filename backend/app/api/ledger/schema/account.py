@@ -1,4 +1,4 @@
-from typing import Annotated, Literal, Self
+from typing import Annotated, Self
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -7,7 +7,6 @@ from app.domain.appearance import Icon
 from app.domain.ledger.model.account import Account, AccountName, AccountNote
 
 
-AccountSortKey = Literal["name", "note"]
 HexRgbColorCode = Annotated[str, Field(pattern=r"^#[0-9A-Fa-f]{6}$")]
 
 

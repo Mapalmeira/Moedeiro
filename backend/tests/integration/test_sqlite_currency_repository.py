@@ -1,5 +1,7 @@
 """Integration tests for the ledger SQLite currency repository."""
 
+import sqlite3
+
 from pydantic import ValidationError
 
 from app.infrastructure.persistence.sqlite.ledger.repository.currency import SqliteCurrencyRepository
@@ -28,6 +30,18 @@ class SqliteCurrencyRepositoryTest(LedgerRepositoryTestCase):
         from uuid import uuid4
 
         self.assertIsNone(self.repository.get(uuid4()))
+
+    def test_get_by_name_returns_the_currency_and_unknown_name_returns_none(self) -> None:
+        currency = self.create_currency("Real")
+
+        self.assertEqual(self.repository.get_by_name("Real"), currency)
+        self.assertIsNone(self.repository.get_by_name("Unknown"))
+
+    def test_database_rejects_duplicate_currency_names(self) -> None:
+        self.create_currency("Real")
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.create_currency("Real")
 
     def test_updates_name_prefix_and_suffix_independently(self) -> None:
         """Each update changes only its selected mutable field."""
@@ -66,19 +80,10 @@ class SqliteCurrencyRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(updated.color_code, b"\xff\x80\x00")
         self.assertEqual(updated.decimal_places, currency.decimal_places)
 
-    def test_list_page_orders_and_rejects_uuid_sorting(self) -> None:
-        """Pagination accepts model fields but never UUID as a public sort key."""
-        self.repository.create("Charlie", None, None, 2, "unicode:$", b"\x80\x80\x80")
-        self.repository.create("Alpha", None, None, 2, "unicode:$", b"\x80\x80\x80")
-        self.repository.create("Bravo", None, None, 2, "unicode:$", b"\x80\x80\x80")
-
-        page = self.repository.list_page(1, 2, "name", True)
-        all_currencies = self.repository.list_page(1, 200, "name", False)
-
-        self.assertEqual([currency.name for currency in page], ["Alpha", "Bravo"])
-        self.assertEqual([currency.name for currency in all_currencies], ["Charlie", "Bravo", "Alpha"])
-        with self.assertRaises(ValueError):
-            self.repository.list_page(1, 200, "uuid", True)
+    def test_list_all_and_count_include_every_item(self) -> None:
+        created = [self.create_currency(name) for name in ("Charlie", "Alpha", "Bravo")]
+        self.assertEqual(self.repository.list_all(), created)
+        self.assertEqual(self.repository.count(), 3)
 
     def test_is_in_use_detects_accounts_and_budgets(self) -> None:
         account_currency = self.create_currency("Account currency")
@@ -107,7 +112,7 @@ class SqliteCurrencyRepositoryTest(LedgerRepositoryTestCase):
 
         self.connection.rollback()
 
-        self.assertEqual(self.repository.list_page(1, 200, "name", True), [])
+        self.assertEqual(self.repository.list_all(), [])
 
 
 if __name__ == "__main__":
