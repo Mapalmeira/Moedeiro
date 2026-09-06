@@ -16,10 +16,10 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   background: var(--surface);
   color: #050505;
   font-weight: 800;
-  box-shadow: var(--button-shadow);
-  transition: transform var(--motion-press) ease, box-shadow var(--motion-press) ease;
+  filter: var(--button-shadow);
+  transition: transform var(--motion-press) ease, filter var(--motion-press) ease;
 }
-.ui-button:not(:disabled):active { transform: translate(var(--press-offset), var(--press-offset)); box-shadow: var(--button-shadow-pressed); }
+.ui-button:not(:disabled):active { transform: translate(var(--press-offset), var(--press-offset)); filter: var(--button-shadow-pressed); }
 .ui-button--full { width: 100%; }
 .ui-button--full app-icon { position: absolute; right: 17px; }
 .ui-button--green { --focus-accent: var(--green); background: linear-gradient(90deg, #31d36c, #3ad273); }
@@ -42,12 +42,12 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   font-size: var(--control-font-size);
   font-weight: var(--control-font-weight);
   line-height: var(--control-line-height);
-  box-shadow: var(--selection-shadow-transparent);
-  transition: box-shadow var(--motion-selection) ease, background var(--motion-selection) ease, border-color var(--motion-selection) ease;
+  filter: var(--selection-shadow-transparent);
+  transition: filter var(--motion-selection) ease, background var(--motion-selection) ease, border-color var(--motion-selection) ease;
 }
 .ui-choice:not(:disabled):not(.ui-choice--selected):hover { background: var(--surface-muted); }
 .ui-choice--selected,
-.ui-choice--selected:hover { background: var(--green-soft); box-shadow: var(--selection-shadow); }
+.ui-choice--selected:hover { background: var(--green-soft); filter: var(--selection-shadow); }
 
 /* Shared dropdown/select trigger. It never moves unless explicitly marked as an action. */
 .ui-select-trigger {
@@ -77,16 +77,16 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 
 /* Flag for controls that perform an action and should physically press. */
 .ui-action-press {
-  box-shadow: var(--compact-button-shadow);
-  transition: transform var(--motion-press) ease, box-shadow var(--motion-press) ease, background var(--motion-press) ease, border-color var(--motion-press) ease;
+  filter: var(--compact-button-shadow);
+  transition: transform var(--motion-press) ease, filter var(--motion-press) ease, background var(--motion-press) ease, border-color var(--motion-press) ease;
 }
 .ui-action-press[aria-expanded='true'] {
   border-color: var(--line-strong);
-  box-shadow: var(--compact-button-shadow);
+  filter: var(--compact-button-shadow);
 }
 .ui-action-press:not(:disabled):active {
   transform: translate(var(--press-offset), var(--press-offset));
-  box-shadow: var(--compact-button-shadow-pressed);
+  filter: var(--compact-button-shadow-pressed);
 }
 
 .icon-button {

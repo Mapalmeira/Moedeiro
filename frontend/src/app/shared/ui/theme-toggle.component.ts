@@ -27,7 +27,7 @@ import { IconComponent } from './icon.component';
       align-items: center;
       gap: var(--space-2);
       padding: var(--space-2) var(--space-3);
-      box-shadow: var(--selection-shadow);
+      filter: var(--selection-shadow);
     }
     .switch-track {
       width: 36px;

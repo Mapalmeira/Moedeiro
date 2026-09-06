@@ -111,7 +111,7 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
       position: fixed; z-index: 41; top: 50%; left: 50%; width: min(760px, calc(100vw - 28px));
       max-height: calc(100dvh - 30px); overflow: auto; transform: translate(-50%, -50%);
       border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); color: var(--text);
-      box-shadow: var(--dialog-shadow);
+      filter: var(--dialog-shadow);
     }
     .dialog__header { display: flex; align-items: center; justify-content: space-between; gap: var(--form-gap); padding: 17px 19px; border-bottom: 2px solid var(--line); }
     .dialog__title { display: flex; align-items: center; gap: var(--title-icon-gap); }

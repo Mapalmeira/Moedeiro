@@ -45,7 +45,7 @@ const MOBILE_NAV_ACTION_DELAY_MS = 160;
           </button>
 
           <div class="ledger-main__headline">
-            <span class="ledger-main__token"
+            <span class="ledger-main__token ui-projected-icon"
               [class.ledger-main__token--green]="activeSection().tone === 'green'"
               [class.ledger-main__token--yellow]="activeSection().tone === 'yellow'"
               [class.ledger-main__token--blue]="activeSection().tone === 'blue'"
@@ -111,14 +111,14 @@ const MOBILE_NAV_ACTION_DELAY_MS = 160;
     }
     .mobile-nav-button:hover { background: var(--surface-muted); }
     .ledger-main__headline { display: flex; align-items: center; gap: var(--space-4); min-width: 0; }
-    .ledger-main__token { width: 48px; height: 48px; display: grid; place-items: center; border: 2px solid var(--line-strong); border-radius: 6px; box-shadow: var(--icon-shadow); }
+    .ledger-main__token { width: 48px; height: 48px; display: grid; place-items: center; border: 2px solid var(--line-strong); border-radius: 6px; }
     .ledger-main__token--green { background: var(--green); color: #07130c; }
     .ledger-main__token--yellow { background: var(--yellow); color: #171200; }
-    .ledger-main__token--blue { background: var(--blue); color: #ffffff; }
+    .ledger-main__token--blue { background: var(--blue); color: var(--on-blue); }
     .ledger-main__token--neutral { background: var(--surface-muted); color: var(--text); }
     .ledger-main__title-wrap { min-width: 0; }
     .ledger-main__title-wrap h1 { margin: 0; font-size: clamp(1.45rem, 2vw, 1.8rem); letter-spacing: -.03em; }
-    .placeholder-card { min-height: 320px; display: grid; place-items: center; align-content: center; gap: var(--space-3); padding: clamp(28px, 6vw, 52px); border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); box-shadow: var(--shadow-hard); text-align: center; }
+    .placeholder-card { min-height: 320px; display: grid; place-items: center; align-content: center; gap: var(--space-3); padding: clamp(28px, 6vw, 52px); border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); filter: var(--shadow-hard); text-align: center; }
     .placeholder-card__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-2); }
     .placeholder-card--loading { min-height: 280px; }
     .ledger-section-content { min-height: 1px; }
@@ -142,7 +142,7 @@ const MOBILE_NAV_ACTION_DELAY_MS = 160;
       .ledger-main__header { align-items: center; }
       .ledger-main__headline { gap: var(--space-3); }
       .ledger-main__token, .mobile-nav-button { width: 44px; height: 44px; flex-basis: 44px; }
-      .placeholder-card { min-height: 260px; padding: var(--space-5); box-shadow: var(--surface-shadow); }
+      .placeholder-card { min-height: 260px; padding: var(--space-5); filter: var(--surface-shadow); }
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

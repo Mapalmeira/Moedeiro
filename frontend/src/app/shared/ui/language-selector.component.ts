@@ -13,7 +13,7 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
       <button class="language-selector__trigger ui-select-trigger" type="button" (click)="open.set(!open())"
         [class.ui-action-press]="appearance() === 'compact'"
         [attr.aria-label]="i18n.t('common.language')" [attr.aria-expanded]="open()">
-        <span class="language-selector__language-icon" aria-hidden="true">
+        <span class="language-selector__language-icon ui-projected-icon" aria-hidden="true">
           <app-icon name="languages" [size]="18" />
         </span>
         <span class="language-selector__name">{{ languageName(selectedLanguage()) }}</span>
@@ -49,16 +49,17 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
     .language-selector__trigger {
       width: 100%;
       min-width: 0;
-      height: var(--control-height);
-      min-height: var(--control-height);
+      height: var(--sidebar-control-height);
+      min-height: var(--sidebar-control-height);
       display: grid;
-      grid-template-columns: var(--control-icon-size) minmax(0, 1fr) var(--control-icon-size);
+      grid-template-columns: var(--control-icon-size) minmax(0, 1fr) 16px;
       align-items: center;
-      gap: var(--inline-gap);
+      gap: var(--space-3);
       padding: var(--space-2) var(--space-3);
       text-align: left;
     }
     :host.language-selector--field .language-selector__trigger {
+      height: var(--control-height);
       min-height: var(--control-height);
       grid-template-columns: 24px minmax(0, 1fr) 16px;
       gap: var(--space-2);
@@ -66,16 +67,18 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
       box-shadow: none;
     }
     .language-selector__language-icon {
+      box-sizing: border-box;
       width: var(--control-icon-size);
       height: var(--control-icon-size);
-      display: inline-grid;
+      display: grid;
       place-items: center;
-      border: 2px solid var(--line-strong);
       border-radius: 5px;
-      background: var(--surface-muted);
-      color: var(--text);
-      box-shadow: var(--icon-shadow);
+      border: 2px solid var(--line-strong);
+      background: var(--blue);
+      color: var(--on-blue);
+      line-height: 0;
     }
+    .language-selector__language-icon app-icon { display: grid; place-items: center; }
     :host.language-selector--field .language-selector__language-icon {
       width: 24px;
       height: 24px;
@@ -85,16 +88,12 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
     }
     .language-selector__name {
       min-width: 0;
-      height: 100%;
-      display: grid;
-      place-items: center;
-      text-align: center;
+      text-align: left;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .language-selector__chevron { justify-self: center; }
-    :host.language-selector--field .language-selector__name { place-items: center start; text-align: left; }
+    .language-selector__chevron { justify-self: end; }
     .language-selector__menu {
       position: absolute;
       z-index: 90;
@@ -105,7 +104,7 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
       border: 2px solid var(--line-strong);
       border-radius: 7px;
       background: var(--surface);
-      box-shadow: var(--menu-shadow);
+      filter: var(--menu-shadow);
     }
     .language-selector__menu button {
       width: 100%;

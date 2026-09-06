@@ -79,7 +79,7 @@
   border: 2px solid var(--line-strong);
   border-radius: 7px;
   background: var(--surface);
-  box-shadow: var(--menu-shadow);
+  filter: var(--menu-shadow);
 }
 
 .ui-dropdown-search {

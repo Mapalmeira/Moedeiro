@@ -89,7 +89,7 @@ import { IconComponent } from '../../../shared/ui/icon.component';
   `,
   styles: `
     .dialog-backdrop { position: fixed; inset: 0; z-index: 70; background: rgb(0 0 0 / .30); backdrop-filter: blur(2px); }
-    .dialog { position: fixed; z-index: 71; top: 50%; left: 50%; width: min(550px, calc(100vw - 28px)); max-height: calc(100dvh - 30px); overflow: auto; transform: translate(-50%, -50%); border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); color: var(--text); box-shadow: var(--dialog-shadow); }
+    .dialog { position: fixed; z-index: 71; top: 50%; left: 50%; width: min(550px, calc(100vw - 28px)); max-height: calc(100dvh - 30px); overflow: auto; transform: translate(-50%, -50%); border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); color: var(--text); filter: var(--dialog-shadow); }
     .dialog__header { display: flex; align-items: center; justify-content: space-between; gap: var(--form-gap); padding: 18px var(--space-5); border-bottom: 1px solid var(--line); }
     .dialog__title { display: flex; align-items: center; gap: var(--title-icon-gap); }
     .dialog__title h2 { margin: 0; font-size: 1.22rem; }

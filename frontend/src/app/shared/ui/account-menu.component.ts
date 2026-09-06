@@ -13,7 +13,7 @@ import { IconComponent } from './icon.component';
     <div class="account-control" [class.account-control--up]="placement() === 'up'">
       <button class="account-trigger ui-select-trigger ui-action-press" type="button" (click)="toggle($event)"
         [attr.aria-expanded]="open()" [attr.aria-label]="i18n.t('shell.settings')">
-        <span class="account-trigger__icon"><app-icon name="user" [size]="17" /></span>
+        <span class="account-trigger__icon ui-projected-icon"><app-icon name="user" [size]="17" /></span>
         <strong class="account-trigger__name">{{ userName() || '—' }}</strong>
         <app-icon class="account-trigger__chevron ui-select-chevron" name="chevron-down" [size]="16" />
       </button>
@@ -21,15 +21,15 @@ import { IconComponent } from './icon.component';
       @if (open()) {
         <div class="account-dropdown" role="menu" (click)="$event.stopPropagation()">
           <button type="button" role="menuitem" (click)="choosePreferences()">
-            <span class="account-dropdown__icon account-dropdown__icon--green"><app-icon name="sliders" [size]="17" /></span>
+            <span class="account-dropdown__icon account-dropdown__icon--green ui-projected-icon"><app-icon name="sliders" [size]="17" /></span>
             <span>{{ i18n.t('shell.preferences') }}</span>
           </button>
           <button type="button" role="menuitem" (click)="chooseSecurity()">
-            <span class="account-dropdown__icon account-dropdown__icon--blue"><app-icon name="shield" [size]="17" /></span>
+            <span class="account-dropdown__icon account-dropdown__icon--blue ui-projected-icon"><app-icon name="shield" [size]="17" /></span>
             <span>{{ i18n.t('shell.security') }}</span>
           </button>
           <button type="button" role="menuitem" (click)="chooseLogout()" [disabled]="loggingOut()">
-            <span class="account-dropdown__icon account-dropdown__icon--yellow"><app-icon name="logout" [size]="17" /></span>
+            <span class="account-dropdown__icon account-dropdown__icon--yellow ui-projected-icon"><app-icon name="logout" [size]="17" /></span>
             <span>{{ loggingOut() ? i18n.t('shell.loggingOut') : i18n.t('shell.logout') }}</span>
           </button>
         </div>
@@ -63,7 +63,6 @@ import { IconComponent } from './icon.component';
       border-radius: 5px;
       background: var(--green);
       color: #050505;
-      box-shadow: var(--icon-shadow);
     }
     .account-trigger__name {
       min-width: 0;
@@ -86,7 +85,7 @@ import { IconComponent } from './icon.component';
       border: 2px solid var(--line-strong);
       border-radius: 8px;
       background: var(--surface);
-      box-shadow: var(--compact-button-shadow);
+      filter: var(--compact-button-shadow);
     }
     .account-control--up .account-dropdown { top: auto; bottom: calc(100% + var(--space-2)); left: 0; right: auto; }
     .account-dropdown button {
@@ -115,10 +114,9 @@ import { IconComponent } from './icon.component';
       place-items: center;
       border: 2px solid var(--line-strong);
       border-radius: 5px;
-      box-shadow: var(--icon-shadow);
     }
     .account-dropdown__icon--green { background: var(--green); color: #07130c; }
-    .account-dropdown__icon--blue { background: var(--blue); color: #07111f; }
+    .account-dropdown__icon--blue { background: var(--blue); color: var(--on-blue); }
     .account-dropdown__icon--yellow { background: var(--yellow); color: #171200; }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

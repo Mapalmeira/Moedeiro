@@ -8,6 +8,7 @@
   --blue: #488dfc;
   --blue-strong: #2467d5;
   --blue-soft: #edf4ff;
+  --on-blue: #ffffff;
   --danger: #d62828;
   --danger-soft: #fff0f0;
   --danger-token: #c5222d;
@@ -53,17 +54,18 @@
   --control-icon-size: 30px;
 
   /* Projected shadows. The shadow uses the same color as the strong border. */
-  --button-shadow: 4px 4px 0 var(--shadow-color);
-  --button-shadow-pressed: 2px 2px 0 var(--shadow-color);
-  --compact-button-shadow: 3px 3px 0 var(--shadow-color);
-  --compact-button-shadow-pressed: 1px 1px 0 var(--shadow-color);
-  --selection-shadow: 3px 3px 0 var(--shadow-color);
-  --selection-shadow-transparent: 3px 3px 0 transparent;
-  --icon-shadow: 2px 2px 0 var(--shadow-color);
-  --surface-shadow: 4px 4px 0 var(--shadow-color);
+  --button-shadow: drop-shadow(4px 4px 0 var(--shadow-color));
+  --button-shadow-pressed: drop-shadow(2px 2px 0 var(--shadow-color));
+  --compact-button-shadow: drop-shadow(3px 3px 0 var(--shadow-color));
+  --compact-button-shadow-pressed: drop-shadow(1px 1px 0 var(--shadow-color));
+  --selection-shadow: drop-shadow(3px 3px 0 var(--shadow-color));
+  --selection-shadow-transparent: drop-shadow(3px 3px 0 transparent);
+  --icon-shadow-offset: 2px;
+  --icon-shadow: drop-shadow(var(--icon-shadow-offset) var(--icon-shadow-offset) 0 var(--shadow-color));
+  --surface-shadow: drop-shadow(4px 4px 0 var(--shadow-color));
   --menu-shadow: var(--surface-shadow);
-  --shadow-hard: 6px 6px 0 var(--shadow-color);
-  --dialog-shadow: 7px 7px 0 var(--shadow-color);
+  --shadow-hard: drop-shadow(6px 6px 0 var(--shadow-color));
+  --dialog-shadow: drop-shadow(7px 7px 0 var(--shadow-color));
 
   --space-page: clamp(18px, 4vw, 56px);
 

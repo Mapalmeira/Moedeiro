@@ -24,11 +24,16 @@ a { color: var(--link); }
   border: 2px solid var(--line-strong);
   border-radius: 5px;
   color: #050505;
-  box-shadow: var(--icon-shadow);
+}
+.title-icon,
+.ui-projected-icon {
+  filter: var(--icon-shadow);
+  margin-inline-end: var(--icon-shadow-offset);
+  margin-block-end: var(--icon-shadow-offset);
 }
 .title-icon--green { background: var(--green); }
 .title-icon--yellow { background: var(--yellow); }
-.title-icon--blue { background: var(--blue); color: #07111f; }
+.title-icon--blue { background: var(--blue); color: var(--on-blue); }
 
 :where(button, a, [tabindex]):focus-visible {
   outline: 3px solid color-mix(in srgb, var(--focus-accent, var(--green)) 58%, transparent);
