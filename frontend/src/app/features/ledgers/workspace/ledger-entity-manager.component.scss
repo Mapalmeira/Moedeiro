@@ -1,0 +1,44 @@
+:host {
+  --token-accent: var(--green);
+  --token-accent-strong: var(--green-strong);
+  --section-soft: var(--green-soft);
+  --section-foreground: var(--on-green);
+  --choice-selected-background: var(--section-soft);
+  --focus-accent: var(--token-accent);
+  --spinner-accent: var(--token-accent);
+  --spinner-accent-strong: var(--token-accent-strong);
+  display: block;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+:host.currency-section {
+  --token-accent: var(--yellow);
+  --token-accent-strong: var(--yellow-strong);
+  --section-soft: var(--yellow-soft);
+  --section-foreground: var(--on-yellow);
+}
+.manager { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: var(--section-gap); min-width: 0; }
+.manager-header { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--form-gap); padding-inline-end: calc(var(--space-1) + var(--button-shadow-offset)); }
+.search { flex: 1; max-width: var(--entity-search-width); }
+.search:focus-within { border-color: var(--token-accent-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--token-accent) 32%, transparent); }
+.manager-body { flex: 1 1 auto; min-height: 0; min-width: 0; overflow: hidden; }
+.list { height: 100%; min-height: 0; display: grid; align-content: start; min-width: 0; gap: var(--space-2); padding-inline-end: var(--space-1); padding-block-end: var(--space-1); overflow-y: auto; overscroll-behavior: contain; }
+.entity-row {
+  width: 100%;
+  justify-content: flex-start;
+  min-width: 0;
+  min-height: var(--list-row-height);
+  padding: var(--space-3);
+  text-align: left;
+}
+.entity-copy { display: grid; flex: 1; min-width: 0; }
+.entity-copy strong { font-size: var(--control-font-size); font-weight: var(--control-font-weight); overflow-wrap: anywhere; }
+.state { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: var(--inline-gap); padding: var(--space-12) var(--space-4); color: var(--text-muted); text-align: center; }
+.retry { flex: 0 0 auto; align-self: flex-start; color: var(--text); }
+.delete-layer { --dialog-width: 520px; }
+.delete-body { display: grid; gap: var(--section-gap); padding: var(--space-5); }
+@media (max-width: 720px) {
+  .manager-header { align-items: stretch; flex-direction: column; }
+  .search { max-width: none; }
+}

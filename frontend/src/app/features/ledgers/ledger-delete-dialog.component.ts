@@ -37,7 +37,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
             <input type="text" [ngModel]="confirmation()" (ngModelChange)="confirmation.set($event)" autocomplete="off" />
           </label>
           @if (errorMessage()) { <app-form-message [text]="errorMessage()!" /> }
-          <footer class="dialog__footer">
+          <footer class="dialog__footer ui-surface-actions">
             <button class="ui-button ui-button--danger" type="button" (click)="deleteLedger()" [disabled]="confirmation() !== current.name || deleting()">
               {{ i18n.t('ledgers.delete.confirm') }}
             </button>
@@ -56,7 +56,6 @@ import { IconComponent } from '../../shared/ui/icon.component';
     }
     .title-icon { width: var(--compact-title-icon-size); height: var(--compact-title-icon-size); border-color: var(--danger); background: var(--danger-token); color: var(--on-danger-token); }
     .dialog__body { display: grid; gap: var(--section-gap); padding: var(--space-5); }
-    .dialog__footer { display: flex; justify-content: flex-end; }
     .dialog__footer .ui-button { min-width: var(--action-button-min-width); }
     @media (max-width: 460px) { .dialog__footer .ui-button { width: 100%; } }
   `,

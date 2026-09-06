@@ -12,9 +12,12 @@ import { IconComponent } from './icon.component';
   template: `
     <div class="account-control" [class.account-control--up]="placement() === 'up'">
       <button class="account-trigger ui-select-trigger ui-action-press ui-trigger-with-icon" type="button" (click)="toggle($event)"
-        [attr.aria-expanded]="open()" [attr.aria-label]="i18n.t('shell.settings')">
+        [attr.aria-expanded]="open()" [attr.aria-label]="label() ? label() + ': ' + (userName() || '—') : i18n.t('shell.settings')">
         <span class="account-trigger__icon ui-icon-badge ui-projected-icon"><app-icon name="user" [size]="17" /></span>
-        <strong class="account-trigger__name">{{ userName() || '—' }}</strong>
+        <span class="ui-trigger-content">
+          <strong class="account-trigger__name ui-trigger-value">{{ userName() || '—' }}</strong>
+          @if (label(); as controlLabel) { <span class="ui-trigger-context">{{ controlLabel }}</span> }
+        </span>
         <app-icon class="account-trigger__chevron ui-select-chevron" name="chevron-down" [size]="16" />
       </button>
 
@@ -54,13 +57,7 @@ import { IconComponent } from './icon.component';
       color: var(--on-green);
     }
     .account-trigger__name {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: inherit;
-      font-weight: inherit;
-      line-height: inherit;
+      font: inherit;
     }
     .account-trigger__chevron { justify-self: end; display: inline-grid; }
     .account-dropdown {
@@ -102,6 +99,7 @@ export class AccountMenuComponent {
   readonly i18n = inject(I18nService);
 
   readonly userName = input<string | null>(null);
+  readonly label = input<string | null>(null);
   readonly loggingOut = input(false);
   readonly placement = input<'up' | 'down'>('down');
   readonly fullWidth = input(false);

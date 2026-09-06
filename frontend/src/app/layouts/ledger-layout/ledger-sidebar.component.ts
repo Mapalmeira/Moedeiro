@@ -19,72 +19,78 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
         <app-brand-logo variant="sidebar" />
       </header>
 
-      <nav class="ledger-nav" [attr.aria-label]="i18n.t('ledgerShell.navigation')">
-        @for (item of navItems; track item.key) {
-          <a
-            class="ledger-nav__item"
-            [routerLink]="['/ledgers', ledgerUuid(), item.key]"
-            routerLinkActive="ledger-nav__item--active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            ariaCurrentWhenActive="page"
-            (click)="sectionSelected.emit()">
-            <span class="ledger-nav__icon ui-icon-badge ui-projected-icon"
-              [class.ledger-nav__icon--green]="item.tone === 'green'"
-              [class.ledger-nav__icon--yellow]="item.tone === 'yellow'"
-              [class.ledger-nav__icon--blue]="item.tone === 'blue'"
-              [class.ledger-nav__icon--neutral]="item.tone === 'neutral'">
-              <app-icon [name]="item.icon" [size]="18" />
-            </span>
-            <span class="ledger-nav__label">{{ i18n.t(item.labelKey) }}</span>
-          </a>
-        }
-      </nav>
-
-      <div class="ledger-sidebar__spacer"></div>
-
-      <div class="ledger-sidebar__footer">
-        @if (ledger(); as currentLedger) {
-          <div class="ledger-switcher" (click)="$event.stopPropagation()">
-            <button class="ledger-switcher__trigger ui-select-trigger ui-action-press ui-trigger-with-icon" type="button"
-              (click)="toggleLedgerMenu($event)" [attr.aria-expanded]="ledgerMenuOpen()" [attr.title]="currentLedger.name">
-              <span class="ledger-switcher__icon ui-icon-badge ui-projected-icon" [style.background]="currentLedger.color_code" [style.color]="ledgerForeground()">
-                <app-ledger-icon [icon]="currentLedger.icon" [size]="20" />
+      <div class="ledger-sidebar__body">
+        <nav class="ledger-nav" [attr.aria-label]="i18n.t('ledgerShell.navigation')">
+          @for (item of navItems; track item.key) {
+            <a
+              class="ledger-nav__item"
+              [routerLink]="['/ledgers', ledgerUuid(), item.key]"
+              routerLinkActive="ledger-nav__item--active"
+              [routerLinkActiveOptions]="{ exact: true }"
+              ariaCurrentWhenActive="page"
+              (click)="sectionSelected.emit()">
+              <span class="ledger-nav__icon ui-icon-badge ui-projected-icon"
+                [class.ledger-nav__icon--green]="item.tone === 'green'"
+                [class.ledger-nav__icon--yellow]="item.tone === 'yellow'"
+                [class.ledger-nav__icon--blue]="item.tone === 'blue'"
+                [class.ledger-nav__icon--neutral]="item.tone === 'neutral'">
+                <app-icon [name]="item.icon" [size]="18" />
               </span>
-              <strong class="ledger-switcher__name">{{ currentLedger.name }}</strong>
-              <app-icon class="ledger-switcher__chevron ui-select-chevron" name="chevron-down" [size]="16" />
-            </button>
+              <span class="ledger-nav__label">{{ i18n.t(item.labelKey) }}</span>
+            </a>
+          }
+        </nav>
 
-            @if (ledgerMenuOpen()) {
-              <div class="ledger-switcher__dropdown ui-dropdown-menu ui-projected-surface ui-projection--compact" role="menu">
-                <button type="button" role="menuitem" (click)="editCurrentLedger()">
-                  <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--edit ui-icon-badge ui-projected-icon"><app-icon name="pencil" [size]="17" /></span>
-                  <span>{{ i18n.t('ledgers.edit') }}</span>
-                </button>
-                <button type="button" role="menuitem" (click)="leaveCurrentLedger()">
-                  <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--leave ui-icon-badge ui-projected-icon"><app-icon name="logout" [size]="17" /></span>
-                  <span>{{ i18n.t('ledgerShell.leave') }}</span>
-                </button>
-              </div>
-            }
-          </div>
-        }
+        <div class="ledger-sidebar__spacer"></div>
 
-        <app-account-menu
-          [userName]="userName()"
-          [loggingOut]="loggingOut()"
-          placement="up"
-          [fullWidth]="true"
-          (preferences)="preferences.emit()"
-          (security)="security.emit()"
-          (logout)="logout.emit()" />
+        <div class="ledger-sidebar__footer">
+          @if (ledger(); as currentLedger) {
+            <div class="ledger-switcher" (click)="$event.stopPropagation()">
+              <button class="ledger-switcher__trigger ui-select-trigger ui-action-press ui-trigger-with-icon" type="button"
+                (click)="toggleLedgerMenu($event)" [attr.aria-expanded]="ledgerMenuOpen()" [attr.aria-label]="i18n.t('ledgerShell.currentLedger') + ': ' + currentLedger.name" [attr.title]="currentLedger.name">
+                <span class="ledger-switcher__icon ui-icon-badge ui-projected-icon" [style.background]="currentLedger.color_code" [style.color]="ledgerForeground()">
+                  <app-ledger-icon [icon]="currentLedger.icon" [size]="20" />
+                </span>
+                <span class="ui-trigger-content">
+                  <strong class="ledger-switcher__name ui-trigger-value">{{ currentLedger.name }}</strong>
+                </span>
+                <app-icon class="ledger-switcher__chevron ui-select-chevron" name="chevron-down" [size]="16" />
+              </button>
+
+              @if (ledgerMenuOpen()) {
+                <div class="ledger-switcher__dropdown ui-dropdown-menu ui-projected-surface ui-projection--compact" role="menu">
+                  <button type="button" role="menuitem" (click)="editCurrentLedger()">
+                    <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--edit ui-icon-badge ui-projected-icon"><app-icon name="pencil" [size]="17" /></span>
+                    <span>{{ i18n.t('ledgers.edit') }}</span>
+                  </button>
+                  <button type="button" role="menuitem" (click)="leaveCurrentLedger()">
+                    <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--leave ui-icon-badge ui-projected-icon"><app-icon name="logout" [size]="17" /></span>
+                    <span>{{ i18n.t('ledgerShell.leave') }}</span>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          <app-account-menu
+            [userName]="userName()"
+            [label]="i18n.t('ledgerShell.myAccount')"
+            [loggingOut]="loggingOut()"
+            placement="up"
+            [fullWidth]="true"
+            (preferences)="preferences.emit()"
+            (security)="security.emit()"
+            (logout)="logout.emit()" />
+        </div>
       </div>
     </div>
   `,
   styles: `
-    :host { display: block; min-height: 100%; }
-    .ledger-sidebar__inner { min-height: 100dvh; display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-5) var(--space-4); }
-    .ledger-sidebar__brand-row { min-height: 50px; width: 100%; }
-    .ledger-sidebar__brand-row app-brand-logo { width: 100%; height: 50px; }
+    :host { display: block; height: 100%; min-height: 0; }
+    .ledger-sidebar__inner { height: 100%; min-height: 0; display: grid; grid-template-rows: var(--ledger-header-height) minmax(0, 1fr); }
+    .ledger-sidebar__brand-row { width: 100%; display: flex; align-items: center; padding-block: 0; padding-inline: var(--space-4); padding-inline-start: var(--space-2); border-bottom: var(--border-width) solid var(--line); }
+    .ledger-sidebar__brand-row app-brand-logo { width: 100%; justify-content: flex-start; }
+    .ledger-sidebar__body { min-height: 0; display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-5) var(--space-4); overflow: hidden; }
     .ledger-nav { display: grid; gap: var(--space-2); }
     .ledger-nav__item {
       position: relative;
@@ -105,7 +111,7 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
     .ledger-switcher__trigger {
       width: 100%; min-width: 0; min-height: var(--sidebar-control-height); text-align: left;
     }
-    .ledger-switcher__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; }
+    .ledger-switcher__name { font: inherit; }
     .ledger-switcher__chevron { justify-self: end; }
     .ledger-switcher__dropdown {
       position: absolute; z-index: var(--layer-dropdown); left: 0; right: 0; bottom: calc(100% + var(--space-2));

@@ -79,7 +79,7 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
         }
       </div>
 
-      <footer class="ledger-card__footer">
+      <footer class="ledger-card__footer ui-surface-actions">
         <button class="ui-button ui-button--green enter-button" type="button" [disabled]="!selectedLedger() || entering()" (click)="enterSelected()">
           <span>{{ i18n.t('ledgers.enter') }}</span>
           <app-icon name="arrow-right" [size]="19" />
@@ -122,7 +122,7 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
     .state-row, .empty-state { min-height: var(--ledger-list-min-height); display: grid; place-items: center; align-content: center; gap: var(--space-3); color: var(--text-muted); text-align: center; }
     .state-row { grid-template-columns: auto auto; justify-content: center; }
     .empty-state__icon { width: var(--touch-target-size); height: var(--touch-target-size); display: grid; place-items: center; border: var(--border-width) solid var(--line); border-radius: var(--radius-card); background: var(--surface-muted); }
-    .ledger-card__footer { display: flex; justify-content: flex-end; padding: var(--space-4) var(--space-5) var(--space-5); border-top: 1px solid var(--line); }
+    .ledger-card__footer { padding: var(--space-4) var(--space-5) var(--space-5); }
     .enter-button { min-width: var(--action-button-min-width); }
     @media (max-width: 600px) {
       .ledger-card__header { align-items: stretch; flex-direction: column; }

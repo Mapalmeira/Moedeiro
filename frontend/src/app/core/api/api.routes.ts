@@ -24,4 +24,6 @@ export const API_ROUTES = {
     root: '/api/ledgers',
     one: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}`,
   },
+  ledgerAccounts: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/accounts`,
+  ledgerCurrencies: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/currencies`,
 } as const;

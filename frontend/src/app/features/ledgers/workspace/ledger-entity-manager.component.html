@@ -1,0 +1,64 @@
+<section class="manager" [attr.aria-label]="title()">
+  <header class="manager-header">
+    <label class="search ui-dropdown-search">
+      <app-icon name="search" [size]="18" />
+      <input type="search" [value]="search()" (input)="filter($event)"
+        [attr.aria-label]="i18n.t('workspace.search')" [placeholder]="i18n.t('workspace.search')" />
+    </label>
+    <button class="ui-button" [class.ui-button--green]="kind() === 'account'"
+      [class.ui-button--yellow]="kind() === 'currency'" type="button" (click)="openCreate()"
+      [disabled]="loading() || !!error() || items().length >= 300">
+      <app-icon name="plus" [size]="18" />{{ i18n.t(kind() === 'account' ? 'accounts.create' : 'currencies.create') }}
+    </button>
+  </header>
+  @if (items().length >= 300) { <app-form-message kind="info" [text]="i18n.t('workspace.limit')" /> }
+  @if (error()) {
+    <app-form-message [text]="error()!" />
+    <button class="ui-button retry" type="button" (click)="load()">{{ i18n.t('workspace.retry') }}</button>
+  } @else if (loading()) {
+    <div class="state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
+  } @else {
+    <div class="manager-body">
+      <div class="list" [attr.aria-label]="title()">
+        @for (item of visible(); track item.uuid) {
+          <button type="button" class="entity-row ui-choice" [class.ui-choice--selected]="selectedUuid() === item.uuid"
+            [attr.aria-pressed]="selectedUuid() === item.uuid" (click)="select(item)">
+            <app-entity-badge [icon]="item.icon" [color]="item.color_code" />
+            <span class="entity-copy">
+              <strong>{{ item.name }}</strong>
+            </span>
+          </button>
+        } @empty {
+          <div class="state">
+            <app-icon [name]="kind() === 'account' ? 'building' : 'coins'" [size]="26" />
+            {{ i18n.t(search().trim() ? 'workspace.noResults' : kind() === 'account' ? 'accounts.empty' : 'currencies.empty') }}
+          </div>
+        }
+      </div>
+    </div>
+  }
+</section>
+@if (editorOpen()) {
+  <app-entity-editor [kind]="kind()" [ledgerUuid]="context.ledgerUuid()!" [currencies]="currencies()"
+    (close)="editorOpen.set(false)" (saved)="saved($event)" />
+}
+@if (deleting()) {
+  <div class="ui-dialog-backdrop" (click)="closeDelete()" aria-hidden="true"></div>
+  <div class="ui-dialog-layer delete-layer">
+    <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
+      <section class="ui-dialog-surface" role="alertdialog" aria-modal="true" aria-labelledby="entity-delete-title" (keydown.escape)="closeDelete()">
+        <header class="ui-dialog-header">
+          <div class="ui-dialog-title"><span class="title-icon delete-icon"><app-icon name="trash" [size]="20" /></span>
+            <h2 id="entity-delete-title">{{ i18n.t(kind() === 'account' ? 'accounts.delete' : 'currencies.delete') }}</h2>
+          </div>
+          <button type="button" class="icon-button" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="x" [size]="18" /></button>
+        </header>
+        <div class="delete-body">
+          <app-form-message kind="warning" [text]="i18n.t(kind() === 'account' ? 'accounts.deleteWarning' : 'currencies.deleteWarning')" />
+          @if (deleteError()) { <app-form-message [text]="deleteError()!" /> }
+          <footer class="ui-surface-actions"><button type="button" class="ui-button ui-button--danger" [disabled]="deletingBusy()" (click)="remove()">{{ i18n.t('workspace.delete') }}</button></footer>
+        </div>
+      </section>
+    </div>
+  </div>
+}

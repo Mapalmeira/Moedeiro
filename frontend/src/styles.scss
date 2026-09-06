@@ -58,6 +58,15 @@ a { color: var(--link); }
 .ui-projection--hard { box-shadow: var(--hard-shadow); }
 .ui-projection--dialog { box-shadow: var(--dialog-shadow); }
 
+.ui-card {
+  min-width: 0;
+  min-height: 0;
+  border: var(--border-width) solid var(--line-strong);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--text);
+}
+
 /* Shared icon/text groups align the complete projected footprint, not only the
    painted icon face. Explicit line-height also removes font-metric drift. */
 .ui-heading-with-icon {
@@ -74,6 +83,25 @@ a { color: var(--link); }
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--control-padding-inline);
+}
+.ui-trigger-content {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+.ui-trigger-context {
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: var(--control-detail-font-size);
+  font-weight: var(--control-font-weight);
+  line-height: var(--control-line-height);
+}
+.ui-trigger-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: inherit;
 }
 
 .ui-dropdown-menu {
@@ -148,6 +176,13 @@ a { color: var(--link); }
 .ui-dialog-title { display: flex; align-items: center; gap: var(--title-icon-gap); min-width: 0; }
 .ui-dialog-title h2 { margin: 0; font-size: 1.22rem; line-height: var(--heading-line-height); letter-spacing: -.01em; }
 .ui-dialog-title .title-icon { width: var(--compact-title-icon-size); height: var(--compact-title-icon-size); }
+.ui-surface-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  padding-top: var(--section-gap);
+}
 .title-icon--green { background: var(--green); }
 .title-icon--yellow { background: var(--yellow); }
 .title-icon--blue { background: var(--blue); color: var(--on-blue); }

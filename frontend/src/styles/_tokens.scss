@@ -7,6 +7,7 @@
   --yellow: #ffd51a;
   --yellow-strong: #c99c00;
   --yellow-soft: #fff9df;
+  --warning-text: #765a00;
   --yellow-action-start: #ffd514;
   --yellow-action-end: #ffd322;
   --blue: #488dfc;
@@ -61,6 +62,7 @@
   --control-font-size: .9rem;
   --control-font-weight: 720;
   --control-line-height: 1.2;
+  --control-detail-font-size: .76rem;
   --control-icon-size: 30px;
   --inline-icon-size: 24px;
   --chevron-track-size: 16px;
@@ -73,11 +75,18 @@
   --list-row-height: 68px;
   --action-button-min-width: 200px;
   --spinner-size: 20px;
+  --entity-search-width: 420px;
+  --entity-editor-panel-width: 420px;
+  --ledger-sidebar-width: 268px;
+  --sidebar-brand-font-size: 2rem;
+  --entity-preview-size: 108px;
   --heading-line-height: 1.1;
 
   /* Layered hard shadows preserve the original silhouette while overlapping
      every intermediate pixel, preventing seams at fractional browser zoom. */
   --icon-shadow-offset: 2px;
+  --compact-shadow-offset: 3px;
+  --button-shadow-offset: 4px;
   --hard-shadow-offset: 6px;
   --dialog-shadow-offset: 7px;
   --dialog-viewport-gap: var(--space-4);
@@ -111,6 +120,8 @@
   --motion-focus: 120ms;
   --motion-selection: 160ms;
   --motion-disclosure: 160ms;
+  --motion-panel: 220ms;
+  --motion-panel-easing: cubic-bezier(.2, .8, .2, 1);
   --motion-feedback: 420ms;
   --press-offset: 2px;
 }
@@ -131,6 +142,7 @@
   --yellow: #e5bd24;
   --yellow-strong: #b8961b;
   --yellow-soft: #302b16;
+  --warning-text: #f0c94c;
   --blue: #488dfc;
   --blue-strong: #4e88e8;
   --blue-soft: #17263d;

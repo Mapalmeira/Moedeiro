@@ -98,7 +98,7 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
 
             @if (errorMessage()) { <app-form-message [text]="errorMessage()!" /> }
 
-            <footer class="dialog__footer">
+            <footer class="dialog__footer ui-surface-actions">
               <button class="ui-button ui-button--green" type="submit" [disabled]="form.invalid || saving() || closing()">
                 {{ i18n.t('preferences.save') }}
               </button>
@@ -112,9 +112,9 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
   styles: `
     .dialog-layer { --dialog-width: 760px; }
     form { display: grid; gap: 0; padding: 0 var(--space-5) var(--space-5); }
-    .preference-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--section-gap); padding: var(--section-gap) 0; border-bottom: 1px solid var(--line); }
+    .preference-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--section-gap); padding: var(--section-gap) 0; }
     .preference-grid--top { align-items: start; }
-    .preference-field { min-width: 0; display: grid; gap: var(--field-gap); padding: var(--section-gap) 0; border-bottom: 1px solid var(--line); }
+    .preference-field { min-width: 0; display: grid; gap: var(--field-gap); padding: var(--section-gap) 0; }
     .preference-grid .preference-field { padding: 0; border: 0; }
     .preference-label { font-size: .9rem; font-weight: 780; letter-spacing: -.005em; }
     .choice-grid { display: grid; gap: var(--space-2); }
@@ -122,7 +122,6 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
     .choice-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .choice-card--with-icon { justify-content: flex-start; padding-left: var(--form-gap); }
     .choice-card--example { font-variant-numeric: tabular-nums; letter-spacing: .01em; }
-    .dialog__footer { display: flex; justify-content: flex-end; padding-top: var(--section-gap); }
     .dialog__footer .ui-button { min-width: var(--action-button-min-width); }
     @media (max-width: 650px) {
       .preference-grid { grid-template-columns: 1fr; }

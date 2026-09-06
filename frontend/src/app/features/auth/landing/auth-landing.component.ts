@@ -61,7 +61,7 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
               <app-field-error [text]="passwordError(loginForm.controls.password)" />
             </label>
 
-            <label class="field" [class.ui-field-feedback--rejected]="loginCredentialsRejected()" [class.ui-field-feedback--attention]="loginTotpRequired()">
+            <label class="field" [class.ui-field-feedback--rejected]="loginCredentialsRejected() || loginTotpRequired()">
               <span>{{ i18n.t('auth.totp') }}</span>
               <input inputmode="numeric" autocomplete="one-time-code" formControlName="totp_code" maxlength="6" (input)="clearLoginCredentialsRejection(); clearLoginTotpRequired()" (animationend)="clearLoginCredentialsRejection(); clearLoginTotpRequired()" [attr.aria-invalid]="loginCredentialsRejected() || loginTotpRequired()" [attr.aria-describedby]="loginCredentialsRejected() || loginTotpRequired() ? 'login-credentials-feedback' : null" />
               <app-field-error [text]="totpError(loginForm.controls.totp_code)" />

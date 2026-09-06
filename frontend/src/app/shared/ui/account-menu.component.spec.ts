@@ -35,6 +35,16 @@ describe('AccountMenuComponent', () => {
     expect(fixture.nativeElement.querySelector('.account-dropdown')).not.toBeNull();
   });
 
+  it('renders an optional inline context with the account name in its accessible name', () => {
+    fixture.componentRef.setInput('label', 'Minha conta');
+    fixture.detectChanges();
+
+    const trigger = fixture.nativeElement.querySelector('.account-trigger') as HTMLButtonElement;
+
+    expect(fixture.nativeElement.querySelector('.ui-trigger-context')?.textContent).toContain('Minha conta');
+    expect(trigger.getAttribute('aria-label')).toBe('Minha conta: alice');
+  });
+
   it('closes and emits the selected account action', () => {
     const preferences = vi.fn();
     component.preferences.subscribe(preferences);

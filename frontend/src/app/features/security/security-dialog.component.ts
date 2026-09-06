@@ -77,7 +77,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
 
               @if (passwordErrorMessage()) { <app-form-message [text]="passwordErrorMessage()!" /> }
 
-              <div class="section-actions password-actions">
+              <div class="section-actions password-actions ui-surface-actions">
                 <button class="ui-button ui-button--blue security-action-button" type="submit"
                   [disabled]="passwordForm.invalid || passwordMismatch() || changingPassword() || loadingTotpStatus() || totpStatus() === 'unknown'">
                   {{ i18n.t('security.password.change') }}
@@ -124,7 +124,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
 
                 @if (totpErrorMessage()) { <app-form-message [text]="totpErrorMessage()!" /> }
 
-                <div class="section-actions">
+                <div class="section-actions ui-surface-actions">
                   <button class="ui-button ui-button--danger security-action-button" type="submit" [disabled]="disableTotpForm.invalid || disablingTotp()">
                     {{ i18n.t('security.totp.disable') }}
                   </button>
@@ -188,7 +188,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
                       </div>
                     </div>
 
-                    <div class="section-actions totp-setup__action">
+                    <div class="section-actions totp-setup__action ui-surface-actions">
                       <button class="ui-button ui-button--blue security-action-button" type="submit" [disabled]="confirmTotpForm.invalid || confirmingTotp()">
                         <span>{{ i18n.t('security.totp.confirm') }}</span>
                         @if (totpSetupRemainingTime(); as remainingTime) {
@@ -223,7 +223,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
     .password-grid, .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--form-gap); }
     .password-grid__current { grid-column: 1 / -1; }
     .password-grid--totp .password-grid__current { grid-column: auto; }
-    .section-actions { display: flex; justify-content: flex-end; padding-top: var(--space-1); }
+    .section-actions { width: 100%; }
     .security-action-button { width: var(--action-button-min-width); min-width: var(--action-button-min-width); }
     .password-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--form-gap); justify-items: end; }
     .password-actions .security-action-button { grid-column: 2; }
@@ -248,7 +248,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
       justify-self: center;
       align-self: center;
     }
-    .totp-setup__action { grid-row: 2; align-self: end; padding-top: 0; }
+    .totp-setup__action { grid-row: 2; align-self: end; }
     .qr-wrap { box-sizing: border-box; display: grid; place-items: center; min-height: 280px; height: 100%; padding: var(--form-gap); border: var(--border-width) solid var(--blue-strong); border-radius: var(--radius-card); background: var(--surface); }
     .qr-wrap img { display: block; width: 220px; height: 220px; max-width: 100%; image-rendering: pixelated; }
     .qr-loading { color: var(--text); font-size: 1.4rem; }

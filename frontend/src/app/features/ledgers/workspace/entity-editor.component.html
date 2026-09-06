@@ -1,0 +1,81 @@
+@if (presentation() === 'dialog') {
+  <div class="ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
+}
+<div class="editor-layer" [class.ui-dialog-layer]="presentation() === 'dialog'">
+  <div class="editor-frame" [class.ui-dialog-frame]="presentation() === 'dialog'" [class.ui-projected-surface]="presentation() === 'dialog'" [class.ui-projection--dialog]="presentation() === 'dialog'">
+    <section class="editor-surface" [class.ui-dialog-surface]="presentation() === 'dialog'"
+      [attr.role]="presentation() === 'dialog' ? 'dialog' : 'region'"
+      [attr.aria-modal]="presentation() === 'dialog' ? 'true' : null"
+      [attr.aria-label]="title()">
+      <header class="ui-dialog-header">
+        <div class="ui-dialog-title">
+          <span class="title-icon"><app-icon [name]="entity() ? 'pencil' : 'plus'" [size]="20" /></span>
+          <h2>{{ title() }}</h2>
+        </div>
+        <button class="icon-button" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="x" [size]="19" /></button>
+      </header>
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <div class="editor-content">
+          <div class="fields entity-fields">
+            <label class="field"><span>{{ i18n.t('ledgers.name') }} <span class="required-mark">*</span></span>
+              <input formControlName="name" [maxlength]="maxName()" autocomplete="off" />
+              <app-field-error [text]="fieldError('name')" />
+            </label>
+            @if (kind() === 'account') {
+              <label class="field"><span>{{ i18n.t('accounts.note') }}</span><input formControlName="note" maxlength="300" />
+                <app-field-error [text]="fieldError('note')" />
+              </label>
+              <label class="field"><span>{{ i18n.t('accounts.currency') }} @if (!entity()) { <span class="required-mark" aria-hidden="true">*</span> }</span>
+                @if (entity()) { <input [value]="currencyName()" disabled /> }
+                @else {
+                  <select formControlName="currency_uuid" required><option value="" disabled>—</option>
+                    @for (currency of currencies(); track currency.uuid) { <option [value]="currency.uuid">{{ currency.name }}</option> }
+                  </select>
+                  @if (!currencies().length) { <span class="field-hint">{{ i18n.t('accounts.needsCurrency') }}</span> }
+                  <app-field-error [text]="fieldError('currency_uuid')" />
+                }
+              </label>
+            } @else {
+              <div class="affixes">
+                <label class="field"><span>{{ i18n.t('currencies.prefix') }}</span><input formControlName="prefix" maxlength="10" /><app-field-error [text]="fieldError('prefix')" /></label>
+                <label class="field"><span>{{ i18n.t('currencies.suffix') }}</span><input formControlName="suffix" maxlength="10" /><app-field-error [text]="fieldError('suffix')" /></label>
+              </div>
+              <label class="field"><span>{{ i18n.t('currencies.decimalPlaces') }} @if (!entity()) { <span class="required-mark" aria-hidden="true">*</span> }</span>
+                @if (entity()) { <input [value]="values().decimal_places" disabled /> }
+                @else { <input type="number" formControlName="decimal_places" min="0" max="20" step="1" required /><app-field-error [text]="fieldError('decimal_places')" /> }
+              </label>
+              @if (!entity()) {
+                <app-form-message kind="warning" [text]="i18n.t('currencies.decimalPlacesLocked')" />
+              }
+            }
+          </div>
+
+          <div class="appearance-section">
+            <aside class="preview" [attr.aria-label]="i18n.t('ledgers.editor.preview')">
+              <div class="preview-logo"><app-entity-badge [icon]="values().icon" [color]="previewColor()" [size]="108" /></div>
+              <span class="preview-text">{{ values().name || i18n.t('ledgers.name') }}</span>
+              @if (kind() === 'currency') { <span class="preview-text preview-amount">{{ currencyPreview() }}</span> }
+            </aside>
+            <div class="appearance-fields">
+              <app-ledger-appearance-fields [iconControl]="form.controls.icon" [colorControl]="form.controls.color_code" />
+              <app-field-error [text]="fieldError('icon')" /><app-field-error [text]="fieldError('color_code')" />
+            </div>
+          </div>
+        </div>
+        @if (error()) { <app-form-message [text]="error()!" /> }
+        <footer class="editor-actions ui-surface-actions">
+          @if (presentation() === 'panel') {
+            @if (entity(); as currentEntity) {
+              <button type="button" class="ui-button ui-button--danger" [disabled]="saving()" (click)="deleteRequested.emit(currentEntity)">
+                <app-icon name="trash" [size]="18" />{{ i18n.t('workspace.delete') }}
+              </button>
+            }
+          }
+          <button type="submit" class="ui-button" [class.ui-button--green]="kind() === 'account'" [class.ui-button--yellow]="kind() === 'currency'" [disabled]="saving() || form.invalid">
+            {{ entity() ? i18n.t('ledgers.editor.save') : i18n.t('workspace.create') }}
+          </button>
+        </footer>
+      </form>
+    </section>
+  </div>
+</div>

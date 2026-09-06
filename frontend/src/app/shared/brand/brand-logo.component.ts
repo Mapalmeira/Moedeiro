@@ -16,8 +16,8 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     .brand__wordmark { font-size: clamp(3rem, 5.4vw, 4.5rem); font-weight: 850; letter-spacing: -.055em; line-height: .95; white-space: nowrap; }
 
     .brand--sidebar { gap: var(--space-3); }
-    .brand--sidebar .brand__icon { width: var(--title-icon-size); height: var(--title-icon-size); }
-    .brand--sidebar .brand__wordmark { font-size: 1.72rem; letter-spacing: -.045em; line-height: .95; }
+    .brand--sidebar .brand__icon { width: var(--sidebar-control-height); height: var(--sidebar-control-height); }
+    .brand--sidebar .brand__wordmark { font-size: var(--sidebar-brand-font-size); letter-spacing: -.045em; line-height: .95; }
 
     @media (max-width: 480px) {
       .brand:not(.brand--sidebar) .brand__icon { width: 56px; height: 56px; }

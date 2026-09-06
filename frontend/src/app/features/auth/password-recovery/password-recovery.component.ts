@@ -71,9 +71,9 @@ import { IconComponent } from '../../../shared/ui/icon.component';
           </label>
 
           @if (totpRequired()) {
-            <label class="field" [class.ui-field-feedback--attention]="totpRequiredAttention()">
+            <label class="field" [class.ui-field-feedback--rejected]="totpRequiredRejected()">
               <span>{{ i18n.t('auth.totp') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <input inputmode="numeric" autocomplete="one-time-code" formControlName="totp_code" maxlength="6" (input)="clearTotpRequiredAttention()" (animationend)="clearTotpRequiredAttention()" [attr.aria-invalid]="totpRequiredAttention()" [attr.aria-describedby]="totpRequiredAttention() ? 'recovery-totp-required-feedback' : null" />
+              <input inputmode="numeric" autocomplete="one-time-code" formControlName="totp_code" maxlength="6" (input)="clearTotpRequiredRejection()" (animationend)="clearTotpRequiredRejection()" [attr.aria-invalid]="totpRequiredRejected()" [attr.aria-describedby]="totpRequiredRejected() ? 'recovery-totp-required-feedback' : null" />
               <app-field-error [text]="totpError(form.controls.totp_code)" />
               <app-field-error messageId="recovery-totp-required-feedback" [visuallyHidden]="true" [text]="totpRequiredFeedback()" />
             </label>
@@ -82,11 +82,13 @@ import { IconComponent } from '../../../shared/ui/icon.component';
           @if (errorMessage()) { <app-form-message [text]="errorMessage()!" /> }
           @if (successMessage()) { <app-form-message kind="success" [text]="successMessage()!" /> }
 
-          <button class="ui-button ui-button--green ui-button--full" type="submit"
-            [disabled]="form.invalid || passwordMismatch() || loading() || completed()">
-            <span>{{ i18n.t('auth.recovery.submit') }}</span>
-            <app-icon name="arrow-right" />
-          </button>
+          <footer class="ui-surface-actions">
+            <button class="ui-button ui-button--green ui-button--full" type="submit"
+              [disabled]="form.invalid || passwordMismatch() || loading() || completed()">
+              <span>{{ i18n.t('auth.recovery.submit') }}</span>
+              <app-icon name="arrow-right" />
+            </button>
+          </footer>
         </form>
       </section>
       </div>
@@ -112,7 +114,7 @@ export class PasswordRecoveryDialogComponent {
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
   readonly totpRequired = signal(false);
-  readonly totpRequiredAttention = signal(false);
+  readonly totpRequiredRejected = signal(false);
   readonly recoveryCredentialsRejected = signal(false);
   readonly showPassword = signal(false);
 
@@ -168,7 +170,7 @@ export class PasswordRecoveryDialogComponent {
       error: (error: unknown) => {
         if (error instanceof HttpErrorResponse && error.status === 401 && error.error?.detail === 'TOTP required') {
           this.totpRequired.set(true);
-          this.totpRequiredAttention.set(true);
+          this.totpRequiredRejected.set(true);
           this.form.controls.totp_code.setValidators([Validators.required, Validators.pattern(TOTP_PATTERN)]);
           this.form.controls.totp_code.updateValueAndValidity();
         } else if (error instanceof HttpErrorResponse && error.error?.detail === 'Invalid credentials') this.recoveryCredentialsRejected.set(true);
@@ -203,12 +205,12 @@ export class PasswordRecoveryDialogComponent {
     return null;
   }
 
-  clearTotpRequiredAttention(): void {
-    this.totpRequiredAttention.set(false);
+  clearTotpRequiredRejection(): void {
+    this.totpRequiredRejected.set(false);
   }
 
   totpRequiredFeedback(): string | null {
-    return this.totpRequiredAttention() ? this.i18n.t('errors.totpRequired') : null;
+    return this.totpRequiredRejected() ? this.i18n.t('errors.totpRequired') : null;
   }
 
   clearRecoveryCredentialsRejection(): void {
@@ -241,7 +243,7 @@ export class PasswordRecoveryDialogComponent {
     this.errorMessage.set(null);
     this.successMessage.set(null);
     this.totpRequired.set(false);
-    this.totpRequiredAttention.set(false);
+    this.totpRequiredRejected.set(false);
     this.recoveryCredentialsRejected.set(false);
     this.showPassword.set(false);
   }

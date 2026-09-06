@@ -49,7 +49,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 }
 .ui-choice:not(:disabled):not(.ui-choice--selected):hover { background: var(--surface-muted); }
 .ui-choice--selected,
-.ui-choice--selected:hover { background: var(--green-soft); box-shadow: var(--selection-shadow); }
+.ui-choice--selected:hover { background: var(--choice-selected-background, var(--green-soft)); box-shadow: var(--selection-shadow); }
 
 /* Shared dropdown/select trigger. It never moves unless explicitly marked as an action. */
 .ui-select-trigger {

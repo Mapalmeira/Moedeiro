@@ -5,6 +5,8 @@ import { filter } from 'rxjs';
 import { LedgerContextService } from '../../core/ledgers/ledger-context.service';
 import { AuthenticatedShellService } from '../authenticated-layout/authenticated-shell.service';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { EntityEditorComponent } from '../../features/ledgers/workspace/entity-editor.component';
+import { LedgerEntityPanelService } from '../../features/ledgers/workspace/ledger-entity-panel.service';
 import { LedgerEditorDialogComponent } from '../../features/ledgers/ledger-editor-dialog.component';
 import { FormMessageComponent } from '../../shared/ui/form-message.component';
 import { IconComponent } from '../../shared/ui/icon.component';
@@ -14,14 +16,15 @@ import { ledgerSectionByKey } from './ledger-sections';
 @Component({
   selector: 'app-ledger-layout',
   standalone: true,
-  imports: [RouterOutlet, LedgerSidebarComponent, LedgerEditorDialogComponent, FormMessageComponent, IconComponent],
+  imports: [RouterOutlet, LedgerSidebarComponent, LedgerEditorDialogComponent, EntityEditorComponent, FormMessageComponent, IconComponent],
+  providers: [LedgerEntityPanelService],
   template: `
-    <div class="ledger-shell">
+    <div class="ledger-shell" [class.ledger-shell--editor-open]="!!entityPanel.state()">
       @if (isMobile() && mobileSidebarOpen()) {
         <button class="mobile-overlay" type="button" (click)="closeMobileNavigation()" [attr.aria-label]="i18n.t('ledgerShell.collapse')"></button>
       }
 
-      <aside class="ledger-sidebar" [class.ledger-sidebar--mobile-open]="mobileSidebarOpen()">
+      <aside class="ledger-sidebar ui-card ui-projected-surface ui-projection--hard" [class.ledger-sidebar--mobile-open]="mobileSidebarOpen()">
         <app-ledger-sidebar
           [ledgerUuid]="ledgerUuid()"
           [ledger]="context.ledger()"
@@ -35,14 +38,14 @@ import { ledgerSectionByKey } from './ledger-sections';
           (logout)="shell.logout()" />
       </aside>
 
-      <section class="ledger-main">
+      <section class="ledger-main ui-card ui-projected-surface ui-projection--hard">
         <header class="ledger-main__header">
-          <button class="mobile-nav-button ui-action-press" type="button" (click)="openMobileNavigation()"
-            [attr.aria-label]="i18n.t('ledgerShell.navigation')">
-            <app-icon name="panel-open" [size]="20" />
-          </button>
-
           <div class="ledger-main__headline ui-heading-with-icon">
+            <button class="mobile-nav-button ui-icon-badge ui-icon-badge--title ui-projected-icon ui-action-press" type="button"
+              (click)="openMobileNavigation()" [attr.aria-label]="i18n.t('ledgerShell.navigation')">
+              <app-icon name="panel-open" [size]="20" />
+            </button>
+
             <span class="ledger-main__token ui-icon-badge ui-icon-badge--title ui-projected-icon"
               [class.ledger-main__token--green]="activeSection().tone === 'green'"
               [class.ledger-main__token--yellow]="activeSection().tone === 'yellow'"
@@ -57,14 +60,14 @@ import { ledgerSectionByKey } from './ledger-sections';
         </header>
 
         @if (context.loadError()) {
-          <div class="placeholder-card placeholder-card--error ui-projected-surface ui-projection--hard">
+          <div class="placeholder-card placeholder-card--error">
             <app-form-message [text]="context.loadError()!" />
             <div class="placeholder-card__actions">
               <button class="ui-button ui-button--green" type="button" (click)="leaveLedger()">{{ i18n.t('ledgerShell.backToLedgers') }}</button>
             </div>
           </div>
         } @else if (context.loading() && !context.ledger()) {
-          <div class="placeholder-card placeholder-card--loading ui-projected-surface ui-projection--hard">
+          <div class="placeholder-card placeholder-card--loading">
             <div class="spinner ui-spinner" aria-hidden="true"></div>
           </div>
         } @else {
@@ -74,6 +77,15 @@ import { ledgerSectionByKey } from './ledger-sections';
         }
       </section>
 
+      @if (entityPanel.state(); as panel) {
+        <aside class="ledger-entity-editor ui-card ui-projected-surface ui-projection--hard">
+          <app-entity-editor presentation="panel" [kind]="panel.kind" [ledgerUuid]="panel.ledgerUuid"
+            [entity]="panel.entity" [currencies]="panel.currencies"
+            (close)="entityPanel.requestClose()" (saved)="entityPanel.requestSaved($event)"
+            (deleteRequested)="entityPanel.requestDelete($event)" />
+        </aside>
+      }
+
       <app-ledger-editor-dialog
         [open]="ledgerEditorOpen()"
         [ledger]="context.ledger()"
@@ -82,29 +94,55 @@ import { ledgerSectionByKey } from './ledger-sections';
     </div>
   `,
   styles: `
-    :host { display: block; min-height: 100dvh; }
+    :host { display: block; height: 100dvh; min-height: 0; overflow: hidden; }
     .ledger-shell {
-      --sidebar-width: 268px;
-      min-height: 100dvh;
+      --ledger-shell-inset: var(--space-4);
+      --ledger-header-height: calc(var(--sidebar-control-height) + var(--space-10));
+      height: 100dvh;
+      min-height: 0;
       display: grid;
-      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+      grid-template-columns: var(--ledger-sidebar-width) var(--space-6) minmax(0, 1fr) 0px 0px;
+      grid-template-rows: minmax(0, 1fr);
+      padding: var(--ledger-shell-inset);
       background: var(--page);
       color: var(--text);
-    }
-    .ledger-sidebar {
-      position: sticky;
-      top: 0;
-      min-height: 100dvh;
-      border-right: var(--border-width) solid var(--line);
-      background: var(--surface);
-      transition: transform var(--motion-disclosure) ease;
       overflow: hidden;
     }
-    .ledger-main { min-width: 0; min-height: 100dvh; display: grid; align-content: start; gap: var(--space-6); padding: var(--space-6); }
-    .ledger-main__header { display: flex; align-items: center; gap: var(--space-4); }
+    .ledger-shell--editor-open {
+      grid-template-columns: var(--ledger-sidebar-width) var(--space-6) minmax(0, 1fr) var(--space-6) var(--entity-editor-panel-width);
+    }
+    .ledger-sidebar {
+      grid-column: 1;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+      transition: transform var(--motion-panel) var(--motion-panel-easing);
+    }
+    .ledger-main {
+      grid-column: 3;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      display: grid;
+      grid-template-rows: var(--ledger-header-height) minmax(0, 1fr);
+      align-content: stretch;
+      overflow: hidden;
+    }
+    .ledger-main__header {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: 0 var(--space-5);
+      border-bottom: var(--border-width) solid var(--line);
+    }
     .mobile-nav-button {
-      display: none; place-items: center; width: var(--icon-button-size); height: var(--icon-button-size); padding: 0; border: var(--border-width) solid var(--line-strong);
-      border-radius: var(--radius-sm); background: var(--surface); color: var(--text);
+      display: none;
+      padding: 0;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
     }
     .mobile-nav-button:hover { background: var(--surface-muted); }
     .ledger-main__headline { min-height: calc(var(--title-icon-size) + var(--icon-shadow-offset)); }
@@ -115,29 +153,55 @@ import { ledgerSectionByKey } from './ledger-sections';
     .ledger-main__token--neutral { background: var(--surface-muted); color: var(--text); }
     .ledger-main__title-wrap { min-width: 0; }
     .ledger-main__title-wrap h1 { margin: 0; font-size: clamp(1.45rem, 2vw, 1.8rem); line-height: var(--heading-line-height); letter-spacing: -.03em; }
-    .placeholder-card { min-height: 320px; display: grid; place-items: center; align-content: center; gap: var(--space-3); padding: clamp(28px, 6vw, 52px); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); text-align: center; }
+    .ledger-section-content { min-height: 0; padding: var(--space-5); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
+    .ledger-entity-editor {
+      grid-column: 5;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    .ledger-entity-editor > app-entity-editor { display: block; height: 100%; min-height: 0; }
+    .placeholder-card { min-height: 320px; display: grid; place-items: center; align-content: center; gap: var(--space-3); margin: var(--space-5); padding: clamp(28px, 6vw, 52px); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); text-align: center; }
     .placeholder-card__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-2); }
     .placeholder-card--loading { min-height: 280px; }
-    .ledger-section-content { min-height: 1px; }
     .spinner { --spinner-size: 24px; }
     .mobile-overlay { display: none; }
 
+    @media (prefers-reduced-motion: reduce) {
+      .ledger-sidebar { transition: none; }
+    }
     @media (max-width: 960px) {
-      .ledger-shell { grid-template-columns: minmax(0, 1fr); }
+      .ledger-shell, .ledger-shell--editor-open { grid-template-columns: minmax(0, 1fr); }
+      .ledger-sidebar,
+      .ledger-entity-editor {
+        position: fixed;
+        left: var(--ledger-shell-inset);
+        right: var(--ledger-shell-inset);
+        top: var(--ledger-shell-inset);
+        bottom: var(--ledger-shell-inset);
+        width: auto;
+        height: auto;
+      }
       .ledger-sidebar {
-        position: fixed; z-index: var(--layer-drawer); left: 0; top: 0; bottom: 0; width: min(312px, calc(100vw - 32px)); transform: translateX(-100%);
-        box-shadow: var(--drawer-shadow);
+        z-index: var(--layer-drawer);
+        transform: translateX(calc(-100% - var(--ledger-shell-inset)));
       }
       .ledger-sidebar.ledger-sidebar--mobile-open { transform: translateX(0); }
-      .mobile-nav-button { display: grid; width: var(--touch-target-size); height: var(--touch-target-size); flex: 0 0 var(--touch-target-size); }
-      .ledger-main { padding: var(--space-5); }
+      .ledger-main { grid-column: 1; }
+      .ledger-entity-editor {
+        z-index: var(--layer-page-controls);
+        grid-column: auto;
+      }
+      .mobile-nav-button { display: grid; }
       .mobile-overlay { position: fixed; inset: 0; display: block; z-index: var(--layer-drawer-backdrop); background: var(--drawer-overlay-color); }
     }
     @media (max-width: 640px) {
-      .ledger-main { gap: var(--space-5); padding: var(--space-4); }
-      .ledger-main__header { align-items: center; }
+      .ledger-shell { --ledger-shell-inset: var(--space-3); }
+      .ledger-main__header { padding: 0 var(--space-4); }
       .ledger-main__headline { gap: var(--space-3); }
-      .placeholder-card { box-shadow: var(--surface-shadow); min-height: 260px; padding: var(--space-5); }
+      .ledger-section-content { padding: var(--space-4); }
+      .placeholder-card { min-height: 260px; margin: var(--space-4); padding: var(--space-5); }
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -153,6 +217,7 @@ export class LedgerLayoutComponent {
   readonly context = inject(LedgerContextService);
   readonly shell = inject(AuthenticatedShellService);
   readonly i18n = inject(I18nService);
+  readonly entityPanel = inject(LedgerEntityPanelService);
   readonly ledgerUuid = input.required<string>();
 
   readonly mobileSidebarOpen = signal(false);
@@ -197,6 +262,7 @@ export class LedgerLayoutComponent {
 
   leaveLedger(): void {
     this.mobileSidebarOpen.set(false);
+    this.entityPanel.requestClose();
     void this.router.navigateByUrl('/home');
   }
 }
