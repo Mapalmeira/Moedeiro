@@ -63,7 +63,7 @@ describe('AuthLandingComponent registration', () => {
     });
     expect(auth.login).not.toHaveBeenCalled();
     expect(router.navigateByUrl).not.toHaveBeenCalled();
-    expect(component.registrationSuccess()).toBe(true);
+    expect(component.registrationCompleted()).toBe(true);
     expect(component.loginForm.controls.name.value).toBe('alice');
     expect(component.loginForm.controls.password.value).toBe('');
     expect(component.registrationForm.getRawValue()).toEqual({
@@ -83,7 +83,7 @@ describe('AuthLandingComponent registration', () => {
 
     expect(auth.login).not.toHaveBeenCalled();
     expect(router.navigateByUrl).not.toHaveBeenCalled();
-    expect(component.registrationSuccess()).toBe(false);
+    expect(component.registrationCompleted()).toBe(false);
     expect(component.registrationError()).toBe('registration failed');
     expect(component.loadingRegistration()).toBe(false);
   });

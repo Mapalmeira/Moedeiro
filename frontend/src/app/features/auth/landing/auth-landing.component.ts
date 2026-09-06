@@ -86,7 +86,7 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
         </app-auth-card>
 
         <app-auth-card [title]="i18n.t('auth.register.title')" icon="mail" accent="yellow">
-          <form class="registration-form" [formGroup]="registrationForm" (ngSubmit)="submitRegistration()" (input)="registrationSuccess.set(false)" novalidate>
+          <form class="registration-form" [formGroup]="registrationForm" (ngSubmit)="submitRegistration()" novalidate>
             <label class="field">
               <span>{{ i18n.t('auth.invite.label') }} <span class="required-mark" aria-hidden="true">*</span></span>
               <input appCrockfordCode formControlName="invitation_code" autocomplete="off" required />
@@ -118,13 +118,12 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
               <app-field-error [text]="confirmPasswordError()" />
             </label>
 
-            @if (registrationSuccess()) { <app-form-message kind="success" [text]="i18n.t('auth.register.success')" /> }
             @if (registrationError()) { <app-form-message [text]="registrationError()!" /> }
 
             <button class="ui-button ui-button--yellow ui-button--full" type="submit"
-              [disabled]="registrationForm.invalid || passwordMismatch() || loadingRegistration()">
+              [disabled]="registrationForm.invalid || passwordMismatch() || loadingRegistration() || registrationCompleted()">
               <span>{{ loadingRegistration() ? i18n.t('auth.register.creating') : i18n.t('auth.register.title') }}</span>
-              <app-icon name="arrow-right" />
+              <app-icon [name]="registrationCompleted() ? 'check' : 'arrow-right'" />
             </button>
           </form>
         </app-auth-card>
@@ -174,9 +173,10 @@ export class AuthLandingComponent {
   readonly loadingRegistration = signal(false);
   readonly loginError = signal<string | null>(null);
   readonly registrationError = signal<string | null>(null);
-  readonly registrationSuccess = signal(false);
+  readonly registrationCompleted = signal(false);
   readonly passwordChanged = signal(history.state?.passwordChanged === true);
   readonly recoveryOpen = signal(false);
+  private registrationCompletionTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly loginForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(USER_NAME_MAX_LENGTH), Validators.pattern(USER_NAME_PATTERN)]],
@@ -222,7 +222,7 @@ export class AuthLandingComponent {
 
     this.loadingRegistration.set(true);
     this.registrationError.set(null);
-    this.registrationSuccess.set(false);
+    this.clearRegistrationCompletion();
     const value = this.registrationForm.getRawValue();
 
     this.auth.register({
@@ -237,7 +237,8 @@ export class AuthLandingComponent {
         this.loginForm.controls.password.reset('');
         this.registrationForm.reset({ invitation_code: '', name: '', password: '', confirm_password: '' });
         this.showRegistrationPassword.set(false);
-        this.registrationSuccess.set(true);
+        this.registrationCompleted.set(true);
+        this.registrationCompletionTimer = setTimeout(() => this.clearRegistrationCompletion(), 2_000);
       },
       error: (error: unknown) => {
         this.registrationError.set(this.apiErrors.message(error, 'errors.registrationFailed'));
@@ -248,6 +249,14 @@ export class AuthLandingComponent {
   passwordMismatch(): boolean {
     const { password, confirm_password } = this.registrationForm.getRawValue();
     return !!confirm_password && password !== confirm_password;
+  }
+
+  private clearRegistrationCompletion(): void {
+    if (this.registrationCompletionTimer !== null) {
+      clearTimeout(this.registrationCompletionTimer);
+      this.registrationCompletionTimer = null;
+    }
+    this.registrationCompleted.set(false);
   }
 
   usernameError(control: AbstractControl): string | null {
