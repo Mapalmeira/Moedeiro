@@ -13,7 +13,7 @@ import { IconComponent } from './icon.component';
   `,
   styles: `
     :host { display: block; min-width: 0; }
-    .message { --message-accent: var(--danger); display: flex; gap: var(--space-2); align-items: flex-start; margin: 0; padding: var(--space-3); border: var(--border-width) solid var(--message-accent); border-radius: var(--radius-sm); background: var(--danger-soft); color: var(--text); font-size: .9rem; }
+    .message { --message-accent: var(--danger); display: flex; gap: var(--space-2); align-items: flex-start; margin: 0; padding: var(--space-3); border: var(--border-width) solid var(--message-accent); border-radius: var(--radius-sm); background: var(--danger-soft); color: var(--message-accent); font-size: .9rem; font-weight: 650; line-height: 1.4; }
     .message--success { --message-accent: var(--green-strong); background: var(--green-soft); }
     .message--info { --message-accent: var(--blue-strong); background: var(--blue-soft); }
     .message--warning { --message-accent: var(--yellow-strong); background: var(--yellow-soft); }
