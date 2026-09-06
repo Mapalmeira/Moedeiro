@@ -33,7 +33,6 @@ export class CrockfordCodeInputDirective implements ControlValueAccessor, Valida
 
   @HostListener('beforeinput', ['$event'])
   blockNonAlphanumeric(event: InputEvent): void {
-    // Colagens são higienizadas no evento `input`, inclusive se vierem já com hífens.
     if (event.inputType === 'insertFromPaste') return;
     if (event.data && /[^A-Za-z0-9]/.test(event.data)) event.preventDefault();
   }

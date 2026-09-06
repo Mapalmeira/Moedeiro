@@ -1,7 +1,3 @@
-/**
- * Frontend e backend são same-origin (mesmo IP + porta), então todas as URLs
- * da API são relativas ao host que entregou a aplicação Angular.
- */
 export const API_ROUTES = {
   authentication: {
     login: '/api/authentication/login',

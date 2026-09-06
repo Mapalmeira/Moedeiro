@@ -42,6 +42,9 @@ export class ApiErrorService {
       'TOTP not enabled': 'errors.totpNotEnabled',
       'Invalid or expired TOTP setup': 'errors.invalidTotpSetup',
       'Ledger not found': 'errors.ledgerNotFound',
+      'Ledger limit reached': 'errors.ledgerLimitReached',
+      'Budget limit reached': 'errors.budgetLimitReached',
+      'Financial event limit reached': 'errors.financialEventLimitReached',
       'Account limit reached': 'workspace.limit',
       'Currency limit reached': 'workspace.limit',
       'Account is in use': 'errors.accountInUse',
@@ -52,7 +55,6 @@ export class ApiErrorService {
       'Currency not found': 'errors.currencyNotFound',
     };
 
-    // Não expomos se usuário, senha ou segundo fator foi o dado incorreto.
     if (detail === 'Invalid credentials') return fallback;
     const key = known[detail];
     return key ? this.i18n.t(key) : fallback;

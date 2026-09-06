@@ -88,7 +88,7 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
   styles: `
     :host { display: block; height: 100%; min-height: 0; }
     .ledger-sidebar__inner { height: 100%; min-height: 0; display: grid; grid-template-rows: var(--ledger-header-height) minmax(0, 1fr); }
-    .ledger-sidebar__brand-row { width: 100%; display: flex; align-items: center; padding-block: 0; padding-inline: var(--space-4); padding-inline-start: var(--space-2); border-bottom: var(--border-width) solid var(--line); }
+    .ledger-sidebar__brand-row { width: 100%; display: flex; align-items: center; padding-block: 0; padding-inline: var(--space-4); padding-inline-start: var(--space-3); border-bottom: var(--border-width) solid var(--line); }
     .ledger-sidebar__brand-row app-brand-logo { width: 100%; justify-content: flex-start; }
     .ledger-sidebar__body { min-height: 0; display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-5) var(--space-4); overflow: hidden; }
     .ledger-nav { display: grid; gap: var(--space-2); }

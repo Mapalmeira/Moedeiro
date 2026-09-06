@@ -69,7 +69,6 @@ export class AuthService {
   logout(): Observable<void> {
     return this.http.post<void>(API_ROUTES.authentication.logout, {}, { withCredentials: true }).pipe(
       catchError((error) => {
-        // Mesmo se o servidor já considerar a sessão inválida, o front deve sair da área protegida.
         if (error instanceof HttpErrorResponse && error.status === 401) {
           return of(void 0);
         }
