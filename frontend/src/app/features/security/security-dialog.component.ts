@@ -97,7 +97,7 @@ const PENDING_TOTP_SETUP_STORAGE_PREFIX = 'moedeiro.pending-totp-setup.';
             <h3>{{ i18n.t('security.totp.title') }}</h3>
 
             @if (totpInfoMessage()) { <app-form-message kind="info" [text]="totpInfoMessage()!" /> }
-            @if (totpWarningMessage()) { <app-form-message kind="warning" [text]="totpWarningMessage()!" /> }
+            @if (totpExpiryErrorMessage()) { <app-form-message [text]="totpExpiryErrorMessage()!" /> }
             @if (totpSuccessMessage()) { <app-form-message kind="info" [text]="totpSuccessMessage()!" /> }
 
             @if (loadingTotpStatus()) {
@@ -345,7 +345,7 @@ export class SecurityDialogComponent {
   readonly totpErrorMessage = signal<string | null>(null);
   readonly totpStatusErrorMessage = signal<string | null>(null);
   readonly totpInfoMessage = signal<string | null>(null);
-  readonly totpWarningMessage = signal<string | null>(null);
+  readonly totpExpiryErrorMessage = signal<string | null>(null);
   readonly totpSuccessMessage = signal<string | null>(null);
   readonly totpCodeRejection = signal<'password' | 'confirm' | null>(null);
   readonly passwordCurrentRejected = signal(false);
@@ -653,7 +653,7 @@ export class SecurityDialogComponent {
   private clearTotpMessages(): void {
     this.totpErrorMessage.set(null);
     this.totpInfoMessage.set(null);
-    this.totpWarningMessage.set(null);
+    this.totpExpiryErrorMessage.set(null);
     this.totpSuccessMessage.set(null);
   }
 
@@ -702,7 +702,7 @@ export class SecurityDialogComponent {
     }
 
     this.resetTotpFormsAndProvisioning(true);
-    this.totpWarningMessage.set(this.i18n.t('security.totp.expired'));
+    this.totpExpiryErrorMessage.set(this.i18n.t('security.totp.expired'));
   }
 
   private stopSetupExpiryCountdown(): void {
@@ -760,7 +760,7 @@ export class SecurityDialogComponent {
   }
 
   private pendingTotpSetupStorage(): Storage | null {
-    return typeof sessionStorage === 'undefined' ? null : sessionStorage;
+    return typeof localStorage === 'undefined' ? null : localStorage;
   }
 
   private pendingTotpSetupStorageKey(): string {
