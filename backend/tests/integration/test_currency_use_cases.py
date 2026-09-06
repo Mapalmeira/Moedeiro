@@ -112,7 +112,7 @@ class CurrencyUseCasesTest(unittest.TestCase):
 
     def test_update_rejects_an_unavailable_name(self) -> None:
         first = self.create("Real")
-        second = self.create("Dollar")
+        second = self.create("Dolár")
 
         with self.assertRaises(CurrencyNameUnavailableError):
             update_currency(

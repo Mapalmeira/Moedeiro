@@ -23,7 +23,7 @@ class FinancialEventUseCasesTest(unittest.TestCase):
         with self.open_ledger() as unit_of_work:
             unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 10)
             self.real = unit_of_work.currency_repository.create("Real", "R$", None, 2, "lucide:CircleDollarSign", b"\x10\x20\x30")
-            self.dollar = unit_of_work.currency_repository.create("Dollar", "$", None, 2, "lucide:CircleDollarSign", b"\x20\x30\x40")
+            self.dollar = unit_of_work.currency_repository.create("Dolár", "$", None, 2, "lucide:CircleDollarSign", b"\x20\x30\x40")
             self.source = unit_of_work.account_repository.create("Checking", None, self.real.uuid, "lucide:WalletCards", b"\x30\x40\x50")
             self.destination = unit_of_work.account_repository.create("Savings", None, self.dollar.uuid, "lucide:PiggyBank", b"\x40\x50\x60")
             self.food = unit_of_work.category_repository.create("Food", "lucide:Utensils", b"\x50\x60\x70", None)

@@ -47,7 +47,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
         self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="lucide:WalletCards", color_code="#102030"), self.request, self.user)
         with self.application.state.databases.open_ledger(f"{self.ledger.uuid}.sqlite") as unit_of_work:
             real = unit_of_work.currency_repository.create("Real", "R$", None, 2, "lucide:CircleDollarSign", b"\x10\x20\x30")
-            dollar = unit_of_work.currency_repository.create("Dollar", "$", None, 2, "lucide:CircleDollarSign", b"\x20\x30\x40")
+            dollar = unit_of_work.currency_repository.create("Dolár", "$", None, 2, "lucide:CircleDollarSign", b"\x20\x30\x40")
             self.source = unit_of_work.account_repository.create("Checking", None, real.uuid, "lucide:WalletCards", b"\x30\x40\x50")
             self.destination = unit_of_work.account_repository.create("Savings", None, dollar.uuid, "lucide:PiggyBank", b"\x40\x50\x60")
             self.food = unit_of_work.category_repository.create("Food", "lucide:Utensils", b"\x50\x60\x70", None)

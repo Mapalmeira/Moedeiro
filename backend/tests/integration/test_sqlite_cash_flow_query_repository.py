@@ -16,10 +16,10 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         self.event_repository = SqliteFinancialEventRepository(self.connection)
         self.movement_repository = SqliteFinancialMovementRepository(self.connection)
         self.currency = self.create_currency()
-        self.other_currency = self.create_currency("Dollar")
+        self.other_currency = self.create_currency("Dolár")
         self.account = self.create_account(currency=self.currency)
         self.other_account = self.create_account("Other real account", self.currency)
-        self.foreign_currency_account = self.create_account("Dollar account", self.other_currency)
+        self.foreign_currency_account = self.create_account("Dolár account", self.other_currency)
         self.category = self.create_category()
 
     def add_movement(self, description: str, occurred_at: int, value: int, account: Account | None = None, event_type: FinancialEventType = "TRANSACTION") -> FinancialEvent:

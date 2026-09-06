@@ -24,12 +24,12 @@ class BudgetUseCasesTest(unittest.TestCase):
         with self.open_ledger() as unit_of_work:
             unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 10)
             self.currency = unit_of_work.currency_repository.create("Real", "R$", None, 2, "lucide:CircleDollarSign", b"\x10\x20\x30")
-            self.other_currency = unit_of_work.currency_repository.create("Dollar", "$", None, 2, "lucide:CircleDollarSign", b"\x20\x30\x40")
+            self.other_currency = unit_of_work.currency_repository.create("Dolár", "$", None, 2, "lucide:CircleDollarSign", b"\x20\x30\x40")
             self.category = unit_of_work.category_repository.create("Food", "lucide:Utensils", b"\x70\x80\x90", None)
             self.other_category = unit_of_work.category_repository.create("Leisure", "lucide:Gamepad2", b"\x80\x90\xa0", None)
             self.account = unit_of_work.account_repository.create("Checking", None, self.currency.uuid, "lucide:WalletCards", b"\x40\x50\x60")
             self.second_account = unit_of_work.account_repository.create("Savings", None, self.currency.uuid, "lucide:PiggyBank", b"\x50\x60\x70")
-            self.other_currency_account = unit_of_work.account_repository.create("Dollar", None, self.other_currency.uuid, "lucide:WalletCards", b"\x60\x70\x80")
+            self.other_currency_account = unit_of_work.account_repository.create("Dolár", None, self.other_currency.uuid, "lucide:WalletCards", b"\x60\x70\x80")
             unit_of_work.commit()
 
     def tearDown(self) -> None:

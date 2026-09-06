@@ -125,8 +125,8 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
     def test_add_account_rejects_a_different_currency(self) -> None:
         """The composite foreign key keeps all budget accounts in one currency."""
         budget = self.create_budget(currency=self.currency, category=self.category)
-        other_currency = self.create_currency("Dollar")
-        account = self.create_account("Dollar account", other_currency)
+        other_currency = self.create_currency("Dolár")
+        account = self.create_account("Dolár account", other_currency)
 
         with self.assertRaises(sqlite3.IntegrityError):
             self.repository.add_account(budget.uuid, account.uuid)

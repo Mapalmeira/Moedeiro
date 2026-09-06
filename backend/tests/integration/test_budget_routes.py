@@ -60,7 +60,7 @@ class BudgetRoutesTest(unittest.TestCase):
         )
         self.other_currency = create_ledger_currency(
             self.ledger.uuid,
-            CreateCurrencyRequest(name="Route Dollar", prefix="$", suffix=None, decimal_places=2, icon="lucide:CircleDollarSign", color_code="#BBCCDD"),
+            CreateCurrencyRequest(name="Route Dolár", prefix="$", suffix=None, decimal_places=2, icon="lucide:CircleDollarSign", color_code="#BBCCDD"),
             self.request,
             self.user,
         )
@@ -90,7 +90,7 @@ class BudgetRoutesTest(unittest.TestCase):
         )
         self.other_currency_account = create_ledger_account(
             self.ledger.uuid,
-            CreateAccountRequest(name="Dollar", currency_uuid=self.other_currency.uuid, icon="lucide:WalletCards", color_code="#607080"),
+            CreateAccountRequest(name="Dolár", currency_uuid=self.other_currency.uuid, icon="lucide:WalletCards", color_code="#607080"),
             self.request,
             self.user,
         )
