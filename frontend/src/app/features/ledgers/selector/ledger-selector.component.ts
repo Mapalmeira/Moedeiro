@@ -81,7 +81,7 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
 
       <footer class="ledger-card__footer">
         <button class="ui-button ui-button--green enter-button" type="button" [disabled]="!selectedLedger() || entering()" (click)="enterSelected()">
-          <span>{{ entering() ? i18n.t('ledgers.entering') : i18n.t('ledgers.enter') }}</span>
+          <span>{{ i18n.t('ledgers.enter') }}</span>
           <app-icon name="arrow-right" [size]="19" />
         </button>
       </footer>

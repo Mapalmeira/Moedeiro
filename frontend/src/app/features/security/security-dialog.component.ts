@@ -81,7 +81,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
               <div class="section-actions password-actions">
                 <button class="ui-button ui-button--blue security-action-button" type="submit"
                   [disabled]="passwordForm.invalid || passwordMismatch() || changingPassword() || loadingTotpStatus() || totpStatus() === 'unknown'">
-                  {{ changingPassword() ? i18n.t('security.password.changing') : i18n.t('security.password.change') }}
+                  {{ i18n.t('security.password.change') }}
                 </button>
               </div>
             </form>
@@ -122,7 +122,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
 
                 <div class="section-actions">
                   <button class="ui-button ui-button--danger security-action-button" type="submit" [disabled]="disableTotpForm.invalid || disablingTotp()">
-                    {{ disablingTotp() ? i18n.t('security.totp.disabling') : i18n.t('security.totp.disable') }}
+                    {{ i18n.t('security.totp.disable') }}
                   </button>
                 </div>
               </form>
@@ -137,7 +137,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
                     </label>
 
                     <button class="ui-button ui-button--blue security-action-button" type="submit" [disabled]="setupForm.invalid || startingTotp()">
-                      {{ startingTotp() ? i18n.t('security.totp.preparing') : i18n.t('security.totp.start') }}
+                      {{ i18n.t('security.totp.start') }}
                     </button>
                   </div>
 

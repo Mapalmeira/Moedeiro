@@ -39,7 +39,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
           @if (errorMessage()) { <app-form-message [text]="errorMessage()!" /> }
           <footer class="dialog__footer">
             <button class="ui-button ui-button--danger" type="button" (click)="deleteLedger()" [disabled]="confirmation() !== current.name || deleting()">
-              {{ deleting() ? i18n.t('ledgers.delete.deleting') : i18n.t('ledgers.delete.confirm') }}
+              {{ i18n.t('ledgers.delete.confirm') }}
             </button>
           </footer>
         </div>

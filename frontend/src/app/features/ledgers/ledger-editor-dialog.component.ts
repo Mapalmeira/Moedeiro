@@ -129,7 +129,7 @@ type IconMode = 'lucide' | 'unicode';
 
           <footer class="dialog__footer">
             <button class="ui-button ui-button--green" type="submit" [disabled]="!canSave()">
-              {{ saving() ? i18n.t('ledgers.editor.saving') : (ledger() ? i18n.t('ledgers.editor.save') : i18n.t('ledgers.editor.create')) }}
+              {{ ledger() ? i18n.t('ledgers.editor.save') : i18n.t('ledgers.editor.create') }}
             </button>
           </footer>
         </form>

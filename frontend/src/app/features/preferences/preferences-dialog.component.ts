@@ -100,7 +100,7 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
 
             <footer class="dialog__footer">
               <button class="ui-button ui-button--green" type="submit" [disabled]="form.invalid || saving() || closing()">
-                {{ saving() ? i18n.t('preferences.saving') : i18n.t('preferences.save') }}
+                {{ i18n.t('preferences.save') }}
               </button>
             </footer>
         </form>

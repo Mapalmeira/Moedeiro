@@ -82,7 +82,7 @@ import { IconComponent } from '../../../shared/ui/icon.component';
 
           <button class="ui-button ui-button--green ui-button--full" type="submit"
             [disabled]="form.invalid || passwordMismatch() || loading() || completed()">
-            <span>{{ loading() ? i18n.t('auth.recovery.updating') : i18n.t('auth.recovery.submit') }}</span>
+            <span>{{ i18n.t('auth.recovery.submit') }}</span>
             <app-icon name="arrow-right" />
           </button>
         </form>

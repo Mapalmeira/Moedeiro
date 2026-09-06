@@ -79,7 +79,7 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
             </div>
 
             <button class="ui-button ui-button--green ui-button--full" type="submit" [disabled]="loginForm.invalid || loadingLogin()">
-              <span>{{ loadingLogin() ? i18n.t('auth.signingIn') : i18n.t('auth.signIn') }}</span>
+              <span>{{ i18n.t('auth.signIn') }}</span>
               <app-icon name="arrow-right" />
             </button>
           </form>
@@ -122,7 +122,7 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
 
             <button class="ui-button ui-button--yellow ui-button--full" type="submit"
               [disabled]="registrationForm.invalid || passwordMismatch() || loadingRegistration() || registrationCompleted()">
-              <span>{{ loadingRegistration() ? i18n.t('auth.register.creating') : i18n.t('auth.register.title') }}</span>
+              <span>{{ i18n.t('auth.register.title') }}</span>
               <app-icon [name]="registrationCompleted() ? 'check' : 'arrow-right'" />
             </button>
           </form>

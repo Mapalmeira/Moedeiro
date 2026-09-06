@@ -66,7 +66,6 @@ import { ledgerSectionByKey } from './ledger-sections';
         } @else if (context.loading() && !context.ledger()) {
           <div class="placeholder-card placeholder-card--loading ui-projected-surface ui-projection--hard">
             <div class="spinner ui-spinner" aria-hidden="true"></div>
-            <p>{{ i18n.t('ledgers.entering') }}</p>
           </div>
         } @else {
           <div class="ledger-section-content" aria-live="polite">

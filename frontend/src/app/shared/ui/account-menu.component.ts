@@ -30,7 +30,7 @@ import { IconComponent } from './icon.component';
           </button>
           <button type="button" role="menuitem" (click)="chooseLogout()" [disabled]="loggingOut()">
             <span class="account-dropdown__icon account-dropdown__icon--yellow ui-icon-badge ui-projected-icon"><app-icon name="logout" [size]="17" /></span>
-            <span>{{ loggingOut() ? i18n.t('shell.loggingOut') : i18n.t('shell.logout') }}</span>
+            <span>{{ i18n.t('shell.logout') }}</span>
           </button>
         </div>
       }
