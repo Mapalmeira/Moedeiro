@@ -11,8 +11,6 @@ import { IconComponent } from '../../shared/ui/icon.component';
 import { LedgerSidebarComponent } from './ledger-sidebar.component';
 import { ledgerSectionByKey } from './ledger-sections';
 
-const MOBILE_NAV_ACTION_DELAY_MS = 160;
-
 @Component({
   selector: 'app-ledger-layout',
   standalone: true,
@@ -161,7 +159,6 @@ export class LedgerLayoutComponent {
   readonly ledgerUuid = input.required<string>();
 
   readonly mobileSidebarOpen = signal(false);
-  readonly mobileActionPending = signal(false);
   readonly ledgerEditorOpen = signal(false);
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth <= 960 : false);
   readonly activeSection = computed(() => {
@@ -179,34 +176,22 @@ export class LedgerLayoutComponent {
     this.isMobile.set(mobile);
     if (!mobile) {
       this.mobileSidebarOpen.set(false);
-      this.mobileActionPending.set(false);
     }
   }
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
     this.mobileSidebarOpen.set(false);
-    this.mobileActionPending.set(false);
   }
 
   openMobileNavigation(): void {
-    if (!this.isMobile() || this.mobileSidebarOpen() || this.mobileActionPending()) return;
-
-    this.mobileActionPending.set(true);
-    window.setTimeout(() => {
-      this.mobileSidebarOpen.set(true);
-      this.mobileActionPending.set(false);
-    }, MOBILE_NAV_ACTION_DELAY_MS);
+    if (!this.isMobile() || this.mobileSidebarOpen()) return;
+    this.mobileSidebarOpen.set(true);
   }
 
   closeMobileNavigation(): void {
-    if (!this.isMobile() || !this.mobileSidebarOpen() || this.mobileActionPending()) return;
-
-    this.mobileActionPending.set(true);
-    window.setTimeout(() => {
-      this.mobileSidebarOpen.set(false);
-      this.mobileActionPending.set(false);
-    }, MOBILE_NAV_ACTION_DELAY_MS);
+    if (!this.isMobile() || !this.mobileSidebarOpen()) return;
+    this.mobileSidebarOpen.set(false);
   }
 
   onSectionSelected(): void {
@@ -215,7 +200,6 @@ export class LedgerLayoutComponent {
 
   leaveLedger(): void {
     this.mobileSidebarOpen.set(false);
-    this.mobileActionPending.set(false);
     void this.router.navigateByUrl('/home');
   }
 }
