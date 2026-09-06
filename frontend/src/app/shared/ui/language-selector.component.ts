@@ -14,7 +14,11 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
         [class.ui-action-press]="appearance() === 'compact'"
         [attr.aria-label]="i18n.t('common.language')" [attr.aria-expanded]="open()">
         <span class="language-selector__language-icon ui-icon-badge" [class.ui-projected-icon]="appearance() === 'compact'" aria-hidden="true">
-          <app-icon name="languages" [size]="18" />
+          @if (appearance() === 'field') {
+            <app-twemoji-flag [country]="languageCountry(selectedLanguage())" />
+          } @else {
+            <app-icon name="languages" [size]="18" />
+          }
         </span>
         <span class="language-selector__name">{{ languageName(selectedLanguage()) }}</span>
         <app-icon class="language-selector__chevron ui-select-chevron" name="chevron-down" [size]="16" />
@@ -70,6 +74,7 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
       background: transparent;
       box-shadow: none;
     }
+    :host.language-selector--field .language-selector__language-icon app-twemoji-flag { display: grid; width: 100%; height: 100%; }
     .language-selector__name {
       min-width: 0;
       text-align: left;
@@ -155,5 +160,9 @@ export class LanguageSelectorComponent {
 
   languageName(language: AppLanguage): string {
     return language === 'pt-BR' ? this.i18n.t('language.pt') : this.i18n.t('language.en');
+  }
+
+  languageCountry(language: AppLanguage): 'br' | 'us' {
+    return language === 'pt-BR' ? 'br' : 'us';
   }
 }
