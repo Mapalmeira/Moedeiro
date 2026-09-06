@@ -2,12 +2,18 @@
   --green: #21e683;
   --green-strong: #10a956;
   --green-soft: #eafaf0;
+  --green-action-start: #31d36c;
+  --green-action-end: #3ad273;
   --yellow: #ffd51a;
   --yellow-strong: #c99c00;
   --yellow-soft: #fff9df;
+  --yellow-action-start: #ffd514;
+  --yellow-action-end: #ffd322;
   --blue: #488dfc;
   --blue-strong: #2467d5;
   --blue-soft: #edf4ff;
+  --on-green: #07130c;
+  --on-yellow: #171200;
   --on-blue: #ffffff;
   --danger: #d62828;
   --danger-soft: #fff0f0;
@@ -25,6 +31,9 @@
   --focus-accent: var(--green);
   --radius-card: 8px;
   --radius-sm: 6px;
+  --radius-icon: 5px;
+  --radius-inner: calc(var(--radius-sm) - var(--border-width));
+  --border-width: 2px;
 
   /* Spacing scale. */
   --space-1: 4px;
@@ -48,29 +57,58 @@
   /* Shared control typography and dimensions. */
   --control-height: 46px;
   --sidebar-control-height: 54px;
+  --control-padding-inline: var(--space-3);
   --control-font-size: .9rem;
   --control-font-weight: 720;
   --control-line-height: 1.2;
   --control-icon-size: 30px;
+  --inline-icon-size: 24px;
+  --chevron-track-size: 16px;
+  --control-icon-footprint: calc(var(--control-icon-size) + var(--icon-shadow-offset));
+  --title-icon-size: 46px;
+  --compact-title-icon-size: 40px;
+  --icon-button-size: 40px;
+  --touch-target-size: 48px;
+  --menu-item-height: 44px;
+  --list-row-height: 68px;
+  --action-button-min-width: 200px;
+  --spinner-size: 20px;
+  --heading-line-height: 1.1;
 
-  /* Projected shadows. The shadow uses the same color as the strong border. */
-  --button-shadow: drop-shadow(4px 4px 0 var(--shadow-color));
-  --button-shadow-pressed: drop-shadow(2px 2px 0 var(--shadow-color));
-  --compact-button-shadow: drop-shadow(3px 3px 0 var(--shadow-color));
-  --compact-button-shadow-pressed: drop-shadow(1px 1px 0 var(--shadow-color));
-  --selection-shadow: drop-shadow(3px 3px 0 var(--shadow-color));
-  --selection-shadow-transparent: drop-shadow(3px 3px 0 transparent);
+  /* Layered hard shadows preserve the original silhouette while overlapping
+     every intermediate pixel, preventing seams at fractional browser zoom. */
   --icon-shadow-offset: 2px;
-  --icon-shadow: drop-shadow(var(--icon-shadow-offset) var(--icon-shadow-offset) 0 var(--shadow-color));
-  --surface-shadow: drop-shadow(4px 4px 0 var(--shadow-color));
-  --menu-shadow: var(--surface-shadow);
-  --shadow-hard: drop-shadow(6px 6px 0 var(--shadow-color));
-  --dialog-shadow: drop-shadow(7px 7px 0 var(--shadow-color));
+  --hard-shadow-offset: 6px;
+  --dialog-shadow-offset: 7px;
+  --dialog-viewport-gap: var(--space-4);
+  --icon-shadow: 1px 1px 0 var(--shadow-color), 2px 2px 0 var(--shadow-color);
+  --compact-shadow: 1px 1px 0 var(--shadow-color), 2px 2px 0 var(--shadow-color), 3px 3px 0 var(--shadow-color);
+  --compact-shadow-pressed: 1px 1px 0 var(--shadow-color);
+  --selection-shadow: var(--compact-shadow);
+  --selection-shadow-transparent: 1px 1px 0 transparent, 2px 2px 0 transparent, 3px 3px 0 transparent;
+  --button-shadow: 1px 1px 0 var(--shadow-color), 2px 2px 0 var(--shadow-color), 3px 3px 0 var(--shadow-color), 4px 4px 0 var(--shadow-color);
+  --button-shadow-pressed: 1px 1px 0 var(--shadow-color), 2px 2px 0 var(--shadow-color), 3px 3px 0 transparent, 4px 4px 0 transparent;
+  --surface-shadow: var(--button-shadow);
+  --hard-shadow: 1px 1px 0 var(--shadow-color), 2px 2px 0 var(--shadow-color), 3px 3px 0 var(--shadow-color), 4px 4px 0 var(--shadow-color), 5px 5px 0 var(--shadow-color), 6px 6px 0 var(--shadow-color);
+  --dialog-shadow: 1px 1px 0 var(--shadow-color), 2px 2px 0 var(--shadow-color), 3px 3px 0 var(--shadow-color), 4px 4px 0 var(--shadow-color), 5px 5px 0 var(--shadow-color), 6px 6px 0 var(--shadow-color), 7px 7px 0 var(--shadow-color);
+
+  /* Shared overlays and layers. */
+  --overlay-color: rgb(0 0 0 / .34);
+  --layer-dropdown: 90;
+  --layer-toast: 95;
+  --layer-overlay: 100;
+  --layer-dialog: 101;
+  --layer-page-controls: 10;
+  --layer-drawer-backdrop: 30;
+  --layer-drawer: 40;
+  --drawer-overlay-color: rgb(0 0 0 / .26);
+  --drawer-shadow: 6px 0 20px color-mix(in srgb, var(--shadow-color) 24%, transparent);
 
   --space-page: clamp(18px, 4vw, 56px);
 
   /* Motion families: actions press quickly; selections/disclosures transition without moving. */
   --motion-press: 80ms;
+  --motion-focus: 120ms;
   --motion-selection: 160ms;
   --motion-disclosure: 160ms;
   --press-offset: 2px;

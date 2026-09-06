@@ -57,19 +57,19 @@ import { IconComponent } from './icon.component';
       text-align: left;
     }
     .search-select__value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .search-select__panel { position: absolute; z-index: 60; top: calc(100% + var(--space-2)); left: 0; right: 0; }
+    .search-select__panel { position: absolute; z-index: var(--layer-dropdown); top: calc(100% + var(--space-2)); left: 0; right: 0; }
     .search-select--up .search-select__panel { top: auto; bottom: calc(100% + var(--space-2)); }
     .search-select__list { max-height: min(190px, 28dvh); overflow-y: auto; overscroll-behavior: contain; display: grid; gap: var(--space-1); }
     .search-select__list button {
       width: 100%;
-      min-height: 38px;
+      min-height: var(--menu-item-height);
       display: grid;
       grid-template-columns: minmax(0, 1fr) 20px;
       align-items: center;
       gap: var(--space-2);
       padding: var(--space-2) var(--space-3);
       border: 0;
-      border-radius: 4px;
+      border-radius: var(--radius-sm);
       background: transparent;
       color: var(--text);
       text-align: left;

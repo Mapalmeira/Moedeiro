@@ -54,17 +54,17 @@ import { AuthenticatedShellService } from './authenticated-shell.service';
     .app-page--ledger { display: block; padding: 0; }
     .top-area { grid-row: 1; align-self: end; display: grid; place-items: center; margin-bottom: var(--space-8); }
     .top-area__brand { display: grid; justify-items: center; text-align: center; }
-    .account-wrap { position: absolute; top: 28px; right: var(--space-page); z-index: 10; width: min(230px, calc(100vw - (2 * var(--space-page)))); }
+    .account-wrap { position: absolute; top: var(--space-7); right: var(--space-page); z-index: var(--layer-page-controls); width: min(230px, calc(100vw - (2 * var(--space-page)))); }
     .content-area { grid-row: 2; width: min(1180px, 100%); min-height: 0; margin: 0 auto; }
     .content-area--ledger { width: 100%; min-height: 100dvh; margin: 0; }
-    .floating-message { position: fixed; right: 20px; bottom: 20px; width: min(430px, calc(100vw - 40px)); z-index: 80; }
+    .floating-message { position: fixed; right: var(--space-5); bottom: var(--space-5); width: min(430px, calc(100vw - (2 * var(--space-5)))); z-index: var(--layer-toast); }
     @media (max-width: 700px) {
       .app-page:not(.app-page--ledger) {
         grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
         padding: 76px var(--space-page) 32px;
       }
       .top-area { align-self: end; margin-bottom: var(--space-6); }
-      .account-wrap { top: 16px; }
+      .account-wrap { top: var(--space-4); }
       .content-area:not(.content-area--ledger) { align-self: center; margin: 0 auto; }
     }
     @media (max-height: 620px) {

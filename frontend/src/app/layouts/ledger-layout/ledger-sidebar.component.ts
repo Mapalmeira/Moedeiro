@@ -28,7 +28,7 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
             [routerLinkActiveOptions]="{ exact: true }"
             ariaCurrentWhenActive="page"
             (click)="sectionSelected.emit()">
-            <span class="ledger-nav__icon ui-projected-icon"
+            <span class="ledger-nav__icon ui-icon-badge ui-projected-icon"
               [class.ledger-nav__icon--green]="item.tone === 'green'"
               [class.ledger-nav__icon--yellow]="item.tone === 'yellow'"
               [class.ledger-nav__icon--blue]="item.tone === 'blue'"
@@ -45,9 +45,9 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
       <div class="ledger-sidebar__footer">
         @if (ledger(); as currentLedger) {
           <div class="ledger-switcher" (click)="$event.stopPropagation()">
-            <button class="ledger-switcher__trigger ui-select-trigger ui-action-press" type="button"
+            <button class="ledger-switcher__trigger ui-select-trigger ui-action-press ui-trigger-with-icon" type="button"
               (click)="toggleLedgerMenu($event)" [attr.aria-expanded]="ledgerMenuOpen()" [attr.title]="currentLedger.name">
-              <span class="ledger-switcher__icon ui-projected-icon" [style.background]="currentLedger.color_code" [style.color]="ledgerForeground()">
+              <span class="ledger-switcher__icon ui-icon-badge ui-projected-icon" [style.background]="currentLedger.color_code" [style.color]="ledgerForeground()">
                 <app-ledger-icon [icon]="currentLedger.icon" [size]="20" />
               </span>
               <strong class="ledger-switcher__name">{{ currentLedger.name }}</strong>
@@ -55,13 +55,13 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
             </button>
 
             @if (ledgerMenuOpen()) {
-              <div class="ledger-switcher__dropdown" role="menu">
+              <div class="ledger-switcher__dropdown ui-dropdown-menu ui-projected-surface ui-projection--compact" role="menu">
                 <button type="button" role="menuitem" (click)="editCurrentLedger()">
-                  <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--edit ui-projected-icon"><app-icon name="pencil" [size]="17" /></span>
+                  <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--edit ui-icon-badge ui-projected-icon"><app-icon name="pencil" [size]="17" /></span>
                   <span>{{ i18n.t('ledgers.edit') }}</span>
                 </button>
                 <button type="button" role="menuitem" (click)="leaveCurrentLedger()">
-                  <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--leave ui-projected-icon"><app-icon name="logout" [size]="17" /></span>
+                  <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--leave ui-icon-badge ui-projected-icon"><app-icon name="logout" [size]="17" /></span>
                   <span>{{ i18n.t('ledgerShell.leave') }}</span>
                 </button>
               </div>
@@ -87,15 +87,15 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
     .ledger-sidebar__brand-row app-brand-logo { width: 100%; height: 50px; }
     .ledger-nav { display: grid; gap: var(--space-2); }
     .ledger-nav__item {
-      min-height: 52px; display: grid; grid-template-columns: 36px minmax(0, 1fr); align-items: center; gap: var(--space-3);
-      padding: var(--space-2) var(--space-3); border: 2px solid transparent; border-radius: 6px; background: transparent; color: var(--text); filter: var(--selection-shadow-transparent);
-      text-align: left; text-decoration: none; font-size: var(--control-font-size); font-weight: var(--control-font-weight); line-height: var(--control-line-height); transition: box-shadow var(--motion-selection) ease, background var(--motion-selection) ease, border-color var(--motion-selection) ease;
+      position: relative;
+      min-height: var(--sidebar-control-height); display: grid; grid-template-columns: var(--control-icon-footprint) minmax(0, 1fr); align-items: center; gap: var(--space-3);
+      padding: var(--space-2) var(--control-padding-inline); border: var(--border-width) solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--text);
+      text-align: left; text-decoration: none; font-size: var(--control-font-size); font-weight: var(--control-font-weight); line-height: var(--control-line-height); box-shadow: var(--selection-shadow-transparent); transition: box-shadow var(--motion-selection) ease, background var(--motion-selection) ease, border-color var(--motion-selection) ease;
     }
     .ledger-nav__item:not(.ledger-nav__item--active):hover { background: var(--surface-muted); }
-    .ledger-nav__item--active { border-color: var(--line-strong); background: var(--green-soft); color: var(--text); filter: var(--selection-shadow); }
-    .ledger-nav__icon { width: var(--control-icon-size); height: var(--control-icon-size); display: grid; place-items: center; border: 2px solid var(--line-strong); border-radius: 5px; }
-    .ledger-nav__icon--green { background: var(--green); color: #07130c; }
-    .ledger-nav__icon--yellow { background: var(--yellow); color: #171200; }
+    .ledger-nav__item--active { border-color: var(--line-strong); background: var(--green-soft); color: var(--text); box-shadow: var(--selection-shadow); }
+    .ledger-nav__icon--green { background: var(--green); color: var(--on-green); }
+    .ledger-nav__icon--yellow { background: var(--yellow); color: var(--on-yellow); }
     .ledger-nav__icon--blue { background: var(--blue); color: var(--on-blue); }
     .ledger-nav__icon--neutral { background: var(--surface-muted); color: var(--text); }
     .ledger-nav__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -103,35 +103,23 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
     .ledger-sidebar__footer { display: grid; gap: var(--space-3); }
     .ledger-switcher { position: relative; min-width: 0; }
     .ledger-switcher__trigger {
-      width: 100%; min-width: 0; min-height: var(--sidebar-control-height); display: grid;
-      grid-template-columns: var(--control-icon-size) minmax(0, 1fr) 16px; align-items: center; gap: var(--space-3);
-      padding: var(--space-2) var(--space-3); text-align: left;
-    }
-    .ledger-switcher__icon {
-      width: var(--control-icon-size); height: var(--control-icon-size); display: grid; place-items: center; overflow: hidden;
-      border: 2px solid var(--line-strong); border-radius: 5px;
+      width: 100%; min-width: 0; min-height: var(--sidebar-control-height); text-align: left;
     }
     .ledger-switcher__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: inherit; }
     .ledger-switcher__chevron { justify-self: end; }
     .ledger-switcher__dropdown {
-      position: absolute; z-index: 90; left: 0; right: 0; bottom: calc(100% + var(--space-2));
-      padding: var(--space-2); border: 2px solid var(--line-strong); border-radius: 8px;
-      background: var(--surface); filter: var(--compact-button-shadow);
+      position: absolute; z-index: var(--layer-dropdown); left: 0; right: 0; bottom: calc(100% + var(--space-2));
     }
     .ledger-switcher__dropdown button {
-      width: 100%; min-height: var(--control-height); display: grid; grid-template-columns: var(--control-icon-size) minmax(0, 1fr);
-      align-items: center; gap: var(--space-3); padding: var(--space-2); border: 0; border-radius: 5px;
+      width: 100%; min-height: var(--menu-item-height); display: grid; grid-template-columns: var(--control-icon-footprint) minmax(0, 1fr);
+      align-items: center; gap: var(--space-3); padding: var(--space-2); border: 0; border-radius: var(--radius-sm);
       background: transparent; color: var(--text); text-align: left; font-size: var(--control-font-size);
       font-weight: var(--control-font-weight); line-height: var(--control-line-height);
     }
     .ledger-switcher__dropdown button:hover { background: var(--surface-muted); }
     .ledger-switcher__dropdown button + button { margin-top: var(--space-1); }
-    .ledger-switcher__menu-icon {
-      width: var(--control-icon-size); height: var(--control-icon-size); display: grid; place-items: center;
-      border: 2px solid var(--line-strong); border-radius: 5px;
-    }
     .ledger-switcher__menu-icon--edit { background: var(--blue); color: var(--on-blue); }
-    .ledger-switcher__menu-icon--leave { background: var(--yellow); color: #171200; }
+    .ledger-switcher__menu-icon--leave { background: var(--yellow); color: var(--on-yellow); }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

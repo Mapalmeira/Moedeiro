@@ -5,36 +5,38 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 
 .ui-button {
   position: relative;
-  min-height: 47px;
+  min-height: var(--control-height);
   display: inline-flex;
   justify-content: center;
   align-items: center;
   gap: var(--inline-gap);
-  padding: 0 18px;
-  border: 2px solid var(--line-strong);
-  border-radius: 4px;
+  padding: 0 var(--space-5);
+  border: var(--border-width) solid var(--line-strong);
+  border-radius: var(--radius-sm);
   background: var(--surface);
-  color: #050505;
+  color: var(--on-green);
   font-weight: 800;
-  filter: var(--button-shadow);
-  transition: transform var(--motion-press) ease, filter var(--motion-press) ease;
+  box-shadow: var(--button-shadow);
+  transition: transform var(--motion-press) ease, box-shadow var(--motion-press) ease;
 }
-.ui-button:not(:disabled):active { transform: translate(var(--press-offset), var(--press-offset)); filter: var(--button-shadow-pressed); }
-.ui-button--full { width: 100%; }
-.ui-button--full app-icon { position: absolute; right: 17px; }
-.ui-button--green { --focus-accent: var(--green); background: linear-gradient(90deg, #31d36c, #3ad273); }
-.ui-button--yellow { --focus-accent: var(--yellow); background: linear-gradient(90deg, #ffd514, #ffd322); }
-.ui-button--blue { --focus-accent: var(--blue); background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 82%, white), var(--blue)); color: #07111f; }
+.ui-button:not(:disabled):active { transform: translate(var(--press-offset), var(--press-offset)); box-shadow: var(--button-shadow-pressed); }
+.ui-button--full { width: 100%; display: grid; grid-template-columns: 20px minmax(0, auto) 20px; }
+.ui-button--full > span { grid-column: 2; }
+.ui-button--full app-icon { grid-column: 3; justify-self: end; }
+.ui-button--green { --focus-accent: var(--green); background: linear-gradient(90deg, var(--green-action-start), var(--green-action-end)); color: var(--on-green); }
+.ui-button--yellow { --focus-accent: var(--yellow); background: linear-gradient(90deg, var(--yellow-action-start), var(--yellow-action-end)); color: var(--on-yellow); }
+.ui-button--blue { --focus-accent: var(--blue); background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 82%, white), var(--blue)); color: var(--on-blue); }
 
 /* Selection controls retain their state and never use physical press motion. */
 .ui-choice {
+  position: relative;
   min-height: var(--control-height);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border: 2px solid var(--line-strong);
+  border: var(--border-width) solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text);
@@ -42,17 +44,17 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   font-size: var(--control-font-size);
   font-weight: var(--control-font-weight);
   line-height: var(--control-line-height);
-  filter: var(--selection-shadow-transparent);
-  transition: filter var(--motion-selection) ease, background var(--motion-selection) ease, border-color var(--motion-selection) ease;
+  box-shadow: var(--selection-shadow-transparent);
+  transition: box-shadow var(--motion-selection) ease, background var(--motion-selection) ease, border-color var(--motion-selection) ease;
 }
 .ui-choice:not(:disabled):not(.ui-choice--selected):hover { background: var(--surface-muted); }
 .ui-choice--selected,
-.ui-choice--selected:hover { background: var(--green-soft); filter: var(--selection-shadow); }
+.ui-choice--selected:hover { background: var(--green-soft); box-shadow: var(--selection-shadow); }
 
 /* Shared dropdown/select trigger. It never moves unless explicitly marked as an action. */
 .ui-select-trigger {
   min-height: var(--control-height);
-  border: 2px solid var(--line-strong);
+  border: var(--border-width) solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text);
@@ -77,26 +79,26 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 
 /* Flag for controls that perform an action and should physically press. */
 .ui-action-press {
-  filter: var(--compact-button-shadow);
-  transition: transform var(--motion-press) ease, filter var(--motion-press) ease, background var(--motion-press) ease, border-color var(--motion-press) ease;
+  position: relative;
+  box-shadow: var(--compact-shadow);
+  transition: transform var(--motion-press) ease, box-shadow var(--motion-press) ease, background var(--motion-press) ease, border-color var(--motion-press) ease;
 }
 .ui-action-press[aria-expanded='true'] {
   border-color: var(--line-strong);
-  filter: var(--compact-button-shadow);
 }
 .ui-action-press:not(:disabled):active {
   transform: translate(var(--press-offset), var(--press-offset));
-  filter: var(--compact-button-shadow-pressed);
+  box-shadow: var(--compact-shadow-pressed);
 }
 
 .icon-button {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: var(--icon-button-size);
+  height: var(--icon-button-size);
   padding: 0;
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text);
 }

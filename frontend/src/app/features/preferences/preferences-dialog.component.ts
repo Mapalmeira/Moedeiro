@@ -18,10 +18,12 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
   imports: [ReactiveFormsModule, FormMessageComponent, IconComponent, LanguageSelectorComponent, SearchSelectComponent],
   template: `
     @if (open()) {
-      <div class="dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
-      <section class="dialog" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('preferences.title')">
-        <header class="dialog__header">
-          <div class="dialog__title">
+      <div class="dialog-backdrop ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
+      <div class="dialog-layer ui-dialog-layer">
+      <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
+      <section class="dialog ui-dialog-surface" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('preferences.title')">
+        <header class="dialog__header ui-dialog-header">
+          <div class="dialog__title ui-dialog-title">
             <span class="title-icon title-icon--green"><app-icon name="sliders" [size]="21" /></span>
             <h2>{{ i18n.t('preferences.title') }}</h2>
           </div>
@@ -103,20 +105,12 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
             </footer>
         </form>
       </section>
+      </div>
+      </div>
     }
   `,
   styles: `
-    .dialog-backdrop { position: fixed; inset: 0; z-index: 40; background: rgb(0 0 0 / .34); backdrop-filter: blur(2px); }
-    .dialog {
-      position: fixed; z-index: 41; top: 50%; left: 50%; width: min(760px, calc(100vw - 28px));
-      max-height: calc(100dvh - 30px); overflow: auto; transform: translate(-50%, -50%);
-      border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); color: var(--text);
-      filter: var(--dialog-shadow);
-    }
-    .dialog__header { display: flex; align-items: center; justify-content: space-between; gap: var(--form-gap); padding: 17px 19px; border-bottom: 2px solid var(--line); }
-    .dialog__title { display: flex; align-items: center; gap: var(--title-icon-gap); }
-    .dialog__title h2 { margin: 0; font-size: 1.22rem; letter-spacing: -.01em; }
-    .dialog__title .title-icon { width: 40px; height: 40px; }
+    .dialog-layer { --dialog-width: 760px; }
     form { display: grid; gap: 0; padding: 0 var(--space-5) var(--space-5); }
     .preference-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--section-gap); padding: var(--section-gap) 0; border-bottom: 1px solid var(--line); }
     .preference-grid--top { align-items: start; }
@@ -129,7 +123,7 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
     .choice-card--with-icon { justify-content: flex-start; padding-left: var(--form-gap); }
     .choice-card--example { font-variant-numeric: tabular-nums; letter-spacing: .01em; }
     .dialog__footer { display: flex; justify-content: flex-end; padding-top: var(--section-gap); }
-    .dialog__footer .ui-button { min-width: 200px; }
+    .dialog__footer .ui-button { min-width: var(--action-button-min-width); }
     @media (max-width: 650px) {
       .preference-grid { grid-template-columns: 1fr; }
       .choice-grid--3 { grid-template-columns: 1fr; }

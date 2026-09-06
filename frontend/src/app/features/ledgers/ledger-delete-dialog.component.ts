@@ -15,10 +15,12 @@ import { IconComponent } from '../../shared/ui/icon.component';
   template: `
     @if (open()) {
       @if (ledger(); as current) {
-        <div class="dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
-        <section class="dialog" role="alertdialog" aria-modal="true" [attr.aria-label]="i18n.t('ledgers.delete.title')">
-        <header class="dialog__header">
-          <div class="dialog__title">
+        <div class="dialog-backdrop ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
+        <div class="dialog-layer ui-dialog-layer">
+        <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
+        <section class="dialog ui-dialog-surface" role="alertdialog" aria-modal="true" [attr.aria-label]="i18n.t('ledgers.delete.title')">
+        <header class="dialog__header ui-dialog-header">
+          <div class="dialog__title ui-dialog-title">
             <span class="title-icon"><app-icon name="trash" [size]="21" /></span>
             <h2>{{ i18n.t('ledgers.delete.title') }}</h2>
           </div>
@@ -42,26 +44,21 @@ import { IconComponent } from '../../shared/ui/icon.component';
           </footer>
         </div>
         </section>
+        </div>
+        </div>
       }
     }
   `,
   styles: `
-    .dialog-backdrop { position: fixed; inset: 0; z-index: 60; background: rgb(0 0 0 / .38); backdrop-filter: blur(2px); }
+    .dialog-layer { --dialog-width: 520px; }
     .dialog {
       --token-accent: var(--danger-token); --token-accent-strong: var(--danger); --focus-accent: var(--danger-token);
-      position: fixed; z-index: 61; top: 50%; left: 50%; width: min(520px, calc(100vw - 28px));
-      max-height: calc(100dvh - 30px); overflow: auto; transform: translate(-50%, -50%);
-      border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); color: var(--text);
-      filter: var(--dialog-shadow);
     }
-    .dialog__header { display: flex; align-items: center; justify-content: space-between; gap: var(--form-gap); padding: 17px 19px; border-bottom: 2px solid var(--line); }
-    .dialog__title { display: flex; align-items: center; gap: var(--title-icon-gap); }
-    .dialog__title h2 { margin: 0; font-size: 1.22rem; }
-    .title-icon { width: 40px; height: 40px; display: grid; place-items: center; border: 1.5px solid var(--danger); border-radius: 5px; background: var(--danger-token); color: var(--on-danger-token); }
+    .title-icon { width: var(--compact-title-icon-size); height: var(--compact-title-icon-size); border-color: var(--danger); background: var(--danger-token); color: var(--on-danger-token); }
     .dialog__body { display: grid; gap: var(--section-gap); padding: var(--space-5); }
     p { margin: 0; color: var(--text-muted); line-height: 1.55; }
     .dialog__footer { display: flex; justify-content: flex-end; }
-    .dialog__footer .ui-button { min-width: 180px; }
+    .dialog__footer .ui-button { min-width: var(--action-button-min-width); }
     @media (max-width: 460px) { .dialog__footer .ui-button { width: 100%; } }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

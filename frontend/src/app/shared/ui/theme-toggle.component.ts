@@ -21,19 +21,18 @@ import { IconComponent } from './icon.component';
   styles: `
     :host { display: inline-block; }
     .theme-toggle {
-      height: var(--control-height);
-      min-height: var(--control-height);
+      height: var(--sidebar-control-height);
+      min-height: var(--sidebar-control-height);
       display: inline-flex;
       align-items: center;
       gap: var(--space-2);
       padding: var(--space-2) var(--space-3);
-      filter: var(--selection-shadow);
     }
     .switch-track {
       width: 36px;
       height: 20px;
-      padding: 2px;
-      border: 2px solid var(--line-strong);
+      padding: var(--border-width);
+      border: var(--border-width) solid var(--line-strong);
       border-radius: 999px;
       background: var(--surface-muted);
       transition: background var(--motion-selection) ease, border-color var(--motion-selection) ease;

@@ -42,8 +42,8 @@ import { ledgerSectionByKey } from './ledger-sections';
             <app-icon name="panel-open" [size]="20" />
           </button>
 
-          <div class="ledger-main__headline">
-            <span class="ledger-main__token ui-projected-icon"
+          <div class="ledger-main__headline ui-heading-with-icon">
+            <span class="ledger-main__token ui-icon-badge ui-icon-badge--title ui-projected-icon"
               [class.ledger-main__token--green]="activeSection().tone === 'green'"
               [class.ledger-main__token--yellow]="activeSection().tone === 'yellow'"
               [class.ledger-main__token--blue]="activeSection().tone === 'blue'"
@@ -57,15 +57,15 @@ import { ledgerSectionByKey } from './ledger-sections';
         </header>
 
         @if (context.loadError()) {
-          <div class="placeholder-card placeholder-card--error">
+          <div class="placeholder-card placeholder-card--error ui-projected-surface ui-projection--hard">
             <app-form-message [text]="context.loadError()!" />
             <div class="placeholder-card__actions">
               <button class="ui-button ui-button--green" type="button" (click)="leaveLedger()">{{ i18n.t('ledgerShell.backToLedgers') }}</button>
             </div>
           </div>
         } @else if (context.loading() && !context.ledger()) {
-          <div class="placeholder-card placeholder-card--loading">
-            <div class="spinner" aria-hidden="true"></div>
+          <div class="placeholder-card placeholder-card--loading ui-projected-surface ui-projection--hard">
+            <div class="spinner ui-spinner" aria-hidden="true"></div>
             <p>{{ i18n.t('ledgers.entering') }}</p>
           </div>
         } @else {
@@ -96,51 +96,49 @@ import { ledgerSectionByKey } from './ledger-sections';
       position: sticky;
       top: 0;
       min-height: 100dvh;
-      border-right: 2px solid var(--line);
+      border-right: var(--border-width) solid var(--line);
       background: var(--surface);
-      transition: transform .18s ease;
+      transition: transform var(--motion-disclosure) ease;
       overflow: hidden;
     }
     .ledger-main { min-width: 0; min-height: 100dvh; display: grid; align-content: start; gap: var(--space-6); padding: var(--space-6); }
     .ledger-main__header { display: flex; align-items: center; gap: var(--space-4); }
     .mobile-nav-button {
-      display: none; place-items: center; width: 40px; height: 40px; padding: 0; border: 2px solid var(--line-strong);
-      border-radius: 6px; background: var(--surface); color: var(--text);
+      display: none; place-items: center; width: var(--icon-button-size); height: var(--icon-button-size); padding: 0; border: var(--border-width) solid var(--line-strong);
+      border-radius: var(--radius-sm); background: var(--surface); color: var(--text);
     }
     .mobile-nav-button:hover { background: var(--surface-muted); }
-    .ledger-main__headline { display: flex; align-items: center; gap: var(--space-4); min-width: 0; }
-    .ledger-main__token { width: 48px; height: 48px; display: grid; place-items: center; border: 2px solid var(--line-strong); border-radius: 6px; }
-    .ledger-main__token--green { background: var(--green); color: #07130c; }
-    .ledger-main__token--yellow { background: var(--yellow); color: #171200; }
+    .ledger-main__headline { min-height: calc(var(--title-icon-size) + var(--icon-shadow-offset)); }
+    .ledger-main__token { border-radius: var(--radius-sm); }
+    .ledger-main__token--green { background: var(--green); color: var(--on-green); }
+    .ledger-main__token--yellow { background: var(--yellow); color: var(--on-yellow); }
     .ledger-main__token--blue { background: var(--blue); color: var(--on-blue); }
     .ledger-main__token--neutral { background: var(--surface-muted); color: var(--text); }
     .ledger-main__title-wrap { min-width: 0; }
-    .ledger-main__title-wrap h1 { margin: 0; font-size: clamp(1.45rem, 2vw, 1.8rem); letter-spacing: -.03em; }
-    .placeholder-card { min-height: 320px; display: grid; place-items: center; align-content: center; gap: var(--space-3); padding: clamp(28px, 6vw, 52px); border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); filter: var(--shadow-hard); text-align: center; }
+    .ledger-main__title-wrap h1 { margin: 0; font-size: clamp(1.45rem, 2vw, 1.8rem); line-height: var(--heading-line-height); letter-spacing: -.03em; }
+    .placeholder-card { min-height: 320px; display: grid; place-items: center; align-content: center; gap: var(--space-3); padding: clamp(28px, 6vw, 52px); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); text-align: center; }
     .placeholder-card__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-2); }
     .placeholder-card--loading { min-height: 280px; }
     .ledger-section-content { min-height: 1px; }
-    .spinner { width: 24px; height: 24px; border: 2px solid color-mix(in srgb, var(--green) 28%, var(--line)); border-top-color: var(--green-strong); border-radius: 50%; animation: spin .7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { --spinner-size: 24px; }
     .mobile-overlay { display: none; }
 
     @media (max-width: 960px) {
       .ledger-shell { grid-template-columns: minmax(0, 1fr); }
       .ledger-sidebar {
-        position: fixed; z-index: 40; left: 0; top: 0; bottom: 0; width: min(312px, calc(100vw - 32px)); transform: translateX(-100%);
-        box-shadow: 6px 0 20px color-mix(in srgb, var(--shadow-color) 24%, transparent);
+        position: fixed; z-index: var(--layer-drawer); left: 0; top: 0; bottom: 0; width: min(312px, calc(100vw - 32px)); transform: translateX(-100%);
+        box-shadow: var(--drawer-shadow);
       }
       .ledger-sidebar.ledger-sidebar--mobile-open { transform: translateX(0); }
-      .mobile-nav-button { display: grid; width: 48px; height: 48px; flex: 0 0 48px; }
+      .mobile-nav-button { display: grid; width: var(--touch-target-size); height: var(--touch-target-size); flex: 0 0 var(--touch-target-size); }
       .ledger-main { padding: var(--space-5); }
-      .mobile-overlay { position: fixed; inset: 0; display: block; z-index: 30; background: color-mix(in srgb, #000 26%, transparent); }
+      .mobile-overlay { position: fixed; inset: 0; display: block; z-index: var(--layer-drawer-backdrop); background: var(--drawer-overlay-color); }
     }
     @media (max-width: 640px) {
       .ledger-main { gap: var(--space-5); padding: var(--space-4); }
       .ledger-main__header { align-items: center; }
       .ledger-main__headline { gap: var(--space-3); }
-      .ledger-main__token, .mobile-nav-button { width: 44px; height: 44px; flex-basis: 44px; }
-      .placeholder-card { min-height: 260px; padding: var(--space-5); filter: var(--surface-shadow); }
+      .placeholder-card { box-shadow: var(--surface-shadow); min-height: 260px; padding: var(--space-5); }
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -27,11 +27,13 @@ type IconMode = 'lucide' | 'unicode';
   imports: [ReactiveFormsModule, FieldErrorComponent, FormMessageComponent, IconComponent, LedgerIconComponent],
   template: `
     @if (open()) {
-      <div class="dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
-      <section class="dialog" role="dialog" aria-modal="true" [attr.aria-label]="title()">
-        <header class="dialog__header">
-          <div class="dialog__title">
-            <span class="title-icon"><app-icon [name]="ledger() ? 'pencil' : 'plus'" [size]="25" /></span>
+      <div class="dialog-backdrop ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
+      <div class="dialog-layer ui-dialog-layer">
+      <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
+      <section class="dialog ui-dialog-surface" role="dialog" aria-modal="true" [attr.aria-label]="title()">
+        <header class="dialog__header ui-dialog-header">
+          <div class="dialog__title ui-dialog-title">
+            <span class="title-icon title-icon--green"><app-icon [name]="ledger() ? 'pencil' : 'plus'" [size]="21" /></span>
             <h2>{{ title() }}</h2>
           </div>
           <button class="icon-button" type="button" (click)="requestClose()" [disabled]="saving()"
@@ -110,11 +112,13 @@ type IconMode = 'lucide' | 'unicode';
               </section>
             </div>
 
-            <aside class="preview-panel">
+            <aside class="preview-panel ui-projected-surface ui-projection--surface">
               <span class="field-label preview-label">{{ i18n.t('ledgers.editor.preview') }}</span>
               <div class="preview-stage">
+                <div class="preview-token-frame ui-projected-surface ui-projection--surface">
                 <div class="preview-token" [style.background]="color()" [style.color]="contrast().foreground">
                   <app-ledger-icon [icon]="previewIcon()" [size]="54" />
+                </div>
                 </div>
               </div>
               <strong class="preview-name">{{ previewName() }}</strong>
@@ -130,54 +134,49 @@ type IconMode = 'lucide' | 'unicode';
           </footer>
         </form>
       </section>
+      </div>
+      </div>
     }
   `,
   styles: `
-    .dialog-backdrop { position: fixed; inset: 0; z-index: 50; background: rgb(0 0 0 / .34); backdrop-filter: blur(2px); }
+    .dialog-layer { --dialog-width: 760px; }
     .dialog {
       --token-accent: var(--green); --token-accent-strong: var(--green-strong); --focus-accent: var(--green);
-      position: fixed; z-index: 51; top: 50%; left: 50%; width: min(760px, calc(100vw - 28px));
-      max-height: calc(100dvh - 30px); overflow: auto; transform: translate(-50%, -50%);
-      border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); color: var(--text);
-      filter: var(--dialog-shadow);
     }
-    .dialog__header { display: flex; align-items: center; justify-content: space-between; gap: var(--form-gap); padding: 17px 19px; border-bottom: 2px solid var(--line); }
-    .dialog__title { display: flex; align-items: center; gap: var(--title-icon-gap); }
-    .dialog__title h2 { margin: 0; font-size: 1.22rem; letter-spacing: -.01em; }
-    .title-icon { width: 46px; height: 46px; display: grid; place-items: center; flex: 0 0 46px; border: 2px solid var(--line-strong); border-radius: 5px; background: var(--green); color: #060606; }
     form { display: grid; gap: var(--section-gap); padding: var(--space-5); }
     .editor-grid { display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(220px, .78fr); gap: var(--space-6); align-items: stretch; }
     .editor-fields { display: grid; gap: var(--space-4); min-width: 0; align-content: start; }
     .appearance-field { display: grid; gap: var(--field-gap); min-width: 0; }
     .field-label { font-size: .9rem; font-weight: 780; }
     .color-row { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: var(--space-3); align-items: stretch; }
-    .color-picker { box-sizing: border-box; width: 70px; height: 46px; padding: 4px; border: 2px solid var(--line-strong); border-radius: var(--radius-sm); outline: none; background: var(--surface); box-shadow: none; }
+    .color-picker { box-sizing: border-box; width: 70px; height: var(--control-height); padding: var(--space-1); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-sm); outline: none; background: var(--surface); box-shadow: none; }
     .color-picker:focus, .color-picker:focus-visible { border-color: var(--green-strong); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 32%, transparent); }
     .color-picker::-webkit-color-swatch-wrapper { padding: 0; }
     .color-picker::-webkit-color-swatch { border: 0; border-radius: 3px; }
     .color-picker::-moz-color-swatch { border: 0; border-radius: 3px; }
     .color-code-field { gap: 0; }
     .mode-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
-    .mode-switch__button { width: 100%; min-height: 46px; font-weight: 760; }
-    .icon-control-slot { position: relative; min-height: 46px; margin-top: var(--space-2); }
+    .mode-switch__button { width: 100%; min-height: var(--control-height); font-weight: 760; }
+    .icon-control-slot { position: relative; min-height: var(--control-height); margin-top: var(--space-2); }
     .lucide-picker { position: relative; }
-    .lucide-picker__trigger { width: 100%; height: 46px; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); padding: 0 var(--space-3) 0 var(--space-2); text-align: left; font-weight: 650; }
-    .lucide-picker__selected-icon { width: 32px; height: 32px; display: grid; place-items: center; overflow: hidden; border: 1.5px solid var(--line-strong); border-radius: 5px; background: var(--surface-muted); }
+    .lucide-picker__trigger { width: 100%; height: var(--control-height); display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); padding: 0 var(--space-3) 0 var(--space-2); text-align: left; font-weight: 650; }
+    .lucide-picker__selected-icon { width: 32px; height: 32px; display: grid; place-items: center; overflow: hidden; border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-icon); background: var(--surface-muted); }
     .lucide-picker__selected-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .lucide-picker__panel { position: absolute; z-index: 70; left: 0; right: 0; bottom: calc(100% + var(--space-2)); }
+    .lucide-picker__panel { position: absolute; z-index: var(--layer-dropdown); left: 0; right: 0; bottom: calc(100% + var(--space-2)); }
     .icon-grid { max-height: min(196px, 28dvh); overflow: auto; overscroll-behavior: contain; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); padding: var(--space-1); }
-    .icon-choice { min-width: 0; min-height: 68px; display: grid; justify-items: center; align-content: center; gap: var(--space-1); padding: var(--space-2); }
+    .icon-choice { min-width: 0; min-height: var(--list-row-height); display: grid; justify-items: center; align-content: center; gap: var(--space-1); padding: var(--space-2); }
     .icon-choice span { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .7rem; font-weight: 680; }
     .unicode-field { gap: 0; }
     .unicode-field input { font-size: .96rem; line-height: 1.2; text-align: center; }
     .unicode-field input::placeholder { color: var(--text-muted); font-size: .8rem; font-weight: 560; }
-    .preview-panel { position: sticky; top: var(--space-5); align-self: stretch; min-height: 0; margin-top: var(--space-6); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; justify-items: center; gap: var(--space-3); padding: var(--space-4); border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface-muted); filter: var(--surface-shadow); }
+    .preview-panel { position: sticky; top: var(--space-5); align-self: stretch; min-height: 0; margin-top: var(--space-6); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; justify-items: center; gap: var(--space-3); padding: var(--space-4); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface-muted); }
     .preview-label { justify-self: start; color: var(--text); }
     .preview-stage { width: 100%; min-height: 0; display: grid; place-items: center; align-self: stretch; }
-    .preview-token { width: 124px; height: 124px; display: grid; place-items: center; overflow: hidden; border: 2px solid var(--line-strong); border-radius: 12px; filter: var(--surface-shadow); }
+    .preview-token-frame { border-radius: var(--space-3); }
+    .preview-token { width: 124px; height: 124px; display: grid; place-items: center; overflow: hidden; border: var(--border-width) solid var(--line-strong); border-radius: inherit; }
     .preview-name { max-width: 100%; overflow-wrap: anywhere; text-align: center; font-size: 1.02rem; }
     .dialog__footer { display: flex; justify-content: flex-end; padding-top: var(--space-1); }
-    .dialog__footer .ui-button { min-width: 190px; }
+    .dialog__footer .ui-button { min-width: var(--action-button-min-width); }
     @media (max-width: 760px) {
       .editor-grid { grid-template-columns: 1fr; }
       .preview-panel { position: static; min-height: 220px; margin-top: 0; grid-template-rows: auto minmax(0, 1fr) auto; justify-items: center; align-items: stretch; }

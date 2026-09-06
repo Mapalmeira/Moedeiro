@@ -135,9 +135,8 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
   `,
   styles: `
     .auth-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(30px, 4.5vw, 54px); align-items: stretch; }
-    app-auth-card { height: 100%; }
     form { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: var(--form-gap); }
-    .login-options { display: flex; justify-content: space-between; gap: var(--form-gap); align-items: center; margin: -2px 0 2px; font-size: .88rem; }
+    .login-options { display: flex; justify-content: space-between; gap: var(--form-gap); align-items: center; margin: 0; font-size: .88rem; }
     .login-feedback {
       position: relative;
       flex: 1 1 64px;

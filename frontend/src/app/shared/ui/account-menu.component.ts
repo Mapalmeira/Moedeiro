@@ -11,25 +11,25 @@ import { IconComponent } from './icon.component';
   },
   template: `
     <div class="account-control" [class.account-control--up]="placement() === 'up'">
-      <button class="account-trigger ui-select-trigger ui-action-press" type="button" (click)="toggle($event)"
+      <button class="account-trigger ui-select-trigger ui-action-press ui-trigger-with-icon" type="button" (click)="toggle($event)"
         [attr.aria-expanded]="open()" [attr.aria-label]="i18n.t('shell.settings')">
-        <span class="account-trigger__icon ui-projected-icon"><app-icon name="user" [size]="17" /></span>
+        <span class="account-trigger__icon ui-icon-badge ui-projected-icon"><app-icon name="user" [size]="17" /></span>
         <strong class="account-trigger__name">{{ userName() || '—' }}</strong>
         <app-icon class="account-trigger__chevron ui-select-chevron" name="chevron-down" [size]="16" />
       </button>
 
       @if (open()) {
-        <div class="account-dropdown" role="menu" (click)="$event.stopPropagation()">
+        <div class="account-dropdown ui-dropdown-menu ui-projected-surface ui-projection--compact" role="menu" (click)="$event.stopPropagation()">
           <button type="button" role="menuitem" (click)="choosePreferences()">
-            <span class="account-dropdown__icon account-dropdown__icon--green ui-projected-icon"><app-icon name="sliders" [size]="17" /></span>
+            <span class="account-dropdown__icon account-dropdown__icon--green ui-icon-badge ui-projected-icon"><app-icon name="sliders" [size]="17" /></span>
             <span>{{ i18n.t('shell.preferences') }}</span>
           </button>
           <button type="button" role="menuitem" (click)="chooseSecurity()">
-            <span class="account-dropdown__icon account-dropdown__icon--blue ui-projected-icon"><app-icon name="shield" [size]="17" /></span>
+            <span class="account-dropdown__icon account-dropdown__icon--blue ui-icon-badge ui-projected-icon"><app-icon name="shield" [size]="17" /></span>
             <span>{{ i18n.t('shell.security') }}</span>
           </button>
           <button type="button" role="menuitem" (click)="chooseLogout()" [disabled]="loggingOut()">
-            <span class="account-dropdown__icon account-dropdown__icon--yellow ui-projected-icon"><app-icon name="logout" [size]="17" /></span>
+            <span class="account-dropdown__icon account-dropdown__icon--yellow ui-icon-badge ui-projected-icon"><app-icon name="logout" [size]="17" /></span>
             <span>{{ loggingOut() ? i18n.t('shell.loggingOut') : i18n.t('shell.logout') }}</span>
           </button>
         </div>
@@ -44,25 +44,14 @@ import { IconComponent } from './icon.component';
       width: 100%;
       min-width: 0;
       min-height: var(--sidebar-control-height);
-      display: grid;
-      grid-template-columns: var(--control-icon-size) minmax(0, 1fr) 16px;
-      align-items: center;
-      gap: var(--space-3);
-      padding: var(--space-2) var(--space-3);
       text-align: left;
       font-size: var(--control-font-size);
       font-weight: var(--control-font-weight);
       line-height: var(--control-line-height);
     }
     .account-trigger__icon {
-      width: var(--control-icon-size);
-      height: var(--control-icon-size);
-      display: grid;
-      place-items: center;
-      border: 2px solid var(--line-strong);
-      border-radius: 5px;
       background: var(--green);
-      color: #050505;
+      color: var(--on-green);
     }
     .account-trigger__name {
       min-width: 0;
@@ -77,27 +66,22 @@ import { IconComponent } from './icon.component';
     .account-dropdown {
       box-sizing: border-box;
       position: absolute;
-      z-index: 90;
+      z-index: var(--layer-dropdown);
       top: calc(100% + var(--space-2));
       right: 0;
       width: 100%;
-      padding: var(--space-2);
-      border: 2px solid var(--line-strong);
-      border-radius: 8px;
-      background: var(--surface);
-      filter: var(--compact-button-shadow);
     }
     .account-control--up .account-dropdown { top: auto; bottom: calc(100% + var(--space-2)); left: 0; right: auto; }
     .account-dropdown button {
       width: 100%;
-      min-height: var(--control-height);
+      min-height: var(--menu-item-height);
       display: grid;
-      grid-template-columns: var(--control-icon-size) minmax(0, 1fr);
+      grid-template-columns: var(--control-icon-footprint) minmax(0, 1fr);
       align-items: center;
       gap: var(--space-3);
       padding: var(--space-2);
       border: 0;
-      border-radius: 5px;
+      border-radius: var(--radius-sm);
       background: transparent;
       color: var(--text);
       text-align: left;
@@ -107,17 +91,9 @@ import { IconComponent } from './icon.component';
     }
     .account-dropdown button:not(:disabled):hover { background: var(--surface-muted); }
     .account-dropdown button + button { margin-top: var(--space-1); }
-    .account-dropdown__icon {
-      width: var(--control-icon-size);
-      height: var(--control-icon-size);
-      display: grid;
-      place-items: center;
-      border: 2px solid var(--line-strong);
-      border-radius: 5px;
-    }
-    .account-dropdown__icon--green { background: var(--green); color: #07130c; }
+    .account-dropdown__icon--green { background: var(--green); color: var(--on-green); }
     .account-dropdown__icon--blue { background: var(--blue); color: var(--on-blue); }
-    .account-dropdown__icon--yellow { background: var(--yellow); color: #171200; }
+    .account-dropdown__icon--yellow { background: var(--yellow); color: var(--on-yellow); }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

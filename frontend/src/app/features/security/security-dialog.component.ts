@@ -23,10 +23,12 @@ import { IconComponent } from '../../shared/ui/icon.component';
   imports: [ReactiveFormsModule, NoWhitespaceInputDirective, FieldErrorComponent, FormMessageComponent, IconComponent],
   template: `
     @if (open()) {
-      <div class="dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
-      <section class="dialog security-dialog" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('security.title')">
-        <header class="dialog__header">
-          <div class="dialog__title">
+      <div class="dialog-backdrop ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
+      <div class="dialog-layer ui-dialog-layer">
+      <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
+      <section class="dialog security-dialog ui-dialog-surface" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('security.title')">
+        <header class="dialog__header ui-dialog-header">
+          <div class="dialog__title ui-dialog-title">
             <span class="title-icon title-icon--blue"><app-icon name="shield" [size]="21" /></span>
             <h2>{{ i18n.t('security.title') }}</h2>
           </div>
@@ -92,12 +94,12 @@ import { IconComponent } from '../../shared/ui/icon.component';
             @if (totpSuccessMessage()) { <app-form-message kind="success" [text]="totpSuccessMessage()!" /> }
 
             @if (loadingTotpStatus()) {
-              <div class="totp-status-state" role="status" aria-live="polite">
-                <span class="totp-status-spinner" aria-hidden="true"></span>
+              <div class="totp-status-state ui-projected-surface" role="status" aria-live="polite">
+                <span class="totp-status-spinner ui-spinner" aria-hidden="true"></span>
                 <span>{{ i18n.t('security.totp.checking') }}</span>
               </div>
             } @else if (totpStatus() === 'unknown') {
-              <div class="totp-status-state totp-status-state--error">
+              <div class="totp-status-state totp-status-state--error ui-projected-surface">
                 @if (totpStatusErrorMessage()) { <app-form-message [text]="totpStatusErrorMessage()!" /> }
               </div>
             } @else if (totpStatus() === 'enabled') {
@@ -143,7 +145,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
                 </form>
               } @else {
                 <div class="totp-setup">
-                  <div class="qr-wrap">
+                  <div class="qr-wrap ui-projected-surface ui-projection--surface">
                     @if (qrDataUrl()) {
                       <img [src]="qrDataUrl()!" [alt]="i18n.t('security.totp.qrAlt')" width="220" height="220" />
                     } @else {
@@ -155,7 +157,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
                     <div class="totp-setup__fields">
                       <div class="secret-block">
                         <span class="secret-block__label">{{ i18n.t('security.totp.secret') }}</span>
-                        <div class="secret-value">
+                        <div class="secret-value ui-projected-surface">
                           <code>{{ secretVisible() ? totpSecret() : maskedTotpSecret() }}</code>
                           <button class="secret-visibility-button" type="button" (click)="toggleSecretVisibility()"
                             [attr.aria-label]="secretVisible() ? i18n.t('security.totp.hideSecret') : i18n.t('security.totp.showSecret')">
@@ -192,55 +194,47 @@ import { IconComponent } from '../../shared/ui/icon.component';
           </section>
         </div>
       </section>
+      </div>
+      </div>
     }
   `,
   styles: `
-    .dialog-backdrop { position: fixed; inset: 0; z-index: 50; background: rgb(0 0 0 / .34); backdrop-filter: blur(2px); }
-    .dialog {
-      position: fixed; z-index: 51; top: 50%; left: 50%; width: min(760px, calc(100vw - 28px));
-      max-height: calc(100dvh - 30px); overflow: auto; transform: translate(-50%, -50%);
-      border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); color: var(--text);
-      filter: var(--dialog-shadow);
-    }
+    .dialog-layer { --dialog-width: 760px; }
     .security-dialog {
       --token-accent: var(--blue);
       --token-accent-strong: var(--blue-strong);
       --focus-accent: var(--blue);
     }
-    .dialog__header { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: var(--form-gap); padding: 17px 19px; border-bottom: 2px solid var(--line); background: var(--surface); }
-    .dialog__title { display: flex; align-items: center; gap: var(--title-icon-gap); }
-    .dialog__title h2 { margin: 0; font-size: 1.22rem; letter-spacing: -.01em; }
-    .title-icon { width: 40px; height: 40px; }
-    .dialog__body { padding: 0 var(--space-5) 22px; }
+    .dialog__header { position: sticky; top: 0; z-index: 2; background: var(--surface); }
+    .dialog__body { padding: 0 var(--space-5) var(--space-5); }
     .security-section { padding: var(--section-gap) 0; border-bottom: 1px solid var(--line); }
     .security-section:last-child { border-bottom: 0; padding-bottom: 0; }
     .security-section h3 { margin: 0 0 var(--form-gap); font-size: 1rem; letter-spacing: -.005em; }
-    .notice-token { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--form-gap); padding: var(--space-3); border: 2px solid var(--blue-strong); border-radius: 6px; background: var(--blue-soft); font-size: .84rem; font-weight: 650; line-height: 1.35; }
+    .notice-token { display: flex; align-items: flex-start; gap: var(--space-3); margin-bottom: var(--form-gap); padding: var(--space-3); border: var(--border-width) solid var(--blue-strong); border-radius: var(--radius-sm); background: var(--blue-soft); font-size: .84rem; font-weight: 650; line-height: 1.35; }
     .notice-token app-icon { flex: 0 0 auto; color: var(--blue-strong); }
     .security-form, .confirm-form { display: grid; gap: var(--form-gap); }
     .password-grid, .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--form-gap); }
     .password-grid__current { grid-column: 1 / -1; }
     .password-grid--totp .password-grid__current { grid-column: auto; }
-    .section-actions { display: flex; justify-content: flex-end; padding-top: 2px; }
-    .security-action-button { width: 210px; min-width: 210px; }
+    .section-actions { display: flex; justify-content: flex-end; padding-top: var(--space-1); }
+    .security-action-button { width: var(--action-button-min-width); min-width: var(--action-button-min-width); }
     .password-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--form-gap); justify-items: end; }
     .password-actions .security-action-button { grid-column: 2; }
     .totp-form { margin-top: var(--form-gap); }
-    .totp-status-state { min-height: 78px; display: flex; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--form-gap); border: 2px solid color-mix(in srgb, var(--blue-strong) 56%, var(--line)); border-radius: var(--radius-card); background: var(--surface); color: var(--text-muted); font-size: .86rem; font-weight: 700; filter: var(--selection-shadow); }
+    .totp-status-state { min-height: 78px; display: flex; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--form-gap); border: var(--border-width) solid color-mix(in srgb, var(--blue-strong) 56%, var(--line)); border-radius: var(--radius-card); background: var(--surface); color: var(--text-muted); font-size: .86rem; font-weight: 700; box-shadow: var(--selection-shadow); }
     .totp-status-state--error { display: grid; justify-items: end; }
-    .totp-status-spinner { width: 18px; height: 18px; border: 2px solid color-mix(in srgb, var(--blue) 28%, var(--line)); border-top-color: var(--blue); border-radius: 50%; animation: totp-spin .7s linear infinite; }
-    @keyframes totp-spin { to { transform: rotate(360deg); } }
+    .totp-status-spinner { --spinner-size: 20px; --spinner-accent: var(--blue); --spinner-accent-strong: var(--blue); }
     .setup-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto auto; column-gap: var(--form-gap); row-gap: var(--field-gap); align-items: stretch; }
     .setup-row .field { display: contents; }
     .setup-row .field > span { grid-column: 1; grid-row: 1; }
     .setup-row .field > input { grid-column: 1; grid-row: 2; }
     .setup-row .field > app-field-error { grid-column: 1; grid-row: 3; }
-    .setup-row .security-action-button { grid-column: 2; grid-row: 2; height: 46px; min-height: 46px; }
+    .setup-row .security-action-button { grid-column: 2; grid-row: 2; height: var(--control-height); min-height: var(--control-height); }
     .totp-setup { display: grid; grid-template-columns: minmax(238px, .82fr) minmax(300px, 1.18fr); gap: var(--section-gap); margin-top: var(--section-gap); align-items: stretch; }
     .totp-setup__side { position: relative; min-width: 0; min-height: 100%; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: var(--form-gap); }
     .totp-setup__fields { grid-row: 1; display: grid; gap: var(--space-12); min-width: 0; align-self: center; }
     .totp-setup__action { grid-row: 2; align-self: end; padding-top: 0; }
-    .qr-wrap { box-sizing: border-box; display: grid; place-items: center; min-height: 280px; height: 100%; padding: var(--form-gap); border: 2px solid var(--blue-strong); border-radius: var(--radius-card); background: var(--surface); filter: var(--surface-shadow); }
+    .qr-wrap { box-sizing: border-box; display: grid; place-items: center; min-height: 280px; height: 100%; padding: var(--form-gap); border: var(--border-width) solid var(--blue-strong); border-radius: var(--radius-card); background: var(--surface); }
     .qr-wrap img { display: block; width: 220px; height: 220px; max-width: 100%; image-rendering: pixelated; }
     .qr-loading { color: var(--text); font-size: 1.4rem; }
     .secret-block, .totp-code-field { position: relative; display: grid; gap: var(--field-gap); min-width: 0; }
@@ -249,11 +243,11 @@ import { IconComponent } from '../../shared/ui/icon.component';
     .totp-code-field > input { display: block; }
     .totp-code-field > app-field-error { display: block; }
     .totp-code-message { display: block; min-width: 0; }
-    .secret-value { display: grid; grid-template-columns: minmax(0, 1fr) 44px 44px; align-items: stretch; min-height: 46px; border: 2px solid var(--blue-strong); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface); filter: var(--selection-shadow); }
-    .secret-value code { min-width: 0; display: flex; align-items: center; min-height: 42px; padding: var(--space-2) 13px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: .82rem; color: var(--text); }
-    .secret-visibility-button, .copy-button { box-sizing: border-box; display: grid; place-items: center; width: 44px; min-width: 44px; height: 100%; min-height: 42px; margin: 0; padding: 0; border: 0; border-left: 2px solid var(--blue-strong); border-radius: 0; font: inherit; line-height: 1; transition: background var(--motion-press) ease, color var(--motion-press) ease; }
+    .secret-value { display: grid; grid-template-columns: minmax(0, 1fr) var(--menu-item-height) var(--menu-item-height); align-items: stretch; min-height: var(--control-height); border: var(--border-width) solid var(--blue-strong); border-radius: var(--radius-sm); background: var(--surface); box-shadow: var(--selection-shadow); }
+    .secret-value code { min-width: 0; display: flex; align-items: center; min-height: calc(var(--control-height) - (2 * var(--border-width))); padding: var(--space-2) var(--control-padding-inline); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: .82rem; color: var(--text); }
+    .secret-visibility-button, .copy-button { box-sizing: border-box; display: grid; place-items: center; width: var(--menu-item-height); min-width: var(--menu-item-height); height: 100%; min-height: calc(var(--control-height) - (2 * var(--border-width))); margin: 0; padding: 0; border: 0; border-left: var(--border-width) solid var(--blue-strong); border-radius: 0; font: inherit; line-height: 1; transition: background var(--motion-press) ease, color var(--motion-press) ease; }
     .secret-visibility-button { background: var(--surface); color: var(--text); }
-    .copy-button { background: var(--blue); color: #07111f; }
+    .copy-button { background: var(--blue); color: var(--on-blue); }
     .secret-visibility-button:hover { background: var(--surface-muted); }
     .copy-button:hover { background: color-mix(in srgb, var(--blue) 88%, white); }
     .secret-visibility-button:active { background: color-mix(in srgb, var(--surface-muted) 78%, var(--blue-soft)); }
@@ -285,8 +279,8 @@ import { IconComponent } from '../../shared/ui/icon.component';
         grid-column: 1 / -1;
         grid-row: 1;
         width: 100%;
-        min-height: 46px;
-        padding-inline: 13px;
+        min-height: var(--control-height);
+        padding-inline: var(--control-padding-inline);
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
@@ -296,10 +290,10 @@ import { IconComponent } from '../../shared/ui/icon.component';
         width: auto;
         min-width: 0;
         min-height: 42px;
-        border-top: 2px solid var(--blue-strong);
+        border-top: var(--border-width) solid var(--blue-strong);
       }
       .secret-visibility-button { grid-column: 1; border-left: 0; }
-      .copy-button { grid-column: 2; border-left: 2px solid var(--blue-strong); }
+      .copy-button { grid-column: 2; border-left: var(--border-width) solid var(--blue-strong); }
     }
     @media (max-width: 620px) {
       .password-grid, .form-grid, .setup-row, .password-actions { grid-template-columns: 1fr; }

@@ -17,10 +17,10 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
   standalone: true,
   imports: [FormMessageComponent, IconComponent, LedgerIconComponent, LedgerEditorDialogComponent, LedgerDeleteDialogComponent],
   template: `
-    <section class="ledger-card" aria-labelledby="ledgers-title">
+    <section class="ledger-card ui-projected-surface ui-projection--hard" aria-labelledby="ledgers-title">
       <header class="ledger-card__header">
-        <div class="ledger-card__title">
-          <span class="ledger-card__title-icon ui-projected-icon" aria-hidden="true"><app-icon name="database" [size]="25" /></span>
+        <div class="ledger-card__title ui-heading-with-icon">
+          <span class="ledger-card__title-icon ui-icon-badge ui-icon-badge--title ui-projected-icon" aria-hidden="true"><app-icon name="database" [size]="25" /></span>
           <h1 id="ledgers-title">{{ i18n.t('ledgers.title') }}</h1>
         </div>
         <button class="ui-button ui-button--green create-button" type="button" (click)="openCreate()">
@@ -30,7 +30,7 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
       </header>
 
       <div class="ledger-card__body">
-        <label class="search-box">
+        <label class="search-box ui-dropdown-search">
           <app-icon name="search" [size]="19" />
           <input type="search" [value]="search()" (input)="setSearchFromEvent($event)" [placeholder]="i18n.t('ledgers.search')" />
         </label>
@@ -38,7 +38,7 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
         @if (loadError()) {
           <app-form-message [text]="loadError()!" />
         } @else if (loading()) {
-          <div class="state-row"><span class="spinner" aria-hidden="true"></span><span>{{ i18n.t('ledgers.loading') }}</span></div>
+          <div class="state-row"><span class="ui-spinner" aria-hidden="true"></span><span>{{ i18n.t('ledgers.loading') }}</span></div>
         } @else if (filteredLedgers().length === 0) {
           <div class="empty-state">
             <span class="empty-state__icon"><app-icon name="book" [size]="25" /></span>
@@ -50,7 +50,7 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
               <div class="ledger-row" role="option" tabindex="0" [attr.aria-selected]="selectedUuid() === ledger.uuid"
                 [class.ledger-row--selected]="selectedUuid() === ledger.uuid"
                 (click)="selectLedger(ledger.uuid)" (keydown.enter)="selectLedger(ledger.uuid)" (keydown.space)="selectLedgerFromSpace($event, ledger.uuid)">
-                <span class="ledger-row__token ui-projected-icon" [style.background]="ledger.color_code" [style.color]="foreground(ledger.color_code)">
+                <span class="ledger-row__token ui-icon-badge ui-icon-badge--title ui-projected-icon" [style.background]="ledger.color_code" [style.color]="foreground(ledger.color_code)">
                   <app-ledger-icon [icon]="ledger.icon" [size]="25" />
                 </span>
                 <strong class="ledger-row__name">{{ ledger.name }}</strong>
@@ -61,13 +61,13 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
                     <app-icon name="ellipsis" [size]="20" />
                   </button>
                   @if (menuLedgerUuid() === ledger.uuid) {
-                    <div class="row-menu" role="menu" (click)="$event.stopPropagation()">
+                    <div class="row-menu ui-dropdown-menu ui-projected-surface ui-projection--surface" role="menu" (click)="$event.stopPropagation()">
                       <button type="button" role="menuitem" (click)="openEdit(ledger)">
-                        <span class="row-menu__icon row-menu__icon--blue ui-projected-icon"><app-icon name="pencil" [size]="16" /></span>
+                        <span class="row-menu__icon row-menu__icon--blue ui-icon-badge ui-projected-icon"><app-icon name="pencil" [size]="16" /></span>
                         <span>{{ i18n.t('ledgers.edit') }}</span>
                       </button>
                       <button class="row-menu__delete" type="button" role="menuitem" (click)="openDelete(ledger)">
-                        <span class="row-menu__icon row-menu__icon--danger ui-projected-icon"><app-icon name="trash" [size]="16" /></span>
+                        <span class="row-menu__icon row-menu__icon--danger ui-icon-badge ui-projected-icon"><app-icon name="trash" [size]="16" /></span>
                         <span>{{ i18n.t('ledgers.delete') }}</span>
                       </button>
                     </div>
@@ -91,45 +91,38 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
     <app-ledger-delete-dialog [open]="deleteOpen()" [ledger]="deletingLedger()" (close)="closeDelete()" (deleted)="onDeleted($event)" />
   `,
   styles: `
-    :host { display: block; width: 100%; }
+    :host { display: grid; justify-items: center; width: 100%; }
     .ledger-card {
       --token-accent: var(--green); --token-accent-strong: var(--green-strong); --focus-accent: var(--green);
-      width: min(760px, 100%); margin: 0 auto; border: 2px solid var(--line-strong); border-radius: var(--radius-card);
-      background: var(--surface); color: var(--text); filter: var(--shadow-hard); overflow: visible;
+      width: min(760px, calc(100% - var(--hard-shadow-offset))); margin-inline-end: var(--hard-shadow-offset); margin-block-end: var(--hard-shadow-offset); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-card);
+      background: var(--surface); color: var(--text); overflow: visible;
     }
-    .ledger-card__header { display: flex; align-items: center; justify-content: space-between; gap: var(--section-gap); padding: var(--space-5); border-bottom: 2px solid var(--line); }
-    .ledger-card__title { display: flex; align-items: center; gap: var(--title-icon-gap); min-width: 0; }
-    .ledger-card__title-icon { width: 46px; height: 46px; display: grid; place-items: center; flex: 0 0 46px; border: 2px solid var(--line-strong); border-radius: 5px; background: var(--green); color: #060606; }
-    h1 { margin: 0; font-size: clamp(1.25rem, 2vw, 1.48rem); letter-spacing: -.015em; }
-    .create-button { flex: 0 0 auto; min-height: 43px; padding-inline: var(--space-4); }
+    .ledger-card__header { display: flex; align-items: center; justify-content: space-between; gap: var(--section-gap); padding: var(--space-5); border-bottom: var(--border-width) solid var(--line); }
+    .ledger-card__title-icon { background: var(--green); color: var(--on-green); }
+    h1 { margin: 0; font-size: clamp(1.25rem, 2vw, 1.48rem); line-height: var(--heading-line-height); letter-spacing: -.015em; }
+    .create-button { flex: 0 0 auto; padding-inline: var(--space-4); }
     .ledger-card__body { display: grid; gap: var(--form-gap); padding: var(--space-5); }
-    .search-box { height: 46px; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-2); padding: 0 var(--space-3); border: 2px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); }
-    .search-box:focus-within { border-color: var(--green-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 32%, transparent); }
-    .search-box input { min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; }
+    .search-box { height: var(--control-height); }
     .ledger-list { display: grid; gap: var(--space-2); min-width: 0; }
-    .ledger-row { position: relative; min-height: 66px; display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; gap: var(--title-icon-gap); padding: var(--space-2) var(--space-3); border: 2px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); filter: var(--selection-shadow-transparent); outline: none; transition: border-color var(--motion-selection) ease, background var(--motion-selection) ease, filter var(--motion-selection) ease; cursor: pointer; }
+    .ledger-row { position: relative; min-height: var(--list-row-height); display: grid; grid-template-columns: calc(var(--title-icon-size) + var(--icon-shadow-offset)) minmax(0, 1fr) auto; align-items: center; gap: var(--title-icon-gap); padding: var(--space-2) var(--space-3); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); box-shadow: var(--selection-shadow-transparent); outline: none; transition: border-color var(--motion-selection) ease, background var(--motion-selection) ease, box-shadow var(--motion-selection) ease; cursor: pointer; }
     .ledger-row:not(.ledger-row--selected):hover { border-color: var(--line-strong); background: var(--surface-muted); }
     .ledger-row:focus-visible { border-color: var(--green-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 30%, transparent); }
-    .ledger-row.ledger-row--selected { border-color: var(--line-strong); background: var(--green-soft); filter: var(--selection-shadow); }
-    .ledger-row__token { width: 46px; height: 46px; display: grid; place-items: center; overflow: hidden; border: 2px solid var(--line-strong); border-radius: 5px; }
+    .ledger-row.ledger-row--selected { border-color: var(--line-strong); background: var(--green-soft); box-shadow: var(--selection-shadow); }
     .ledger-row__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .98rem; }
     .ledger-row__actions { position: relative; }
-    .more-button { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1.5px solid transparent; border-radius: 5px; background: transparent; color: var(--text); }
+    .more-button { display: grid; place-items: center; width: var(--icon-button-size); height: var(--icon-button-size); padding: 0; border: var(--border-width) solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--text); }
     .more-button:hover, .more-button[aria-expanded='true'] { border-color: var(--line); background: var(--surface); }
-    .row-menu { position: absolute; z-index: 12; top: calc(100% + 6px); right: 0; width: 172px; padding: 6px; border: 2px solid var(--line-strong); border-radius: 7px; background: var(--surface); filter: var(--menu-shadow); }
-    .row-menu button { width: 100%; min-height: 40px; display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: var(--space-2); padding: 4px 7px; border: 0; border-radius: 4px; background: transparent; color: var(--text); text-align: left; font-size: .9rem; font-weight: 720; }
+    .row-menu { position: absolute; z-index: var(--layer-dropdown); top: calc(100% + var(--space-2)); right: 0; width: 172px; }
+    .row-menu button { width: 100%; min-height: var(--menu-item-height); display: grid; grid-template-columns: var(--control-icon-footprint) minmax(0, 1fr); align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-2); border: 0; background: transparent; color: var(--text); text-align: left; font-size: var(--control-font-size); font-weight: var(--control-font-weight); }
     .row-menu button:hover { background: var(--surface-muted); }
-    .row-menu button + button { margin-top: 2px; }
-    .row-menu__icon { width: 26px; height: 26px; display: grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 4px; }
+    .row-menu button + button { margin-top: var(--space-1); }
     .row-menu__icon--blue { background: var(--blue); color: var(--on-blue); }
     .row-menu__icon--danger { background: var(--danger-token); color: var(--on-danger-token); }
     .state-row, .empty-state { min-height: 160px; display: grid; place-items: center; align-content: center; gap: var(--space-3); color: var(--text-muted); text-align: center; }
-    .state-row { grid-template-columns: auto auto; }
-    .empty-state__icon { width: 48px; height: 48px; display: grid; place-items: center; border: 2px solid var(--line); border-radius: 8px; background: var(--surface-muted); }
-    .spinner { width: 20px; height: 20px; border: 2px solid color-mix(in srgb, var(--green) 28%, var(--line)); border-top-color: var(--green-strong); border-radius: 50%; animation: spin .7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .state-row { grid-template-columns: auto auto; justify-content: center; }
+    .empty-state__icon { width: var(--touch-target-size); height: var(--touch-target-size); display: grid; place-items: center; border: var(--border-width) solid var(--line); border-radius: var(--radius-card); background: var(--surface-muted); }
     .ledger-card__footer { display: flex; justify-content: flex-end; padding: var(--space-4) var(--space-5) var(--space-5); border-top: 1px solid var(--line); }
-    .enter-button { min-width: 210px; }
+    .enter-button { min-width: var(--action-button-min-width); }
     @media (max-width: 600px) {
       .ledger-card__header { align-items: stretch; flex-direction: column; }
       .create-button { width: 100%; }

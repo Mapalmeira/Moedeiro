@@ -24,11 +24,13 @@ import { IconComponent } from '../../../shared/ui/icon.component';
   imports: [ReactiveFormsModule, CrockfordCodeInputDirective, NoWhitespaceInputDirective, FieldErrorComponent, FormMessageComponent, IconComponent],
   template: `
     @if (open()) {
-      <div class="dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
-      <section class="dialog" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('auth.recovery.title')">
-        <header class="dialog__header">
-          <div class="dialog__title">
-            <span class="title-icon title-icon--green"><app-icon name="key" [size]="22" /></span>
+      <div class="dialog-backdrop ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
+      <div class="dialog-layer ui-dialog-layer">
+      <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
+      <section class="dialog ui-dialog-surface" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('auth.recovery.title')">
+        <header class="dialog__header ui-dialog-header">
+          <div class="dialog__title ui-dialog-title">
+            <span class="title-icon title-icon--green"><app-icon name="key" [size]="21" /></span>
             <h2>{{ i18n.t('auth.recovery.title') }}</h2>
           </div>
           <button class="icon-button" type="button" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
@@ -85,14 +87,12 @@ import { IconComponent } from '../../../shared/ui/icon.component';
           </button>
         </form>
       </section>
+      </div>
+      </div>
     }
   `,
   styles: `
-    .dialog-backdrop { position: fixed; inset: 0; z-index: 70; background: rgb(0 0 0 / .30); backdrop-filter: blur(2px); }
-    .dialog { position: fixed; z-index: 71; top: 50%; left: 50%; width: min(550px, calc(100vw - 28px)); max-height: calc(100dvh - 30px); overflow: auto; transform: translate(-50%, -50%); border: 2px solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); color: var(--text); filter: var(--dialog-shadow); }
-    .dialog__header { display: flex; align-items: center; justify-content: space-between; gap: var(--form-gap); padding: 18px var(--space-5); border-bottom: 1px solid var(--line); }
-    .dialog__title { display: flex; align-items: center; gap: var(--title-icon-gap); }
-    .dialog__title h2 { margin: 0; font-size: 1.22rem; }
+    .dialog-layer { --dialog-width: 550px; }
     form { display: grid; gap: var(--form-gap); padding: var(--space-5); }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -32,8 +32,8 @@ import { ThemeToggleComponent } from './theme-toggle.component';
     }
     .auth-shell__controls {
       position: absolute;
-      z-index: 10;
-      top: 26px;
+      z-index: var(--layer-page-controls);
+      top: var(--space-6);
       left: var(--space-page);
       right: var(--space-page);
       display: flex;
