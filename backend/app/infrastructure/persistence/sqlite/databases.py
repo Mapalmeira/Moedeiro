@@ -11,12 +11,12 @@ from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRe
 
 
 _DEFAULT_LEDGER_CURRENCIES = (
-    ("Real", "R$", None, 2, "unicode:R$", bytes.fromhex("FFD51A")),
-    ("Dollar", "$", None, 2, "unicode:$", bytes.fromhex("2E7D32")),
-    ("Euro", "€", None, 2, "unicode:€", bytes.fromhex("003399")),
-    ("Bitcoin", None, "BTC", 8, "unicode:₿", bytes.fromhex("F7931A")),
-    ("Iene", "¥", None, 0, "unicode:¥", bytes.fromhex("BC002D")),
-    ("Libra", "£", None, 2, "unicode:£", bytes.fromhex("5B2C6F")),
+    ("Real", "R$ ", None, 2, "unicode:R$", bytes.fromhex("FFD51A")),
+    ("Dollar", "$ ", None, 2, "unicode:$", bytes.fromhex("2E7D32")),
+    ("Euro", "€ ", None, 2, "unicode:€", bytes.fromhex("003399")),
+    ("Bitcoin", None, " BTC", 8, "unicode:₿", bytes.fromhex("F7931A")),
+    ("Iene", "¥ ", None, 0, "unicode:¥", bytes.fromhex("BC002D")),
+    ("Libra", "£ ", None, 2, "unicode:£", bytes.fromhex("5B2C6F")),
 )
 
 
