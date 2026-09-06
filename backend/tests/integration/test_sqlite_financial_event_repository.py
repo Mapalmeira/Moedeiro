@@ -28,6 +28,17 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         """An absent event is represented by None."""
         self.assertIsNone(self.repository.get(uuid4()))
 
+    def test_count_tracks_persisted_events(self) -> None:
+        self.assertEqual(self.repository.count(), 0)
+        first = self.repository.create(10, "First", "TRANSACTION")
+        self.repository.create(20, "Second", "TRANSACTION")
+
+        self.assertEqual(self.repository.count(), 2)
+
+        self.repository.delete(first.uuid)
+
+        self.assertEqual(self.repository.count(), 1)
+
     def test_delete_cascades_to_the_event_movements(self) -> None:
         currency = self.create_currency()
         account = self.create_account(currency=currency)

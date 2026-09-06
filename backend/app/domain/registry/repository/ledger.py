@@ -49,3 +49,7 @@ class LedgerRepository(ABC):
     @abstractmethod
     def list_owned_by_user(self, user_uuid: UUID, sort_key: str, ascending: bool) -> list[Ledger]:
         pass
+
+    @abstractmethod
+    def count_owned_by_user(self, user_uuid: UUID) -> int:
+        pass

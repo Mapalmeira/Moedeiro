@@ -3,8 +3,6 @@
 import sqlite3
 from uuid import uuid4
 
-from pydantic import ValidationError
-
 from app.infrastructure.persistence.sqlite.ledger.repository.budget import SqliteBudgetRepository
 from tests.integration.ledger_repository_test_case import LedgerRepositoryTestCase
 
@@ -32,6 +30,17 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
 
         self.assertEqual(self.repository.get_by_name(budget.name), budget)
         self.assertIsNone(self.repository.get_by_name("Unknown"))
+
+    def test_count_tracks_persisted_budgets(self) -> None:
+        self.assertEqual(self.repository.count(), 0)
+        first = self.create_budget("First", self.currency, self.category)
+        self.create_budget("Second", self.currency, self.category)
+
+        self.assertEqual(self.repository.count(), 2)
+
+        self.repository.delete(first.uuid)
+
+        self.assertEqual(self.repository.count(), 1)
 
     def test_create_requires_existing_category_and_currency(self) -> None:
         """Foreign keys reject unknown category or currency identities."""

@@ -7,7 +7,7 @@ from app.api.dependencies.authentication import AuthenticatedUser
 from app.api.dependencies.ledger import ledger_unit_of_work_factory
 from app.api.dependencies.pagination import validate_requested_page
 from app.api.ledger.schema.budget import BudgetResponse, BudgetSortKey, BudgetStatusResponse, CreateBudgetRequest, UpdateBudgetRequest
-from app.application.ledger.exceptions import AccountNotFoundError, BudgetAccountCurrencyMismatchError, BudgetNameUnavailableError, BudgetNotActiveError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
+from app.application.ledger.exceptions import AccountNotFoundError, BudgetAccountCurrencyMismatchError, BudgetLimitReachedError, BudgetNameUnavailableError, BudgetNotActiveError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
 from app.application.ledger.use_cases.budget import create_budget, delete_budget, get_budget, list_budget_page, update_budget
 from app.application.ledger.use_cases.budget_status import get_budget_status, list_budget_status_page
 
@@ -41,6 +41,8 @@ def create_ledger_budget(ledger_uuid: UUID, payload: CreateBudgetRequest, reques
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Budget name unavailable") from error
     except BudgetAccountCurrencyMismatchError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Budget account uses a different currency") from error
+    except BudgetLimitReachedError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Budget limit reached") from error
     return BudgetResponse.from_budget(budget)
 
 

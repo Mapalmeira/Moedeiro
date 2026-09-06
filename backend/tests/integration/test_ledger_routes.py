@@ -1,6 +1,7 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
@@ -62,6 +63,15 @@ class LedgerRoutesTest(unittest.TestCase):
         self.assertEqual(created.color_code, "#102030")
         self.assertTrue(self.application.state.databases.get_ledger_path(created.uuid).is_file())
         self.assertNotIn("path", created.model_dump())
+
+    def test_create_maps_the_per_user_ledger_limit(self) -> None:
+        self.create_ledger()
+        with patch("app.application.ledger.use_cases.ledger.MAXIMUM_LEDGERS_PER_USER", 1):
+            with self.assertRaises(HTTPException) as raised:
+                self.create_ledger("Overflow")
+
+        self.assertEqual(raised.exception.status_code, 409)
+        self.assertEqual(raised.exception.detail, "Ledger limit reached")
 
     def test_list_applies_the_requested_name_order(self) -> None:
         bravo = self.create_ledger("Bravo")

@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from app.application.ledger.exceptions import LedgerNotFoundError
+from app.application.registry.exceptions import LedgerLimitReachedError
 from app.application.ledger.use_cases.ledger import access_owned_ledger, create_ledger, delete_owned_ledger, get_owned_ledger, list_owned_ledgers, update_owned_ledger
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
 
@@ -61,6 +62,18 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
         self.assertEqual(metadata.ledger_uuid, ledger.uuid)
         self.assertEqual(metadata.schema_version, 1)
         self.assertEqual(metadata.created_at, 100)
+
+    def test_creation_limit_is_per_user_and_can_be_reused_after_deletion(self) -> None:
+        with patch("app.application.ledger.use_cases.ledger.MAXIMUM_LEDGERS_PER_USER", 1):
+            first = self.create()
+            with self.assertRaises(LedgerLimitReachedError):
+                self.create(name="Overflow")
+            other = self.create(self.other_user.uuid, "Other")
+            delete_owned_ledger(self.databases.open_registry, self.databases.delete_ledger_database, self.user.uuid, first.uuid)
+            replacement = self.create(name="Replacement")
+
+        self.assertEqual(list_owned_ledgers(self.databases.open_registry, self.user.uuid, "name", True), [replacement])
+        self.assertEqual(list_owned_ledgers(self.databases.open_registry, self.other_user.uuid, "name", True), [other])
 
     def test_create_removes_database_and_rolls_back_registry_when_grant_creation_fails(self) -> None:
         with patch(

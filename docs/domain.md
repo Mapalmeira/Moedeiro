@@ -4,7 +4,7 @@
 
 * **User** is an account that can authenticate. User names contain only URI-safe ASCII characters and are unique using a normalized form produced with NFKC normalization, trimming, and case folding. A user has a password hash and creation/password-change timestamps.
 
-* **Ledger** is a named financial dataset with its own SQLite database. The registry records its storage path, appearance, and most recent access time; it does not contain its financial records.
+* **Ledger** is a named financial dataset with its own SQLite database. The registry records its storage path, appearance, and most recent access time; it does not contain its financial records. A user may own up to 10 ledgers.
 
 * **Ledger grant** links a user to a ledger. The current role is `OWNER`; grants can be revoked while retaining their history.
 
@@ -34,7 +34,7 @@
 
 * **Category** classifies movements. Categories form a tree: a category may have one parent, with a maximum depth of five and up to 1,000 nodes. Financial-event and cash-flow filters over a category include its descendants, as do budget calculations for that category.
 
-* **Financial event** is an occurrence at `occurred_at`, with a description and one or more movements. It has one of three types:
+* **Financial event** is an occurrence at `occurred_at`, with a description and one or more movements. A ledger may contain up to 1,000,000 financial events. It has one of three types:
 
   * `TRANSACTION` has one non-zero movement and represents a simple income (positive value) or expense (negative value).
   * `SHOPPING_LIST` has one or more negative movements from a single account, allowing a purchase to be itemized across categories. It supports up to 300 movements.
@@ -42,4 +42,4 @@
 
 * **Financial movement** is the accounting entry within an event. It links one account and one category, and contains a non-zero signed `value`, a positive `quantity`, and an optional item name. Its economic impact is `value × quantity`.
 
-* **Budget** sets a non-negative amount for a category, currency, and time period. Spending in descendant categories is included. A budget may optionally restrict spending to up to 50 accounts, all of which must use the budget currency. Budget names are unique within the ledger.
+* **Budget** sets a non-negative amount for a category, currency, and time period. Spending in descendant categories is included. A ledger may contain up to 1,000 budgets. A budget may optionally restrict spending to up to 50 accounts, all of which must use the budget currency. Budget names are unique within the ledger.

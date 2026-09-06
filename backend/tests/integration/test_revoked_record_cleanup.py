@@ -3,7 +3,6 @@ from tempfile import TemporaryDirectory
 import unittest
 from uuid import uuid4
 
-from app.domain.registry.model.mfa_method import TOTP_SETUP_TTL_SECONDS
 from app.application.registry.use_cases.cleanup import SECONDS_PER_DAY, remove_inactive_records
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork

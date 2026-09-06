@@ -1,5 +1,17 @@
-from app.domain.ledger.limits import AccountLimitReachedError, CurrencyLimitReachedError
+class AccountLimitReachedError(Exception):
+    pass
 
+
+class CurrencyLimitReachedError(Exception):
+    pass
+
+
+class BudgetLimitReachedError(Exception):
+    pass
+
+
+class FinancialEventLimitReachedError(Exception):
+    pass
 
 class LedgerNotFoundError(Exception):
     pass

@@ -130,6 +130,9 @@ class SqliteBudgetRepository(BudgetRepository):
         account_uuids = self._list_account_uuids(budget_uuids)
         return [self._to_model(row, account_uuids[UUID(bytes=row["uuid"])]) for row in rows]
 
+    def count(self) -> int:
+        return int(self.connection.execute("SELECT COUNT(*) FROM budget").fetchone()[0])
+
     def delete(self, uuid: UUID) -> None:
         self.connection.execute("DELETE FROM budget WHERE uuid = ?", (uuid.bytes,))
 

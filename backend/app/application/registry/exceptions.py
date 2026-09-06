@@ -1,3 +1,6 @@
+class LedgerLimitReachedError(Exception):
+    pass
+
 class InvitationNotAvailableError(Exception):
     pass
 

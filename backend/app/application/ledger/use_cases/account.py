@@ -4,10 +4,8 @@ from uuid import UUID
 from app.application.ledger.exceptions import AccountInUseError, AccountLimitReachedError, AccountNameUnavailableError, AccountNotFoundError, CurrencyNotFoundError
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
 from app.domain.appearance import Icon, RgbColorCode
-from app.domain.ledger.model.account import Account, AccountName, AccountNote
-
-
 from app.domain.ledger.limits import MAXIMUM_ACCOUNTS
+from app.domain.ledger.model.account import Account, AccountName, AccountNote
 
 
 def create_account(

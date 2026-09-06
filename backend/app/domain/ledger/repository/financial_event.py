@@ -39,5 +39,9 @@ class FinancialEventRepository(ABC):
         pass
 
     @abstractmethod
+    def count(self) -> int:
+        pass
+
+    @abstractmethod
     def delete(self, uuid: UUID) -> None:
         pass

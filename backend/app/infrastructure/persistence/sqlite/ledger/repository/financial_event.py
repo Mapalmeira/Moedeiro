@@ -90,5 +90,8 @@ class SqliteFinancialEventRepository(FinancialEventRepository):
             events[movement.financial_event_uuid.bytes]["movements"].append(movement)
         return [FinancialEvent.model_validate(events[row["uuid"]]) for row in rows]
 
+    def count(self) -> int:
+        return int(self.connection.execute("SELECT COUNT(*) FROM financial_event").fetchone()[0])
+
     def delete(self, uuid: UUID) -> None:
         self.connection.execute("DELETE FROM financial_event WHERE uuid = ?", (uuid.bytes,))

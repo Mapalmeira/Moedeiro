@@ -7,7 +7,7 @@ from app.api.dependencies.authentication import AuthenticatedUser
 from app.api.registry.schema.ledger import CreateLedgerRequest, LedgerResponse, LedgerSortKey, UpdateLedgerRequest
 from app.application.ledger.exceptions import LedgerNotFoundError
 from app.application.ledger.use_cases.ledger import access_owned_ledger, create_ledger, delete_owned_ledger, list_owned_ledgers, update_owned_ledger
-from app.application.registry.exceptions import UserNotFoundError
+from app.application.registry.exceptions import LedgerLimitReachedError, UserNotFoundError
 
 
 router = APIRouter(prefix="/api/ledgers", tags=["ledgers"])
@@ -29,6 +29,8 @@ def create_owned_ledger(payload: CreateLedgerRequest, request: Request, user: Au
         )
     except UserNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from error
+    except LedgerLimitReachedError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ledger limit reached") from error
     return LedgerResponse.from_ledger(ledger)
 
 

@@ -1,6 +1,7 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
@@ -122,6 +123,15 @@ class BudgetRoutesTest(unittest.TestCase):
         self.assertEqual(response, created)
         self.assertEqual(response.color_code, "#808080")
         self.assertEqual(response.account_uuids, sorted((self.account.uuid, self.second_account.uuid), key=lambda value: value.bytes))
+
+    def test_create_maps_the_budget_limit(self) -> None:
+        self.create_budget("First")
+        with patch("app.application.ledger.use_cases.budget.MAXIMUM_BUDGETS", 1):
+            with self.assertRaises(HTTPException) as raised:
+                self.create_budget("Overflow")
+
+        self.assertEqual(raised.exception.status_code, 409)
+        self.assertEqual(raised.exception.detail, "Budget limit reached")
 
     def test_create_maps_unknown_relations_and_currency_mismatch(self) -> None:
         payloads = (

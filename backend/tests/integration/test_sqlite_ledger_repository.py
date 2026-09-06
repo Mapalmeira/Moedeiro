@@ -71,6 +71,22 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
 
         self.assertEqual(ledgers, [recent, older])
 
+    def test_count_owned_by_user_counts_only_active_owner_grants(self) -> None:
+        grant_repository = SqliteLedgerGrantRepository(self.connection)
+        user_repository = SqliteUserRepository(self.connection)
+        user = user_repository.create("Alice", "$argon2id$test", 10)
+        other_user = user_repository.create("Bob", "$argon2id$test", 10)
+        active = self.create_ledger("active.sqlite")
+        revoked = self.create_ledger("revoked.sqlite")
+        other = self.create_ledger("other.sqlite")
+        grant_repository.create(user.uuid, active.uuid, "OWNER", 20)
+        revoked_grant = grant_repository.create(user.uuid, revoked.uuid, "OWNER", 20)
+        grant_repository.create(other_user.uuid, other.uuid, "OWNER", 20)
+        grant_repository.revoke(revoked_grant.uuid, 30)
+
+        self.assertEqual(self.repository.count_owned_by_user(user.uuid), 1)
+        self.assertEqual(self.repository.count_owned_by_user(other_user.uuid), 1)
+
     def test_get_returns_none_when_ledger_does_not_exist(self) -> None:
         """get and get_by_path represent an absent row with None."""
         self.create_ledger("ledger.sqlite")

@@ -1,11 +1,12 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError
+from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, FinancialEventLimitReachedError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError
 from app.application.ledger.use_cases.financial_event import create_account_transfer_financial_event, create_shopping_list_financial_event, create_simple_financial_event, delete_financial_event, get_financial_event, list_financial_events_after, update_account_transfer_financial_event, update_shopping_list_financial_event, update_simple_financial_event
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
@@ -48,6 +49,16 @@ class FinancialEventUseCasesTest(unittest.TestCase):
         self.assertEqual(event.movements[0].category_uuid, self.food.uuid)
         self.assertEqual(event.movements[0].value, 250)
         self.assertEqual(get_financial_event(self.open_ledger, event.uuid), event)
+
+    def test_creation_limit_can_be_reused_after_deletion(self) -> None:
+        with patch("app.application.ledger.use_cases.financial_event.MAXIMUM_FINANCIAL_EVENTS", 1):
+            event = self.create_simple()
+            with self.assertRaises(FinancialEventLimitReachedError):
+                self.create_simple(occurred_at=20)
+            delete_financial_event(self.open_ledger, event.uuid)
+            replacement = self.create_simple(occurred_at=30)
+
+        self.assertEqual(self.list_events(), [replacement])
 
     def test_create_simple_event_rejects_zero_without_persisting_an_event(self) -> None:
         with self.assertRaises(InvalidFinancialEventError):

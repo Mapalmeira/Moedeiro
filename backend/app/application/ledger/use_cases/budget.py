@@ -1,9 +1,10 @@
 from collections.abc import Callable, Collection
 from uuid import UUID
 
-from app.application.ledger.exceptions import AccountNotFoundError, BudgetAccountCurrencyMismatchError, BudgetNameUnavailableError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
+from app.application.ledger.exceptions import AccountNotFoundError, BudgetAccountCurrencyMismatchError, BudgetLimitReachedError, BudgetNameUnavailableError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
 from app.domain.appearance import Icon, RgbColorCode
+from app.domain.ledger.limits import MAXIMUM_BUDGETS
 from app.domain.ledger.model.budget import MAX_BUDGET_ACCOUNTS, Budget, BudgetAmount, BudgetDescription, BudgetName
 
 
@@ -21,6 +22,8 @@ def create_budget(
     account_uuids: Collection[UUID],
 ) -> Budget:
     with unit_of_work_factory() as unit_of_work:
+        if unit_of_work.budget_repository.count() >= MAXIMUM_BUDGETS:
+            raise BudgetLimitReachedError
         _require_currency(unit_of_work, currency_uuid)
         _require_category(unit_of_work, category_uuid)
         selected_account_uuids = _require_accounts_in_currency(unit_of_work, account_uuids, currency_uuid)

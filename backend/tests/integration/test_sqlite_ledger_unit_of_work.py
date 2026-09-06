@@ -102,7 +102,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
             unit_of_work.commit()
 
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
-            self.assertEqual(unit_of_work.currency_repository.list_page(1, 200, "name", True), [])
+            self.assertEqual(unit_of_work.currency_repository.list_all(), [])
 
     def test_exit_without_commit_rolls_back_changes(self) -> None:
         """Leaving the scope discards pending writes."""
@@ -112,7 +112,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
             )
 
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
-            self.assertEqual(unit_of_work.currency_repository.list_page(1, 200, "name", True), [])
+            self.assertEqual(unit_of_work.currency_repository.list_all(), [])
 
     def test_exception_rolls_back_and_propagates(self) -> None:
         """An exceptional exit discards pending writes without suppressing the error."""
@@ -124,7 +124,7 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
                 raise RuntimeError("expected failure")
 
         with SqliteLedgerUnitOfWork(self.database) as unit_of_work:
-            self.assertEqual(unit_of_work.currency_repository.list_page(1, 200, "name", True), [])
+            self.assertEqual(unit_of_work.currency_repository.list_all(), [])
 
     def test_exit_closes_the_owned_connection(self) -> None:
         """The connection cannot be reused after the transactional scope ends."""

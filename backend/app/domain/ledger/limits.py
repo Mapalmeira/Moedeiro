@@ -1,10 +1,5 @@
 MAXIMUM_ACCOUNTS = 300
 MAXIMUM_CURRENCIES = 300
+MAXIMUM_BUDGETS = 1_000
+MAXIMUM_FINANCIAL_EVENTS = 1_000_000
 
-
-class AccountLimitReachedError(Exception):
-    pass
-
-
-class CurrencyLimitReachedError(Exception):
-    pass

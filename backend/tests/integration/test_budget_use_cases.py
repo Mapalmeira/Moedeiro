@@ -1,11 +1,12 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.application.ledger.exceptions import AccountNotFoundError, BudgetAccountCurrencyMismatchError, BudgetNameUnavailableError, BudgetNotActiveError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
+from app.application.ledger.exceptions import AccountNotFoundError, BudgetAccountCurrencyMismatchError, BudgetLimitReachedError, BudgetNameUnavailableError, BudgetNotActiveError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
 from app.application.ledger.use_cases.budget import _require_accounts_in_currency, create_budget, delete_budget, get_budget, list_budget_page, update_budget
 from app.application.ledger.use_cases.budget_status import get_budget_status, list_budget_status_page
 from app.domain.ledger.model.budget import MAX_BUDGET_ACCOUNTS
@@ -62,6 +63,16 @@ class BudgetUseCasesTest(unittest.TestCase):
         budget = self.create()
 
         self.assertEqual(budget.account_uuids, [])
+
+    def test_creation_limit_can_be_reused_after_deletion(self) -> None:
+        with patch("app.application.ledger.use_cases.budget.MAXIMUM_BUDGETS", 1):
+            budget = self.create("First")
+            with self.assertRaises(BudgetLimitReachedError):
+                self.create("Overflow")
+            delete_budget(self.open_ledger, budget.uuid)
+            replacement = self.create("Replacement")
+
+        self.assertEqual(list_budget_page(self.open_ledger, 1, 200, "name", True), [replacement])
 
     def test_create_rejects_unknown_relations_or_an_account_in_another_currency(self) -> None:
         operations = (

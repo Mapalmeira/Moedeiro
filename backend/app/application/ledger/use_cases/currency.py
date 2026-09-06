@@ -4,10 +4,8 @@ from uuid import UUID
 from app.application.ledger.exceptions import CurrencyInUseError, CurrencyLimitReachedError, CurrencyNameUnavailableError, CurrencyNotFoundError
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
 from app.domain.appearance import Icon, RgbColorCode
-from app.domain.ledger.model.currency import Currency
-
-
 from app.domain.ledger.limits import MAXIMUM_CURRENCIES
+from app.domain.ledger.model.currency import Currency
 
 
 def create_currency(

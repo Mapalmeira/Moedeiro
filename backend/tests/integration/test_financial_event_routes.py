@@ -1,6 +1,7 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
@@ -73,6 +74,15 @@ class FinancialEventRoutesTest(unittest.TestCase):
         self.assertEqual(event.movements[0].account_uuid, self.source.uuid)
         self.assertEqual(event.movements[0].value, -100)
         self.assertEqual(event.movements[0].quantity, 2)
+
+    def test_create_maps_the_financial_event_limit(self) -> None:
+        self.create_simple()
+        with patch("app.application.ledger.use_cases.financial_event.MAXIMUM_FINANCIAL_EVENTS", 1):
+            with self.assertRaises(HTTPException) as raised:
+                self.create_simple(20)
+
+        self.assertEqual(raised.exception.status_code, 409)
+        self.assertEqual(raised.exception.detail, "Financial event limit reached")
 
     def test_create_shopping_list_returns_expenses_on_the_selected_account(self) -> None:
         event = create_ledger_financial_event(

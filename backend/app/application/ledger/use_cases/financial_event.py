@@ -1,8 +1,9 @@
 from collections.abc import Callable, Sequence
 from uuid import UUID
 
-from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError, InvalidFinancialEventStructureError
+from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, FinancialEventLimitReachedError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError, InvalidFinancialEventStructureError
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
+from app.domain.ledger.limits import MAXIMUM_FINANCIAL_EVENTS
 from app.domain.ledger.model.financial_event import MAX_SHOPPING_LIST_MOVEMENTS, FinancialEvent, FinancialEventDescription, FinancialEventType
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName, FinancialMovementQuantity
@@ -229,6 +230,8 @@ def _create_financial_event(
     movements: Sequence[_Movement],
 ) -> FinancialEvent:
     with unit_of_work_factory() as unit_of_work:
+        if unit_of_work.financial_event_repository.count() >= MAXIMUM_FINANCIAL_EVENTS:
+            raise FinancialEventLimitReachedError
         _require_accounts(unit_of_work, [movement[0] for movement in movements])
         _require_categories(unit_of_work, [movement[1] for movement in movements])
         event = unit_of_work.financial_event_repository.create(occurred_at, description, event_type)

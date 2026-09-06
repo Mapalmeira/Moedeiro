@@ -3,9 +3,10 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 from app.application.ledger.exceptions import LedgerNotFoundError
-from app.application.registry.exceptions import UserNotFoundError
+from app.application.registry.exceptions import LedgerLimitReachedError, UserNotFoundError
 from app.application.registry.unit_of_work import RegistryUnitOfWork
 from app.domain.appearance import Icon, RgbColorCode
+from app.domain.registry.limits import MAXIMUM_LEDGERS_PER_USER
 from app.domain.registry.model.ledger import Ledger, LedgerName
 
 
@@ -25,6 +26,8 @@ def create_ledger(
         with unit_of_work_factory() as unit_of_work:
             if unit_of_work.user_repository.get(user_uuid) is None:
                 raise UserNotFoundError
+            if unit_of_work.ledger_repository.count_owned_by_user(user_uuid) >= MAXIMUM_LEDGERS_PER_USER:
+                raise LedgerLimitReachedError
             database_path = initialize_database(ledger_uuid, timestamp)
             ledger = unit_of_work.ledger_repository.create(
                 ledger_uuid,

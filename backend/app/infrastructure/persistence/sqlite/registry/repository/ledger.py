@@ -112,6 +112,21 @@ class SqliteLedgerRepository(LedgerRepository):
         ).fetchall()
         return [self._to_model(row) for row in rows]
 
+    def count_owned_by_user(self, user_uuid: UUID) -> int:
+        return int(
+            self.connection.execute(
+                """
+                SELECT COUNT(*)
+                FROM ledger
+                JOIN ledger_grant ON ledger_grant.ledger_uuid = ledger.uuid
+                WHERE ledger_grant.user_uuid = ?
+                  AND ledger_grant.role = 'OWNER'
+                  AND ledger_grant.revoked_at IS NULL
+                """,
+                (user_uuid.bytes,),
+            ).fetchone()[0]
+        )
+
     @staticmethod
     def _to_model(row: sqlite3.Row) -> Ledger:
         return Ledger.model_validate(dict(row))
