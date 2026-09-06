@@ -184,7 +184,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
 
                     <div class="section-actions totp-setup__action">
                       <button class="ui-button ui-button--blue security-action-button" type="submit" [disabled]="confirmTotpForm.invalid || confirmingTotp()">
-                        <span>{{ confirmingTotp() ? i18n.t('security.totp.confirming') : i18n.t('security.totp.confirm') }}</span>
+                        <span>{{ i18n.t('security.totp.confirm') }}</span>
                         @if (totpSetupRemainingTime(); as remainingTime) {
                           <span class="totp-setup__countdown" role="status" aria-live="polite" [attr.aria-label]="totpSetupExpiryMessage()">{{ remainingTime }}</span>
                         }
