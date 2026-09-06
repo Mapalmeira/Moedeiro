@@ -17,6 +17,12 @@ import { FieldErrorComponent } from '../../shared/ui/field-error.component';
 import { FormMessageComponent } from '../../shared/ui/form-message.component';
 import { IconComponent } from '../../shared/ui/icon.component';
 
+interface PendingTotpSetup {
+  provisioningUri: string;
+  expiresAt: number;
+}
+
+const PENDING_TOTP_SETUP_STORAGE_PREFIX = 'moedeiro.pending-totp-setup.';
 
 @Component({
   selector: 'app-security-dialog',
@@ -49,15 +55,17 @@ import { IconComponent } from '../../shared/ui/icon.component';
               <div class="password-grid" [class.password-grid--totp]="totpStatus() === 'enabled'">
                 <label class="field password-grid__current" [class.ui-field-feedback--rejected]="passwordCurrentRejected()">
                   <span>{{ i18n.t('security.currentPassword') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                  <input appNoWhitespace type="password" autocomplete="current-password" formControlName="current_password" required (input)="clearCredentialRejections()" (animationend)="clearCredentialRejections()" />
+                  <input appNoWhitespace type="password" autocomplete="current-password" formControlName="current_password" required (input)="clearCredentialRejections()" (animationend)="clearCredentialRejections()" [attr.aria-invalid]="passwordCurrentRejected()" [attr.aria-describedby]="passwordCurrentRejected() ? 'password-current-feedback' : null" />
                   <app-field-error [text]="passwordError(passwordForm.controls.current_password)" />
+                  <app-field-error messageId="password-current-feedback" [visuallyHidden]="true" [text]="passwordCurrentFeedback()" />
                 </label>
 
                 @if (totpStatus() === 'enabled') {
                   <label class="field" [class.ui-field-feedback--rejected]="totpCodeRejection() === 'password'">
                     <span>{{ i18n.t('auth.totp') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                    <input inputmode="numeric" autocomplete="one-time-code" formControlName="totp_code" maxlength="6" required (input)="clearTotpCodeRejection()" (animationend)="clearTotpCodeRejection()" />
+                    <input inputmode="numeric" autocomplete="one-time-code" formControlName="totp_code" maxlength="6" required (input)="clearTotpCodeRejection()" (animationend)="clearTotpCodeRejection()" [attr.aria-invalid]="totpCodeRejection() === 'password'" [attr.aria-describedby]="totpCodeRejection() === 'password' ? 'password-totp-feedback' : null" />
                     <app-field-error [text]="totpError(passwordForm.controls.totp_code)" />
+                    <app-field-error messageId="password-totp-feedback" [visuallyHidden]="true" [text]="passwordTotpFeedback()" />
                   </label>
                 }
 
@@ -90,7 +98,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
 
             @if (totpInfoMessage()) { <app-form-message kind="info" [text]="totpInfoMessage()!" /> }
             @if (totpWarningMessage()) { <app-form-message kind="warning" [text]="totpWarningMessage()!" /> }
-            @if (totpSuccessMessage()) { <app-form-message kind="success" [text]="totpSuccessMessage()!" /> }
+            @if (totpSuccessMessage()) { <app-form-message kind="info" [text]="totpSuccessMessage()!" /> }
 
             @if (loadingTotpStatus()) {
               <div class="totp-status-state ui-projected-surface" role="status" aria-live="polite">
@@ -104,18 +112,22 @@ import { IconComponent } from '../../shared/ui/icon.component';
             } @else if (totpStatus() === 'enabled') {
               <form class="security-form totp-form" [formGroup]="disableTotpForm" (ngSubmit)="disableTotp()" novalidate>
                 <div class="form-grid">
-                  <label class="field" [class.ui-field-feedback--rejected]="disableCredentialsRejected()">
+                  <label class="field" [class.ui-field-feedback--rejected]="disablePasswordRejected() || disableCredentialsRejected()">
                     <span>{{ i18n.t('security.currentPassword') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                    <input appNoWhitespace type="password" autocomplete="current-password" formControlName="current_password" required (input)="clearCredentialRejections()" (animationend)="clearCredentialRejections()" />
+                    <input appNoWhitespace type="password" autocomplete="current-password" formControlName="current_password" required (input)="clearCredentialRejections()" (animationend)="clearCredentialRejections()" [attr.aria-invalid]="disablePasswordRejected() || disableCredentialsRejected()" [attr.aria-describedby]="disableCredentialsRejected() ? 'disable-credentials-feedback' : disablePasswordRejected() ? 'disable-password-feedback' : null" />
                     <app-field-error [text]="passwordError(disableTotpForm.controls.current_password)" />
+                    <app-field-error messageId="disable-password-feedback" [visuallyHidden]="true" [text]="disablePasswordFeedback()" />
                   </label>
 
-                  <label class="field" [class.ui-field-feedback--rejected]="disableCredentialsRejected()">
+                  <label class="field" [class.ui-field-feedback--rejected]="disableTotpCodeRejected() || disableCredentialsRejected()">
                     <span>{{ i18n.t('auth.totp') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                    <input inputmode="numeric" autocomplete="one-time-code" formControlName="code" maxlength="6" required (input)="clearCredentialRejections()" (animationend)="clearCredentialRejections()" />
+                    <input inputmode="numeric" autocomplete="one-time-code" formControlName="code" maxlength="6" required (input)="clearCredentialRejections()" (animationend)="clearCredentialRejections()" [attr.aria-invalid]="disableTotpCodeRejected() || disableCredentialsRejected()" [attr.aria-describedby]="disableCredentialsRejected() ? 'disable-credentials-feedback' : disableTotpCodeRejected() ? 'disable-totp-feedback' : null" />
                     <app-field-error [text]="totpError(disableTotpForm.controls.code)" />
+                    <app-field-error messageId="disable-totp-feedback" [visuallyHidden]="true" [text]="disableTotpCodeFeedback()" />
                   </label>
                 </div>
+
+                <app-field-error messageId="disable-credentials-feedback" [visuallyHidden]="true" [text]="disableCredentialsFeedback()" />
 
                 @if (totpErrorMessage()) { <app-form-message [text]="totpErrorMessage()!" /> }
 
@@ -131,8 +143,9 @@ import { IconComponent } from '../../shared/ui/icon.component';
                   <div class="setup-row">
                     <label class="field" [class.ui-field-feedback--rejected]="setupPasswordRejected()">
                       <span>{{ i18n.t('security.currentPassword') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                      <input appNoWhitespace type="password" autocomplete="current-password" formControlName="current_password" required (input)="clearCredentialRejections()" (animationend)="clearCredentialRejections()" />
+                      <input appNoWhitespace type="password" autocomplete="current-password" formControlName="current_password" required (input)="clearCredentialRejections()" (animationend)="clearCredentialRejections()" [attr.aria-invalid]="setupPasswordRejected()" [attr.aria-describedby]="setupPasswordRejected() ? 'setup-password-feedback' : null" />
                       <app-field-error [text]="passwordError(setupForm.controls.current_password)" />
+                      <app-field-error messageId="setup-password-feedback" [visuallyHidden]="true" [text]="setupPasswordFeedback()" />
                     </label>
 
                     <button class="ui-button ui-button--blue security-action-button" type="submit" [disabled]="setupForm.invalid || startingTotp()">
@@ -172,8 +185,9 @@ import { IconComponent } from '../../shared/ui/icon.component';
                       <div class="totp-code-stack">
                         <label class="field totp-code-field" [class.ui-field-feedback--rejected]="totpCodeRejection() === 'confirm'">
                           <span>{{ i18n.t('auth.totp') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                          <input inputmode="numeric" autocomplete="one-time-code" formControlName="code" maxlength="6" required (input)="clearTotpCodeRejection()" (animationend)="clearTotpCodeRejection()" />
+                          <input inputmode="numeric" autocomplete="one-time-code" formControlName="code" maxlength="6" required (input)="clearTotpCodeRejection()" (animationend)="clearTotpCodeRejection()" [attr.aria-invalid]="totpCodeRejection() === 'confirm'" [attr.aria-describedby]="totpCodeRejection() === 'confirm' ? 'confirm-totp-feedback' : null" />
                           <app-field-error [text]="totpError(confirmTotpForm.controls.code)" />
+                          <app-field-error messageId="confirm-totp-feedback" [visuallyHidden]="true" [text]="confirmTotpFeedback()" />
                         </label>
                         @if (totpErrorMessage()) {
                           <app-form-message class="totp-code-message" [text]="totpErrorMessage()!" />
@@ -336,6 +350,8 @@ export class SecurityDialogComponent {
   readonly totpCodeRejection = signal<'password' | 'confirm' | null>(null);
   readonly passwordCurrentRejected = signal(false);
   readonly setupPasswordRejected = signal(false);
+  readonly disablePasswordRejected = signal(false);
+  readonly disableTotpCodeRejected = signal(false);
   readonly disableCredentialsRejected = signal(false);
   readonly totpStatus = this.security.totpStatus;
   readonly provisioningUri = signal<string | null>(null);
@@ -421,6 +437,10 @@ export class SecurityDialogComponent {
     this.security.getTotpStatus().pipe(
       finalize(() => this.loadingTotpStatus.set(false)),
     ).subscribe({
+      next: ({ enabled }) => {
+        if (enabled) this.clearPendingTotpSetup();
+        else this.restorePendingTotpSetup();
+      },
       error: (error: unknown) => {
         this.totpStatusErrorMessage.set(this.apiErrors.message(error, 'errors.totpStatusFailed'));
       },
@@ -457,10 +477,8 @@ export class SecurityDialogComponent {
     this.security.startTotpSetup(this.setupForm.getRawValue()).pipe(finalize(() => this.startingTotp.set(false))).subscribe({
       next: (response) => {
         this.setupForm.reset({ current_password: '' });
-        this.provisioningUri.set(response.provisioning_uri);
-        this.totpSecret.set(this.extractSecret(response.provisioning_uri));
-        this.startSetupExpiryCountdown(response.setup_expires_at);
-        void this.renderQrCode(response.provisioning_uri);
+        this.applyPendingTotpSetup({ provisioningUri: response.provisioning_uri, expiresAt: response.setup_expires_at });
+        this.persistPendingTotpSetup();
       },
       error: (error: unknown) => {
         if (this.hasErrorDetail(error, 'Invalid current password')) this.setupPasswordRejected.set(true);
@@ -476,7 +494,7 @@ export class SecurityDialogComponent {
 
     this.security.confirmTotp(this.confirmTotpForm.getRawValue()).pipe(finalize(() => this.confirmingTotp.set(false))).subscribe({
       next: () => {
-        this.resetTotpFormsAndProvisioning();
+        this.resetTotpFormsAndProvisioning(true);
         this.totpInfoMessage.set(this.i18n.t('security.totp.enabled'));
       },
       error: (error: unknown) => {
@@ -494,11 +512,13 @@ export class SecurityDialogComponent {
 
     this.security.disableTotp(this.disableTotpForm.getRawValue()).pipe(finalize(() => this.disablingTotp.set(false))).subscribe({
       next: () => {
-        this.resetTotpFormsAndProvisioning();
+        this.resetTotpFormsAndProvisioning(true);
         this.totpSuccessMessage.set(this.i18n.t('security.totp.disabled'));
       },
       error: (error: unknown) => {
-        if (this.hasErrorDetail(error, 'Invalid credentials')) this.disableCredentialsRejected.set(true);
+        if (this.hasErrorDetail(error, 'Invalid current password')) this.disablePasswordRejected.set(true);
+        else if (this.isInvalidTotpCode(error)) this.disableTotpCodeRejected.set(true);
+        else if (this.hasErrorDetail(error, 'Invalid credentials')) this.disableCredentialsRejected.set(true);
         else this.totpErrorMessage.set(this.apiErrors.message(error, 'errors.totpDisableFailed'));
       },
     });
@@ -549,7 +569,37 @@ export class SecurityDialogComponent {
   clearCredentialRejections(): void {
     this.passwordCurrentRejected.set(false);
     this.setupPasswordRejected.set(false);
+    this.disablePasswordRejected.set(false);
+    this.disableTotpCodeRejected.set(false);
     this.disableCredentialsRejected.set(false);
+  }
+
+  passwordCurrentFeedback(): string | null {
+    return this.passwordCurrentRejected() ? this.i18n.t('errors.invalidCurrentPassword') : null;
+  }
+
+  passwordTotpFeedback(): string | null {
+    return this.totpCodeRejection() === 'password' ? this.i18n.t('feedback.invalidTotpCode') : null;
+  }
+
+  setupPasswordFeedback(): string | null {
+    return this.setupPasswordRejected() ? this.i18n.t('errors.invalidCurrentPassword') : null;
+  }
+
+  confirmTotpFeedback(): string | null {
+    return this.totpCodeRejection() === 'confirm' ? this.i18n.t('feedback.invalidTotpCode') : null;
+  }
+
+  disablePasswordFeedback(): string | null {
+    return this.disablePasswordRejected() ? this.i18n.t('errors.invalidCurrentPassword') : null;
+  }
+
+  disableTotpCodeFeedback(): string | null {
+    return this.disableTotpCodeRejected() ? this.i18n.t('feedback.invalidTotpCode') : null;
+  }
+
+  disableCredentialsFeedback(): string | null {
+    return this.disableCredentialsRejected() ? this.i18n.t('errors.totpDisableFailed') : null;
   }
 
 
@@ -607,7 +657,7 @@ export class SecurityDialogComponent {
     this.totpSuccessMessage.set(null);
   }
 
-  private resetTotpFormsAndProvisioning(): void {
+  private resetTotpFormsAndProvisioning(clearPending = false): void {
     this.stopSetupExpiryCountdown();
     this.setupForm.reset({ current_password: '' });
     this.confirmTotpForm.reset({ code: '' });
@@ -621,6 +671,7 @@ export class SecurityDialogComponent {
     this.secretVisible.set(false);
     this.clearTotpCodeRejection();
     this.clearCredentialRejections();
+    if (clearPending) this.clearPendingTotpSetup();
   }
 
   private resetDialog(): void {
@@ -650,7 +701,7 @@ export class SecurityDialogComponent {
       return;
     }
 
-    this.resetTotpFormsAndProvisioning();
+    this.resetTotpFormsAndProvisioning(true);
     this.totpWarningMessage.set(this.i18n.t('security.totp.expired'));
   }
 
@@ -671,5 +722,48 @@ export class SecurityDialogComponent {
 
   private hasErrorDetail(error: unknown, detail: string): boolean {
     return error instanceof HttpErrorResponse && error.error?.detail === detail;
+  }
+
+  private applyPendingTotpSetup(setup: PendingTotpSetup): void {
+    this.provisioningUri.set(setup.provisioningUri);
+    this.totpSecret.set(this.extractSecret(setup.provisioningUri));
+    this.startSetupExpiryCountdown(setup.expiresAt);
+    void this.renderQrCode(setup.provisioningUri);
+  }
+
+  private restorePendingTotpSetup(): void {
+    const storage = this.pendingTotpSetupStorage();
+    if (storage === null) return;
+
+    try {
+      const saved = JSON.parse(storage.getItem(this.pendingTotpSetupStorageKey()) ?? '') as Partial<PendingTotpSetup>;
+      if (typeof saved.provisioningUri !== 'string' || typeof saved.expiresAt !== 'number' || saved.expiresAt <= Math.floor(Date.now() / 1_000)) {
+        this.clearPendingTotpSetup();
+        return;
+      }
+      this.applyPendingTotpSetup({ provisioningUri: saved.provisioningUri, expiresAt: saved.expiresAt });
+    } catch {
+      this.clearPendingTotpSetup();
+    }
+  }
+
+  private persistPendingTotpSetup(): void {
+    const storage = this.pendingTotpSetupStorage();
+    const provisioningUri = this.provisioningUri();
+    const expiresAt = this.setupExpiresAt();
+    if (storage === null || provisioningUri === null || expiresAt === null) return;
+    storage.setItem(this.pendingTotpSetupStorageKey(), JSON.stringify({ provisioningUri, expiresAt } satisfies PendingTotpSetup));
+  }
+
+  private clearPendingTotpSetup(): void {
+    this.pendingTotpSetupStorage()?.removeItem(this.pendingTotpSetupStorageKey());
+  }
+
+  private pendingTotpSetupStorage(): Storage | null {
+    return typeof sessionStorage === 'undefined' ? null : sessionStorage;
+  }
+
+  private pendingTotpSetupStorageKey(): string {
+    return `${PENDING_TOTP_SETUP_STORAGE_PREFIX}${encodeURIComponent(this.auth.currentUserName() ?? '')}`;
   }
 }

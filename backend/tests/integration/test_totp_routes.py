@@ -137,19 +137,22 @@ class TotpRoutesTest(unittest.TestCase):
         self.assertEqual(raised.exception.status_code, 409)
         self.assertEqual(raised.exception.detail, "TOTP code already used")
 
-    def test_totp_disable_returns_one_generic_error_for_an_invalid_password_or_code(self) -> None:
+    def test_totp_disable_identifies_the_invalid_credential(self) -> None:
         setup_request = self.request()
         user = require_authenticated_user(setup_request)
         asyncio.run(start_setup(StartTotpSetupRequest(current_password="current password"), setup_request, user))
         confirm_setup(ConfirmTotpRequest(code="123456"), setup_request, user)
         request = self.request("123456")
 
-        for current_password, code in (("wrong password", "123456"), ("current password", "000000")):
+        for current_password, code, detail in (
+            ("wrong password", "123456", "Invalid current password"),
+            ("current password", "000000", "Invalid TOTP code"),
+        ):
             with self.subTest(current_password=current_password, code=code):
                 with self.assertRaises(HTTPException) as raised:
                     asyncio.run(remove_totp(DisableTotpRequest(current_password=current_password, code=code), request, user))
                 self.assertEqual(raised.exception.status_code, 401)
-                self.assertEqual(raised.exception.detail, "Invalid credentials")
+                self.assertEqual(raised.exception.detail, detail)
 
 
 if __name__ == "__main__":

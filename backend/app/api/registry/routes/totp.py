@@ -84,8 +84,10 @@ async def remove_totp(payload: DisableTotpRequest, request: Request, user: Annot
         )
     except TotpCodeAlreadyUsedError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="TOTP code already used") from error
-    except (InvalidCurrentPasswordError, InvalidTotpCodeError) as error:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials") from error
+    except InvalidCurrentPasswordError as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid current password") from error
+    except InvalidTotpCodeError as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid TOTP code") from error
     except TotpNotEnabledError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="TOTP not enabled") from error
 
