@@ -180,14 +180,14 @@ import { IconComponent } from '../../shared/ui/icon.component';
                           <app-form-message class="totp-code-message" [text]="totpErrorMessage()!" />
                         }
                       </div>
-                      @if (totpSetupExpiryMessage(); as expiryMessage) {
-                        <p class="totp-setup__expiry" role="status" aria-live="polite">{{ expiryMessage }}</p>
-                      }
                     </div>
 
                     <div class="section-actions totp-setup__action">
                       <button class="ui-button ui-button--blue security-action-button" type="submit" [disabled]="confirmTotpForm.invalid || confirmingTotp()">
-                        {{ confirmingTotp() ? i18n.t('security.totp.confirming') : i18n.t('security.totp.confirm') }}
+                        <span>{{ confirmingTotp() ? i18n.t('security.totp.confirming') : i18n.t('security.totp.confirm') }}</span>
+                        @if (totpSetupRemainingTime(); as remainingTime) {
+                          <span class="totp-setup__countdown" role="status" aria-live="polite" [attr.aria-label]="totpSetupExpiryMessage()">{{ remainingTime }}</span>
+                        }
                       </button>
                     </div>
                   </form>
@@ -254,7 +254,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
     .totp-code-field > input { display: block; }
     .totp-code-field > app-field-error { display: block; }
     .totp-code-message { display: block; min-width: 0; }
-    .totp-setup__expiry { margin: 0; color: var(--text-muted); font-size: .8rem; font-weight: 650; line-height: 1.35; }
+    .totp-setup__countdown { padding-inline-start: var(--space-2); border-inline-start: var(--border-width) solid color-mix(in srgb, var(--on-blue) 42%, transparent); color: var(--on-blue); font: inherit; font-variant-numeric: tabular-nums; line-height: 1; }
     .secret-value { display: grid; grid-template-columns: minmax(0, 1fr) var(--menu-item-height) var(--menu-item-height); align-items: stretch; min-height: var(--control-height); border: var(--border-width) solid var(--blue-strong); border-radius: var(--radius-sm); background: var(--surface); box-shadow: var(--selection-shadow); }
     .secret-value code { min-width: 0; display: flex; align-items: center; min-height: calc(var(--control-height) - (2 * var(--border-width))); padding: var(--space-2) var(--control-padding-inline); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: .82rem; color: var(--text); }
     .secret-visibility-button, .copy-button { box-sizing: border-box; display: grid; place-items: center; width: var(--menu-item-height); min-width: var(--menu-item-height); height: 100%; min-height: calc(var(--control-height) - (2 * var(--border-width))); margin: 0; padding: 0; border: 0; border-left: var(--border-width) solid var(--blue-strong); border-radius: 0; font: inherit; line-height: 1; transition: background var(--motion-press) ease, color var(--motion-press) ease; }
@@ -515,12 +515,17 @@ export class SecurityDialogComponent {
     return control.hasError('pattern') ? this.i18n.t('validation.totp.invalid') : null;
   }
 
-  totpSetupExpiryMessage(): string | null {
+  totpSetupRemainingTime(): string | null {
     const remaining = this.setupSecondsRemaining();
     if (remaining === null) return null;
     const minutes = Math.floor(remaining / 60);
     const seconds = remaining % 60;
-    return this.i18n.t('security.totp.expiresIn', { time: `${minutes}:${seconds.toString().padStart(2, '0')}` });
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  totpSetupExpiryMessage(): string | null {
+    const time = this.totpSetupRemainingTime();
+    return time === null ? null : this.i18n.t('security.totp.expiresIn', { time });
   }
 
 
