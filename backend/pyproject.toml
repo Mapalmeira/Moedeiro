@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=80"]
+requires = ["setuptools==84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,13 +7,16 @@ name = "moedeiro"
 version = "1.0.0"
 requires-python = ">=3.14"
 dependencies = [
-    "argon2-cffi",
-    "cryptography",
-    "fastapi",
-    "limits",
-    "pydantic",
-    "uvicorn",
+    "argon2-cffi==25.1.0",
+    "cryptography==50.0.1",
+    "fastapi==0.141.1",
+    "limits==5.8.0",
+    "pydantic==2.13.5",
+    "uvicorn==0.52.4",
 ]
+
+[project.optional-dependencies]
+test = ["httpx==0.28.1"]
 
 [project.scripts]
 moedeiro = "app.cli:main"

@@ -20,7 +20,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY backend/ /app/backend/
-RUN pip install --no-cache-dir /app/backend && rm -rf /app/backend
+RUN pip install --no-cache-dir --constraint /app/backend/requirements.lock /app/backend && rm -rf /app/backend
 
 COPY --from=frontend-build /app/frontend/dist/moedeiro/browser/ /app/frontend/
 

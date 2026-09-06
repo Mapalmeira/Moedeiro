@@ -170,8 +170,10 @@ Create a virtual environment and install the backend package in editable mode fr
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install --editable ./backend
+python -m pip install --constraint ./backend/requirements.lock --editable ./backend
 ```
+
+The constraint file pins direct and transitive dependencies. The build backend is pinned in `backend/pyproject.toml`.
 
 This installs the backend dependencies and the `moedeiro` command while keeping the installed package linked to the repository checkout. The native storage and frontend defaults therefore resolve against the standard repository layout.
 
@@ -228,3 +230,24 @@ Use the [Command line interface](cli.md) for operator tasks such as creating inv
 FastAPI's interactive API reference is available from the running service at `/docs`.
 
 If Moedeiro will be exposed through an HTTPS reverse proxy, continue with [Reverse proxy](reverse-proxy.md).
+
+## Backend dependency updates and tests
+
+Direct dependency versions in `backend/pyproject.toml` were checked against
+[PyPI](https://pypi.org/) on 2026-09-05. `backend/requirements.lock` also pins
+transitive dependencies and the optional HTTP test client.
+
+To install the test dependencies and run the backend suite from the repository root:
+
+```sh
+python -m pip install --constraint ./backend/requirements.lock --editable './backend[test]'
+(cd backend && python -m unittest discover -s tests)
+```
+
+To refresh the lock after updating the exact versions in `pyproject.toml`:
+
+```sh
+(cd backend && uv pip compile --upgrade --universal --extra test pyproject.toml --output-file requirements.lock)
+```
+
+Review the resolved versions and rerun the backend suite before committing an update.
