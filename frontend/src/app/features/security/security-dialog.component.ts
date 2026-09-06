@@ -180,6 +180,9 @@ import { IconComponent } from '../../shared/ui/icon.component';
                           <app-form-message class="totp-code-message" [text]="totpErrorMessage()!" />
                         }
                       </div>
+                      @if (totpSetupExpiryMessage(); as expiryMessage) {
+                        <p class="totp-setup__expiry" role="status" aria-live="polite">{{ expiryMessage }}</p>
+                      }
                     </div>
 
                     <div class="section-actions totp-setup__action">
@@ -232,17 +235,26 @@ import { IconComponent } from '../../shared/ui/icon.component';
     .setup-row .security-action-button { grid-column: 2; grid-row: 2; height: var(--control-height); min-height: var(--control-height); }
     .totp-setup { display: grid; grid-template-columns: minmax(238px, .82fr) minmax(300px, 1.18fr); gap: var(--section-gap); margin-top: var(--section-gap); align-items: stretch; }
     .totp-setup__side { position: relative; min-width: 0; min-height: 100%; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: var(--form-gap); }
-    .totp-setup__fields { grid-row: 1; display: grid; gap: var(--space-12); min-width: 0; align-self: center; }
+    .totp-setup__fields {
+      grid-row: 1;
+      display: grid;
+      width: min(100%, 420px);
+      gap: var(--section-gap);
+      min-width: 0;
+      justify-self: center;
+      align-self: center;
+    }
     .totp-setup__action { grid-row: 2; align-self: end; padding-top: 0; }
     .qr-wrap { box-sizing: border-box; display: grid; place-items: center; min-height: 280px; height: 100%; padding: var(--form-gap); border: var(--border-width) solid var(--blue-strong); border-radius: var(--radius-card); background: var(--surface); }
     .qr-wrap img { display: block; width: 220px; height: 220px; max-width: 100%; image-rendering: pixelated; }
     .qr-loading { color: var(--text); font-size: 1.4rem; }
-    .secret-block, .totp-code-field { position: relative; display: grid; gap: var(--field-gap); min-width: 0; }
-    .secret-block__label, .totp-code-field > span { position: absolute; left: 0; bottom: calc(100% + var(--field-gap)); font-size: .86rem; font-weight: 760; white-space: nowrap; }
-    .totp-code-stack { min-width: 0; display: grid; gap: var(--form-gap); }
+    .secret-block, .totp-code-field { display: grid; gap: var(--field-gap); min-width: 0; }
+    .secret-block__label, .totp-code-field > span { display: block; font-size: .86rem; font-weight: 760; }
+    .totp-code-stack { min-width: 0; display: grid; gap: var(--field-gap); }
     .totp-code-field > input { display: block; }
     .totp-code-field > app-field-error { display: block; }
     .totp-code-message { display: block; min-width: 0; }
+    .totp-setup__expiry { margin: 0; color: var(--text-muted); font-size: .8rem; font-weight: 650; line-height: 1.35; }
     .secret-value { display: grid; grid-template-columns: minmax(0, 1fr) var(--menu-item-height) var(--menu-item-height); align-items: stretch; min-height: var(--control-height); border: var(--border-width) solid var(--blue-strong); border-radius: var(--radius-sm); background: var(--surface); box-shadow: var(--selection-shadow); }
     .secret-value code { min-width: 0; display: flex; align-items: center; min-height: calc(var(--control-height) - (2 * var(--border-width))); padding: var(--space-2) var(--control-padding-inline); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: .82rem; color: var(--text); }
     .secret-visibility-button, .copy-button { box-sizing: border-box; display: grid; place-items: center; width: var(--menu-item-height); min-width: var(--menu-item-height); height: 100%; min-height: calc(var(--control-height) - (2 * var(--border-width))); margin: 0; padding: 0; border: 0; border-left: var(--border-width) solid var(--blue-strong); border-radius: 0; font: inherit; line-height: 1; transition: background var(--motion-press) ease, color var(--motion-press) ease; }
@@ -265,12 +277,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
       }
       .qr-wrap img { width: min(220px, 100%); height: auto; aspect-ratio: 1; }
       .totp-setup__side { min-height: 0; grid-template-rows: auto auto; }
-      .totp-setup__fields { align-self: stretch; gap: var(--form-gap); }
-      .secret-block__label, .totp-code-field > span {
-        position: static;
-        display: block;
-        white-space: normal;
-      }
+      .totp-setup__fields { width: 100%; align-self: stretch; }
       .secret-value {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         grid-template-rows: minmax(46px, auto) 42px;
@@ -332,8 +339,11 @@ export class SecurityDialogComponent {
   readonly provisioningUri = signal<string | null>(null);
   readonly totpSecret = signal('');
   readonly qrDataUrl = signal<string | null>(null);
+  readonly setupExpiresAt = signal<number | null>(null);
+  readonly setupSecondsRemaining = signal<number | null>(null);
   readonly secretCopied = signal(false);
   readonly secretVisible = signal(false);
+  private setupExpiryTimer: ReturnType<typeof setInterval> | null = null;
 
   readonly passwordForm = this.fb.nonNullable.group({
     current_password: ['', [Validators.required, Validators.minLength(PASSWORD_MIN_LENGTH), Validators.maxLength(PASSWORD_MAX_LENGTH)]],
@@ -388,6 +398,11 @@ export class SecurityDialogComponent {
     if (this.open()) this.requestClose();
   }
 
+  @HostListener('document:visibilitychange')
+  onVisibilityChange(): void {
+    if (this.open() && document.visibilityState === 'visible') this.updateSetupExpiry();
+  }
+
   requestClose(): void {
     if (this.busy()) return;
     this.resetDialog();
@@ -436,6 +451,7 @@ export class SecurityDialogComponent {
         this.setupForm.reset({ current_password: '' });
         this.provisioningUri.set(response.provisioning_uri);
         this.totpSecret.set(this.extractSecret(response.provisioning_uri));
+        this.startSetupExpiryCountdown(response.setup_expires_at);
         void this.renderQrCode(response.provisioning_uri);
       },
       error: (error: unknown) => {
@@ -452,7 +468,7 @@ export class SecurityDialogComponent {
     this.security.confirmTotp(this.confirmTotpForm.getRawValue()).pipe(finalize(() => this.confirmingTotp.set(false))).subscribe({
       next: () => {
         this.resetTotpFormsAndProvisioning();
-        this.totpSuccessMessage.set(this.i18n.t('security.totp.enabled'));
+        this.totpInfoMessage.set(this.i18n.t('security.totp.enabled'));
       },
       error: (error: unknown) => this.totpErrorMessage.set(this.apiErrors.message(error, 'errors.totpConfirmFailed')),
     });
@@ -499,6 +515,14 @@ export class SecurityDialogComponent {
     return control.hasError('pattern') ? this.i18n.t('validation.totp.invalid') : null;
   }
 
+  totpSetupExpiryMessage(): string | null {
+    const remaining = this.setupSecondsRemaining();
+    if (remaining === null) return null;
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
+    return this.i18n.t('security.totp.expiresIn', { time: `${minutes}:${seconds.toString().padStart(2, '0')}` });
+  }
+
 
   toggleSecretVisibility(): void {
     this.secretVisible.update((visible) => !visible);
@@ -531,10 +555,11 @@ export class SecurityDialogComponent {
 
   private async renderQrCode(provisioningUri: string): Promise<void> {
     try {
-      this.qrDataUrl.set(await toDataURL(provisioningUri, { width: 220, margin: 2, errorCorrectionLevel: 'M' }));
+      const qrDataUrl = await toDataURL(provisioningUri, { width: 220, margin: 2, errorCorrectionLevel: 'M' });
+      if (this.provisioningUri() === provisioningUri) this.qrDataUrl.set(qrDataUrl);
     } catch {
       // The secret remains copyable even if local QR rendering fails.
-      this.qrDataUrl.set(null);
+      if (this.provisioningUri() === provisioningUri) this.qrDataUrl.set(null);
     }
   }
 
@@ -553,12 +578,15 @@ export class SecurityDialogComponent {
   }
 
   private resetTotpFormsAndProvisioning(): void {
+    this.stopSetupExpiryCountdown();
     this.setupForm.reset({ current_password: '' });
     this.confirmTotpForm.reset({ code: '' });
     this.disableTotpForm.reset({ current_password: '', code: '' });
     this.provisioningUri.set(null);
     this.totpSecret.set('');
     this.qrDataUrl.set(null);
+    this.setupExpiresAt.set(null);
+    this.setupSecondsRemaining.set(null);
     this.secretCopied.set(false);
     this.secretVisible.set(false);
   }
@@ -569,5 +597,35 @@ export class SecurityDialogComponent {
     this.totpStatusErrorMessage.set(null);
     this.resetTotpFormsAndProvisioning();
     this.clearTotpMessages();
+  }
+
+  private startSetupExpiryCountdown(setupExpiresAt: number): void {
+    this.stopSetupExpiryCountdown();
+    this.setupExpiresAt.set(setupExpiresAt);
+    this.updateSetupExpiry();
+    if (this.setupExpiresAt() !== null) {
+      this.setupExpiryTimer = setInterval(() => this.updateSetupExpiry(), 1_000);
+    }
+  }
+
+  private updateSetupExpiry(): void {
+    const setupExpiresAt = this.setupExpiresAt();
+    if (setupExpiresAt === null) return;
+
+    const remaining = Math.max(0, setupExpiresAt - Math.floor(Date.now() / 1_000));
+    if (remaining > 0) {
+      this.setupSecondsRemaining.set(remaining);
+      return;
+    }
+
+    this.resetTotpFormsAndProvisioning();
+    this.totpInfoMessage.set(this.i18n.t('security.totp.expired'));
+  }
+
+  private stopSetupExpiryCountdown(): void {
+    if (this.setupExpiryTimer !== null) {
+      clearInterval(this.setupExpiryTimer);
+      this.setupExpiryTimer = null;
+    }
   }
 }

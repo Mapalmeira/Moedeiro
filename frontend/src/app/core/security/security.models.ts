@@ -16,6 +16,7 @@ export interface StartTotpSetupRequest {
 
 export interface StartTotpSetupResponse {
   provisioning_uri: string;
+  setup_expires_at: number;
 }
 
 export interface ConfirmTotpRequest {
