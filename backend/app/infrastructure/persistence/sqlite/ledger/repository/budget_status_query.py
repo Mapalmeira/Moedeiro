@@ -3,6 +3,7 @@ from uuid import UUID
 
 from app.domain.ledger.model.budget_status import BudgetStatus
 from app.domain.ledger.repository.budget_status_query import BudgetStatusQueryRepository
+from app.infrastructure.persistence.sqlite.ledger.repository._numeric import raise_query_result_overflow, require_sqlite_integer
 
 
 class SqliteBudgetStatusQueryRepository(BudgetStatusQueryRepository):
@@ -75,30 +76,37 @@ class SqliteBudgetStatusQueryRepository(BudgetStatusQueryRepository):
         self.connection = connection
 
     def get_status(self, budget_uuid: UUID, timestamp: int) -> BudgetStatus | None:
-        row = self.connection.execute(
-            self._SELECT.format(budget_where="WHERE budget.uuid = ? AND budget.from_timestamp <= ? AND budget.to_timestamp > ?"),
-            (budget_uuid.bytes, timestamp, timestamp, timestamp),
-        ).fetchone()
+        try:
+            row = self.connection.execute(
+                self._SELECT.format(budget_where="WHERE budget.uuid = ? AND budget.from_timestamp <= ? AND budget.to_timestamp > ?"),
+                (budget_uuid.bytes, timestamp, timestamp, timestamp),
+            ).fetchone()
+        except sqlite3.OperationalError as error:
+            raise_query_result_overflow(error)
         if row is None:
             return None
         return self._to_model(row)
 
     def list_page(self, timestamp: int, page_number: int, page_size: int) -> list[BudgetStatus]:
         offset = (page_number - 1) * page_size
-        rows = self.connection.execute(
-            self._SELECT.format(
+        try:
+            rows = self.connection.execute(
+                self._SELECT.format(
                 budget_where="""
                 WHERE budget.from_timestamp <= ? AND budget.to_timestamp > ?
                 ORDER BY budget.budget_name ASC, budget.uuid ASC
                 LIMIT ? OFFSET ?
                 """
             ),
-            (timestamp, timestamp, page_size, offset, timestamp),
-        ).fetchall()
+                (timestamp, timestamp, page_size, offset, timestamp),
+            ).fetchall()
+        except sqlite3.OperationalError as error:
+            raise_query_result_overflow(error)
         return [self._to_model(row) for row in rows]
 
     @staticmethod
     def _to_model(row: sqlite3.Row) -> BudgetStatus:
         values = dict(row)
+        values["spent_amount"] = require_sqlite_integer(values["spent_amount"])
         values["over_budget"] = values["spent_amount"] > values["budgeted_amount"]
         return BudgetStatus.model_validate(values)

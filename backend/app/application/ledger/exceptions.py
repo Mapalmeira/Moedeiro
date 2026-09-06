@@ -78,5 +78,9 @@ class InvalidQueryParameterError(Exception):
     pass
 
 
+class QueryResultOverflowError(Exception):
+    pass
+
+
 class FinancialMovementNotFoundError(Exception):
     pass

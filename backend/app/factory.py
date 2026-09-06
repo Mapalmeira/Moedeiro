@@ -4,7 +4,8 @@ from threading import BoundedSemaphore
 from typing import AsyncGenerator
 
 from anyio.to_thread import current_default_thread_limiter
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
 
 from app.api.ledger.routes.account import router as account_router
 from app.api.ledger.routes.account_balance import router as account_balance_router
@@ -22,6 +23,7 @@ from app.api.registry.routes.totp import router as totp_router
 from app.api.registry.routes.user_preferences import router as user_preferences_router
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.totp_authenticator import TotpAuthenticator
+from app.application.ledger.exceptions import QueryResultOverflowError
 from app.infrastructure.concurrency.concurrent_password_hasher import ConcurrentPasswordHasher
 from app.infrastructure.concurrency.credential_operation_executor import CredentialOperationExecutor
 from app.infrastructure.http.trusted_proxy import TrustedProxyMiddleware
@@ -41,6 +43,7 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
     databases.initialize()
 
     application = FastAPI(title="Moedeiro", lifespan=_lifespan)
+    _add_numeric_error_handlers(application)
     application.add_middleware(TrustedProxyMiddleware, trusted_proxy_ip=selected_settings.trusted_proxy_ip)
     application.state.settings = selected_settings
     application.state.databases = databases
@@ -68,6 +71,18 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
     if mount_frontend:
         _mount_frontend(application, selected_settings.frontend_dist_path)
     return application
+
+
+def _add_numeric_error_handlers(application: FastAPI) -> None:
+    @application.exception_handler(OverflowError)
+    async def integer_binding_overflow(_: Request, error: OverflowError) -> JSONResponse:
+        if str(error) == "Python int too large to convert to SQLite INTEGER":
+            return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, content={"detail": "Integer must fit signed 64-bit range"})
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"detail": "Internal Server Error"})
+
+    @application.exception_handler(QueryResultOverflowError)
+    async def query_result_overflow(_: Request, __: QueryResultOverflowError) -> JSONResponse:
+        return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, content={"detail": "Query result exceeds signed 64-bit range"})
 
 
 @asynccontextmanager

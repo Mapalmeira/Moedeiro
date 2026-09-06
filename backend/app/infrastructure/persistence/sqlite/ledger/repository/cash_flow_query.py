@@ -4,6 +4,7 @@ from uuid import UUID
 from app.domain.ledger.model.cash_flow import CashFlow
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 from app.domain.ledger.repository.cash_flow_query import CashFlowQueryRepository
+from app.infrastructure.persistence.sqlite.ledger.repository._numeric import raise_query_result_overflow, require_sqlite_integer
 
 
 class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
@@ -13,7 +14,8 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
     def get_summary(self, currency_uuid: UUID, filters: FinancialEventFilter) -> CashFlow:
         where_clause, parameters = self._filtered_events(filters)
         movement_clause, movement_parameters = self._movement_filter(filters)
-        row = self.connection.execute(
+        try:
+            row = self.connection.execute(
             f"""
             WITH filtered_events AS (
                 SELECT event.uuid, event.occurred_at
@@ -32,14 +34,17 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
             WHERE account.currency_uuid = ?{movement_clause}
             """,
             [*parameters, currency_uuid.bytes, *movement_parameters],
-        ).fetchone()
+            ).fetchone()
+        except sqlite3.OperationalError as error:
+            raise_query_result_overflow(error)
         return self._to_model(row, currency_uuid)
 
     def list_points(self, currency_uuid: UUID, filters: FinancialEventFilter, point_width: int) -> list[CashFlow]:
         self._validate_point_width(point_width)
         where_clause, parameters = self._filtered_events(filters)
         movement_clause, movement_parameters = self._movement_filter(filters)
-        rows = self.connection.execute(
+        try:
+            rows = self.connection.execute(
             f"""
             WITH filtered_events AS (
                 SELECT event.uuid, event.occurred_at,
@@ -61,8 +66,10 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
             GROUP BY filtered_events.point_start
             """,
             [filters.from_timestamp, filters.from_timestamp, point_width, point_width, *parameters, currency_uuid.bytes, *movement_parameters],
-        ).fetchall()
-        rows_by_point = {row["point_start"]: row for row in rows}
+            ).fetchall()
+        except sqlite3.OperationalError as error:
+            raise_query_result_overflow(error)
+        rows_by_point = {require_sqlite_integer(row["point_start"]): row for row in rows}
         return [
             self._to_model(rows_by_point.get(point_start), currency_uuid)
             for point_start in range(filters.from_timestamp, filters.to_timestamp, point_width)
@@ -117,8 +124,8 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
     def _to_model(row: sqlite3.Row | None, currency_uuid: UUID) -> CashFlow:
         return CashFlow(
             currency_uuid=currency_uuid,
-            income=0 if row is None else row["income"],
-            expense=0 if row is None else row["expense"],
+            income=0 if row is None else require_sqlite_integer(row["income"]),
+            expense=0 if row is None else require_sqlite_integer(row["expense"]),
             event_count=0 if row is None else row["event_count"],
             income_movement_count=0 if row is None else row["income_movement_count"],
             expense_movement_count=0 if row is None else row["expense_movement_count"],

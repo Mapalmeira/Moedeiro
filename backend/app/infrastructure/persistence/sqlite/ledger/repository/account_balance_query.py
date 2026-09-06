@@ -2,6 +2,7 @@ import sqlite3
 from uuid import UUID
 
 from app.domain.ledger.repository.account_balance_query import AccountBalanceQueryRepository
+from app.infrastructure.persistence.sqlite.ledger.repository._numeric import raise_query_result_overflow, require_sqlite_integer
 
 
 class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
@@ -10,22 +11,26 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
 
     def get_balance_at(self, account_uuid: UUID, timestamp: int) -> int:
         self._ensure_account_exists(account_uuid)
-        row = self.connection.execute(
-            """
-            SELECT COALESCE(SUM(movement.value * movement.quantity), 0) AS balance
-            FROM financial_movement AS movement
-            JOIN financial_event AS event ON event.uuid = movement.financial_event_uuid
-            WHERE movement.account_uuid = ? AND event.occurred_at <= ?
-            """,
-            (account_uuid.bytes, timestamp),
-        ).fetchone()
-        return row["balance"]
+        try:
+            row = self.connection.execute(
+                """
+                SELECT COALESCE(SUM(movement.value * movement.quantity), 0) AS balance
+                FROM financial_movement AS movement
+                JOIN financial_event AS event ON event.uuid = movement.financial_event_uuid
+                WHERE movement.account_uuid = ? AND event.occurred_at <= ?
+                """,
+                (account_uuid.bytes, timestamp),
+            ).fetchone()
+        except sqlite3.OperationalError as error:
+            raise_query_result_overflow(error)
+        return require_sqlite_integer(row["balance"])
 
     def list_points(self, account_uuid: UUID, from_timestamp: int, point_count: int, point_interval: int) -> list[int]:
         self._validate_point_parameters(point_count, point_interval)
         self._ensure_account_exists(account_uuid)
         to_timestamp = from_timestamp + point_count * point_interval
-        rows = self.connection.execute(
+        try:
+            rows = self.connection.execute(
             """
             SELECT
                 CASE
@@ -40,9 +45,11 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
             GROUP BY point_start
             """,
             (from_timestamp, from_timestamp, from_timestamp, point_interval, point_interval, account_uuid.bytes, to_timestamp),
-        ).fetchall()
-        changes = {row["point_start"]: row["value"] for row in rows if row["point_start"] is not None}
-        balance = next((row["value"] for row in rows if row["point_start"] is None), 0)
+            ).fetchall()
+        except sqlite3.OperationalError as error:
+            raise_query_result_overflow(error)
+        changes = {require_sqlite_integer(row["point_start"]): require_sqlite_integer(row["value"]) for row in rows if row["point_start"] is not None}
+        balance = next((require_sqlite_integer(row["value"]) for row in rows if row["point_start"] is None), 0)
         points: list[int] = []
         for point_start in range(from_timestamp, to_timestamp, point_interval):
             balance += changes.get(point_start, 0)
