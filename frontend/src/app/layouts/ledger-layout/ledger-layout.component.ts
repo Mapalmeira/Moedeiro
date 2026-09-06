@@ -185,17 +185,28 @@ import { ledgerSectionByKey } from './ledger-sections';
       }
       .ledger-sidebar {
         z-index: var(--layer-drawer);
-        transform: translateX(calc(-100% - var(--ledger-shell-inset)));
+        transform: translateX(calc(-100% - var(--ledger-shell-inset) - var(--hard-shadow-offset)));
       }
       .ledger-sidebar.ledger-sidebar--mobile-open { transform: translateX(0); }
       .ledger-main { grid-column: 1; }
       .ledger-entity-editor {
         z-index: var(--layer-page-controls);
         grid-column: auto;
+        animation: ledger-entity-editor-enter var(--motion-panel) var(--motion-panel-easing) both;
+        will-change: transform;
       }
       .mobile-nav-button { display: grid; }
       .mobile-overlay { position: fixed; inset: 0; display: block; z-index: var(--layer-drawer-backdrop); background: var(--drawer-overlay-color); }
     }
+    @keyframes ledger-entity-editor-enter {
+      from { transform: translateY(calc(100% + var(--ledger-shell-inset) + var(--hard-shadow-offset))); }
+      to { transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) and (max-width: 960px) {
+      .ledger-entity-editor { animation: none; }
+    }
+
     @media (max-width: 640px) {
       .ledger-shell { --ledger-shell-inset: var(--space-3); }
       .ledger-main__header { padding: 0 var(--space-4); }
