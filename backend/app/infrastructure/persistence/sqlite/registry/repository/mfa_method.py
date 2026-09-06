@@ -1,7 +1,7 @@
 import sqlite3
 from uuid import UUID, uuid4
 
-from app.domain.registry.model.mfa_method import MfaMethod, MfaMethodType
+from app.domain.registry.model.mfa_method import MfaMethod, MfaMethodType, TOTP_SETUP_TTL_SECONDS
 from app.domain.registry.repository.mfa_method import MfaMethodRepository
 
 
@@ -35,7 +35,7 @@ class SqliteMfaMethodRepository(MfaMethodRepository):
         return bool(row[0])
 
     def confirm(self, uuid: UUID, confirmed_at: int, last_used_counter: int) -> bool:
-        cursor = self.connection.execute("UPDATE mfa_method SET confirmed_at = ?, last_used_counter = ? WHERE uuid = ? AND confirmed_at IS NULL AND created_at <= ?", (confirmed_at, last_used_counter, uuid.bytes, confirmed_at))
+        cursor = self.connection.execute("UPDATE mfa_method SET confirmed_at = ?, last_used_counter = ? WHERE uuid = ? AND confirmed_at IS NULL AND created_at <= ? AND created_at > ?", (confirmed_at, last_used_counter, uuid.bytes, confirmed_at, confirmed_at - TOTP_SETUP_TTL_SECONDS))
         return cursor.rowcount == 1
 
     def use_totp_counter(self, uuid: UUID, counter: int) -> bool:

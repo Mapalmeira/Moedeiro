@@ -5,6 +5,7 @@ from app.application.registry.exceptions import InvalidCurrentPasswordError, Inv
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.totp_authenticator import TotpAuthenticator
 from app.application.registry.unit_of_work import RegistryUnitOfWork
+from app.domain.registry.model.mfa_method import TOTP_SETUP_TTL_SECONDS
 from app.domain.registry.model.totp import TotpCode
 from app.domain.registry.model.user import Password, User
 
@@ -35,6 +36,12 @@ def confirm_totp_setup(unit_of_work_factory: Callable[[], RegistryUnitOfWork], t
             raise InvalidTotpSetupError
         if method.confirmed_at is not None:
             raise TotpAlreadyEnabledError
+        if timestamp < method.created_at:
+            raise InvalidTotpSetupError
+        if timestamp - method.created_at >= TOTP_SETUP_TTL_SECONDS:
+            unit_of_work.mfa_method_repository.delete(method.uuid)
+            unit_of_work.commit()
+            raise InvalidTotpSetupError
         counter = totp_authenticator.verify(totp_authenticator.decrypt_secret(method.secret_encrypted), code, timestamp)
         if counter is None:
             raise InvalidTotpCodeError

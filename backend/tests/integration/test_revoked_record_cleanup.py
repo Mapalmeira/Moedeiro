@@ -3,6 +3,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from uuid import uuid4
 
+from app.domain.registry.model.mfa_method import TOTP_SETUP_TTL_SECONDS
 from app.application.registry.use_cases.cleanup import SECONDS_PER_DAY, remove_inactive_records
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
@@ -21,6 +22,20 @@ class InactiveRecordCleanupTest(unittest.TestCase):
 
     def open_registry(self) -> SqliteRegistryUnitOfWork:
         return SqliteRegistryUnitOfWork(self.database)
+
+    def test_pending_cleanup_counts_retention_from_expiration(self) -> None:
+        timestamp = 100 * SECONDS_PER_DAY
+        cutoff = timestamp - 30 * SECONDS_PER_DAY
+        with self.open_registry() as unit_of_work:
+            old_user = unit_of_work.user_repository.create("Old", "hash", 1)
+            recent_user = unit_of_work.user_repository.create("Recent", "hash", 1)
+            old = unit_of_work.mfa_method_repository.create(old_user.uuid, "TOTP", b"old", cutoff - TOTP_SETUP_TTL_SECONDS)
+            recent = unit_of_work.mfa_method_repository.create(recent_user.uuid, "TOTP", b"recent", cutoff - TOTP_SETUP_TTL_SECONDS + 1)
+            unit_of_work.commit()
+        self.assertEqual(remove_inactive_records(self.open_registry, timestamp, 30), 1)
+        with self.open_registry() as unit_of_work:
+            self.assertIsNone(unit_of_work.mfa_method_repository.get(old.uuid))
+            self.assertIsNotNone(unit_of_work.mfa_method_repository.get(recent.uuid))
 
     def test_removes_only_grants_revoked_on_or_before_the_retention_cutoff(self) -> None:
         timestamp = 100 * SECONDS_PER_DAY
@@ -72,7 +87,7 @@ class InactiveRecordCleanupTest(unittest.TestCase):
             expired_session = unit_of_work.auth_session_repository.create(user.uuid, b"s" * 32, 1, cutoff, 1)
             inactive_session = unit_of_work.auth_session_repository.create(user.uuid, b"i" * 32, 1, timestamp, 1)
             expired_remember_session = unit_of_work.remember_session_repository.create(user.uuid, b"r" * 32, 1, cutoff)
-            pending_method = unit_of_work.mfa_method_repository.create(user.uuid, "TOTP", b"pending", cutoff)
+            pending_method = unit_of_work.mfa_method_repository.create(user.uuid, "TOTP", b"pending", cutoff - TOTP_SETUP_TTL_SECONDS)
             confirmed_method = unit_of_work.mfa_method_repository.create(confirmed_user.uuid, "TOTP", b"confirmed", 1, 2)
             unit_of_work.commit()
 

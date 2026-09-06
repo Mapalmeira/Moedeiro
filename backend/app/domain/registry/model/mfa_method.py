@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, model_validator
 
 
 MfaMethodType = Literal["TOTP"]
+TOTP_SETUP_TTL_SECONDS = 10 * 60
 
 
 class MfaMethod(BaseModel):

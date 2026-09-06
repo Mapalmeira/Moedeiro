@@ -1,6 +1,7 @@
 import sqlite3
 from uuid import uuid4
 
+from app.domain.registry.model.mfa_method import TOTP_SETUP_TTL_SECONDS
 from tests.integration.registry_repository_test_case import RegistryRepositoryTestCase
 
 
@@ -39,6 +40,12 @@ class SqliteMfaMethodRepositoryTest(RegistryRepositoryTestCase):
         assert confirmed is not None
         self.assertEqual(confirmed.confirmed_at, 40)
         self.assertEqual(confirmed.last_used_counter, 1)
+
+    def test_confirm_atomically_rejects_expired_pending_methods(self) -> None:
+        for elapsed in (TOTP_SETUP_TTL_SECONDS, TOTP_SETUP_TTL_SECONDS + 1):
+            method = self.mfa_repository.create(self.create_user().uuid, "TOTP", b"pending", 30)
+            self.assertFalse(self.mfa_repository.confirm(method.uuid, 30 + elapsed, 1))
+            self.assertIsNone(self.mfa_repository.get(method.uuid).confirmed_at)
 
     def test_use_totp_counter_accepts_only_a_later_counter(self) -> None:
         method = self.mfa_repository.create(self.create_user().uuid, "TOTP", b"encrypted-secret", 30, 40, 1)
