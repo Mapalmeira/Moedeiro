@@ -31,7 +31,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
         </header>
 
         <div class="dialog__body">
-          <app-form-message kind="warning" [text]="i18n.t('ledgers.delete.warning')" />
+          <app-form-message [text]="i18n.t('ledgers.delete.warning')" />
           <label class="field">
             <span>{{ i18n.t('ledgers.delete.repeatName', { name: current.name }) }}</span>
             <input type="text" [ngModel]="confirmation()" (ngModelChange)="confirmation.set($event)" autocomplete="off" />
