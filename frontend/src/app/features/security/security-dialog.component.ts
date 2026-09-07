@@ -208,7 +208,6 @@ import { IconComponent } from '../../shared/ui/icon.component';
     }
   `,
   styles: `
-    .dialog-layer { --dialog-width: 760px; }
     .security-dialog {
       --token-accent: var(--blue);
       --token-accent-strong: var(--blue-strong);

@@ -1,12 +1,7 @@
-@if (presentation() === 'dialog') {
-  <div class="ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
-}
-<div class="editor-layer" [class.ui-dialog-layer]="presentation() === 'dialog'">
-  <div class="editor-frame" [class.ui-dialog-frame]="presentation() === 'dialog'" [class.ui-projected-surface]="presentation() === 'dialog'" [class.ui-projection--dialog]="presentation() === 'dialog'">
-    <section class="editor-surface" [class.ui-dialog-surface]="presentation() === 'dialog'"
-      [attr.role]="presentation() === 'dialog' ? 'dialog' : 'region'"
-      [attr.aria-modal]="presentation() === 'dialog' ? 'true' : null"
-      [attr.aria-label]="title()">
+<div class="ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
+<div class="editor-layer ui-dialog-layer">
+  <div class="editor-frame ui-dialog-frame ui-projected-surface ui-projection--dialog">
+    <section class="editor-surface ui-dialog-surface" role="dialog" aria-modal="true" [attr.aria-label]="title()">
       <header class="ui-dialog-header">
         <div class="ui-dialog-title">
           <span class="title-icon"><app-icon [name]="entity() ? 'pencil' : 'plus'" [size]="20" /></span>
@@ -25,7 +20,7 @@
               <label class="field"><span>{{ i18n.t('accounts.note') }}</span><input formControlName="note" maxlength="300" />
                 <app-field-error [text]="fieldError('note')" />
               </label>
-              <label class="field"><span>{{ i18n.t('accounts.currency') }} @if (!entity()) { <span class="required-mark" aria-hidden="true">*</span> }</span>
+              <label class="field"><span>{{ i18n.t('accounts.currency') }} <span class="required-mark" aria-hidden="true">*</span></span>
                 @if (entity()) { <input [value]="currencyName()" disabled /> }
                 @else {
                   <select formControlName="currency_uuid" required><option value="" disabled>—</option>
@@ -40,7 +35,7 @@
                 <label class="field"><span>{{ i18n.t('currencies.prefix') }}</span><input formControlName="prefix" maxlength="10" /><app-field-error [text]="fieldError('prefix')" /></label>
                 <label class="field"><span>{{ i18n.t('currencies.suffix') }}</span><input formControlName="suffix" maxlength="10" /><app-field-error [text]="fieldError('suffix')" /></label>
               </div>
-              <label class="field"><span>{{ i18n.t('currencies.decimalPlaces') }} @if (!entity()) { <span class="required-mark" aria-hidden="true">*</span> }</span>
+              <label class="field"><span>{{ i18n.t('currencies.decimalPlaces') }} <span class="required-mark" aria-hidden="true">*</span></span>
                 @if (entity()) { <input [value]="values().decimal_places" disabled /> }
                 @else { <input type="number" formControlName="decimal_places" min="0" max="20" step="1" required /><app-field-error [text]="fieldError('decimal_places')" /> }
               </label>
@@ -64,12 +59,10 @@
         </div>
         @if (error()) { <app-form-message [text]="error()!" /> }
         <footer class="editor-actions ui-surface-actions">
-          @if (presentation() === 'panel') {
-            @if (entity(); as currentEntity) {
-              <button type="button" class="ui-button ui-button--danger" [disabled]="saving()" (click)="deleteRequested.emit(currentEntity)">
-                <app-icon name="trash" [size]="18" />{{ i18n.t('workspace.delete') }}
-              </button>
-            }
+          @if (entity(); as currentEntity) {
+            <button type="button" class="ui-button ui-button--danger" [disabled]="saving()" (click)="deleteRequested.emit(currentEntity)">
+              <app-icon name="trash" [size]="18" />{{ i18n.t('workspace.delete') }}
+            </button>
           }
           <button type="submit" class="ui-button" [class.ui-button--green]="kind() === 'account'" [class.ui-button--yellow]="kind() === 'currency'" [disabled]="saving() || form.invalid">
             {{ entity() ? i18n.t('ledgers.editor.save') : i18n.t('workspace.create') }}

@@ -142,7 +142,7 @@ a { color: var(--link); }
   pointer-events: none;
 }
 .ui-dialog-layer > .ui-dialog-frame {
-  width: min(var(--dialog-width, 760px), calc(100% - var(--dialog-shadow-offset)));
+  width: min(var(--dialog-width, var(--dialog-width-standard)), calc(100% - var(--dialog-shadow-offset)));
   max-height: calc(100% - var(--dialog-shadow-offset));
   min-height: 0;
   margin-inline-end: var(--dialog-shadow-offset);
@@ -183,6 +183,12 @@ a { color: var(--link); }
   gap: var(--space-3);
   padding-top: var(--section-gap);
 }
+.ui-delete-dialog-body {
+  display: grid;
+  gap: var(--form-gap);
+  padding: var(--space-5);
+}
+.ui-delete-dialog-body > .ui-surface-actions { padding-top: 0; }
 .title-icon--green { background: var(--green); }
 .title-icon--yellow { background: var(--yellow); }
 .title-icon--blue { background: var(--blue); color: var(--on-blue); }

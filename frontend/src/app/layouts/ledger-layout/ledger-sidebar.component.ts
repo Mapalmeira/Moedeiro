@@ -24,6 +24,10 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
           @for (item of navItems; track item.key) {
             <a
               class="ledger-nav__item"
+              [class.ledger-nav__item--green]="item.tone === 'green'"
+              [class.ledger-nav__item--yellow]="item.tone === 'yellow'"
+              [class.ledger-nav__item--blue]="item.tone === 'blue'"
+              [class.ledger-nav__item--neutral]="item.tone === 'neutral'"
               [routerLink]="['/ledgers', ledgerUuid(), item.key]"
               routerLinkActive="ledger-nav__item--active"
               [routerLinkActiveOptions]="{ exact: true }"
@@ -88,8 +92,8 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
   styles: `
     :host { display: block; height: 100%; min-height: 0; }
     .ledger-sidebar__inner { height: 100%; min-height: 0; display: grid; grid-template-rows: var(--ledger-header-height) minmax(0, 1fr); }
-    .ledger-sidebar__brand-row { width: 100%; display: flex; align-items: center; padding-block: 0; padding-inline: var(--space-4); padding-inline-start: var(--space-3); border-bottom: var(--border-width) solid var(--line); }
-    .ledger-sidebar__brand-row app-brand-logo { width: 100%; justify-content: flex-start; }
+    .ledger-sidebar__brand-row { width: 100%; display: grid; place-items: center; border-bottom: var(--border-width) solid var(--line); }
+    .ledger-sidebar__brand-row app-brand-logo { width: max-content; }
     .ledger-sidebar__body { min-height: 0; display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-5) var(--space-4); overflow: hidden; }
     .ledger-nav { display: grid; gap: var(--space-2); }
     .ledger-nav__item {
@@ -99,7 +103,11 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
       text-align: left; text-decoration: none; font-size: var(--control-font-size); font-weight: var(--control-font-weight); line-height: var(--control-line-height); box-shadow: var(--selection-shadow-transparent); transition: box-shadow var(--motion-selection) ease, background var(--motion-selection) ease, border-color var(--motion-selection) ease;
     }
     .ledger-nav__item:not(.ledger-nav__item--active):hover { background: var(--surface-muted); }
-    .ledger-nav__item--active { border-color: var(--line-strong); background: var(--green-soft); color: var(--text); box-shadow: var(--selection-shadow); }
+    .ledger-nav__item--green { --ledger-nav-active-background: var(--green-soft); }
+    .ledger-nav__item--yellow { --ledger-nav-active-background: var(--yellow-soft); }
+    .ledger-nav__item--blue { --ledger-nav-active-background: var(--blue-soft); }
+    .ledger-nav__item--neutral { --ledger-nav-active-background: var(--surface-muted); }
+    .ledger-nav__item--active { border-color: var(--line-strong); background: var(--ledger-nav-active-background, var(--surface-muted)); color: var(--text); box-shadow: var(--selection-shadow); }
     .ledger-nav__icon--green { background: var(--green); color: var(--on-green); }
     .ledger-nav__icon--yellow { background: var(--yellow); color: var(--on-yellow); }
     .ledger-nav__icon--blue { background: var(--blue); color: var(--on-blue); }

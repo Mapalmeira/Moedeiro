@@ -16,7 +16,7 @@ export const LEDGER_SECTION_ITEMS: readonly LedgerSectionItem[] = [
   { key: 'budgets', labelKey: 'ledgerShell.budgets', icon: 'wallet', tone: 'yellow' },
   { key: 'analytics', labelKey: 'ledgerShell.analytics', icon: 'chart', tone: 'blue' },
   { key: 'accounts', labelKey: 'ledgerShell.accounts', icon: 'building', tone: 'green' },
-  { key: 'categories', labelKey: 'ledgerShell.categories', icon: 'layers', tone: 'neutral' },
+  { key: 'categories', labelKey: 'ledgerShell.categories', icon: 'layers', tone: 'blue' },
   { key: 'currencies', labelKey: 'ledgerShell.currencies', icon: 'coins', tone: 'yellow' },
 ];
 

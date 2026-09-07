@@ -13,6 +13,8 @@ import {
   LucideEllipsis,
   LucideEye,
   LucideEyeOff,
+  LucideFolder,
+  LucideGripVertical,
   LucideHouse,
   LucideInfo,
   LucideKeyRound,
@@ -39,13 +41,13 @@ export type IconName =
   | 'logout' | 'sliders' | 'sun' | 'moon' | 'info' | 'check' | 'key' | 'x' | 'languages'
   | 'search' | 'chevron-down' | 'shield' | 'copy' | 'plus' | 'pencil' | 'ellipsis'
   | 'trash' | 'book' | 'database' | 'house' | 'wallet' | 'chart' | 'building'
-  | 'layers' | 'coins' | 'panel-open';
+  | 'layers' | 'coins' | 'panel-open' | 'folder' | 'grip';
 
 @Component({
   selector: 'app-icon',
   standalone: true,
   imports: [
-      LucideArrowLeftRight,
+    LucideArrowLeftRight,
     LucideArrowRight,
     LucideBuilding2,
     LucideBookOpen,
@@ -58,6 +60,8 @@ export type IconName =
     LucideEllipsis,
     LucideEye,
     LucideEyeOff,
+    LucideFolder,
+    LucideGripVertical,
     LucideHouse,
     LucideInfo,
     LucideKeyRound,
@@ -66,7 +70,7 @@ export type IconName =
     LucideLogOut,
     LucideMail,
     LucideMoon,
-      LucidePanelLeftOpen,
+    LucidePanelLeftOpen,
     LucidePencil,
     LucidePlus,
     LucideSearch,
@@ -116,6 +120,8 @@ export type IconName =
       @case ('layers') { <svg lucideLayers3></svg> }
       @case ('coins') { <svg lucideCoins></svg> }
       @case ('panel-open') { <svg lucidePanelLeftOpen></svg> }
+      @case ('folder') { <svg lucideFolder></svg> }
+      @case ('grip') { <svg lucideGripVertical></svg> }
     }
   `,
   styles: `

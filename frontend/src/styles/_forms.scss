@@ -131,5 +131,6 @@
   font-weight: 500;
   line-height: var(--control-line-height);
 }
+.ui-dropdown-search input:focus { border-color: transparent; box-shadow: none; }
 .ui-dropdown-search input::placeholder { color: color-mix(in srgb, var(--text-muted) 76%, transparent); }
 .ui-dropdown-search input::-webkit-search-cancel-button { display: none; }

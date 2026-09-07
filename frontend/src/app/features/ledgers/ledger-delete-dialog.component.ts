@@ -30,7 +30,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
           </button>
         </header>
 
-        <div class="dialog__body">
+        <div class="dialog__body ui-delete-dialog-body">
           <app-form-message [text]="i18n.t('ledgers.delete.warning')" />
           <label class="field">
             <span>{{ i18n.t('ledgers.delete.repeatName', { name: current.name }) }}</span>
@@ -55,7 +55,6 @@ import { IconComponent } from '../../shared/ui/icon.component';
       --token-accent: var(--danger-token); --token-accent-strong: var(--danger); --focus-accent: var(--danger-token);
     }
     .title-icon { width: var(--compact-title-icon-size); height: var(--compact-title-icon-size); border-color: var(--danger); background: var(--danger-token); color: var(--on-danger-token); }
-    .dialog__body { display: grid; gap: var(--section-gap); padding: var(--space-5); }
     .dialog__footer .ui-button { min-width: var(--action-button-min-width); }
     @media (max-width: 460px) { .dialog__footer .ui-button { width: 100%; } }
   `,

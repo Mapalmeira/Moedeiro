@@ -5,8 +5,6 @@ import { filter } from 'rxjs';
 import { LedgerContextService } from '../../core/ledgers/ledger-context.service';
 import { AuthenticatedShellService } from '../authenticated-layout/authenticated-shell.service';
 import { I18nService } from '../../core/i18n/i18n.service';
-import { EntityEditorComponent } from '../../features/ledgers/workspace/entity-editor.component';
-import { LedgerEntityPanelService } from '../../features/ledgers/workspace/ledger-entity-panel.service';
 import { LedgerEditorDialogComponent } from '../../features/ledgers/ledger-editor-dialog.component';
 import { FormMessageComponent } from '../../shared/ui/form-message.component';
 import { IconComponent } from '../../shared/ui/icon.component';
@@ -16,10 +14,9 @@ import { ledgerSectionByKey } from './ledger-sections';
 @Component({
   selector: 'app-ledger-layout',
   standalone: true,
-  imports: [RouterOutlet, LedgerSidebarComponent, LedgerEditorDialogComponent, EntityEditorComponent, FormMessageComponent, IconComponent],
-  providers: [LedgerEntityPanelService],
+  imports: [RouterOutlet, LedgerSidebarComponent, LedgerEditorDialogComponent, FormMessageComponent, IconComponent],
   template: `
-    <div class="ledger-shell" [class.ledger-shell--editor-open]="!!entityPanel.state()">
+    <div class="ledger-shell">
       @if (isMobile() && mobileSidebarOpen()) {
         <button class="mobile-overlay" type="button" (click)="closeMobileNavigation()" [attr.aria-label]="i18n.t('ledgerShell.collapse')"></button>
       }
@@ -76,16 +73,6 @@ import { ledgerSectionByKey } from './ledger-sections';
           </div>
         }
       </section>
-
-      @if (entityPanel.state(); as panel) {
-        <aside class="ledger-entity-editor ui-card ui-projected-surface ui-projection--hard">
-          <app-entity-editor presentation="panel" [kind]="panel.kind" [ledgerUuid]="panel.ledgerUuid"
-            [entity]="panel.entity" [currencies]="panel.currencies"
-            (close)="entityPanel.requestClose()" (saved)="entityPanel.requestSaved($event)"
-            (deleteRequested)="entityPanel.requestDelete($event)" />
-        </aside>
-      }
-
       <app-ledger-editor-dialog
         [open]="ledgerEditorOpen()"
         [ledger]="context.ledger()"
@@ -101,15 +88,12 @@ import { ledgerSectionByKey } from './ledger-sections';
       height: 100dvh;
       min-height: 0;
       display: grid;
-      grid-template-columns: var(--ledger-sidebar-width) var(--space-6) minmax(0, 1fr) 0px 0px;
+      grid-template-columns: var(--ledger-sidebar-width) var(--space-6) minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr);
       padding: var(--ledger-shell-inset);
       background: var(--page);
       color: var(--text);
       overflow: hidden;
-    }
-    .ledger-shell--editor-open {
-      grid-template-columns: var(--ledger-sidebar-width) var(--space-6) minmax(0, 1fr) var(--space-6) var(--entity-editor-panel-width);
     }
     .ledger-sidebar {
       grid-column: 1;
@@ -154,14 +138,6 @@ import { ledgerSectionByKey } from './ledger-sections';
     .ledger-main__title-wrap { min-width: 0; }
     .ledger-main__title-wrap h1 { margin: 0; font-size: clamp(1.45rem, 2vw, 1.8rem); line-height: var(--heading-line-height); letter-spacing: -.03em; }
     .ledger-section-content { min-height: 0; padding: var(--space-5); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
-    .ledger-entity-editor {
-      grid-column: 5;
-      min-width: 0;
-      min-height: 0;
-      height: 100%;
-      overflow: hidden;
-    }
-    .ledger-entity-editor > app-entity-editor { display: block; height: 100%; min-height: 0; }
     .placeholder-card { min-height: 320px; display: grid; place-items: center; align-content: center; gap: var(--space-3); margin: var(--space-5); padding: clamp(28px, 6vw, 52px); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); text-align: center; }
     .placeholder-card__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-2); }
     .placeholder-card--loading { min-height: 280px; }
@@ -172,9 +148,8 @@ import { ledgerSectionByKey } from './ledger-sections';
       .ledger-sidebar { transition: none; }
     }
     @media (max-width: 960px) {
-      .ledger-shell, .ledger-shell--editor-open { grid-template-columns: minmax(0, 1fr); }
-      .ledger-sidebar,
-      .ledger-entity-editor {
+      .ledger-shell { grid-template-columns: minmax(0, 1fr); }
+      .ledger-sidebar {
         position: fixed;
         left: var(--ledger-shell-inset);
         right: var(--ledger-shell-inset);
@@ -189,24 +164,9 @@ import { ledgerSectionByKey } from './ledger-sections';
       }
       .ledger-sidebar.ledger-sidebar--mobile-open { transform: translateX(0); }
       .ledger-main { grid-column: 1; }
-      .ledger-entity-editor {
-        z-index: var(--layer-page-controls);
-        grid-column: auto;
-        animation: ledger-entity-editor-enter var(--motion-panel) var(--motion-panel-easing) both;
-        will-change: transform;
-      }
       .mobile-nav-button { display: grid; }
       .mobile-overlay { position: fixed; inset: 0; display: block; z-index: var(--layer-drawer-backdrop); background: var(--drawer-overlay-color); }
     }
-    @keyframes ledger-entity-editor-enter {
-      from { transform: translateY(calc(100% + var(--ledger-shell-inset) + var(--hard-shadow-offset))); }
-      to { transform: translateY(0); }
-    }
-
-    @media (prefers-reduced-motion: reduce) and (max-width: 960px) {
-      .ledger-entity-editor { animation: none; }
-    }
-
     @media (max-width: 640px) {
       .ledger-shell { --ledger-shell-inset: var(--space-3); }
       .ledger-main__header { padding: 0 var(--space-4); }
@@ -228,7 +188,6 @@ export class LedgerLayoutComponent {
   readonly context = inject(LedgerContextService);
   readonly shell = inject(AuthenticatedShellService);
   readonly i18n = inject(I18nService);
-  readonly entityPanel = inject(LedgerEntityPanelService);
   readonly ledgerUuid = input.required<string>();
 
   readonly mobileSidebarOpen = signal(false);
@@ -273,7 +232,6 @@ export class LedgerLayoutComponent {
 
   leaveLedger(): void {
     this.mobileSidebarOpen.set(false);
-    this.entityPanel.requestClose();
     void this.router.navigateByUrl('/home');
   }
 }

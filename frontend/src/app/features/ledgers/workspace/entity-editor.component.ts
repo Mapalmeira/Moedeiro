@@ -16,7 +16,6 @@ import { IconComponent } from '../../../shared/ui/icon.component';
 import { entityIconValidator } from '../../../shared/ledger/entity-icon-validator';
 
 type Entity = LedgerAccount | LedgerCurrency;
-type Presentation = 'dialog' | 'panel';
 
 @Component({
   selector: 'app-entity-editor',
@@ -25,7 +24,6 @@ type Presentation = 'dialog' | 'panel';
   styleUrl: './entity-editor.component.scss',
   host: {
     '[class.currency-section]': "kind() === 'currency'",
-    '[class.panel-presentation]': "presentation() === 'panel'",
   },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -40,7 +38,6 @@ export class EntityEditorComponent {
   readonly ledgerUuid = input.required<string>();
   readonly entity = input<Entity | null>(null);
   readonly currencies = input<LedgerCurrency[]>([]);
-  readonly presentation = input<Presentation>('dialog');
   readonly close = output<void>();
   readonly saved = output<Entity>();
   readonly deleteRequested = output<Entity>();

@@ -51,6 +51,20 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .ui-choice--selected,
 .ui-choice--selected:hover { background: var(--choice-selected-background, var(--green-soft)); box-shadow: var(--selection-shadow); }
 
+
+/* Center tab-like choice content across the face plus its projected shadow footprint. */
+.ui-choice--projected-centered {
+  display: grid;
+  gap: 0;
+  grid-template-columns: var(--compact-shadow-offset) minmax(0, 1fr);
+  grid-template-rows: var(--compact-shadow-offset) minmax(0, 1fr);
+}
+.ui-choice--projected-centered > .ui-choice__content {
+  grid-column: 2;
+  grid-row: 2;
+  place-self: center;
+}
+
 /* Shared dropdown/select trigger. It never moves unless explicitly marked as an action. */
 .ui-select-trigger {
   min-height: var(--control-height);
@@ -102,6 +116,18 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   background: var(--surface);
   color: var(--text);
 }
+
+.icon-button--compact {
+  width: var(--control-icon-size);
+  min-width: var(--control-icon-size);
+  height: var(--control-icon-size);
+  min-height: var(--control-icon-size);
+  border-width: var(--border-width);
+  border-color: var(--line-strong);
+}
+.icon-button--green { --focus-accent: var(--green); background: var(--green); color: var(--on-green); }
+.icon-button--yellow { --focus-accent: var(--yellow); background: var(--yellow); color: var(--on-yellow); }
+.icon-button--blue { --focus-accent: var(--blue); background: var(--blue); color: var(--on-blue); }
 
 .ui-button--danger {
   --focus-accent: var(--danger-token);

@@ -82,7 +82,6 @@ const DEFAULT_COLOR = '#21E683';
     }
   `,
   styles: `
-    .dialog-layer { --dialog-width: 760px; }
     .dialog {
       --token-accent: var(--green); --token-accent-strong: var(--green-strong); --focus-accent: var(--green);
     }

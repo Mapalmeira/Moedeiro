@@ -53,6 +53,12 @@ export class ApiErrorService {
       'Currency name unavailable': 'errors.currencyNameUnavailable',
       'Account not found': 'errors.accountNotFound',
       'Currency not found': 'errors.currencyNotFound',
+      'Category is in use': 'errors.categoryInUse',
+      'Category not found': 'errors.categoryNotFound',
+      'Category name unavailable': 'errors.categoryNameUnavailable',
+      'Category limit exceeded': 'errors.categoryLimitReached',
+      'Category depth limit exceeded': 'errors.categoryDepthExceeded',
+      'Invalid category hierarchy': 'errors.categoryHierarchyInvalid',
     };
 
     if (detail === 'Invalid credentials') return fallback;

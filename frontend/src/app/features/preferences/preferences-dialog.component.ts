@@ -110,7 +110,6 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
     }
   `,
   styles: `
-    .dialog-layer { --dialog-width: 760px; }
     form { display: grid; gap: 0; padding: 0 var(--space-5) var(--space-5); }
     .preference-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--section-gap); padding: var(--section-gap) 0; }
     .preference-grid--top { align-items: start; }

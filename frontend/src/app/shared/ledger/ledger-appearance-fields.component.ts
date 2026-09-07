@@ -27,8 +27,8 @@ type IconMode = 'lucide' | 'unicode';
     <section class="appearance-field icon-field">
       <span class="field-label">{{ i18n.t('ledgers.editor.icon') }}</span>
       <div class="mode-switch" role="group" [attr.aria-label]="i18n.t('ledgers.editor.icon')">
-        <button type="button" class="ui-choice mode-switch__button" [class.ui-choice--selected]="iconMode() === 'lucide'" (click)="setMode('lucide')">Lucide</button>
-        <button type="button" class="ui-choice mode-switch__button" [class.ui-choice--selected]="iconMode() === 'unicode'" (click)="setMode('unicode')">Unicode</button>
+        <button type="button" class="ui-choice ui-choice--projected-centered mode-switch__button" [class.ui-choice--selected]="iconMode() === 'lucide'" (click)="setMode('lucide')"><span class="ui-choice__content">Lucide</span></button>
+        <button type="button" class="ui-choice ui-choice--projected-centered mode-switch__button" [class.ui-choice--selected]="iconMode() === 'unicode'" (click)="setMode('unicode')"><span class="ui-choice__content">Unicode</span></button>
       </div>
       <div class="icon-control-slot">
         @if (iconMode() === 'lucide') {
