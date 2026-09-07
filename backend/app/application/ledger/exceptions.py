@@ -57,6 +57,10 @@ class CategoryTreeSizeExceededError(Exception):
     pass
 
 
+class CategoryDepthExceededError(Exception):
+    pass
+
+
 class InvalidCategoryHierarchyError(Exception):
     pass
 

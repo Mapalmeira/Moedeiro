@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.application.ledger.exceptions import CategoryTreeSizeExceededError, InvalidCategoryHierarchyError
+from app.application.ledger.exceptions import CategoryDepthExceededError, CategoryTreeSizeExceededError, InvalidCategoryHierarchyError
 from app.domain.ledger.model.category_tree_node import CategoryTreeNode
 from app.infrastructure.persistence.sqlite.ledger.repository.category import SqliteCategoryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.financial_movement import SqliteFinancialMovementRepository
@@ -114,7 +114,7 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
             parent = self.repository.create(f"Level {level}", "lucide:Circle", b"\x80\x80\x80", None if parent is None else parent.uuid)
         assert parent is not None
 
-        with self.assertRaises(InvalidCategoryHierarchyError):
+        with self.assertRaises(CategoryDepthExceededError):
             self.repository.create("Too deep", "lucide:Circle", b"\x80\x80\x80", parent.uuid)
 
         self.assertEqual(self._count(self.repository.get_tree(1000)), 5)
@@ -130,7 +130,7 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
 
         with self.assertRaises(InvalidCategoryHierarchyError):
             self.repository.update_parent(root.uuid, child.uuid)
-        with self.assertRaises(InvalidCategoryHierarchyError):
+        with self.assertRaises(CategoryDepthExceededError):
             self.repository.update_parent(source.uuid, target_grandchild.uuid)
 
         stored_root = self.repository.get(root.uuid)

@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.application.ledger.exceptions import CategoryInUseError, CategoryNameUnavailableError, CategoryNotFoundError, CategoryTreeSizeExceededError, InvalidCategoryHierarchyError
+from app.application.ledger.exceptions import CategoryDepthExceededError, CategoryInUseError, CategoryNameUnavailableError, CategoryNotFoundError, CategoryTreeSizeExceededError, InvalidCategoryHierarchyError
 from app.application.ledger.use_cases.category import create_category, delete_category, get_category, get_category_tree, update_category
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
@@ -122,6 +122,21 @@ class CategoryUseCasesTest(unittest.TestCase):
             update_category(self.open_ledger, parent.uuid, "Changed", "lucide:Shapes", b"\xaa\xbb\xcc", child.uuid)
 
         self.assertEqual(get_category(self.open_ledger, parent.uuid), parent)
+
+
+    def test_update_rejects_a_parent_that_would_exceed_the_depth_limit(self) -> None:
+        first = self.create("First")
+        second = self.create("Second", first.uuid)
+        third = self.create("Third", second.uuid)
+        fourth = self.create("Fourth", third.uuid)
+        source = self.create("Source")
+        child = self.create("Child", source.uuid)
+
+        with self.assertRaises(CategoryDepthExceededError):
+            update_category(self.open_ledger, source.uuid, source.name, source.icon, source.color_code, fourth.uuid)
+
+        self.assertEqual(get_category(self.open_ledger, source.uuid), source)
+        self.assertEqual(get_category(self.open_ledger, child.uuid), child)
 
     def test_delete_removes_an_unused_subtree(self) -> None:
         parent = self.create("Parent")

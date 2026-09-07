@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from app.api.dependencies.authentication import AuthenticatedUser
 from app.api.dependencies.ledger import ledger_unit_of_work_factory
 from app.api.ledger.schema.category import CategoryResponse, CategoryTreeNodeResponse, CreateCategoryRequest, UpdateCategoryRequest
-from app.application.ledger.exceptions import CategoryInUseError, CategoryNameUnavailableError, CategoryNotFoundError, CategoryTreeSizeExceededError, InvalidCategoryHierarchyError
+from app.application.ledger.exceptions import CategoryDepthExceededError, CategoryInUseError, CategoryNameUnavailableError, CategoryNotFoundError, CategoryTreeSizeExceededError, InvalidCategoryHierarchyError
 from app.application.ledger.use_cases.category import create_category, delete_category, get_category, get_category_tree, update_category
 
 
@@ -28,6 +28,8 @@ def create_ledger_category(ledger_uuid: UUID, payload: CreateCategoryRequest, re
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Category limit exceeded") from error
     except CategoryNameUnavailableError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Category name unavailable") from error
+    except CategoryDepthExceededError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Category depth limit exceeded") from error
     except InvalidCategoryHierarchyError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Invalid category hierarchy") from error
     return CategoryResponse.from_category(category)
@@ -66,6 +68,8 @@ def update_ledger_category(ledger_uuid: UUID, category_uuid: UUID, payload: Upda
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found") from error
     except CategoryNameUnavailableError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Category name unavailable") from error
+    except CategoryDepthExceededError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Category depth limit exceeded") from error
     except InvalidCategoryHierarchyError as error:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Invalid category hierarchy") from error
     return CategoryResponse.from_category(category)

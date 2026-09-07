@@ -112,6 +112,18 @@ class CategoryRoutesTest(unittest.TestCase):
         self.assertEqual(raised.exception.status_code, 409)
         self.assertEqual(raised.exception.detail, "Category limit exceeded")
 
+
+    def test_create_returns_specific_conflict_for_depth_limit(self) -> None:
+        parent = None
+        for level in range(5):
+            parent = self.create_category(f"Level {level}", None if parent is None else parent.uuid)
+
+        with self.assertRaises(HTTPException) as raised:
+            self.create_category("Too deep", parent.uuid)
+
+        self.assertEqual(raised.exception.status_code, 409)
+        self.assertEqual(raised.exception.detail, "Category depth limit exceeded")
+
     def test_update_changes_category_data_and_parent(self) -> None:
         parent = self.create_category("Parent")
         category = self.create_category("Old")
@@ -144,6 +156,27 @@ class CategoryRoutesTest(unittest.TestCase):
 
         self.assertEqual(raised.exception.status_code, 409)
         self.assertEqual(raised.exception.detail, "Invalid category hierarchy")
+
+
+    def test_update_returns_specific_conflict_for_depth_limit(self) -> None:
+        first = self.create_category("First")
+        second = self.create_category("Second", first.uuid)
+        third = self.create_category("Third", second.uuid)
+        fourth = self.create_category("Fourth", third.uuid)
+        source = self.create_category("Source")
+        self.create_category("Child", source.uuid)
+
+        with self.assertRaises(HTTPException) as raised:
+            update_ledger_category(
+                self.ledger.uuid,
+                source.uuid,
+                UpdateCategoryRequest(name="Source", icon="lucide:Circle", color_code="#102030", parent_uuid=fourth.uuid),
+                self.request,
+                self.user,
+            )
+
+        self.assertEqual(raised.exception.status_code, 409)
+        self.assertEqual(raised.exception.detail, "Category depth limit exceeded")
 
     def test_delete_removes_an_unused_category_subtree(self) -> None:
         parent = self.create_category("Parent")
