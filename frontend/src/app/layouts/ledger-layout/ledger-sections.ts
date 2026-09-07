@@ -12,7 +12,7 @@ export interface LedgerSectionItem {
 
 export const LEDGER_SECTION_ITEMS: readonly LedgerSectionItem[] = [
   { key: 'home', labelKey: 'ledgerShell.home', icon: 'house', tone: 'green' },
-  { key: 'activity', labelKey: 'ledgerShell.activity', icon: 'arrow-left-right', tone: 'neutral' },
+  { key: 'activity', labelKey: 'ledgerShell.activity', icon: 'arrow-left-right', tone: 'green' },
   { key: 'budgets', labelKey: 'ledgerShell.budgets', icon: 'wallet', tone: 'yellow' },
   { key: 'analytics', labelKey: 'ledgerShell.analytics', icon: 'chart', tone: 'blue' },
   { key: 'accounts', labelKey: 'ledgerShell.accounts', icon: 'building', tone: 'green' },

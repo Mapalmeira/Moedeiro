@@ -45,6 +45,8 @@ export class ApiErrorService {
       'Ledger limit reached': 'errors.ledgerLimitReached',
       'Budget limit reached': 'errors.budgetLimitReached',
       'Financial event limit reached': 'errors.financialEventLimitReached',
+      'Financial event not found': 'errors.financialEventNotFound',
+      'Invalid financial event': 'errors.invalidFinancialEvent',
       'Account limit reached': 'workspace.limit',
       'Currency limit reached': 'workspace.limit',
       'Account is in use': 'errors.accountInUse',

@@ -1,13 +1,13 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { IconComponent } from './icon.component';
+import { IconComponent, IconName } from './icon.component';
 
 @Component({
   selector: 'app-form-message',
   standalone: true,
   imports: [IconComponent],
   template: `
-    <div class="message" [class.message--success]="kind() === 'success'" [class.message--info]="kind() === 'info'" [class.message--warning]="kind() === 'warning'" role="status">
-      <app-icon [name]="kind() === 'success' ? 'check' : 'info'" [size]="19" />
+    <div class="message" [class.message--success]="kind() === 'success'" [class.message--info]="kind() === 'info'" [class.message--warning]="kind() === 'warning'" [class.message--compact]="compact()" role="status">
+      <app-icon [name]="icon() ?? (kind() === 'success' ? 'check' : 'info')" [size]="19" />
       <span>{{ text() }}</span>
     </div>
   `,
@@ -17,6 +17,7 @@ import { IconComponent } from './icon.component';
     .message--success { --message-accent: var(--green-strong); background: var(--green-soft); }
     .message--info { --message-accent: var(--blue-strong); background: var(--blue-soft); }
     .message--warning { --message-accent: var(--warning-text); background: var(--yellow-soft); }
+    .message--compact { min-height: var(--message-compact-min-height, var(--control-height)); align-items: center; padding: var(--space-1) var(--space-3); font-size: var(--control-detail-font-size); line-height: 1.25; }
     app-icon { flex: 0 0 auto; color: var(--message-accent); }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -24,4 +25,6 @@ import { IconComponent } from './icon.component';
 export class FormMessageComponent {
   readonly text = input.required<string>();
   readonly kind = input<'error' | 'success' | 'info' | 'warning'>('error');
+  readonly icon = input<IconName | null>(null);
+  readonly compact = input(false);
 }

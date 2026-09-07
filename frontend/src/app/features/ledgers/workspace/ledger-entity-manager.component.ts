@@ -35,6 +35,7 @@ export class LedgerEntityManagerComponent {
   readonly error = signal<string | null>(null);
   readonly items = signal<Entity[]>([]);
   readonly currencies = signal<LedgerCurrency[]>([]);
+  private readonly currencyByUuid = computed(() => new Map(this.currencies().map(currency => [currency.uuid, currency] as const)));
   readonly search = signal('');
   readonly editorOpen = signal(false);
   readonly editing = signal<Entity | null>(null);
@@ -89,6 +90,11 @@ export class LedgerEntityManagerComponent {
       next: items => this.items.set(items),
       error: error => this.error.set(this.errors.message(error, this.kind() === 'account' ? 'errors.accountsLoadFailed' : 'errors.currenciesLoadFailed')),
     });
+  }
+
+  accountCurrencyName(item: Entity): string | null {
+    if (!('currency_uuid' in item)) return null;
+    return this.currencyByUuid().get(item.currency_uuid)?.name ?? item.currency_uuid;
   }
 
   openCreate(): void {

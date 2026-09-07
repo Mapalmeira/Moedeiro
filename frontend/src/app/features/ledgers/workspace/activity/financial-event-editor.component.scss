@@ -1,0 +1,70 @@
+:host { --token-accent: var(--green); --token-accent-strong: var(--green-strong); display: contents; }
+.event-editor form { display: grid; min-height: 0; }
+.event-editor__body { display: grid; gap: var(--form-gap); padding: var(--space-5); }
+.event-editor__actions { padding: 0 var(--space-5) var(--space-5); }
+.event-editor__actions .ui-button { min-width: var(--action-button-min-width); }
+.event-editor__actions-spacer { flex: 1 1 auto; }
+.date-time-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--form-gap); }
+.two-column-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--form-gap); align-items: end; }
+.direction-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.direction-switch .ui-choice--selected:first-child { --choice-selected-background: var(--danger-soft); }
+.direction-switch .ui-choice--selected:last-child { --choice-selected-background: var(--green-soft); }
+.shopping-movements {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-muted);
+}
+.shopping-movements__heading { display: flex; justify-content: space-between; gap: var(--space-3); color: var(--text); font-size: var(--control-font-size); }
+.shopping-movements__heading span { color: var(--text-muted); font-weight: 650; }
+.shopping-movements__columns,
+.shopping-movement {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.25fr) minmax(var(--activity-quantity-column-width), .5fr) minmax(0, 1fr) var(--control-height);
+  align-items: end;
+  gap: var(--space-2);
+}
+.shopping-movements__columns { padding-inline: var(--space-1); color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 650; }
+.shopping-movements__list { display: grid; gap: var(--space-2); }
+.shopping-movement { padding-top: var(--space-2); border-top: var(--border-width) solid var(--line); }
+.shopping-movement .field { gap: 0; }
+.shopping-movement__mobile-title, .shopping-movement__mobile-label { display: none; }
+.shopping-movement__remove { align-self: end; width: calc(var(--control-height) - var(--button-shadow-offset)); height: calc(var(--control-height) - var(--button-shadow-offset)); margin-inline-end: var(--button-shadow-offset); margin-block-end: var(--button-shadow-offset); }
+.shopping-movements__add { justify-self: start; min-height: var(--menu-item-height); padding-inline: var(--space-4); color: var(--text); }
+.transfer-fee-toggle { min-width: 0; min-height: var(--control-height); justify-self: start; align-self: start; padding-inline: var(--space-4); }
+.transfer-amount-fields { align-items: start; }
+
+@media (max-width: 640px) {
+  .event-editor__body { padding: var(--space-4); }
+  .event-editor__actions { display: grid; grid-template-columns: minmax(0, 1fr); padding: 0 var(--space-4) var(--space-4); }
+  .event-editor__actions .ui-button { width: 100%; min-width: 0; }
+  .event-editor__actions-spacer { display: none; }
+  .event-editor__delete { order: 3; }
+  .date-time-fields, .two-column-fields { grid-template-columns: minmax(0, 1fr); }
+  .shopping-movements { padding: var(--space-3); }
+  .shopping-movements__columns { display: none; }
+  .shopping-movement {
+    grid-template-columns: minmax(var(--activity-quantity-column-width), .65fr) minmax(0, 1.35fr) var(--control-height);
+    grid-template-areas:
+      "title title remove"
+      "category category category"
+      "item item item"
+      "quantity amount amount";
+    align-items: end;
+    gap: var(--form-gap) var(--space-3);
+    padding: var(--space-3);
+    border: var(--border-width) solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+  }
+  .shopping-movement__mobile-title { grid-area: title; display: block; align-self: center; font-size: var(--control-font-size); }
+  .shopping-movement__category { grid-area: category; }
+  .shopping-movement__item { grid-area: item; }
+  .shopping-movement__quantity { grid-area: quantity; }
+  .shopping-movement__amount { grid-area: amount; }
+  .shopping-movement__remove { grid-area: remove; align-self: start; margin-block-end: 0; }
+  .shopping-movement__mobile-label { display: block; margin-bottom: var(--field-gap); }
+  .shopping-movements__add { width: 100%; }
+}

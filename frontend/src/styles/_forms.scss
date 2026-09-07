@@ -11,8 +11,9 @@
   font-size: .9rem;
 }
 
-.field input,
-.field select {
+.field > input,
+.field > select,
+.field > .input-with-action > input {
   box-sizing: border-box;
   width: 100%;
   height: var(--control-height);
@@ -28,9 +29,11 @@
   transition: box-shadow var(--motion-focus) ease, border-color var(--motion-focus) ease, background var(--motion-focus) ease;
 }
 
-.field input::placeholder { color: color-mix(in srgb, var(--text-muted) 70%, transparent); }
-.field input:focus,
-.field select:focus {
+.field > input::placeholder,
+.field > .input-with-action > input::placeholder { color: color-mix(in srgb, var(--text-muted) 70%, transparent); }
+.field > input:focus,
+.field > select:focus,
+.field > .input-with-action > input:focus {
   border-color: var(--field-focus-strong);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--field-focus) 32%, transparent);
 }
@@ -50,6 +53,8 @@
   20%, 60% { transform: translateX(calc(var(--press-offset) * -1)); }
   40%, 80% { transform: translateX(var(--press-offset)); }
 }
+
+.ui-feedback-shake { animation: ui-field-rejection var(--motion-feedback) ease; }
 
 .input-with-action { position: relative; }
 .input-with-action input { padding-right: calc(var(--icon-button-size) + var(--space-3)); }

@@ -128,6 +128,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .icon-button--green { --focus-accent: var(--green); background: var(--green); color: var(--on-green); }
 .icon-button--yellow { --focus-accent: var(--yellow); background: var(--yellow); color: var(--on-yellow); }
 .icon-button--blue { --focus-accent: var(--blue); background: var(--blue); color: var(--on-blue); }
+.icon-button--danger { --focus-accent: var(--danger-token); background: var(--danger-token); color: var(--on-danger-token); border-color: var(--line-strong); }
 
 .ui-button--danger {
   --focus-accent: var(--danger-token);

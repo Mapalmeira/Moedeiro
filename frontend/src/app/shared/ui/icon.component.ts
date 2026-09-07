@@ -27,6 +27,7 @@ import {
   LucidePencil,
   LucidePlus,
   LucideSearch,
+  LucideShoppingCart,
   LucideShieldCheck,
   LucideSlidersHorizontal,
   LucideSun,
@@ -41,7 +42,7 @@ export type IconName =
   | 'logout' | 'sliders' | 'sun' | 'moon' | 'info' | 'check' | 'key' | 'x' | 'languages'
   | 'search' | 'chevron-down' | 'shield' | 'copy' | 'plus' | 'pencil' | 'ellipsis'
   | 'trash' | 'book' | 'database' | 'house' | 'wallet' | 'chart' | 'building'
-  | 'layers' | 'coins' | 'panel-open' | 'folder' | 'grip';
+  | 'layers' | 'coins' | 'panel-open' | 'folder' | 'grip' | 'shopping-cart';
 
 @Component({
   selector: 'app-icon',
@@ -74,6 +75,7 @@ export type IconName =
     LucidePencil,
     LucidePlus,
     LucideSearch,
+    LucideShoppingCart,
     LucideShieldCheck,
     LucideSlidersHorizontal,
     LucideSun,
@@ -104,6 +106,7 @@ export type IconName =
       @case ('x') { <svg lucideX></svg> }
       @case ('languages') { <svg lucideLanguages></svg> }
       @case ('search') { <svg lucideSearch></svg> }
+      @case ('shopping-cart') { <svg lucideShoppingCart></svg> }
       @case ('chevron-down') { <svg lucideChevronDown></svg> }
       @case ('shield') { <svg lucideShieldCheck></svg> }
       @case ('copy') { <svg lucideCopy></svg> }

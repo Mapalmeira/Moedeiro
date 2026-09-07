@@ -49,6 +49,15 @@ describe('AuthService', () => {
     expect(localStorage.getItem('moedeiro.last-auth-name')).toBe('alice');
   });
 
+  it('reuses a session established by login without immediately revalidating it', () => {
+    service.login({ name: 'alice', password: 'password123', remember: false, totp_code: null }).subscribe();
+    http.expectOne(API_ROUTES.authentication.login).flush(null);
+
+    service.ensureSession().subscribe((valid) => expect(valid).toBe(true));
+
+    http.expectNone(API_ROUTES.authentication.session);
+  });
+
   it('refreshes the stored username when validating the session', () => {
     service.validateSession().subscribe((valid) => expect(valid).toBe(true));
 

@@ -1,0 +1,220 @@
+<div class="ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
+<div class="ui-dialog-layer">
+  <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
+    <section class="ui-dialog-surface event-editor" role="dialog" aria-modal="true" [attr.aria-label]="title()">
+      <header class="ui-dialog-header">
+        <div class="ui-dialog-title">
+          <span class="title-icon title-icon--green"><app-icon [name]="titleIcon()" [size]="20" /></span>
+          <h2>{{ title() }}</h2>
+        </div>
+        <button class="icon-button" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
+          <app-icon name="x" [size]="19" />
+        </button>
+      </header>
+
+      <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <div class="event-editor__body">
+          @if (!accounts().length || !categories().length) {
+            <app-form-message kind="success" icon="info" [text]="i18n.t(!accounts().length ? 'activity.needsAccount' : 'activity.needsCategory')" />
+          }
+
+          <label class="field">
+            <span>{{ i18n.t('activity.description') }} <span class="required-mark" aria-hidden="true">*</span></span>
+            <input formControlName="description" maxlength="300" autocomplete="off" />
+            <app-field-error [text]="fieldError('description')" />
+          </label>
+
+          <div class="date-time-fields">
+            <label class="field">
+              <span>{{ i18n.t('activity.date') }} <span class="required-mark" aria-hidden="true">*</span></span>
+              <input type="date" formControlName="date" required />
+              <app-field-error [text]="fieldError('date')" />
+            </label>
+            <label class="field">
+              <span>{{ i18n.t('activity.time') }} <span class="required-mark" aria-hidden="true">*</span></span>
+              <input type="time" formControlName="time" step="1" required />
+              <app-field-error [text]="fieldError('time')" />
+            </label>
+          </div>
+
+          @if (type() === 'TRANSACTION') {
+            <div class="two-column-fields">
+              <label class="field">
+                <span>{{ i18n.t('activity.account') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <app-entity-search-select [options]="accountOptions()" [value]="form.controls.account_uuid.value"
+                  [ariaLabel]="i18n.t('activity.account')" [searchPlaceholder]="i18n.t('activity.searchAccount')"
+                  [emptyText]="i18n.t('activity.noAccountResults')" (valueChange)="setControlValue('account_uuid', $event)" />
+                <app-field-error [text]="fieldError('account_uuid')" />
+              </label>
+              <label class="field">
+                <span>{{ i18n.t('activity.category') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <app-entity-search-select [options]="categoryOptions()" [value]="form.controls.category_uuid.value"
+                  [ariaLabel]="i18n.t('activity.category')" [searchPlaceholder]="i18n.t('activity.searchCategory')"
+                  [emptyText]="i18n.t('activity.noCategoryResults')" (valueChange)="setControlValue('category_uuid', $event)" />
+                <app-field-error [text]="fieldError('category_uuid')" />
+              </label>
+            </div>
+            <div class="two-column-fields">
+              <label class="field">
+                <span>{{ i18n.t('activity.amount') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <app-currency-amount-input [currency]="accountCurrency(form.controls.account_uuid.value)" [numberFormat]="numberFormat()"
+                  [value]="form.controls.amount.value" [ariaLabel]="i18n.t('activity.amount')" [required]="true"
+                  (valueChange)="setAmountControl('amount', $event)" />
+              </label>
+              <section class="field" aria-labelledby="event-direction-label">
+                <span id="event-direction-label">{{ i18n.t('activity.direction') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <div class="direction-switch">
+                  <button type="button" class="ui-choice" [class.ui-choice--selected]="form.controls.direction.value === 'EXPENSE'"
+                    (click)="form.controls.direction.setValue('EXPENSE')">{{ i18n.t('activity.expense') }}</button>
+                  <button type="button" class="ui-choice" [class.ui-choice--selected]="form.controls.direction.value === 'INCOME'"
+                    (click)="form.controls.direction.setValue('INCOME')">{{ i18n.t('activity.income') }}</button>
+                </div>
+              </section>
+            </div>
+          }
+
+          @if (type() === 'SHOPPING_LIST') {
+            <label class="field">
+              <span>{{ i18n.t('activity.account') }} <span class="required-mark" aria-hidden="true">*</span></span>
+              <app-entity-search-select [options]="accountOptions()" [value]="form.controls.account_uuid.value"
+                [ariaLabel]="i18n.t('activity.account')" [searchPlaceholder]="i18n.t('activity.searchAccount')"
+                [emptyText]="i18n.t('activity.noAccountResults')" (valueChange)="setControlValue('account_uuid', $event)" />
+              <app-field-error [text]="fieldError('account_uuid')" />
+            </label>
+
+            <section class="shopping-movements" aria-labelledby="shopping-movements-title">
+              <div class="shopping-movements__heading">
+                <strong id="shopping-movements-title">{{ i18n.t('activity.shoppingMovements') }}</strong>
+                <span>{{ movements.length }}/{{ maxShoppingMovements }}</span>
+              </div>
+              <div class="shopping-movements__columns" aria-hidden="true">
+                <span>{{ i18n.t('activity.category') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <span>{{ i18n.t('activity.itemName') }}</span>
+                <span>{{ i18n.t('activity.quantity') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <span>{{ i18n.t('activity.amount') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <span></span>
+              </div>
+              <div class="shopping-movements__list" formArrayName="movements">
+                @for (movement of movements.controls; track movement; let index = $index) {
+                  <div class="shopping-movement" [class.ui-feedback-shake]="invalidMovementIndexes().includes(index)" [formGroupName]="index">
+                    <strong class="shopping-movement__mobile-title">{{ i18n.t('activity.movementNumber', { number: index + 1 }) }}</strong>
+                    <label class="field shopping-movement__category">
+                      <span class="shopping-movement__mobile-label">{{ i18n.t('activity.category') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                      <app-entity-search-select [options]="categoryOptions()" [value]="movement.controls.category_uuid.value"
+                        [ariaLabel]="i18n.t('activity.category')" [searchPlaceholder]="i18n.t('activity.searchCategory')"
+                        [emptyText]="i18n.t('activity.noCategoryResults')" (valueChange)="setMovementCategory(index, $event)" />
+                    </label>
+                    <label class="field shopping-movement__item">
+                      <span class="shopping-movement__mobile-label">{{ i18n.t('activity.itemName') }}</span>
+                      <input formControlName="item_name" maxlength="50" autocomplete="off" />
+                    </label>
+                    <label class="field shopping-movement__quantity">
+                      <span class="shopping-movement__mobile-label">{{ i18n.t('activity.quantity') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                      <input type="number" formControlName="quantity" min="1" step="1" inputmode="numeric" />
+                    </label>
+                    <label class="field shopping-movement__amount">
+                      <span class="shopping-movement__mobile-label">{{ i18n.t('activity.amount') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                      <app-currency-amount-input [currency]="accountCurrency(form.controls.account_uuid.value)" [numberFormat]="numberFormat()"
+                        [value]="movement.controls.amount.value" [ariaLabel]="i18n.t('activity.amount')" [required]="true"
+                        (valueChange)="setMovementAmount(index, $event)" />
+                    </label>
+                    <button class="icon-button icon-button--danger ui-action-press shopping-movement__remove" type="button" (click)="removeMovement(index)"
+                      [disabled]="movements.length <= 1" [attr.aria-label]="i18n.t('activity.removeMovement')">
+                      <app-icon name="trash" [size]="17" />
+                    </button>
+                  </div>
+                }
+              </div>
+              <button class="ui-button shopping-movements__add" type="button" (click)="addMovement()" [disabled]="movements.length >= maxShoppingMovements">
+                <app-icon name="plus" [size]="17" />{{ i18n.t('activity.addMovement') }}
+              </button>
+            </section>
+          }
+
+          @if (type() === 'ACCOUNT_TRANSFER') {
+            <div class="two-column-fields">
+              <label class="field">
+                <span>{{ i18n.t('activity.sourceAccount') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <app-entity-search-select [options]="accountOptions()" [value]="form.controls.source_account_uuid.value"
+                  [ariaLabel]="i18n.t('activity.sourceAccount')" [searchPlaceholder]="i18n.t('activity.searchAccount')"
+                  [emptyText]="i18n.t('activity.noAccountResults')" (valueChange)="setControlValue('source_account_uuid', $event)" />
+              </label>
+              <label class="field">
+                <span>{{ i18n.t('activity.destinationAccount') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <app-entity-search-select [options]="accountOptions()" [value]="form.controls.destination_account_uuid.value"
+                  [ariaLabel]="i18n.t('activity.destinationAccount')" [searchPlaceholder]="i18n.t('activity.searchAccount')"
+                  [emptyText]="i18n.t('activity.noAccountResults')" (valueChange)="setControlValue('destination_account_uuid', $event)" />
+              </label>
+            </div>
+
+            <label class="field">
+              <span>{{ i18n.t('activity.category') }} <span class="required-mark" aria-hidden="true">*</span></span>
+              <app-entity-search-select [options]="categoryOptions()" [value]="form.controls.category_uuid.value"
+                [ariaLabel]="i18n.t('activity.category')" [searchPlaceholder]="i18n.t('activity.searchCategory')"
+                [emptyText]="i18n.t('activity.noCategoryResults')" (valueChange)="setControlValue('category_uuid', $event)" />
+            </label>
+
+            <div class="two-column-fields transfer-amount-fields">
+              <label class="field">
+                <span>{{ i18n.t('activity.sourceAmount') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <app-currency-amount-input [currency]="accountCurrency(form.controls.source_account_uuid.value)" [numberFormat]="numberFormat()"
+                  [value]="form.controls.source_amount.value" [ariaLabel]="i18n.t('activity.sourceAmount')" [required]="true"
+                  (valueChange)="setAmountControl('source_amount', $event)" />
+              </label>
+              @if (!sameTransferCurrency()) {
+                <label class="field">
+                  <span>{{ i18n.t('activity.destinationAmount') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                  <app-currency-amount-input [currency]="accountCurrency(form.controls.destination_account_uuid.value)" [numberFormat]="numberFormat()"
+                    [value]="form.controls.destination_amount.value" [ariaLabel]="i18n.t('activity.destinationAmount')" [required]="true"
+                    (valueChange)="setAmountControl('destination_amount', $event)" />
+                </label>
+              } @else {
+                <div class="field same-currency-field">
+                  <span>{{ i18n.t('activity.destinationAmount') }}</span>
+                  <app-form-message kind="success" icon="info" [compact]="true" [text]="i18n.t('activity.sameCurrencyInfo')" />
+                </div>
+              }
+            </div>
+
+            <button class="ui-button transfer-fee-toggle" [class.ui-button--green]="form.controls.fee_enabled.value"
+              type="button" [attr.aria-pressed]="form.controls.fee_enabled.value" (click)="toggleFee()">
+              <app-icon [name]="form.controls.fee_enabled.value ? 'check' : 'plus'" [size]="17" />
+              <span>{{ i18n.t('activity.addFee') }}</span>
+            </button>
+            @if (form.controls.fee_enabled.value) {
+              <div class="two-column-fields">
+                <label class="field">
+                  <span>{{ i18n.t('activity.feeAmount') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                  <app-currency-amount-input [currency]="accountCurrency(form.controls.destination_account_uuid.value)" [numberFormat]="numberFormat()"
+                    [value]="form.controls.fee_amount.value" [ariaLabel]="i18n.t('activity.feeAmount')" [required]="true"
+                    (valueChange)="setAmountControl('fee_amount', $event)" />
+                </label>
+                <label class="field">
+                  <span>{{ i18n.t('activity.feeCategory') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                  <app-entity-search-select [options]="categoryOptions()" [value]="form.controls.fee_category_uuid.value"
+                    [ariaLabel]="i18n.t('activity.feeCategory')" [searchPlaceholder]="i18n.t('activity.searchCategory')"
+                    [emptyText]="i18n.t('activity.noCategoryResults')" (valueChange)="setControlValue('fee_category_uuid', $event)" />
+                </label>
+              </div>
+            }
+          }
+
+          @if (error()) { <app-form-message [text]="error()!" /> }
+        </div>
+
+        <footer class="event-editor__actions ui-surface-actions">
+          @if (event(); as currentEvent) {
+            <button class="ui-button ui-button--danger event-editor__delete" type="button" [disabled]="saving()" (click)="deleteRequested.emit(currentEvent)">
+              <app-icon name="trash" [size]="18" />{{ i18n.t('workspace.delete') }}
+            </button>
+          }
+          <span class="event-editor__actions-spacer"></span>
+          <button class="ui-button" type="button" [disabled]="saving()" (click)="requestClose()">{{ i18n.t('activity.cancel') }}</button>
+          <button class="ui-button ui-button--green" type="submit" [disabled]="saving() || !accounts().length || !categories().length">
+            {{ event() ? i18n.t('activity.saveChanges') : i18n.t('activity.saveEvent') }}
+          </button>
+        </footer>
+      </form>
+    </section>
+  </div>
+</div>

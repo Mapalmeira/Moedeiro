@@ -27,7 +27,7 @@
         @for (item of filtered(); track item.uuid) {
           <button type="button" class="entity-row" (click)="edit(item)">
             <app-entity-badge [icon]="item.icon" [color]="item.color_code" />
-            <span class="entity-copy"><strong>{{ item.name }}</strong></span>
+            <span class="entity-copy"><strong>{{ item.name }}</strong>@if (accountCurrencyName(item); as currencyName) { <small>{{ currencyName }}</small> }</span>
           </button>
         } @empty {
           <div class="state entity-list__empty">

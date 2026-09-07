@@ -38,6 +38,10 @@ a { color: var(--link); }
   line-height: 0;
 }
 .ui-icon-badge--title { --icon-badge-size: var(--title-icon-size); }
+.ui-icon-badge--green { background: var(--green); color: var(--on-green); }
+.ui-icon-badge--yellow { background: var(--yellow); color: var(--on-yellow); }
+.ui-icon-badge--blue { background: var(--blue); color: var(--on-blue); }
+.ui-icon-badge--neutral { background: var(--surface-muted); color: var(--text); }
 .ui-icon-badge > :where(app-icon, app-ledger-icon) { display: grid; place-items: center; }
 
 /* Projected surfaces use layered, overlapping hard shadows. */

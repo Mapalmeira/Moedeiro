@@ -44,7 +44,9 @@
 .entity-row:last-of-type { border-bottom: 0; }
 .entity-row:hover { background: var(--surface-muted); }
 .entity-copy { display: grid; min-width: 0; }
-.entity-copy strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--control-font-size); font-weight: var(--control-font-weight); }
+.entity-copy strong, .entity-copy small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.entity-copy strong { font-size: var(--control-font-size); font-weight: var(--control-font-weight); }
+.entity-copy small { color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 650; }
 .state { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: var(--inline-gap); padding: var(--space-12) var(--space-4); color: var(--text-muted); text-align: center; }
 .entity-list__empty { min-height: 100%; }
 .retry { flex: 0 0 auto; align-self: flex-start; color: var(--text); }

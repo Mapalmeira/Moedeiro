@@ -21,6 +21,8 @@ export const API_ROUTES = {
     one: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}`,
   },
   ledgerAccounts: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/accounts`,
+  ledgerAccountBalance: (ledgerUuid: string, accountUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/accounts/${encodeURIComponent(accountUuid)}/balance`,
   ledgerCurrencies: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/currencies`,
   ledgerCategories: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/categories`,
+  ledgerEvents: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/events`,
 } as const;

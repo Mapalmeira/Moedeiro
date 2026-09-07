@@ -1,13 +1,16 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { bestContrastingForeground } from './ledger-appearance';
 import { LedgerIconComponent } from './ledger-icon.component';
+
+export const ENTITY_BADGE_DEFAULT_SIZE = 30;
+export const ENTITY_BADGE_DEFAULT_SYMBOL_SIZE = 23;
 
 /** Clip the face, keeping the projected shadow and its layout footprint intact. */
 @Component({
   selector: 'app-entity-badge',
   imports: [LedgerIconComponent],
   template: `<span class="badge ui-projected-icon" [style.width.px]="size()" [style.height.px]="size()"
-    [style.background]="color()" [style.color]="foreground(color())">
+    [style.background]="color()" [style.color]="foreground()">
     <app-ledger-icon [icon]="icon()" [size]="size() * symbolRatio" />
   </span>`,
   styles: `
@@ -19,7 +22,7 @@ import { LedgerIconComponent } from './ledger-icon.component';
 export class EntityBadgeComponent {
   readonly icon = input.required<string>();
   readonly color = input.required<string>();
-  readonly size = input(30);
-  readonly symbolRatio = 23 / 30;
-  foreground(color: string): string { return bestContrastingForeground(color).foreground; }
+  readonly size = input(ENTITY_BADGE_DEFAULT_SIZE);
+  readonly symbolRatio = ENTITY_BADGE_DEFAULT_SYMBOL_SIZE / ENTITY_BADGE_DEFAULT_SIZE;
+  readonly foreground = computed(() => bestContrastingForeground(this.color()).foreground);
 }

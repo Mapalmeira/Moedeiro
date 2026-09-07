@@ -24,6 +24,13 @@ export class LedgerEntitiesService {
     return this.http.delete<void>(`${API_ROUTES.ledgerAccounts(ledgerUuid)}/${encodeURIComponent(accountUuid)}`, { withCredentials: true });
   }
 
+  getAccountBalance(ledgerUuid: string, accountUuid: string, timestamp: number): Observable<number> {
+    return this.http.get<number>(API_ROUTES.ledgerAccountBalance(ledgerUuid, accountUuid), {
+      params: { timestamp },
+      withCredentials: true,
+    });
+  }
+
   listCurrencies(ledgerUuid: string): Observable<LedgerCurrency[]> {
     return this.http.get<LedgerCurrency[]>(API_ROUTES.ledgerCurrencies(ledgerUuid), { withCredentials: true });
   }

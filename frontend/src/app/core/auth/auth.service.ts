@@ -45,6 +45,8 @@ export class AuthService {
   }
 
   ensureSession(): Observable<boolean> {
+    if (this.authenticated() === true) return of(true);
+
     return this.http.get<AuthenticationSession>(API_ROUTES.authentication.session, { withCredentials: true }).pipe(
       tap((session) => this.storeUserName(session.name)),
       map(() => true),

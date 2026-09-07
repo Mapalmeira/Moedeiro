@@ -1,0 +1,219 @@
+<section class="activity" [attr.aria-label]="i18n.t('ledgerShell.activity')">
+  <div class="activity-commandbar">
+    <div class="create-menu" (click)="$event.stopPropagation()">
+      <button class="ui-button ui-button--green create-menu__trigger" type="button" (click)="toggleCreateMenu($event)"
+        [disabled]="!canCreate()" [attr.aria-expanded]="createMenuOpen()" aria-haspopup="menu">
+        <app-icon name="plus" [size]="18" />
+        <span>{{ i18n.t('activity.newEvent') }}</span>
+        <app-icon class="ui-select-chevron" name="chevron-down" [size]="16" />
+      </button>
+      @if (createMenuOpen()) {
+        <div class="create-menu__dropdown ui-dropdown-menu ui-projected-surface ui-projection--compact" role="menu">
+          <button type="button" role="menuitem" (click)="openCreate('TRANSACTION', $event)">
+            <span class="create-menu__icon ui-icon-badge ui-icon-badge--green ui-projected-icon"><app-icon name="wallet" [size]="17" /></span>
+            <span><strong>{{ i18n.t('activity.typeSimple') }}</strong><small>{{ i18n.t('activity.typeSimpleHint') }}</small></span>
+          </button>
+          <button type="button" role="menuitem" (click)="openCreate('SHOPPING_LIST', $event)">
+            <span class="create-menu__icon ui-icon-badge ui-icon-badge--yellow ui-projected-icon"><app-icon name="shopping-cart" [size]="17" /></span>
+            <span><strong>{{ i18n.t('activity.typeShopping') }}</strong><small>{{ i18n.t('activity.typeShoppingHint') }}</small></span>
+          </button>
+          <button type="button" role="menuitem" (click)="openCreate('ACCOUNT_TRANSFER', $event)" [disabled]="accounts().length < 2">
+            <span class="create-menu__icon ui-icon-badge ui-icon-badge--blue ui-projected-icon"><app-icon name="arrow-left-right" [size]="17" /></span>
+            <span><strong>{{ i18n.t('activity.typeTransfer') }}</strong><small>{{ i18n.t('activity.typeTransferHint') }}</small></span>
+          </button>
+        </div>
+      }
+    </div>
+    @if (!canCreate() && !loading()) {
+      <app-form-message class="activity-commandbar__notice" kind="success" icon="info" [compact]="true"
+        [text]="i18n.t(!accounts().length ? 'activity.needsAccount' : 'activity.needsCategory')" />
+    }
+  </div>
+
+  <section class="activity-panel ui-card ui-projected-surface ui-projection--surface">
+    <form class="activity-filters" [formGroup]="filters" (ngSubmit)="applyFilters()">
+      <div class="activity-filter-grid">
+        <div class="period-filter">
+          <label class="field">
+            <span>{{ i18n.t('activity.periodFrom') }}</span>
+            <input type="date" formControlName="from_date" />
+          </label>
+          <span class="period-filter__separator">{{ i18n.t('activity.periodTo') }}</span>
+          <label class="field period-filter__to">
+            <span class="period-filter__mobile-label">{{ i18n.t('activity.periodTo') }}</span>
+            <input type="date" formControlName="to_date" />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>{{ i18n.t('activity.account') }}</span>
+          <app-entity-search-select [options]="accountFilterOptions()" [value]="filters.controls.account_uuid.value"
+            [ariaLabel]="i18n.t('activity.account')" [searchPlaceholder]="i18n.t('activity.searchAccount')"
+            [emptyText]="i18n.t('activity.noAccountResults')" (valueChange)="setFilterValue('account_uuid', $event)" />
+        </label>
+
+        <label class="field">
+          <span>{{ i18n.t('activity.category') }}</span>
+          <app-entity-search-select [options]="categoryFilterOptions()" [value]="filters.controls.category_uuid.value"
+            [ariaLabel]="i18n.t('activity.category')" [searchPlaceholder]="i18n.t('activity.searchCategory')"
+            [emptyText]="i18n.t('activity.noCategoryResults')" (valueChange)="setFilterValue('category_uuid', $event)" />
+        </label>
+
+        <label class="field">
+          <span>{{ i18n.t('activity.eventType') }}</span>
+          <app-entity-search-select [options]="eventTypeFilterOptions()" [value]="filters.controls.event_type.value"
+            [ariaLabel]="i18n.t('activity.eventType')" [searchable]="false"
+            (valueChange)="setFilterValue('event_type', $event)" />
+        </label>
+      </div>
+
+      <div class="activity-filter-actions">
+        <button class="ui-button" type="button" (click)="clearFilters()">{{ i18n.t('activity.clearFilters') }}</button>
+        <button class="ui-button ui-button--green" type="submit">{{ i18n.t('activity.applyFilters') }}</button>
+      </div>
+    </form>
+
+    @if (filterError()) {
+      <div class="activity-panel__message"><app-form-message [text]="filterError()!" /></div>
+    }
+    <section class="activity-list">
+      <header class="activity-list__header">
+        <span class="activity-list__loaded">{{ i18n.t('activity.loadedEvents', { count: events().length }) }}</span>
+        <div class="activity-list__summary">
+          @if (appliedAccount()) {
+            <span class="activity-list__balance">
+              <span class="activity-list__balance-label">{{ i18n.t('activity.periodEndBalance') }}</span>
+              @if (balanceLoading()) {
+                <span class="ui-spinner activity-list__balance-spinner" aria-hidden="true"></span>
+              } @else if (formattedAccountBalance(); as balance) {
+                <strong class="activity-list__balance-value"
+                  [class.activity-list__balance-value--negative]="accountBalanceTone() === 'negative'"
+                  [class.activity-list__balance-value--positive]="accountBalanceTone() === 'positive'">{{ balance }}</strong>
+              } @else if (balanceUnavailable()) {
+                <span>{{ i18n.t('activity.balanceUnavailable') }}</span>
+              }
+            </span>
+          }
+        </div>
+      </header>
+
+      @if (error()) {
+        <div class="activity-state activity-state--error">
+          <app-form-message [text]="error()!" />
+          <button class="ui-button" type="button" (click)="applyFilters()">{{ i18n.t('workspace.retry') }}</button>
+        </div>
+      } @else if (loading()) {
+        <div class="activity-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
+      } @else if (!events().length) {
+        <div class="activity-state">
+          <app-icon name="arrow-left-right" [size]="28" />
+          <strong>{{ i18n.t('activity.empty') }}</strong>
+          <span>{{ i18n.t('activity.emptyHint') }}</span>
+        </div>
+      } @else {
+        <div class="activity-table" role="table" [attr.aria-label]="i18n.t('activity.eventsList')">
+          <div class="activity-table__head" role="row">
+            <span role="columnheader">{{ i18n.t('activity.date') }}</span>
+            <span role="columnheader">{{ i18n.t('activity.event') }}</span>
+            <span role="columnheader">{{ i18n.t('activity.eventType') }}</span>
+            <span role="columnheader">{{ i18n.t('activity.accounts') }}</span>
+            <span role="columnheader">{{ i18n.t('activity.category') }}</span>
+            <span role="columnheader" class="activity-table__value-heading">{{ i18n.t('activity.aggregateValue') }}</span>
+          </div>
+
+          <div class="activity-table__body">
+            @for (row of eventRows(); track row.event.uuid) {
+              <div class="activity-row" role="row" tabindex="0" (click)="openEdit(row.event)" (keydown)="openEditFromKeyboard($event, row.event)">
+                <div class="activity-row__date" role="cell">
+                  <strong>{{ row.date }}</strong>
+                  <span>{{ row.time }}</span>
+                </div>
+
+                <div class="activity-row__event" role="cell">
+                  <span class="activity-row__copy">
+                    <strong>{{ row.event.description }}</strong>
+                    @if (row.detail; as detail) { <small>{{ detail }}</small> }
+                  </span>
+                </div>
+
+                <div class="activity-row__type" role="cell">
+                  <span class="activity-row__type-icon ui-icon-badge ui-projected-icon"
+                    [class.ui-icon-badge--green]="row.tone === 'green'"
+                    [class.ui-icon-badge--yellow]="row.tone === 'yellow'"
+                    [class.ui-icon-badge--blue]="row.tone === 'blue'">
+                    <app-icon [name]="row.typeIcon" [size]="17" />
+                  </span>
+                  <span>{{ row.typeLabel }}</span>
+                </div>
+
+                <div class="activity-row__accounts activity-row__entity-cell" role="cell" [attr.data-label]="i18n.t('activity.accounts')">
+                  <span class="activity-row__entity-value">
+                    <span class="activity-row__entity-icons">
+                      @for (account of row.accounts; track account.uuid) {
+                        <app-entity-badge [icon]="account.icon" [color]="account.color_code" />
+                      }
+                    </span>
+                    <span class="activity-row__entity-label">{{ row.accountLabel }}</span>
+                  </span>
+                </div>
+                <div class="activity-row__category activity-row__entity-cell" role="cell" [attr.data-label]="i18n.t('activity.category')">
+                  <span class="activity-row__entity-value">
+                    <span class="activity-row__entity-icons">
+                      @for (category of row.categoryPreview; track category.uuid) {
+                        <app-entity-badge [icon]="category.icon" [color]="category.color_code" />
+                      }
+                    </span>
+                    <span class="activity-row__entity-label">{{ row.categoryLabel }}</span>
+                  </span>
+                </div>
+                <div class="activity-row__value" role="cell" [attr.data-label]="i18n.t('activity.aggregateValue')"
+                  [class.activity-row__value--negative]="row.valueTone === 'negative'"
+                  [class.activity-row__value--positive]="row.valueTone === 'positive'">
+                  {{ row.value }}
+                </div>
+              </div>
+            }
+            @if (nextCursor()) {
+              <div class="activity-list__sentinel" [class.activity-list__sentinel--loading]="loadingMore()"
+                appInfiniteScrollTrigger [enabled]="!loadingMore()" rootMargin="280px 0px" (triggered)="loadMore()" aria-hidden="true">
+                @if (loadingMore()) { <span class="ui-spinner activity-list__load-spinner"></span> }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </section>
+  </section>
+</section>
+
+@if (editorType(); as type) {
+  <app-financial-event-editor [ledgerUuid]="context.ledgerUuid()!" [type]="type" [event]="editingEvent()"
+    [accounts]="accounts()" [currencies]="currencies()" [categories]="categories()"
+    (close)="closeEditor()" (saved)="editorSaved()" (deleteRequested)="requestDeleteFromEditor($event)" />
+}
+
+@if (deleting()) {
+  <div class="ui-dialog-backdrop" (click)="closeDelete()" aria-hidden="true"></div>
+  <div class="ui-dialog-layer activity-delete-layer">
+    <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
+      <section class="ui-dialog-surface" role="alertdialog" aria-modal="true" aria-labelledby="event-delete-title">
+        <header class="ui-dialog-header">
+          <div class="ui-dialog-title">
+            <span class="title-icon activity-delete-icon"><app-icon name="trash" [size]="20" /></span>
+            <h2 id="event-delete-title">{{ i18n.t('activity.deleteTitle') }}</h2>
+          </div>
+          <button class="icon-button" type="button" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')">
+            <app-icon name="x" [size]="18" />
+          </button>
+        </header>
+        <div class="ui-delete-dialog-body">
+          <app-form-message [text]="i18n.t('activity.deleteWarning')" />
+          @if (deleteError()) { <app-form-message [text]="deleteError()!" /> }
+          <footer class="ui-surface-actions">
+            <button class="ui-button ui-button--danger" type="button" [disabled]="deletingBusy()" (click)="remove()">{{ i18n.t('workspace.delete') }}</button>
+          </footer>
+        </div>
+      </section>
+    </div>
+  </div>
+}
