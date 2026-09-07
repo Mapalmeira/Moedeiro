@@ -40,6 +40,16 @@ class SqliteCategoryRepository(CategoryRepository):
             return None
         return self._to_model(row)
 
+    def get_by_name(self, name: CategoryName) -> Category | None:
+        category_name = self._name_adapter.validate_python(name)
+        row = self.connection.execute(
+            "SELECT uuid, category_name AS name, icon, color_code, parent_uuid FROM category WHERE category_name = ?",
+            (category_name,),
+        ).fetchone()
+        if row is None:
+            return None
+        return self._to_model(row)
+
     def get_many(self, uuids: Collection[UUID]) -> list[Category]:
         unique_uuids = set(uuids)
         if not unique_uuids:

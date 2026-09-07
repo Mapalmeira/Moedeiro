@@ -45,6 +45,10 @@ class CategoryNotFoundError(Exception):
     pass
 
 
+class CategoryNameUnavailableError(Exception):
+    pass
+
+
 class CategoryInUseError(Exception):
     pass
 

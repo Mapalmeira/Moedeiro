@@ -91,6 +91,13 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
                 (uuid4().bytes, b"\x80\x80\x80"),
             )
 
+    def test_category_names_are_unique(self) -> None:
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute(
+                "INSERT INTO category VALUES (?, 'Food', 'lucide:Circle', ?, NULL)",
+                (uuid4().bytes, b"\x80\x80\x80"),
+            )
+
     def test_schema_has_no_collection_size_triggers(self) -> None:
         triggers = self.connection.execute(
             "SELECT name FROM sqlite_master WHERE type = 'trigger' ORDER BY name"

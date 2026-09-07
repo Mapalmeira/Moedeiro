@@ -83,6 +83,25 @@ class CategoryRoutesTest(unittest.TestCase):
         self.assertEqual(create_error.exception.status_code, 404)
         self.assertEqual(update_error.exception.status_code, 404)
 
+    def test_create_and_update_return_conflict_for_a_duplicate_name(self) -> None:
+        first = self.create_category("Food")
+        second = self.create_category("Transport")
+
+        with self.assertRaises(HTTPException) as create_error:
+            self.create_category(first.name)
+        with self.assertRaises(HTTPException) as update_error:
+            update_ledger_category(
+                self.ledger.uuid,
+                second.uuid,
+                UpdateCategoryRequest(name=first.name, icon=second.icon, color_code=second.color_code),
+                self.request,
+                self.user,
+            )
+
+        for error in (create_error.exception, update_error.exception):
+            self.assertEqual(error.status_code, 409)
+            self.assertEqual(error.detail, "Category name unavailable")
+
     def test_create_returns_a_fixed_error_when_the_category_limit_is_reached(self) -> None:
         with patch("app.application.ledger.use_cases.category.MAX_CATEGORY_TREE_SIZE", 2):
             self.create_category("First")
@@ -142,8 +161,7 @@ class CategoryRoutesTest(unittest.TestCase):
         parent = self.create_category("Parent")
         child = self.create_category("Child", parent.uuid)
         with self.application.state.databases.open_ledger(f"{self.ledger.uuid}.sqlite") as unit_of_work:
-            currency = unit_of_work.currency_repository.get_by_name("Real")
-            assert currency is not None
+            currency = unit_of_work.currency_repository.create("Real", "R$", None, 2, "lucide:CircleDollarSign", b"\x10\x20\x30")
             account = unit_of_work.account_repository.create("Checking", None, currency.uuid, "lucide:WalletCards", b"\x40\x50\x60")
             event = unit_of_work.financial_event_repository.create(20, "Purchase", "TRANSACTION")
             unit_of_work.financial_movement_repository.create(event.uuid, account.uuid, child.uuid, -100, None)

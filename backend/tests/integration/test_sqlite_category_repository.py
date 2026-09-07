@@ -55,6 +55,19 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual({category.uuid for category in categories}, {food.uuid, leisure.uuid})
         self.assertEqual(self.repository.get_many([]), [])
 
+    def test_get_by_name_returns_the_matching_category(self) -> None:
+        food = self.create_category("Food")
+        self.create_category("Transport")
+
+        self.assertEqual(self.repository.get_by_name("Food"), food)
+        self.assertIsNone(self.repository.get_by_name("Missing"))
+
+    def test_schema_rejects_duplicate_category_names(self) -> None:
+        self.create_category("Food")
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.repository.create("Food", "lucide:Circle", b"\x80\x80\x80", None)
+
     def test_update_name_validates_model_limit(self) -> None:
         """Category names are validated before an update is executed."""
         category = self.create_category()

@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.application.ledger.exceptions import CategoryInUseError, CategoryNotFoundError, CategoryTreeSizeExceededError, InvalidCategoryHierarchyError
+from app.application.ledger.exceptions import CategoryInUseError, CategoryNameUnavailableError, CategoryNotFoundError, CategoryTreeSizeExceededError, InvalidCategoryHierarchyError
 from app.application.ledger.use_cases.category import create_category, delete_category, get_category, get_category_tree, update_category
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
@@ -48,6 +48,14 @@ class CategoryUseCasesTest(unittest.TestCase):
             self.create("")
 
         self.assertEqual(get_category_tree(self.open_ledger), [])
+
+    def test_create_rejects_a_duplicate_name(self) -> None:
+        category = self.create("Food")
+
+        with self.assertRaises(CategoryNameUnavailableError):
+            self.create("Food")
+
+        self.assertEqual(get_category_tree(self.open_ledger)[0].category, category)
 
     def test_get_raises_for_an_unknown_category(self) -> None:
         with self.assertRaises(CategoryNotFoundError):
@@ -96,6 +104,15 @@ class CategoryUseCasesTest(unittest.TestCase):
             update_category(self.open_ledger, category.uuid, "Child", "lucide:Circle", b"\x10\x20\x30", uuid4())
 
         self.assertEqual(get_category(self.open_ledger, category.uuid), category)
+
+    def test_update_rejects_a_name_owned_by_another_category(self) -> None:
+        first = self.create("Food")
+        second = self.create("Transport")
+
+        with self.assertRaises(CategoryNameUnavailableError):
+            update_category(self.open_ledger, second.uuid, first.name, "lucide:Bus", b"\x10\x20\x30", None)
+
+        self.assertEqual(get_category(self.open_ledger, second.uuid), second)
 
     def test_update_rejects_a_parent_cycle_without_persisting_partial_changes(self) -> None:
         parent = self.create("Parent")

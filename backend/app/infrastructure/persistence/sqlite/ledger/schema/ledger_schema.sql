@@ -32,7 +32,7 @@ CREATE TABLE account (
 
 CREATE TABLE category (
     uuid BLOB PRIMARY KEY,
-    category_name TEXT NOT NULL CHECK (length(category_name) BETWEEN 1 AND 30),
+    category_name TEXT NOT NULL UNIQUE CHECK (length(category_name) BETWEEN 1 AND 30),
     icon TEXT NOT NULL CHECK (length(icon) BETWEEN 1 AND 100),
     color_code BLOB NOT NULL CHECK (length(color_code) = 3),
     parent_uuid BLOB,

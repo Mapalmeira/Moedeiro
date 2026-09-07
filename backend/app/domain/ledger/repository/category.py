@@ -17,6 +17,10 @@ class CategoryRepository(ABC):
         pass
 
     @abstractmethod
+    def get_by_name(self, name: CategoryName) -> Category | None:
+        pass
+
+    @abstractmethod
     def get_many(self, uuids: Collection[UUID]) -> list[Category]:
         pass
 
