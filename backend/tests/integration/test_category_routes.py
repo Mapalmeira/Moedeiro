@@ -194,7 +194,8 @@ class CategoryRoutesTest(unittest.TestCase):
         parent = self.create_category("Parent")
         child = self.create_category("Child", parent.uuid)
         with self.application.state.databases.open_ledger(f"{self.ledger.uuid}.sqlite") as unit_of_work:
-            currency = unit_of_work.currency_repository.create("Real", "R$", None, 2, "lucide:CircleDollarSign", b"\x10\x20\x30")
+            currency = unit_of_work.currency_repository.get_by_name("Real")
+            assert currency is not None
             account = unit_of_work.account_repository.create("Checking", None, currency.uuid, "lucide:WalletCards", b"\x40\x50\x60")
             event = unit_of_work.financial_event_repository.create(20, "Purchase", "TRANSACTION")
             unit_of_work.financial_movement_repository.create(event.uuid, account.uuid, child.uuid, -100, None)
