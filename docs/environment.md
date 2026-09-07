@@ -61,7 +61,7 @@ These values use the `limits` rate syntax, such as `5/minute` or `5/hour`. Each 
 | `PASSWORD_RECOVERY_IP_ATTEMPTS_RATE_LIMIT` | `10/hour`   | Password recovery attempts from one client IP. |
 | `TOTP_SETUP_IP_ATTEMPTS_RATE_LIMIT`        | `5/minute`  | TOTP setup attempts from one client IP.        |
 | `REFRESH_IP_ATTEMPTS_RATE_LIMIT`           | `10/minute` | Session refresh attempts from one client IP.   |
-| `AUTHENTICATED_USER_OPERATIONS_RATE_LIMIT` | `50/minute` | Requests made by one authenticated user.       |
+| `AUTHENTICATED_USER_OPERATIONS_RATE_LIMIT` | `80/minute` | Requests made by one authenticated user.       |
 
 IP-based limits depend on Moedeiro receiving the real client address. See [Reverse proxy](reverse-proxy.md) for proxied installations.
 
