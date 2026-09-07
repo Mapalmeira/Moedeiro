@@ -127,11 +127,11 @@ class SqliteDatabasesTest(unittest.TestCase):
                 for currency in sorted(currencies, key=lambda currency: currency.name)
             ],
             [
-                ("Bitcoin", None, " BTC", 8, "unicode:₿", bytes.fromhex("F7931A")),
-                ("Dolár", "$ ", None, 2, "unicode:$", bytes.fromhex("2E7D32")),
-                ("Euro", "€ ", None, 2, "unicode:€", bytes.fromhex("003399")),
-                ("Iene", "¥ ", None, 0, "unicode:¥", bytes.fromhex("BC002D")),
-                ("Libra", "£ ", None, 2, "unicode:£", bytes.fromhex("5B2C6F")),
+                ("Bitcoin", None, " BTC", 8, "lucide:Bitcoin", bytes.fromhex("AE5400")),
+                ("Dolár", "$ ", None, 2, "lucide:DollarSign", bytes.fromhex("2E7D32")),
+                ("Euro", "€ ", None, 2, "lucide:Euro", bytes.fromhex("003399")),
+                ("Iene", "¥ ", None, 0, "lucide:JapaneseYen", bytes.fromhex("BC002D")),
+                ("Libra", "£ ", None, 2, "lucide:PoundSterling", bytes.fromhex("5B2C6F")),
                 ("Real", "R$ ", None, 2, "unicode:R$", bytes.fromhex("FFD51A")),
             ],
         )
