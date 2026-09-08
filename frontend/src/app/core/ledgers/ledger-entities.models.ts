@@ -15,6 +15,17 @@ export interface LedgerAccountPayload {
   color_code: string;
 }
 
+export interface LedgerAccountBalance {
+  account_uuid: string;
+  currency_uuid: string;
+  balance: number;
+}
+
+export interface LedgerAccountBalanceList {
+  items: LedgerAccountBalance[];
+  total_balance: number | null;
+}
+
 export interface LedgerCurrency {
   uuid: string;
   name: string;

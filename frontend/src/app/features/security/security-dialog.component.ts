@@ -32,7 +32,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
             <span class="title-icon title-icon--blue"><app-icon name="shield" [size]="21" /></span>
             <h2>{{ i18n.t('security.title') }}</h2>
           </div>
-          <button class="icon-button" type="button" (click)="requestClose()" [disabled]="busy()"
+          <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="busy()"
             [attr.aria-label]="i18n.t('common.close')">
             <app-icon name="x" [size]="19" />
           </button>

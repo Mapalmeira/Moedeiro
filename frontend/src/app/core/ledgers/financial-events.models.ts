@@ -29,6 +29,7 @@ export interface FinancialEventFilters {
   to_timestamp: number;
   page_size: number;
   account_uuid?: string | null;
+  currency_uuid?: string | null;
   category_uuid?: string | null;
   event_type?: FinancialEventType | null;
   cursor?: string | null;

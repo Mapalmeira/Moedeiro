@@ -27,28 +27,6 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .ui-button--yellow { --focus-accent: var(--yellow); background: linear-gradient(90deg, var(--yellow-action-start), var(--yellow-action-end)); color: var(--on-yellow); }
 .ui-button--blue { --focus-accent: var(--blue); background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 82%, white), var(--blue)); color: var(--on-blue); }
 
-/* Action content centered across the face plus the rigid projected shadow footprint. */
-.ui-button--projected-centered {
-  display: grid;
-  gap: 0;
-  grid-template-columns: var(--button-shadow-offset) minmax(0, 1fr);
-  grid-template-rows: var(--button-shadow-offset) minmax(0, 1fr);
-}
-.ui-button--projected-centered > .ui-button__content {
-  grid-column: 2;
-  grid-row: 2;
-  place-self: center;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--inline-gap);
-}
-.ui-button--control-footprint {
-  min-height: calc(var(--control-height) - var(--button-shadow-offset));
-  height: calc(var(--control-height) - var(--button-shadow-offset));
-  margin-inline-end: var(--button-shadow-offset);
-  margin-block-end: var(--button-shadow-offset);
-}
-
 /* Selection controls retain their state and never use physical press motion. */
 .ui-choice {
   position: relative;
@@ -127,6 +105,27 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   box-shadow: var(--compact-shadow-pressed);
 }
 
+/* Persistent press toggle: selected state keeps the physical pressed depth. */
+.ui-press-toggle {
+  min-height: var(--menu-item-height);
+  padding: 0 var(--space-3);
+  border: var(--border-width) solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--control-font-size);
+  font-weight: var(--control-font-weight);
+  line-height: var(--control-line-height);
+  box-shadow: var(--compact-shadow);
+  transition: transform var(--motion-press) ease, box-shadow var(--motion-press) ease, background var(--motion-selection) ease;
+}
+.ui-press-toggle:not(:disabled):active,
+.ui-press-toggle[aria-pressed='true'] {
+  transform: translate(var(--press-offset), var(--press-offset));
+  box-shadow: var(--compact-shadow-pressed);
+}
+.ui-press-toggle[aria-pressed='true'] { background: var(--green); color: var(--on-green); }
+
 .icon-button {
   display: grid;
   place-items: center;
@@ -147,6 +146,16 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   border-width: var(--border-width);
   border-color: var(--line-strong);
 }
+
+.icon-button--control {
+  width: var(--menu-item-height);
+  min-width: var(--menu-item-height);
+  height: var(--menu-item-height);
+  min-height: var(--menu-item-height);
+  border-width: var(--border-width);
+  border-color: var(--line-strong);
+}
+.icon-button--add app-icon { color: var(--text); }
 .icon-button--green { --focus-accent: var(--green); background: var(--green); color: var(--on-green); }
 .icon-button--yellow { --focus-accent: var(--yellow); background: var(--yellow); color: var(--on-yellow); }
 .icon-button--blue { --focus-accent: var(--blue); background: var(--blue); color: var(--on-blue); }

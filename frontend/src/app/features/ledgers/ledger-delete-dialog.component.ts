@@ -24,7 +24,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
             <span class="title-icon"><app-icon name="trash" [size]="21" /></span>
             <h2>{{ i18n.t('ledgers.delete.title') }}</h2>
           </div>
-          <button class="icon-button" type="button" (click)="requestClose()" [disabled]="deleting()"
+          <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="deleting()"
             [attr.aria-label]="i18n.t('common.close')">
             <app-icon name="x" [size]="19" />
           </button>

@@ -35,7 +35,7 @@ const DEFAULT_COLOR = '#21E683';
             <span class="title-icon title-icon--green"><app-icon [name]="ledger() ? 'pencil' : 'plus'" [size]="21" /></span>
             <h2>{{ title() }}</h2>
           </div>
-          <button class="icon-button" type="button" (click)="requestClose()" [disabled]="saving()"
+          <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="saving()"
             [attr.aria-label]="i18n.t('common.close')">
             <app-icon name="x" [size]="19" />
           </button>

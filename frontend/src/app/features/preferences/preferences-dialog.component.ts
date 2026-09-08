@@ -27,7 +27,7 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
             <span class="title-icon title-icon--green"><app-icon name="sliders" [size]="21" /></span>
             <h2>{{ i18n.t('preferences.title') }}</h2>
           </div>
-          <button class="icon-button" type="button" (click)="requestClose()" [disabled]="closing() || saving()"
+          <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="closing() || saving()"
             [attr.aria-label]="i18n.t('common.close')">
             <app-icon name="x" [size]="19" />
           </button>

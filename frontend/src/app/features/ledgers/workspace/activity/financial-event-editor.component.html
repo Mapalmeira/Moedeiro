@@ -7,7 +7,7 @@
           <span class="title-icon title-icon--green"><app-icon [name]="titleIcon()" [size]="20" /></span>
           <h2>{{ title() }}</h2>
         </div>
-        <button class="icon-button" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
+        <button class="icon-button icon-button--control ui-action-press" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
           <app-icon name="x" [size]="19" />
         </button>
       </header>

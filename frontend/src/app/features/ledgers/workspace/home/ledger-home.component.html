@@ -1,0 +1,158 @@
+<section class="home">
+  <header class="home-commandbar">
+    <label class="home-control">
+      <span>{{ i18n.t('home.currency') }}</span>
+      <app-entity-search-select class="home-currency-select" [options]="currencyOptions()" [value]="selectedCurrencyUuid()"
+        [ariaLabel]="i18n.t('home.currency')" [searchPlaceholder]="i18n.t('home.searchCurrency')"
+        [emptyText]="i18n.t('home.noCurrencies')" [disabled]="resourcesLoading() || !currencies().length"
+        (valueChange)="selectCurrency($event)" />
+    </label>
+    <div class="home-control home-period-control">
+      <span>{{ i18n.t('home.period') }}</span>
+      <div class="home-period-row">
+        <div class="home-period-switch" role="group" [attr.aria-label]="i18n.t('home.period')">
+          <button type="button" class="ui-press-toggle" [attr.aria-pressed]="periodMode() === 'month'" (click)="setPeriodMode('month')">{{ i18n.t('home.periodMonth') }}</button>
+          <button type="button" class="ui-press-toggle" [attr.aria-pressed]="periodMode() === 'range'" (click)="setPeriodMode('range')">{{ i18n.t('home.periodRange') }}</button>
+        </div>
+        @if (periodMode() === 'month') {
+          <app-month-select class="home-month-select" [value]="selectedMonth()" [locale]="locale()" [ariaLabel]="i18n.t('home.period')"
+            [previousYearLabel]="i18n.t('home.previousYear')" [nextYearLabel]="i18n.t('home.nextYear')" [yearLabel]="i18n.t('home.year')"
+            (valueChange)="selectMonth($event)" />
+        } @else {
+          <div class="home-range-fields">
+            <label class="field home-range-field"><span class="home-range-field__label">{{ i18n.t('home.from') }}</span><input type="date" [value]="rangeFromDate()" (change)="updateRangeFrom($event)" /></label>
+            <span class="home-range-separator" aria-hidden="true">{{ i18n.t('home.to') }}</span>
+            <label class="field home-range-field"><span class="home-range-field__label">{{ i18n.t('home.to') }}</span><input type="date" [value]="rangeToDate()" (change)="updateRangeTo($event)" /></label>
+          </div>
+        }
+      </div>
+    </div>
+  </header>
+
+  @if (error()) {
+    <div class="home-error">
+      <app-form-message [text]="error()!" />
+      <button type="button" class="ui-button" (click)="retry()">{{ i18n.t('workspace.retry') }}</button>
+    </div>
+  } @else if (resourcesLoading() || (loading() && !balances().length && !cashFlow().length)) {
+    <div class="home-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
+  } @else if (!currencies().length) {
+    <div class="home-state"><app-icon name="coins" [size]="28" />{{ i18n.t('home.noCurrencies') }}</div>
+  } @else {
+    <div class="home-metrics">
+      @for (card of metricCards(); track card.label) {
+        <article class="metric-card ui-card ui-projected-surface ui-projection--surface">
+          <span class="metric-card__icon ui-icon-badge ui-icon-badge--title ui-projected-icon"
+            [class.ui-icon-badge--green]="card.tone === 'green'" [class.ui-icon-badge--yellow]="card.tone === 'yellow'"
+            [class.ui-icon-badge--blue]="card.tone === 'blue'" [class.ui-icon-badge--neutral]="card.tone === 'neutral'">
+            <app-icon [name]="card.icon" [size]="21" />
+          </span>
+          <span class="metric-card__copy"><small>{{ card.label }}</small><strong>{{ card.value }}</strong></span>
+        </article>
+      }
+    </div>
+
+    <div class="home-grid">
+      <section class="home-card home-card--flow ui-card ui-projected-surface ui-projection--surface">
+        <header class="home-card__header">
+          <h2>{{ i18n.t('home.flowInPeriod') }}</h2>
+          <div class="flow-switch" role="group" [attr.aria-label]="i18n.t('home.flowView')">
+            <button type="button" class="ui-press-toggle" [attr.aria-pressed]="flowMode() === 'instant'" (click)="setFlowMode('instant')">{{ i18n.t('home.instantaneous') }}</button>
+            <button type="button" class="ui-press-toggle" [attr.aria-pressed]="flowMode() === 'cumulative'" (click)="setFlowMode('cumulative')">{{ i18n.t('home.cumulative') }}</button>
+          </div>
+        </header>
+        <div class="flow-chart" [attr.aria-label]="i18n.t('home.flowInPeriod')">
+          <svg [attr.viewBox]="'0 0 ' + chartWidth + ' ' + chartHeight" preserveAspectRatio="xMidYMid meet" role="img" tabindex="0"
+            (pointermove)="hoverChart($event)" (pointerleave)="leaveChart()" (click)="pinChart($event)"
+            (keydown.arrowleft)="moveChartSelection(-1, $event)" (keydown.arrowright)="moveChartSelection(1, $event)"
+            (keydown.escape)="clearChartSelection()">
+            @for (tick of chartTicks(); track tick.y) {
+              <line class="flow-chart__grid" [attr.x1]="chartLeft" [attr.y1]="tick.y" [attr.x2]="chartRight" [attr.y2]="tick.y" />
+              <text class="flow-chart__y-label" [attr.x]="chartLeft - 12" [attr.y]="tick.y + 5" text-anchor="end">{{ tick.label }}</text>
+            }
+            <line class="flow-chart__y-axis" [attr.x1]="chartLeft" [attr.y1]="chartTop" [attr.x2]="chartLeft" [attr.y2]="chartBottom" />
+            <line class="flow-chart__axis" [attr.x1]="chartLeft" [attr.y1]="chartZeroY" [attr.x2]="chartRight" [attr.y2]="chartZeroY" />
+
+            @if (flowMode() === 'instant') {
+              @for (point of chartPoints(); track point.index) {
+                <rect class="flow-chart__income" [attr.x]="point.x - point.barWidth - point.barGap" [attr.y]="point.incomeY" [attr.width]="point.barWidth" [attr.height]="point.incomeHeight" />
+                <rect class="flow-chart__expense" [attr.x]="point.x + point.barGap" [attr.y]="chartZeroY" [attr.width]="point.barWidth" [attr.height]="point.expenseHeight" />
+                @if (point.showLabel) { <text class="flow-chart__label" [attr.x]="point.x" [attr.y]="chartHeight - 12" text-anchor="middle">{{ point.label }}</text> }
+              }
+            } @else {
+              <polyline class="flow-chart__cumulative" [attr.points]="cumulativePolyline()" />
+              @for (point of chartPoints(); track point.index) {
+                <circle class="flow-chart__point" [attr.cx]="point.x" [attr.cy]="point.cumulativeY" r="4" />
+                @if (point.showLabel) { <text class="flow-chart__label" [attr.x]="point.x" [attr.y]="chartHeight - 12" text-anchor="middle">{{ point.label }}</text> }
+              }
+            }
+
+            @if (activeChartPoint(); as point) {
+              <line class="flow-chart__cursor" [attr.x1]="point.x" [attr.y1]="chartTop" [attr.x2]="point.x" [attr.y2]="chartBottom" />
+            }
+          </svg>
+          @if (activeChartPoint(); as point) {
+            <div class="flow-chart__tooltip" [style.left.%]="point.xPercent">
+              <strong>{{ point.date }}</strong>
+              @if (flowMode() === 'instant') {
+                <span>{{ i18n.t('home.income') }} <b>{{ point.income }}</b></span>
+                <span>{{ i18n.t('home.expense') }} <b>{{ point.expense }}</b></span>
+                <span>{{ i18n.t('home.netFlow') }} <b>{{ point.net }}</b></span>
+              } @else {
+                <span>{{ i18n.t('home.cumulative') }} <b>{{ point.cumulative }}</b></span>
+              }
+            </div>
+          }
+          @if (totalIncome() === 0 && totalExpense() === 0) { <span class="flow-chart__empty">{{ i18n.t('home.noFlow') }}</span> }
+        </div>
+        <footer class="flow-legend">
+          @if (flowMode() === 'instant') {
+            <span><i class="flow-legend__dot flow-legend__dot--income"></i>{{ i18n.t('home.income') }}</span>
+            <span><i class="flow-legend__dot flow-legend__dot--expense"></i>{{ i18n.t('home.expense') }}</span>
+          } @else {
+            <span><i class="flow-legend__dot flow-legend__dot--cumulative"></i>{{ i18n.t('home.cumulative') }}</span>
+          }
+        </footer>
+      </section>
+
+      <section class="home-card home-card--list ui-card ui-projected-surface ui-projection--surface">
+        <header class="home-card__header"><h2>{{ i18n.t('ledgerShell.accounts') }}</h2><a [routerLink]="['/ledgers', context.ledgerUuid(), 'accounts']">{{ i18n.t('home.viewAll') }} →</a></header>
+        <div class="home-list">
+          @for (row of accountRows(); track row.account.uuid) {
+            <a class="home-list-row" [routerLink]="['/ledgers', context.ledgerUuid(), 'accounts']">
+              <app-entity-badge class="home-list-row__icon" [icon]="row.account.icon" [color]="row.account.color_code" />
+              <span class="home-list-row__copy"><strong>{{ row.account.name }}</strong>@if (row.account.note) { <small>{{ row.account.note }}</small> }</span>
+              <strong class="home-list-row__amount" [class.value-positive]="row.balanceTone === 'positive'" [class.value-negative]="row.balanceTone === 'negative'">{{ row.balance }}</strong>
+            </a>
+          } @empty { <div class="home-card__empty">{{ i18n.t('accounts.empty') }}</div> }
+        </div>
+      </section>
+
+      <section class="home-card ui-card ui-projected-surface ui-projection--surface">
+        <header class="home-card__header"><h2>{{ i18n.t('ledgerShell.budgets') }}</h2><a [routerLink]="['/ledgers', context.ledgerUuid(), 'budgets']">{{ i18n.t('home.viewAll') }} →</a></header>
+        <div class="budget-list">
+          @for (row of budgetRows(); track row.budget.uuid) {
+            <a class="budget-row" [routerLink]="['/ledgers', context.ledgerUuid(), 'budgets']">
+              <span class="budget-row__title"><strong>{{ row.budget.name }}</strong><small>{{ row.account?.name ?? i18n.t('home.unavailable') }} · {{ row.category?.name ?? i18n.t('home.unavailable') }}</small></span>
+              <span class="budget-row__numbers"><strong>{{ row.spent }} / {{ row.amount }}</strong><b [class.budget-row__percent--danger]="row.tone === 'danger'" [class.budget-row__percent--yellow]="row.tone === 'yellow'">{{ row.percent }}</b></span>
+              <span class="budget-row__progress"><i [style.width.%]="row.progress" [class.budget-row__bar--danger]="row.tone === 'danger'" [class.budget-row__bar--yellow]="row.tone === 'yellow'"></i></span>
+            </a>
+          } @empty { <div class="home-card__empty">{{ i18n.t('home.noActiveBudgets') }}</div> }
+        </div>
+      </section>
+
+      <section class="home-card home-card--list ui-card ui-projected-surface ui-projection--surface">
+        <header class="home-card__header"><h2>{{ i18n.t('home.recentActivity') }}</h2><a [routerLink]="['/ledgers', context.ledgerUuid(), 'activity']">{{ i18n.t('home.viewAll') }} →</a></header>
+        <div class="home-list">
+          @for (row of eventRows(); track row.event.uuid) {
+            <a class="home-list-row home-event-row" [routerLink]="['/ledgers', context.ledgerUuid(), 'activity']">
+              <span class="home-list-row__icon home-event-row__icon ui-icon-badge ui-projected-icon" [class.ui-icon-badge--green]="row.tone === 'green'" [class.ui-icon-badge--yellow]="row.tone === 'yellow'" [class.ui-icon-badge--blue]="row.tone === 'blue'"><app-icon [name]="row.icon" [size]="18" /></span>
+              <span class="home-list-row__copy"><strong>{{ row.event.description }}</strong><small>{{ row.category }} · {{ row.account }}</small></span>
+              <span class="home-event-row__meta"><strong [class.value-positive]="row.valueTone === 'positive'" [class.value-negative]="row.valueTone === 'negative'">{{ row.value }}</strong><small>{{ row.date }}, {{ row.time }}</small></span>
+            </a>
+          } @empty { <div class="home-card__empty">{{ i18n.t('home.noRecentActivity') }}</div> }
+        </div>
+      </section>
+    </div>
+  }
+</section>

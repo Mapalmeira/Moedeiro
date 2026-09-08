@@ -98,8 +98,8 @@ export interface EntitySearchOption {
       text-align: left;
     }
     .entity-search-select__trigger[aria-expanded='true'] {
-      border-color: var(--green-strong);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 32%, transparent);
+      border-color: var(--entity-select-accent-strong, var(--green-strong));
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--entity-select-accent, var(--green)) 32%, transparent);
     }
     .entity-search-select__copy { min-width: 0; display: grid; gap: var(--space-1); }
     .entity-search-select__copy strong,
@@ -139,7 +139,7 @@ export interface EntitySearchOption {
     }
     .entity-search-select__list button:not([aria-selected='true']):hover { background: var(--surface-muted); }
     .entity-search-select__list button[aria-selected='true'],
-    .entity-search-select__list button[aria-selected='true']:hover { background: var(--green-soft); }
+    .entity-search-select__list button[aria-selected='true']:hover { background: var(--entity-select-selected-background, var(--green-soft)); }
     .entity-search-select__empty { padding: var(--space-3); color: var(--text-muted); font-size: var(--control-font-size); text-align: center; }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -14,8 +14,9 @@ import { formatCurrencyAmount } from '../../../../core/ledgers/currency-format';
 import { formatEventDate } from '../../../../core/preferences/date-time-format';
 import { PreferencesService } from '../../../../core/preferences/preferences.service';
 import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.component';
+import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
-import { IconComponent } from '../../../../shared/ui/icon.component';
+import { IconComponent, IconName } from '../../../../shared/ui/icon.component';
 import { InfiniteScrollTriggerDirective } from '../../../../shared/ui/infinite-scroll-trigger.directive';
 import { BudgetEditorComponent } from './budget-editor.component';
 import { BudgetStateFilterComponent } from './budget-state-filter.component';
@@ -28,6 +29,7 @@ interface BudgetCardView {
   categoryPath: string;
   period: string;
   stateLabel: string;
+  stateIcon: IconName;
   stateDetail: string;
   amountLabel: string;
   spentLabel: string | null;
@@ -48,6 +50,7 @@ const ALL_STATES: readonly LedgerBudgetState[] = ['ACTIVE', 'FUTURE', 'FINISHED'
     BudgetEditorComponent,
     BudgetStateFilterComponent,
     EntityBadgeComponent,
+    EntitySearchSelectComponent,
     FormMessageComponent,
     IconComponent,
     InfiniteScrollTriggerDirective,
@@ -74,6 +77,7 @@ export class LedgerBudgetsComponent {
   readonly categories = signal<LedgerCategory[]>([]);
   readonly items = signal<LedgerBudgetOverview[]>([]);
   readonly states = signal<readonly LedgerBudgetState[]>(ALL_STATES);
+  readonly categoryFilterUuid = signal('');
   readonly search = signal('');
   readonly resourcesLoading = signal(false);
   readonly loading = signal(false);
@@ -89,6 +93,22 @@ export class LedgerBudgetsComponent {
   readonly accountByUuid = computed(() => new Map(this.accounts().map(account => [account.uuid, account] as const)));
   readonly currencyByUuid = computed(() => new Map(this.currencies().map(currency => [currency.uuid, currency] as const)));
   readonly categoryByUuid = computed(() => new Map(this.categories().map(category => [category.uuid, category] as const)));
+  readonly categoryFilterOptions = computed<readonly EntitySearchOption[]>(() => {
+    const byUuid = this.categoryByUuid();
+    return [
+      { value: '', label: this.i18n.t('categories.root'), uiIcon: 'folder', tone: 'neutral' },
+      ...this.categories().map(category => {
+        const path = this.categoryPath(category, byUuid);
+        return {
+          value: category.uuid,
+          label: category.name,
+          detail: path === category.name ? null : path,
+          icon: category.icon,
+          color: category.color_code,
+        };
+      }),
+    ];
+  });
   readonly canCreate = computed(() => this.accounts().length > 0 && this.categories().length > 0 && !this.resourcesLoading() && !this.error());
   readonly percentFormatter = computed(() => new Intl.NumberFormat(this.i18n.language() === 'en' ? 'en-US' : 'pt-BR', { maximumFractionDigits: 1 }));
   readonly cards = computed<BudgetCardView[]>(() => {
@@ -108,6 +128,7 @@ export class LedgerBudgetsComponent {
       const spentLabel = spent === null ? null : currency ? formatCurrencyAmount(spent, currency, preferences.number_format) : String(spent);
       const usage = spent === null ? null : this.usagePercent(spent, budget.amount);
       let stateLabel: string;
+      let stateIcon: IconName;
       let stateDetail: string;
       let summaryLabel: string | null = null;
       let usageLabel: string | null = null;
@@ -116,9 +137,11 @@ export class LedgerBudgetsComponent {
 
       if (budget.state === 'FUTURE') {
         stateLabel = this.i18n.t('budgets.future');
+        stateIcon = 'calendar';
         stateDetail = this.i18n.t('budgets.startsOn', { date: from });
       } else if (budget.state === 'ACTIVE') {
         stateLabel = this.i18n.t('budgets.active');
+        stateIcon = 'clock';
         stateDetail = this.i18n.t('budgets.endsOn', { date: to });
         usageLabel = usage === null ? null : this.i18n.t('budgets.usedPercent', { percent: this.formatPercent(usage) });
         progress = Number.isFinite(usage ?? 0) ? Math.min(100, Math.max(0, usage ?? 0)) : 100;
@@ -131,6 +154,7 @@ export class LedgerBudgetsComponent {
         }
       } else {
         stateLabel = budget.fulfilled ? this.i18n.t('budgets.fulfilled') : this.i18n.t('budgets.notFulfilled');
+        stateIcon = budget.fulfilled ? 'check' : 'x';
         stateDetail = this.i18n.t('budgets.finishedOn', { date: to });
         usageLabel = usage === null ? null : this.i18n.t('budgets.usedPercent', { percent: this.formatPercent(usage) });
         progress = Number.isFinite(usage ?? 0) ? Math.min(100, Math.max(0, usage ?? 0)) : 100;
@@ -153,6 +177,7 @@ export class LedgerBudgetsComponent {
         categoryPath: category ? this.categoryPath(category, categoryByUuid) : this.i18n.t('budgets.unknownCategory'),
         period: `${from} – ${to}`,
         stateLabel,
+        stateIcon,
         stateDetail,
         amountLabel,
         spentLabel,
@@ -173,6 +198,7 @@ export class LedgerBudgetsComponent {
       const ledgerUuid = this.context.ledgerUuid();
       untracked(() => {
         this.closeEditor();
+        this.categoryFilterUuid.set('');
         this.items.set([]);
         this.nextCursor.set(null);
         if (ledgerUuid) this.loadWorkspace();
@@ -189,6 +215,12 @@ export class LedgerBudgetsComponent {
     this.load(true);
   }
 
+  updateCategoryFilter(categoryUuid: string): void {
+    if (categoryUuid === this.categoryFilterUuid()) return;
+    this.categoryFilterUuid.set(categoryUuid);
+    this.load(true);
+  }
+
   loadWorkspace(): void {
     const ledgerUuid = this.context.ledgerUuid();
     if (!ledgerUuid) return;
@@ -199,18 +231,17 @@ export class LedgerBudgetsComponent {
       accounts: this.entities.listAccounts(ledgerUuid),
       currencies: this.entities.listCurrencies(ledgerUuid),
       tree: this.categoriesService.getTree(ledgerUuid),
-    }).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+    }).pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.resourcesLoading.set(false))).subscribe({
       next: ({ accounts, currencies, tree }) => {
         this.accounts.set(accounts);
         this.currencies.set(currencies);
-        this.categories.set(this.flattenCategories(tree));
+        const categories = this.flattenCategories(tree);
+        this.categories.set(categories);
+        if (this.categoryFilterUuid() && !categories.some(category => category.uuid === this.categoryFilterUuid())) this.categoryFilterUuid.set('');
         this.resourcesLoading.set(false);
         this.load(true);
       },
-      error: error => {
-        this.resourcesLoading.set(false);
-        this.error.set(this.errors.message(error, 'errors.budgetResourcesLoadFailed'));
-      },
+      error: error => this.error.set(this.errors.message(error, 'errors.budgetResourcesLoadFailed')),
     });
   }
 
@@ -231,6 +262,7 @@ export class LedgerBudgetsComponent {
       states: this.states(),
       pageSize: PAGE_SIZE,
       search: this.search(),
+      categoryUuid: this.categoryFilterUuid() || null,
       cursor: reset ? null : this.nextCursor(),
     }).pipe(
       takeUntilDestroyed(this.destroyRef),

@@ -4,9 +4,13 @@ import {
   LucideArrowRight,
   LucideBuilding2,
   LucideBookOpen,
+  LucideCalendarDays,
   LucideChartColumn,
   LucideCheck,
+  LucideClock,
   LucideChevronDown,
+  LucideChevronLeft,
+  LucideChevronRight,
   LucideCoins,
   LucideCopy,
   LucideDatabase,
@@ -39,8 +43,8 @@ import {
 
 export type IconName =
   | 'user' | 'mail' | 'eye' | 'eye-off' | 'arrow-right' | 'arrow-left-right'
-  | 'logout' | 'sliders' | 'sun' | 'moon' | 'info' | 'check' | 'key' | 'x' | 'languages'
-  | 'search' | 'chevron-down' | 'shield' | 'copy' | 'plus' | 'pencil' | 'ellipsis'
+  | 'logout' | 'sliders' | 'sun' | 'moon' | 'info' | 'check' | 'clock' | 'key' | 'x' | 'languages'
+  | 'search' | 'chevron-down' | 'chevron-left' | 'chevron-right' | 'calendar' | 'shield' | 'copy' | 'plus' | 'pencil' | 'ellipsis'
   | 'trash' | 'book' | 'database' | 'house' | 'wallet' | 'chart' | 'building'
   | 'layers' | 'coins' | 'panel-open' | 'folder' | 'grip' | 'shopping-cart';
 
@@ -52,9 +56,13 @@ export type IconName =
     LucideArrowRight,
     LucideBuilding2,
     LucideBookOpen,
+    LucideCalendarDays,
     LucideChartColumn,
     LucideCheck,
+    LucideClock,
     LucideChevronDown,
+    LucideChevronLeft,
+    LucideChevronRight,
     LucideCoins,
     LucideCopy,
     LucideDatabase,
@@ -102,12 +110,16 @@ export type IconName =
       @case ('moon') { <svg lucideMoon></svg> }
       @case ('info') { <svg lucideInfo></svg> }
       @case ('check') { <svg lucideCheck></svg> }
+      @case ('clock') { <svg lucideClock></svg> }
       @case ('key') { <svg lucideKeyRound></svg> }
       @case ('x') { <svg lucideX></svg> }
       @case ('languages') { <svg lucideLanguages></svg> }
       @case ('search') { <svg lucideSearch></svg> }
       @case ('shopping-cart') { <svg lucideShoppingCart></svg> }
       @case ('chevron-down') { <svg lucideChevronDown></svg> }
+      @case ('chevron-left') { <svg lucideChevronLeft></svg> }
+      @case ('chevron-right') { <svg lucideChevronRight></svg> }
+      @case ('calendar') { <svg lucideCalendarDays></svg> }
       @case ('shield') { <svg lucideShieldCheck></svg> }
       @case ('copy') { <svg lucideCopy></svg> }
       @case ('plus') { <svg lucidePlus></svg> }

@@ -21,6 +21,7 @@ export class FinancialEventsService {
       .set('page_size', filters.page_size)
       .set('ascending', filters.ascending ?? false);
     if (filters.account_uuid) params = params.set('account_uuid', filters.account_uuid);
+    if (filters.currency_uuid) params = params.set('currency_uuid', filters.currency_uuid);
     if (filters.category_uuid) params = params.set('category_uuid', filters.category_uuid);
     if (filters.event_type) params = params.set('event_type', filters.event_type);
     if (filters.cursor) params = params.set('cursor', filters.cursor);

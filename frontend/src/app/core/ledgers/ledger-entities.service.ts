@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_ROUTES } from '../api/api.routes';
-import { LedgerAccount, LedgerAccountPayload, LedgerCurrency, LedgerCurrencyPayload } from './ledger-entities.models';
+import { LedgerAccount, LedgerAccountBalanceList, LedgerAccountPayload, LedgerCurrency, LedgerCurrencyPayload } from './ledger-entities.models';
 
 @Injectable({ providedIn: 'root' })
 export class LedgerEntitiesService {
@@ -29,6 +29,13 @@ export class LedgerEntitiesService {
       params: { timestamp },
       withCredentials: true,
     });
+  }
+
+  listBalances(ledgerUuid: string, timestamp: number, currencyUuid?: string | null, limit?: number | null): Observable<LedgerAccountBalanceList> {
+    const params: Record<string, string | number> = { timestamp };
+    if (currencyUuid) params['currency_uuid'] = currencyUuid;
+    if (limit) params['limit'] = limit;
+    return this.http.get<LedgerAccountBalanceList>(API_ROUTES.ledgerBalances(ledgerUuid), { params, withCredentials: true });
   }
 
   listCurrencies(ledgerUuid: string): Observable<LedgerCurrency[]> {

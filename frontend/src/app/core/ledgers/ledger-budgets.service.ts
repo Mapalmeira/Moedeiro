@@ -17,19 +17,20 @@ export class LedgerBudgetsService {
 
   overview(
     ledgerUuid: string,
-    options: { states: readonly LedgerBudgetState[]; pageSize: number; search?: string | null; accountUuid?: string | null; cursor?: string | null },
+    options: { states: readonly LedgerBudgetState[]; pageSize: number; search?: string | null; accountUuid?: string | null; categoryUuid?: string | null; cursor?: string | null },
   ): Observable<LedgerBudgetOverviewPage> {
     let params = new HttpParams().set('page_size', options.pageSize);
     for (const state of options.states) params = params.append('state', state);
     if (options.search?.trim()) params = params.set('search', options.search.trim());
     if (options.accountUuid) params = params.set('account_uuid', options.accountUuid);
+    if (options.categoryUuid) params = params.set('category_uuid', options.categoryUuid);
     if (options.cursor) params = params.set('cursor', options.cursor);
     return this.http.get<LedgerBudgetOverviewPage>(`${API_ROUTES.ledgerBudgets(ledgerUuid)}/overview`, { params, withCredentials: true });
   }
 
-  attention(ledgerUuid: string, accountUuid: string, limit = 3): Observable<LedgerBudgetOverview[]> {
-    return this.http.get<LedgerBudgetOverview[]>(`${API_ROUTES.ledgerBudgets(ledgerUuid)}/attention`, {
-      params: { account_uuid: accountUuid, limit },
+  currencyOverview(ledgerUuid: string, currencyUuid: string, limit = 3): Observable<LedgerBudgetOverview[]> {
+    return this.http.get<LedgerBudgetOverview[]>(`${API_ROUTES.ledgerBudgets(ledgerUuid)}/currency-overview`, {
+      params: { currency_uuid: currencyUuid, limit },
       withCredentials: true,
     });
   }

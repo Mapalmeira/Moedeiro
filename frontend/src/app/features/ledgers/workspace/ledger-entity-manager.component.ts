@@ -3,9 +3,11 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subscription, finalize, forkJoin, map } from 'rxjs';
 import { ApiErrorService } from '../../../core/api/api-error';
 import { I18nService } from '../../../core/i18n/i18n.service';
-import { LedgerAccount, LedgerCurrency } from '../../../core/ledgers/ledger-entities.models';
+import { formatCurrencyAmount } from '../../../core/ledgers/currency-format';
+import { LedgerAccount, LedgerAccountBalance, LedgerCurrency } from '../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../core/ledgers/ledger-entities.service';
 import { LedgerContextService } from '../../../core/ledgers/ledger-context.service';
+import { PreferencesService } from '../../../core/preferences/preferences.service';
 import { EntityBadgeComponent } from '../../../shared/ledger/entity-badge.component';
 import { FormMessageComponent } from '../../../shared/ui/form-message.component';
 import { IconComponent } from '../../../shared/ui/icon.component';
@@ -26,6 +28,7 @@ export class LedgerEntityManagerComponent {
   private readonly entities = inject(LedgerEntitiesService);
   readonly context = inject(LedgerContextService);
   private readonly errors = inject(ApiErrorService);
+  private readonly preferences = inject(PreferencesService);
   private readonly destroyRef = inject(DestroyRef);
   private request?: Subscription;
 
@@ -35,7 +38,14 @@ export class LedgerEntityManagerComponent {
   readonly error = signal<string | null>(null);
   readonly items = signal<Entity[]>([]);
   readonly currencies = signal<LedgerCurrency[]>([]);
+  readonly balances = signal<LedgerAccountBalance[]>([]);
   private readonly currencyByUuid = computed(() => new Map(this.currencies().map(currency => [currency.uuid, currency] as const)));
+  private readonly balanceByAccountUuid = computed(() => new Map(this.balances().map(balance => [balance.account_uuid, balance.balance] as const)));
+  private readonly balanceByCurrencyUuid = computed(() => {
+    const totals = new Map<string, number>();
+    for (const balance of this.balances()) totals.set(balance.currency_uuid, (totals.get(balance.currency_uuid) ?? 0) + balance.balance);
+    return totals;
+  });
   readonly search = signal('');
   readonly editorOpen = signal(false);
   readonly editing = signal<Entity | null>(null);
@@ -46,6 +56,18 @@ export class LedgerEntityManagerComponent {
     const query = this.search().trim().toLocaleLowerCase();
     return this.items().filter(item => item.name.toLocaleLowerCase().includes(query));
   });
+  readonly rows = computed(() => this.filtered().map(item => {
+    const currency = 'currency_uuid' in item ? this.currencyByUuid().get(item.currency_uuid) ?? null : item;
+    const balance = 'currency_uuid' in item
+      ? this.balanceByAccountUuid().get(item.uuid) ?? 0
+      : this.balanceByCurrencyUuid().get(item.uuid) ?? 0;
+    return {
+      item,
+      detailText: 'currency_uuid' in item ? item.note : null,
+      balance,
+      balanceText: currency ? formatCurrencyAmount(balance, currency, this.preferences.current().number_format) : null,
+    };
+  }));
   readonly title = computed(() => this.i18n.t(this.kind() === 'account' ? 'ledgerShell.accounts' : 'ledgerShell.currencies'));
 
   constructor() {
@@ -78,23 +100,22 @@ export class LedgerEntityManagerComponent {
     this.request?.unsubscribe();
     this.loading.set(true);
     this.error.set(null);
-    const request: Observable<Entity[]> = this.kind() === 'account'
-      ? forkJoin({ accounts: this.entities.listAccounts(uuid), currencies: this.entities.listCurrencies(uuid) }).pipe(
-          map(({ accounts, currencies }) => {
-            this.currencies.set(currencies);
-            return accounts;
-          }),
+    const timestamp = Math.floor(Date.now() / 1000);
+    const request: Observable<{ items: Entity[]; currencies: LedgerCurrency[]; balances: LedgerAccountBalance[] }> = this.kind() === 'account'
+      ? forkJoin({ accounts: this.entities.listAccounts(uuid), currencies: this.entities.listCurrencies(uuid), balanceList: this.entities.listBalances(uuid, timestamp) }).pipe(
+          map(({ accounts, currencies, balanceList }) => ({ items: accounts, currencies, balances: balanceList.items })),
         )
-      : this.entities.listCurrencies(uuid);
+      : forkJoin({ currencies: this.entities.listCurrencies(uuid), balanceList: this.entities.listBalances(uuid, timestamp) }).pipe(
+          map(({ currencies, balanceList }) => ({ items: currencies, currencies, balances: balanceList.items })),
+        );
     this.request = request.pipe(finalize(() => this.loading.set(false))).subscribe({
-      next: items => this.items.set(items),
+      next: ({ items, currencies, balances }) => {
+        this.items.set(items);
+        this.currencies.set(currencies);
+        this.balances.set(balances);
+      },
       error: error => this.error.set(this.errors.message(error, this.kind() === 'account' ? 'errors.accountsLoadFailed' : 'errors.currenciesLoadFailed')),
     });
-  }
-
-  accountCurrencyName(item: Entity): string | null {
-    if (!('currency_uuid' in item)) return null;
-    return this.currencyByUuid().get(item.currency_uuid)?.name ?? item.currency_uuid;
   }
 
   openCreate(): void {

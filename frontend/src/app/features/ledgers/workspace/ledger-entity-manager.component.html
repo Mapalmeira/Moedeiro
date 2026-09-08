@@ -5,7 +5,7 @@
       <input type="search" [value]="search()" (input)="filter($event)"
         [attr.aria-label]="i18n.t('workspace.search')" [placeholder]="i18n.t('workspace.search')" />
     </label>
-    <button class="manager-create icon-button icon-button--compact ui-action-press" [class.icon-button--green]="kind() === 'account'"
+    <button class="manager-create icon-button icon-button--control icon-button--add ui-action-press" [class.icon-button--green]="kind() === 'account'"
       [class.icon-button--yellow]="kind() === 'currency'" type="button" (click)="openCreate()"
       [disabled]="loading() || !!error() || items().length >= 300"
       [attr.aria-label]="i18n.t(kind() === 'account' ? 'accounts.create' : 'currencies.create')"
@@ -24,10 +24,16 @@
   } @else {
     <div class="manager-body">
       <div class="entity-list ui-card ui-projected-surface ui-projection--surface" [attr.aria-label]="title()">
-        @for (item of filtered(); track item.uuid) {
-          <button type="button" class="entity-row" (click)="edit(item)">
-            <app-entity-badge [icon]="item.icon" [color]="item.color_code" />
-            <span class="entity-copy"><strong>{{ item.name }}</strong>@if (accountCurrencyName(item); as currencyName) { <small>{{ currencyName }}</small> }</span>
+        @if (rows().length) {
+          <div class="entity-list__header" aria-hidden="true"><span class="entity-list__header-name">{{ title() }}</span><span class="entity-list__header-balance">{{ i18n.t('workspace.balance') }}</span></div>
+        }
+        @for (row of rows(); track row.item.uuid) {
+          <button type="button" class="entity-row" (click)="edit(row.item)">
+            <app-entity-badge [icon]="row.item.icon" [color]="row.item.color_code" />
+            <span class="entity-copy"><strong>{{ row.item.name }}</strong>@if (row.detailText) { <small>{{ row.detailText }}</small> }</span>
+            @if (row.balanceText) {
+              <strong class="entity-balance" [class.entity-balance--positive]="row.balance > 0" [class.entity-balance--negative]="row.balance < 0">{{ row.balanceText }}</strong>
+            }
           </button>
         } @empty {
           <div class="state entity-list__empty">
@@ -54,7 +60,7 @@
           <div class="ui-dialog-title"><span class="title-icon delete-icon"><app-icon name="trash" [size]="20" /></span>
             <h2 id="entity-delete-title">{{ i18n.t(kind() === 'account' ? 'accounts.delete' : 'currencies.delete') }}</h2>
           </div>
-          <button type="button" class="icon-button" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="x" [size]="18" /></button>
+          <button type="button" class="icon-button icon-button--control ui-action-press" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="x" [size]="18" /></button>
         </header>
         <div class="delete-body ui-delete-dialog-body">
           <app-form-message [text]="i18n.t(kind() === 'account' ? 'accounts.deleteWarning' : 'currencies.deleteWarning')" />
