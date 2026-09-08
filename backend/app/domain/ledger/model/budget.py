@@ -9,13 +9,12 @@ from app.domain.appearance import Icon, RgbColorCode
 BudgetName = Annotated[str, Field(min_length=1, max_length=50)]
 BudgetDescription = Annotated[str, Field(min_length=1, max_length=300)]
 BudgetAmount = Annotated[int, Field(ge=0)]
-MAX_BUDGET_ACCOUNTS = 50
 
 
 class Budget(BaseModel):
     uuid: UUID
+    account_uuid: UUID
     category_uuid: UUID
-    currency_uuid: UUID
     from_timestamp: int
     to_timestamp: int
     name: BudgetName
@@ -23,7 +22,6 @@ class Budget(BaseModel):
     amount: BudgetAmount
     icon: Icon
     color_code: RgbColorCode
-    account_uuids: list[UUID] = Field(default_factory=list, max_length=MAX_BUDGET_ACCOUNTS)
 
     @model_validator(mode="after")
     def validate_period(self) -> Self:

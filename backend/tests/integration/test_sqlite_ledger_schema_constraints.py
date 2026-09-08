@@ -26,7 +26,7 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
         self.movement_uuid = uuid4().bytes
         self.budget_uuid = uuid4().bytes
         self.connection.execute(
-            "INSERT INTO ledger_metadata VALUES (1, ?, 1, 0)",
+            "INSERT INTO ledger_metadata VALUES (1, ?, 2, 0)",
             (self.ledger_uuid,),
         )
         self.connection.execute(
@@ -51,7 +51,7 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
         )
         self.connection.execute(
             "INSERT INTO budget VALUES (?, 0, 10, 'Monthly', 'Spending', 100, 'lucide:ReceiptText', ?, ?, ?)",
-            (self.budget_uuid, b"\x80\x80\x80", self.category_uuid, self.currency_uuid),
+            (self.budget_uuid, b"\x80\x80\x80", self.account_uuid, self.category_uuid),
         )
 
     def tearDown(self) -> None:
@@ -66,8 +66,7 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             "category": {"uuid", "parent_uuid"},
             "financial_event": {"uuid"},
             "financial_movement": {"uuid", "financial_event_uuid", "account_uuid", "category_uuid"},
-            "budget": {"uuid", "category_uuid", "currency_uuid"},
-            "budget_accounts": {"budget_uuid", "account_uuid", "currency_uuid"},
+            "budget": {"uuid", "account_uuid", "category_uuid"},
         }
 
         for table, expected_columns in uuid_columns.items():

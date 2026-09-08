@@ -85,13 +85,14 @@ class SqliteCurrencyRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(self.repository.list_all(), created)
         self.assertEqual(self.repository.count(), 3)
 
-    def test_is_in_use_detects_accounts_and_budgets(self) -> None:
+    def test_is_in_use_detects_accounts_including_accounts_used_by_budgets(self) -> None:
         account_currency = self.create_currency("Account currency")
         budget_currency = self.create_currency("Budget currency")
         unused_currency = self.create_currency("Unused currency")
         category = self.create_category()
         self.create_account(currency=account_currency)
-        self.create_budget(currency=budget_currency, category=category)
+        budget_account = self.create_account("Budget account", budget_currency)
+        self.create_budget(account=budget_account, category=category)
 
         self.assertTrue(self.repository.is_in_use(account_currency.uuid))
         self.assertTrue(self.repository.is_in_use(budget_currency.uuid))

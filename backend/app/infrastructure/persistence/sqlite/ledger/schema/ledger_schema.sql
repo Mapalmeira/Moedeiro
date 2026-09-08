@@ -24,9 +24,6 @@ CREATE TABLE account (
     icon TEXT NOT NULL CHECK (length(icon) BETWEEN 1 AND 100),
     color_code BLOB NOT NULL CHECK (length(color_code) = 3),
 
-    -- needed for FK in budget_accounts.
-    UNIQUE (uuid, currency_uuid),
-
     FOREIGN KEY (currency_uuid) REFERENCES currency(uuid) ON DELETE RESTRICT
 ) STRICT;
 
@@ -81,40 +78,17 @@ CREATE TABLE budget (
     icon TEXT NOT NULL CHECK (length(icon) BETWEEN 1 AND 100),
     color_code BLOB NOT NULL CHECK (length(color_code) = 3),
 
+    account_uuid BLOB NOT NULL,
     category_uuid BLOB NOT NULL,
-    currency_uuid BLOB NOT NULL,
 
     CHECK (from_timestamp < to_timestamp),
 
-    -- needed for FK in budget_accounts.
-    UNIQUE (uuid, currency_uuid),
-
+    FOREIGN KEY (account_uuid)
+        REFERENCES account(uuid)
+        ON DELETE RESTRICT,
 
     FOREIGN KEY (category_uuid)
         REFERENCES category(uuid)
-        ON DELETE RESTRICT,
-
-    FOREIGN KEY (currency_uuid)
-        REFERENCES currency(uuid)
-        ON DELETE RESTRICT
-) STRICT;
-
-CREATE TABLE budget_accounts (
-    budget_uuid BLOB NOT NULL,
-    account_uuid BLOB NOT NULL,
-
-    -- intentional redundancy to allow for ensuring every budget account
-    -- has the same currency
-    currency_uuid BLOB NOT NULL,
-
-    PRIMARY KEY (budget_uuid, account_uuid),
-
-    FOREIGN KEY (budget_uuid, currency_uuid)
-        REFERENCES budget(uuid, currency_uuid)
-        ON DELETE CASCADE,
-
-    FOREIGN KEY (account_uuid, currency_uuid)
-        REFERENCES account(uuid, currency_uuid)
         ON DELETE RESTRICT
 ) STRICT;
 
@@ -142,11 +116,8 @@ ON financial_movement(category_uuid, financial_event_uuid);
 CREATE INDEX account_currency_idx
 ON account(currency_uuid, uuid);
 
-CREATE INDEX budget_currency_idx
-ON budget(currency_uuid);
+CREATE INDEX budget_account_period_idx
+ON budget(account_uuid, from_timestamp, to_timestamp);
 
 CREATE INDEX budget_to_from_idx
 ON budget(to_timestamp, from_timestamp);
-
-CREATE INDEX budget_accounts_account_idx
-ON budget_accounts(account_uuid, currency_uuid);

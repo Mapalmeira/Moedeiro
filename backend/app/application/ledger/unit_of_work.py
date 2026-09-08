@@ -4,7 +4,7 @@ from app.application.unit_of_work import UnitOfWork
 from app.domain.ledger.repository.account import AccountRepository
 from app.domain.ledger.repository.account_balance_query import AccountBalanceQueryRepository
 from app.domain.ledger.repository.budget import BudgetRepository
-from app.domain.ledger.repository.budget_status_query import BudgetStatusQueryRepository
+from app.domain.ledger.repository.budget_overview_query import BudgetOverviewQueryRepository
 from app.domain.ledger.repository.cash_flow_query import CashFlowQueryRepository
 from app.domain.ledger.repository.category import CategoryRepository
 from app.domain.ledger.repository.currency import CurrencyRepository
@@ -17,7 +17,7 @@ class LedgerUnitOfWork(UnitOfWork):
     account_repository: AccountRepository
     account_balance_query_repository: AccountBalanceQueryRepository
     budget_repository: BudgetRepository
-    budget_status_query_repository: BudgetStatusQueryRepository
+    budget_overview_query_repository: BudgetOverviewQueryRepository
     cash_flow_query_repository: CashFlowQueryRepository
     category_repository: CategoryRepository
     currency_repository: CurrencyRepository

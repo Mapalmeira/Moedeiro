@@ -48,8 +48,8 @@ class LedgerRepositoryTestCase(unittest.TestCase):
         repository = SqliteFinancialEventRepository(self.connection)
         return repository.create(occurred_at, description, type)
 
-    def create_budget(self, name: str = "Monthly", currency: Currency | None = None, category: Category | None = None) -> Budget:
-        selected_currency = currency or self.create_currency()
+    def create_budget(self, name: str = "Monthly", account: Account | None = None, category: Category | None = None, from_timestamp: int = 10, to_timestamp: int = 20, amount: int = 100) -> Budget:
+        selected_account = account or self.create_account()
         selected_category = category or self.create_category()
         repository = SqliteBudgetRepository(self.connection)
-        return repository.create(selected_category.uuid, selected_currency.uuid, 10, 20, name, "Monthly spending", 100, "lucide:ReceiptText", b"\x80\x80\x80")
+        return repository.create(selected_account.uuid, selected_category.uuid, from_timestamp, to_timestamp, name, "Monthly spending", amount, "lucide:ReceiptText", b"\x80\x80\x80")

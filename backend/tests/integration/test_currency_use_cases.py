@@ -162,9 +162,12 @@ class CurrencyUseCasesTest(unittest.TestCase):
                 b"\x80\x80\x80",
                 None,
             )
+            account = unit_of_work.account_repository.create(
+                "Budget account", None, currency.uuid, "lucide:WalletCards", b"\x80\x80\x80"
+            )
             unit_of_work.budget_repository.create(
+                account.uuid,
                 category.uuid,
-                currency.uuid,
                 10,
                 20,
                 "Monthly",

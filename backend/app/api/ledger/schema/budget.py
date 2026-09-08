@@ -1,20 +1,19 @@
-from typing import Annotated, Literal, Self
+from typing import Annotated, Self
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
 
 from app.domain.appearance import Icon
-from app.domain.ledger.model.budget import MAX_BUDGET_ACCOUNTS, Budget, BudgetAmount, BudgetDescription, BudgetName
-from app.domain.ledger.model.budget_status import BudgetStatus
+from app.domain.ledger.model.budget import Budget, BudgetAmount, BudgetDescription, BudgetName
+from app.domain.ledger.model.budget_overview import BudgetOverviewItem, BudgetOverviewState
 
 
-BudgetSortKey = Literal["from_timestamp", "to_timestamp", "name", "description", "amount"]
 HexRgbColorCode = Annotated[str, Field(pattern=r"^#[0-9A-Fa-f]{6}$")]
 
 
 class CreateBudgetRequest(BaseModel):
+    account_uuid: UUID
     category_uuid: UUID
-    currency_uuid: UUID
     from_timestamp: int
     to_timestamp: int
     name: BudgetName
@@ -22,7 +21,6 @@ class CreateBudgetRequest(BaseModel):
     amount: BudgetAmount
     icon: Icon
     color_code: HexRgbColorCode
-    account_uuids: set[UUID] = Field(default_factory=set, max_length=MAX_BUDGET_ACCOUNTS)
 
     @model_validator(mode="after")
     def validate_period(self) -> Self:
@@ -40,7 +38,6 @@ class UpdateBudgetRequest(BaseModel):
     amount: BudgetAmount
     icon: Icon
     color_code: HexRgbColorCode
-    account_uuids: set[UUID] = Field(default_factory=set, max_length=MAX_BUDGET_ACCOUNTS)
 
     @model_validator(mode="after")
     def validate_period(self) -> Self:
@@ -51,8 +48,8 @@ class UpdateBudgetRequest(BaseModel):
 
 class BudgetResponse(BaseModel):
     uuid: UUID
+    account_uuid: UUID
     category_uuid: UUID
-    currency_uuid: UUID
     from_timestamp: int
     to_timestamp: int
     name: BudgetName
@@ -60,14 +57,13 @@ class BudgetResponse(BaseModel):
     amount: BudgetAmount
     icon: Icon
     color_code: HexRgbColorCode
-    account_uuids: list[UUID]
 
     @classmethod
     def from_budget(cls, budget: Budget) -> Self:
         return cls(
             uuid=budget.uuid,
+            account_uuid=budget.account_uuid,
             category_uuid=budget.category_uuid,
-            currency_uuid=budget.currency_uuid,
             from_timestamp=budget.from_timestamp,
             to_timestamp=budget.to_timestamp,
             name=budget.name,
@@ -75,21 +71,25 @@ class BudgetResponse(BaseModel):
             amount=budget.amount,
             icon=budget.icon,
             color_code=f"#{budget.color_code.hex().upper()}",
-            account_uuids=budget.account_uuids,
         )
 
 
-class BudgetStatusResponse(BaseModel):
-    budget_uuid: UUID
-    budgeted_amount: BudgetAmount
-    spent_amount: BudgetAmount
-    over_budget: bool
+class BudgetOverviewResponse(BudgetResponse):
+    state: BudgetOverviewState
+    spent_amount: int | None
+    fulfilled: bool | None
 
     @classmethod
-    def from_status(cls, budget_status: BudgetStatus) -> Self:
+    def from_overview(cls, item: BudgetOverviewItem) -> Self:
+        budget = item.budget
         return cls(
-            budget_uuid=budget_status.budget_uuid,
-            budgeted_amount=budget_status.budgeted_amount,
-            spent_amount=budget_status.spent_amount,
-            over_budget=budget_status.over_budget,
+            **BudgetResponse.from_budget(budget).model_dump(),
+            state=item.state,
+            spent_amount=item.spent_amount,
+            fulfilled=item.fulfilled,
         )
+
+
+class BudgetOverviewPageResponse(BaseModel):
+    items: list[BudgetOverviewResponse]
+    next_cursor: str | None

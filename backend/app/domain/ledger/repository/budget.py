@@ -9,8 +9,8 @@ class BudgetRepository(ABC):
     @abstractmethod
     def create(
         self,
+        account_uuid: UUID,
         category_uuid: UUID,
-        currency_uuid: UUID,
         from_timestamp: int,
         to_timestamp: int,
         name: BudgetName,
@@ -31,24 +31,6 @@ class BudgetRepository(ABC):
 
     @abstractmethod
     def update(self, budget: Budget) -> None:
-        pass
-
-    @abstractmethod
-    def add_account(self, budget_uuid: UUID, account_uuid: UUID) -> None:
-        pass
-
-    @abstractmethod
-    def remove_account(self, budget_uuid: UUID, account_uuid: UUID) -> None:
-        pass
-
-    @abstractmethod
-    def list_page(
-        self,
-        page_number: int,
-        page_size: int,
-        sort_key: str,
-        ascending: bool,
-    ) -> list[Budget]:
         pass
 
     @abstractmethod

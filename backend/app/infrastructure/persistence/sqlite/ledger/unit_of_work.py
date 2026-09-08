@@ -8,7 +8,7 @@ from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.repository.account import SqliteAccountRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.account_balance_query import SqliteAccountBalanceQueryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.budget import SqliteBudgetRepository
-from app.infrastructure.persistence.sqlite.ledger.repository.budget_status_query import SqliteBudgetStatusQueryRepository
+from app.infrastructure.persistence.sqlite.ledger.repository.budget_overview_query import SqliteBudgetOverviewQueryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.cash_flow_query import SqliteCashFlowQueryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.category import SqliteCategoryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.currency import SqliteCurrencyRepository
@@ -28,7 +28,7 @@ class SqliteLedgerUnitOfWork(LedgerUnitOfWork):
         self.account_repository = SqliteAccountRepository(self.connection)
         self.account_balance_query_repository = SqliteAccountBalanceQueryRepository(self.connection)
         self.budget_repository = SqliteBudgetRepository(self.connection)
-        self.budget_status_query_repository = SqliteBudgetStatusQueryRepository(self.connection)
+        self.budget_overview_query_repository = SqliteBudgetOverviewQueryRepository(self.connection)
         self.cash_flow_query_repository = SqliteCashFlowQueryRepository(self.connection)
         self.category_repository = SqliteCategoryRepository(self.connection)
         self.currency_repository = SqliteCurrencyRepository(self.connection)

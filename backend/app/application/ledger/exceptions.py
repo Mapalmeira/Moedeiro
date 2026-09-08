@@ -73,14 +73,6 @@ class BudgetNameUnavailableError(Exception):
     pass
 
 
-class BudgetAccountCurrencyMismatchError(Exception):
-    pass
-
-
-class BudgetNotActiveError(Exception):
-    pass
-
-
 class FinancialEventNotFoundError(Exception):
     pass
 

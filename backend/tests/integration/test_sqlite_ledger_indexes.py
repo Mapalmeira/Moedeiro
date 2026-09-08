@@ -32,9 +32,8 @@ class SqliteLedgerIndexesTest(unittest.TestCase):
             "financial_movement_account_event_idx",
             "financial_movement_category_event_idx",
             "account_currency_idx",
-            "budget_currency_idx",
             "budget_to_from_idx",
-            "budget_accounts_account_idx",
+            "budget_account_period_idx",
         }
         rows = self.connection.execute(
             "SELECT name FROM sqlite_schema WHERE type = 'index' AND name NOT LIKE 'sqlite_autoindex_%'"
@@ -99,12 +98,11 @@ class SqliteLedgerIndexesTest(unittest.TestCase):
         self.assertIn("category_name_idx", details)
         self.assertNotIn("USE TEMP B-TREE FOR ORDER BY", details)
 
-    def test_budget_period_and_currency_queries_use_declared_indexes(self) -> None:
+    def test_budget_period_account_and_currency_queries_use_declared_indexes(self) -> None:
         queries = (
             ("SELECT uuid FROM budget WHERE from_timestamp <= ? AND to_timestamp > ?", (10, 10), "budget_to_from_idx"),
             ("SELECT uuid FROM account WHERE currency_uuid = ?", (b"currency",), "account_currency_idx"),
-            ("SELECT uuid FROM budget WHERE currency_uuid = ?", (b"currency",), "budget_currency_idx"),
-            ("SELECT budget_uuid FROM budget_accounts WHERE account_uuid = ?", (b"account",), "budget_accounts_account_idx"),
+            ("SELECT uuid FROM budget WHERE account_uuid = ? AND from_timestamp <= ? AND to_timestamp > ?", (b"account", 10, 10), "budget_account_period_idx"),
         )
         for query, parameters, index_name in queries:
             with self.subTest(index_name=index_name):

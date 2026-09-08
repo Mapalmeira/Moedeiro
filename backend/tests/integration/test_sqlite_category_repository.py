@@ -95,7 +95,7 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
         account = self.create_account(currency=currency)
         event = self.create_event()
         SqliteFinancialMovementRepository(self.connection).create(event.uuid, account.uuid, movement_child.uuid, -100, None)
-        self.create_budget(currency=currency, category=budget_child)
+        self.create_budget(account=account, category=budget_child)
 
         self.assertTrue(self.repository.is_in_use(movement_parent.uuid))
         self.assertTrue(self.repository.is_in_use(budget_parent.uuid))

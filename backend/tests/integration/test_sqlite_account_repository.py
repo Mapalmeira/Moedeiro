@@ -6,7 +6,6 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from app.infrastructure.persistence.sqlite.ledger.repository.account import SqliteAccountRepository
-from app.infrastructure.persistence.sqlite.ledger.repository.budget import SqliteBudgetRepository
 from app.infrastructure.persistence.sqlite.ledger.repository.financial_movement import SqliteFinancialMovementRepository
 from tests.integration.ledger_repository_test_case import LedgerRepositoryTestCase
 
@@ -91,8 +90,7 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
         category = self.create_category()
         event = self.create_event()
         SqliteFinancialMovementRepository(self.connection).create(event.uuid, movement_account.uuid, category.uuid, -100, None)
-        budget = self.create_budget(currency=self.currency, category=category)
-        SqliteBudgetRepository(self.connection).add_account(budget.uuid, budget_account.uuid)
+        self.create_budget(account=budget_account, category=category)
 
         self.assertTrue(self.repository.is_in_use(movement_account.uuid))
         self.assertTrue(self.repository.is_in_use(budget_account.uuid))

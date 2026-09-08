@@ -8,12 +8,18 @@ from fastapi import HTTPException, Request
 from pydantic import ValidationError
 
 from app.api.ledger.routes.account import create_ledger_account
-from app.api.ledger.routes.budget import create_ledger_budget, delete_ledger_budget, get_ledger_budget, get_ledger_budget_status, list_ledger_budget_statuses, list_ledger_budgets, update_ledger_budget
+from app.api.ledger.routes.budget import (
+    create_ledger_budget,
+    delete_ledger_budget,
+    get_ledger_budget,
+    list_ledger_budget_attention,
+    list_ledger_budget_overview,
+    update_ledger_budget,
+)
 from app.api.ledger.routes.category import create_ledger_category
 from app.api.ledger.routes.currency import create_ledger_currency
 from app.api.ledger.schema.account import CreateAccountRequest
 from app.api.ledger.schema.budget import CreateBudgetRequest, UpdateBudgetRequest
-from app.domain.ledger.model.budget import MAX_BUDGET_ACCOUNTS
 from app.api.ledger.schema.category import CreateCategoryRequest
 from app.api.ledger.schema.currency import CreateCurrencyRequest
 from app.api.registry.routes.ledger import create_owned_ledger
@@ -58,12 +64,6 @@ class BudgetRoutesTest(unittest.TestCase):
             self.request,
             self.user,
         )
-        self.other_currency = create_ledger_currency(
-            self.ledger.uuid,
-            CreateCurrencyRequest(name="Route Dolár", prefix="$", suffix=None, decimal_places=2, icon="lucide:CircleDollarSign", color_code="#BBCCDD"),
-            self.request,
-            self.user,
-        )
         self.category = create_ledger_category(
             self.ledger.uuid,
             CreateCategoryRequest(name="Food", icon="lucide:Utensils", color_code="#708090"),
@@ -88,110 +88,67 @@ class BudgetRoutesTest(unittest.TestCase):
             self.request,
             self.user,
         )
-        self.other_currency_account = create_ledger_account(
-            self.ledger.uuid,
-            CreateAccountRequest(name="Dolár", currency_uuid=self.other_currency.uuid, icon="lucide:WalletCards", color_code="#607080"),
-            self.request,
-            self.user,
-        )
 
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()
 
-    def payload(self, name: str = "Monthly", account_uuids=None) -> CreateBudgetRequest:
+    def payload(self, name: str = "Monthly", *, account_uuid=None, from_timestamp: int = 10, to_timestamp: int = 20, amount: int = 100) -> CreateBudgetRequest:
         return CreateBudgetRequest(
+            account_uuid=account_uuid or self.account.uuid,
             category_uuid=self.category.uuid,
-            currency_uuid=self.currency.uuid,
-            from_timestamp=10,
-            to_timestamp=20,
+            from_timestamp=from_timestamp,
+            to_timestamp=to_timestamp,
             name=name,
             description="Monthly spending",
-            amount=100,
+            amount=amount,
             icon="lucide:ReceiptText",
             color_code="#808080",
-            account_uuids=set() if account_uuids is None else account_uuids,
         )
 
-    def create_budget(self, name: str = "Monthly", account_uuids=None):
-        return create_ledger_budget(self.ledger.uuid, self.payload(name, account_uuids), self.request, self.user)
+    def create_budget(self, name: str = "Monthly", **changes):
+        return create_ledger_budget(self.ledger.uuid, self.payload(name, **changes), self.request, self.user)
 
-    def test_create_and_get_return_the_budget_with_its_account_selectors(self) -> None:
-        created = self.create_budget(account_uuids={self.second_account.uuid, self.account.uuid})
+    def add_spending(self, occurred_at: int, amount: int, *, account_uuid=None, category_uuid=None, quantity: int = 1) -> None:
+        with self.application.state.databases.open_ledger(f"{self.ledger.uuid}.sqlite") as unit_of_work:
+            event = unit_of_work.financial_event_repository.create(occurred_at, f"Spend {amount}", "TRANSACTION")
+            unit_of_work.financial_movement_repository.create(
+                event.uuid,
+                account_uuid or self.account.uuid,
+                category_uuid or self.category.uuid,
+                -amount,
+                None,
+                quantity,
+            )
+            unit_of_work.commit()
 
+    def test_create_and_get_use_one_account_and_derive_currency_outside_the_budget(self) -> None:
+        created = self.create_budget()
         response = get_ledger_budget(self.ledger.uuid, created.uuid, self.request, self.user)
 
         self.assertEqual(response, created)
-        self.assertEqual(response.color_code, "#808080")
-        self.assertEqual(response.account_uuids, sorted((self.account.uuid, self.second_account.uuid), key=lambda value: value.bytes))
+        self.assertEqual(response.account_uuid, self.account.uuid)
+        self.assertNotIn("currency_uuid", response.model_fields)
+        self.assertNotIn("account_uuids", response.model_fields)
 
-    def test_create_maps_the_budget_limit(self) -> None:
-        self.create_budget("First")
+    def test_create_maps_limit_relations_and_duplicate_name(self) -> None:
+        with self.assertRaises(HTTPException) as account_error:
+            create_ledger_budget(self.ledger.uuid, self.payload(account_uuid=uuid4()), self.request, self.user)
+        with self.assertRaises(HTTPException) as category_error:
+            create_ledger_budget(self.ledger.uuid, self.payload().model_copy(update={"category_uuid": uuid4()}), self.request, self.user)
+        self.create_budget("Existing")
+        with self.assertRaises(HTTPException) as name_error:
+            self.create_budget("Existing")
         with patch("app.application.ledger.use_cases.budget.MAXIMUM_BUDGETS", 1):
-            with self.assertRaises(HTTPException) as raised:
+            with self.assertRaises(HTTPException) as limit_error:
                 self.create_budget("Overflow")
 
-        self.assertEqual(raised.exception.status_code, 409)
-        self.assertEqual(raised.exception.detail, "Budget limit reached")
+        self.assertEqual((account_error.exception.status_code, account_error.exception.detail), (404, "Account not found"))
+        self.assertEqual((category_error.exception.status_code, category_error.exception.detail), (404, "Category not found"))
+        self.assertEqual((name_error.exception.status_code, name_error.exception.detail), (409, "Budget name unavailable"))
+        self.assertEqual((limit_error.exception.status_code, limit_error.exception.detail), (409, "Budget limit reached"))
 
-    def test_create_maps_unknown_relations_and_currency_mismatch(self) -> None:
-        payloads = (
-            (404, "Currency not found", self.payload().model_copy(update={"currency_uuid": uuid4()})),
-            (404, "Category not found", self.payload().model_copy(update={"category_uuid": uuid4()})),
-            (404, "Account not found", self.payload().model_copy(update={"account_uuids": {uuid4()}})),
-            (409, "Budget account uses a different currency", self.payload().model_copy(update={"account_uuids": {self.other_currency_account.uuid}})),
-        )
-
-        for expected_status, expected_detail, payload in payloads:
-            with self.subTest(expected_detail=expected_detail):
-                with self.assertRaises(HTTPException) as raised:
-                    create_ledger_budget(self.ledger.uuid, payload, self.request, self.user)
-                self.assertEqual(raised.exception.status_code, expected_status)
-                self.assertEqual(raised.exception.detail, expected_detail)
-
-    def test_create_and_update_map_an_unavailable_name(self) -> None:
-        existing = self.create_budget("Existing")
-
-        with self.assertRaises(HTTPException) as create_error:
-            self.create_budget("Existing")
-        other = self.create_budget("Other")
-        update_payload = UpdateBudgetRequest(
-            category_uuid=self.category.uuid,
-            from_timestamp=10,
-            to_timestamp=20,
-            name=existing.name,
-            description="Changed",
-            amount=200,
-            icon="lucide:Circle",
-            color_code="#102030",
-        )
-        with self.assertRaises(HTTPException) as update_error:
-            update_ledger_budget(self.ledger.uuid, other.uuid, update_payload, self.request, self.user)
-
-        self.assertEqual(create_error.exception.status_code, 409)
-        self.assertEqual(create_error.exception.detail, "Budget name unavailable")
-        self.assertEqual(update_error.exception.status_code, 409)
-        self.assertEqual(update_error.exception.detail, "Budget name unavailable")
-
-    def test_list_applies_pagination_and_ordering(self) -> None:
-        charlie = self.create_budget("Charlie")
-        alpha = self.create_budget("Alpha")
-        bravo = self.create_budget("Bravo")
-
-        descending = list_ledger_budgets(self.ledger.uuid, self.request, self.user, 1, 3, "name", False)
-        second_page = list_ledger_budgets(self.ledger.uuid, self.request, self.user, 2, 1, "name", True)
-
-        self.assertEqual(descending, [charlie, bravo, alpha])
-        self.assertEqual(second_page, [bravo])
-
-    def test_list_rejects_a_page_larger_than_the_configured_limit(self) -> None:
-        with self.assertRaises(HTTPException) as raised:
-            list_ledger_budgets(self.ledger.uuid, self.request, self.user, 1, 4, "name", True)
-
-        self.assertEqual(raised.exception.status_code, 422)
-
-    def test_update_changes_mutable_fields_and_account_scope_without_changing_currency(self) -> None:
-        created = self.create_budget(account_uuids={self.account.uuid})
-
+    def test_update_changes_mutable_fields_and_preserves_account(self) -> None:
+        created = self.create_budget()
         updated = update_ledger_budget(
             self.ledger.uuid,
             created.uuid,
@@ -204,105 +161,107 @@ class BudgetRoutesTest(unittest.TestCase):
                 amount=250,
                 icon="lucide:Landmark",
                 color_code="#AABBCC",
-                account_uuids={self.second_account.uuid},
             ),
             self.request,
             self.user,
         )
 
+        self.assertEqual(updated.account_uuid, created.account_uuid)
         self.assertEqual(updated.category_uuid, self.other_category.uuid)
-        self.assertEqual(updated.currency_uuid, created.currency_uuid)
-        self.assertEqual(updated.account_uuids, [self.second_account.uuid])
-        self.assertEqual(updated.color_code, "#AABBCC")
+        self.assertEqual(updated.name, "Updated")
+        self.assertNotIn("account_uuid", UpdateBudgetRequest.model_fields)
+        self.assertNotIn("currency_uuid", UpdateBudgetRequest.model_fields)
 
-    def test_status_returns_spending_and_rejects_an_inactive_budget(self) -> None:
-        budget = self.create_budget(account_uuids={self.account.uuid})
-        with self.application.state.databases.open_ledger(f"{self.ledger.uuid}.sqlite") as unit_of_work:
-            event = unit_of_work.financial_event_repository.create(15, "Groceries", "SHOPPING_LIST")
-            unit_of_work.financial_movement_repository.create(event.uuid, self.account.uuid, self.category.uuid, -30, "Item", 2)
-            unit_of_work.commit()
+    def test_overview_classifies_and_evaluates_only_budgets_that_started(self) -> None:
+        finished = self.create_budget("Finished", from_timestamp=1, to_timestamp=10)
+        active = self.create_budget("Active", from_timestamp=10, to_timestamp=30)
+        future = self.create_budget("Future", from_timestamp=30, to_timestamp=40)
+        self.add_spending(5, 20)
+        self.add_spending(15, 30)
 
-        response = get_ledger_budget_status(self.ledger.uuid, budget.uuid, 15, self.request, self.user)
+        with patch("app.api.ledger.routes.budget.time.time", return_value=20):
+            page = list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 3)
 
-        self.assertEqual(response.spent_amount, 60)
+        by_uuid = {item.uuid: item for item in page.items}
+        self.assertEqual(by_uuid[finished.uuid].state, "FINISHED")
+        self.assertEqual(by_uuid[finished.uuid].spent_amount, 20)
+        self.assertTrue(by_uuid[finished.uuid].fulfilled)
+        self.assertEqual(by_uuid[active.uuid].state, "ACTIVE")
+        self.assertEqual(by_uuid[active.uuid].spent_amount, 30)
+        self.assertIsNone(by_uuid[future.uuid].spent_amount)
+
+    def test_overview_filters_states_search_and_uses_cursor(self) -> None:
+        self.create_budget("Alpha", from_timestamp=10, to_timestamp=30)
+        self.create_budget("Bravo", from_timestamp=10, to_timestamp=30)
+        self.create_budget("Future", from_timestamp=30, to_timestamp=40)
+
+        with patch("app.api.ledger.routes.budget.time.time", return_value=20):
+            first = list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 1, ["ACTIVE"], None, "a")
+            second = list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 1, ["ACTIVE"], None, None, first.next_cursor)
+
+        self.assertEqual([item.name for item in first.items], ["Alpha"])
+        self.assertEqual([item.name for item in second.items], ["Bravo"])
+
+    def test_overview_and_attention_reject_unknown_account_filter(self) -> None:
+        missing = uuid4()
+        with patch("app.api.ledger.routes.budget.time.time", return_value=20):
+            with self.assertRaises(HTTPException) as overview_error:
+                list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 1, None, missing)
+            with self.assertRaises(HTTPException) as attention_error:
+                list_ledger_budget_attention(self.ledger.uuid, missing, self.request, self.user, 1)
+
+        self.assertEqual((overview_error.exception.status_code, overview_error.exception.detail), (404, "Account not found"))
+        self.assertEqual((attention_error.exception.status_code, attention_error.exception.detail), (404, "Account not found"))
+
+    def test_attention_returns_the_active_budgets_with_highest_usage_first(self) -> None:
+        over = self.create_budget("Over", amount=100, from_timestamp=10, to_timestamp=40)
+        lower = self.create_budget("Lower", amount=200, from_timestamp=10, to_timestamp=35)
+        self.create_budget("Future", from_timestamp=30, to_timestamp=40)
+        self.add_spending(15, 120)
+
+        with patch("app.api.ledger.routes.budget.time.time", return_value=20):
+            items = list_ledger_budget_attention(self.ledger.uuid, self.account.uuid, self.request, self.user, 2)
+
+        self.assertEqual([item.uuid for item in items], [over.uuid, lower.uuid])
+        self.assertEqual([item.spent_amount for item in items], [120, 120])
+
+    def test_page_size_and_invalid_cursor_are_rejected(self) -> None:
+        with self.assertRaises(HTTPException) as page_error:
+            list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 4)
+        with self.assertRaises(HTTPException) as cursor_error:
+            list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 1, None, None, None, "not-a-cursor")
+
+        self.assertEqual(page_error.exception.status_code, 422)
+        self.assertEqual(cursor_error.exception.status_code, 422)
+        self.assertEqual(cursor_error.exception.detail, "Invalid cursor")
+
+    def test_delete_and_missing_budget_map_to_not_found(self) -> None:
+        created = self.create_budget()
+        self.assertIsNone(delete_ledger_budget(self.ledger.uuid, created.uuid, self.request, self.user))
         with self.assertRaises(HTTPException) as raised:
-            get_ledger_budget_status(self.ledger.uuid, budget.uuid, 20, self.request, self.user)
-        self.assertEqual(raised.exception.status_code, 409)
-        self.assertEqual(raised.exception.detail, "Budget is not active at timestamp")
+            get_ledger_budget(self.ledger.uuid, created.uuid, self.request, self.user)
+        self.assertEqual((raised.exception.status_code, raised.exception.detail), (404, "Budget not found"))
 
-    def test_status_list_returns_active_budgets_with_pagination(self) -> None:
-        monthly = self.create_budget("Monthly")
-        alpha = self.create_budget("Alpha")
-
-        first_page = list_ledger_budget_statuses(self.ledger.uuid, 15, self.request, self.user, 1, 1)
-        second_page = list_ledger_budget_statuses(self.ledger.uuid, 15, self.request, self.user, 2, 1)
-
-        self.assertEqual([budget_status.budget_uuid for budget_status in first_page], [alpha.uuid])
-        self.assertEqual([budget_status.budget_uuid for budget_status in second_page], [monthly.uuid])
-
-    def test_delete_removes_a_budget_and_missing_members_return_not_found(self) -> None:
-        budget = self.create_budget()
-
-        self.assertIsNone(delete_ledger_budget(self.ledger.uuid, budget.uuid, self.request, self.user))
-
-        operations = (
-            lambda: get_ledger_budget(self.ledger.uuid, budget.uuid, self.request, self.user),
-            lambda: delete_ledger_budget(self.ledger.uuid, budget.uuid, self.request, self.user),
-            lambda: get_ledger_budget_status(self.ledger.uuid, budget.uuid, 15, self.request, self.user),
-        )
-        for operation in operations:
-            with self.subTest(operation=operation):
-                with self.assertRaises(HTTPException) as raised:
-                    operation()
-                self.assertEqual(raised.exception.status_code, 404)
-                self.assertEqual(raised.exception.detail, "Budget not found")
-
-    def test_another_user_cannot_discover_or_change_budgets(self) -> None:
-        budget = self.create_budget()
-        operations = (
-            lambda: list_ledger_budgets(self.ledger.uuid, self.request, self.other_user, 1, 3, "name", True),
-            lambda: get_ledger_budget(self.ledger.uuid, budget.uuid, self.request, self.other_user),
-            lambda: delete_ledger_budget(self.ledger.uuid, budget.uuid, self.request, self.other_user),
-        )
-
-        for operation in operations:
-            with self.subTest(operation=operation):
-                with self.assertRaises(HTTPException) as raised:
-                    operation()
-                self.assertEqual(raised.exception.status_code, 404)
-                self.assertEqual(raised.exception.detail, "Ledger not found")
-
-    def test_request_schemas_enforce_limits_and_keep_currency_immutable(self) -> None:
+    def test_request_schemas_enforce_budget_limits_and_allow_zero(self) -> None:
+        self.assertEqual(self.payload(amount=0).amount, 0)
         invalid_values = (
-            {**self.payload().model_dump(), "from_timestamp": 20, "to_timestamp": 20},
             {**self.payload().model_dump(), "name": ""},
-            {**self.payload().model_dump(), "description": "x" * 301},
+            {**self.payload().model_dump(), "description": ""},
             {**self.payload().model_dump(), "amount": -1},
-            {**self.payload().model_dump(), "icon": "ReceiptText"},
-            {**self.payload().model_dump(), "color_code": "red"},
-            {**self.payload().model_dump(), "account_uuids": {uuid4() for _ in range(MAX_BUDGET_ACCOUNTS + 1)}},
+            {**self.payload().model_dump(), "from_timestamp": 20, "to_timestamp": 20},
         )
         for values in invalid_values:
             with self.subTest(values=values):
                 with self.assertRaises(ValidationError):
                     CreateBudgetRequest(**values)
 
-        self.assertNotIn("currency_uuid", UpdateBudgetRequest.model_fields)
-
-    def test_routes_expose_the_complete_budget_lifecycle_and_status(self) -> None:
+    def test_openapi_exposes_overview_and_attention_before_budget_identifier(self) -> None:
         paths = self.application.openapi()["paths"]
-        collection = paths["/api/ledgers/{ledger_uuid}/budgets"]
-        statuses = paths["/api/ledgers/{ledger_uuid}/budgets/statuses"]
-        member = paths["/api/ledgers/{ledger_uuid}/budgets/{budget_uuid}"]
-        budget_status = paths["/api/ledgers/{ledger_uuid}/budgets/{budget_uuid}/status"]
-
-        self.assertIn("201", collection["post"]["responses"])
-        self.assertIn("200", collection["get"]["responses"])
-        self.assertIn("200", statuses["get"]["responses"])
-        self.assertIn("200", member["get"]["responses"])
-        self.assertIn("200", member["put"]["responses"])
-        self.assertNotIn("content", member["delete"]["responses"]["204"])
-        self.assertIn("200", budget_status["get"]["responses"])
+        self.assertIn("/api/ledgers/{ledger_uuid}/budgets/overview", paths)
+        self.assertIn("/api/ledgers/{ledger_uuid}/budgets/attention", paths)
+        self.assertIn("/api/ledgers/{ledger_uuid}/budgets/{budget_uuid}", paths)
+        self.assertIn("get", paths["/api/ledgers/{ledger_uuid}/budgets/overview"])
+        self.assertIn("get", paths["/api/ledgers/{ledger_uuid}/budgets/attention"])
 
 
 if __name__ == "__main__":

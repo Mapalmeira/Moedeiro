@@ -94,9 +94,8 @@ class SqliteCurrencyRepository(CurrencyRepository):
         row = self.connection.execute(
             """
             SELECT EXISTS(SELECT 1 FROM account WHERE currency_uuid = ?)
-                OR EXISTS(SELECT 1 FROM budget WHERE currency_uuid = ?)
             """,
-            (uuid.bytes, uuid.bytes),
+            (uuid.bytes,),
         ).fetchone()
         return bool(row[0])
 

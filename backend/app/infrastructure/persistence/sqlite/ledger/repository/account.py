@@ -97,7 +97,7 @@ class SqliteAccountRepository(AccountRepository):
         row = self.connection.execute(
             """
             SELECT EXISTS(SELECT 1 FROM financial_movement WHERE account_uuid = ?)
-                OR EXISTS(SELECT 1 FROM budget_accounts WHERE account_uuid = ?)
+                OR EXISTS(SELECT 1 FROM budget WHERE account_uuid = ?)
             """,
             (uuid.bytes, uuid.bytes),
         ).fetchone()

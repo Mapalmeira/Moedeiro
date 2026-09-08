@@ -111,8 +111,7 @@ class AccountUseCasesTest(unittest.TestCase):
         account = self.create()
         with self.open_ledger() as unit_of_work:
             category = unit_of_work.category_repository.create("Food", "lucide:Utensils", b"\x80\x80\x80", None)
-            budget = unit_of_work.budget_repository.create(category.uuid, self.currency.uuid, 20, 30, "Monthly", "Food budget", 100, "lucide:ReceiptText", b"\x80\x80\x80")
-            unit_of_work.budget_repository.add_account(budget.uuid, account.uuid)
+            unit_of_work.budget_repository.create(account.uuid, category.uuid, 20, 30, "Monthly", "Food budget", 100, "lucide:ReceiptText", b"\x80\x80\x80")
             unit_of_work.commit()
 
         with self.assertRaises(AccountInUseError):
