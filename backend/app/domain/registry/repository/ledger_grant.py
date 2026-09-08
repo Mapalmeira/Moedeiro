@@ -32,3 +32,7 @@ class LedgerGrantRepository(ABC):
     @abstractmethod
     def list_by_ledger(self, ledger_uuid: UUID) -> list[LedgerGrant]:
         pass
+
+    @abstractmethod
+    def list_all(self) -> list[LedgerGrant]:
+        pass

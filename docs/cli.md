@@ -67,6 +67,22 @@ moedeiro user delete UUID
 
 `user delete` permanently deletes the user and the database files for ledgers currently owned by that user. Related registry records, including sessions, remembered sessions, MFA methods, recovery codes, preferences, and ledger grants, are removed with the account.
 
+## Managing ledger grants
+
+Administrative ledger-grant operations are available under `moedeiro grant`:
+
+```text
+moedeiro grant list [USER_UUID] [LEDGER_UUID]
+moedeiro grant set-owner USER_UUID LEDGER_UUID
+moedeiro grant revoke GRANT_UUID
+```
+
+`grant list` shows each grant's UUID, user UUID, ledger UUID, role, creation time, and revocation time. Supply a user UUID, and optionally a ledger UUID, to filter the result.
+
+`grant set-owner USER_UUID LEDGER_UUID` transfers ownership of an existing ledger to the selected user. The prior owner's grant is revoked, so a ledger never has more than one active owner. The selected user can own at most 10 ledgers.
+
+`grant revoke GRANT_UUID` revokes an active grant.
+
 ## Removing inactive records
 
 Inactive registry records can be removed with:

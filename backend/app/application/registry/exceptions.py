@@ -1,6 +1,19 @@
 class LedgerLimitReachedError(Exception):
     pass
 
+
+class LedgerNotFoundError(Exception):
+    pass
+
+
+class LedgerOwnershipAlreadyExistsError(Exception):
+    pass
+
+
+class LedgerGrantNotFoundError(Exception):
+    pass
+
+
 class InvitationNotAvailableError(Exception):
     pass
 

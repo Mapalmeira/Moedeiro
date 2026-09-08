@@ -106,6 +106,35 @@ class UserDeletionCliTest(unittest.TestCase):
         self.assertIn(f"{user.uuid}\tBob\t100\n", output.getvalue())
 
     @patch("app.cli.time.time", return_value=100)
+    def test_sets_ledger_owner_lists_grants_and_revokes_a_grant(self, current_time) -> None:
+        with self.databases.open_registry() as unit_of_work:
+            second_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
+            unit_of_work.commit()
+        output = StringIO()
+
+        with redirect_stdout(output):
+            exit_code = main(["grant", "set-owner", str(second_user.uuid), str(self.owned_ledger.uuid)], self.settings)
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(output.getvalue(), f"Set user {second_user.uuid} as owner of ledger {self.owned_ledger.uuid}\n")
+        with self.databases.open_registry() as unit_of_work:
+            new_grant = unit_of_work.ledger_grant_repository.get_active(second_user.uuid, self.owned_ledger.uuid)
+        assert new_grant is not None
+        output = StringIO()
+        with redirect_stdout(output):
+            exit_code = main(["grant", "list", str(second_user.uuid), str(self.owned_ledger.uuid)], self.settings)
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(output.getvalue(), f"{new_grant.uuid}\t{second_user.uuid}\t{self.owned_ledger.uuid}\tOWNER\t100\t\n")
+        with self.databases.open_registry() as unit_of_work:
+            grant = unit_of_work.ledger_grant_repository.get_active(self.user.uuid, self.owned_ledger.uuid)
+        self.assertIsNone(grant)
+        output = StringIO()
+        with redirect_stdout(output):
+            exit_code = main(["grant", "revoke", str(new_grant.uuid)], self.settings)
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(output.getvalue(), f"Revoked ledger grant {new_grant.uuid}\n")
+
+    @patch("app.cli.time.time", return_value=100)
     @patch("app.domain.registry.model.crockford_code.secrets.token_bytes", return_value=bytes(range(10)))
     def test_recover_password_emits_a_code_without_exposing_recovery_code_administration(self, token_bytes, current_time) -> None:
         output = StringIO()

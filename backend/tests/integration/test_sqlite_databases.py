@@ -231,13 +231,14 @@ class SqliteDatabasesTest(unittest.TestCase):
         self.databases.initialize_ledger(ledger_uuid, 10, "pt-BR")
         migrations_directory = self.directory / "registry_migrations"
         migrations_directory.mkdir()
-        (migrations_directory / "0002_add_marker.sql").write_text(
+        target_version = CURRENT_REGISTRY_SCHEMA_VERSION + 1
+        (migrations_directory / f"{target_version:04d}_add_marker.sql").write_text(
             "ALTER TABLE registry_metadata ADD COLUMN marker TEXT;\n",
             encoding="utf-8",
         )
         self.databases.registry_migrator = SqliteSchemaMigrator(
             "registry_metadata",
-            2,
+            target_version,
             migrations_directory,
         )
 
@@ -247,7 +248,7 @@ class SqliteDatabasesTest(unittest.TestCase):
         try:
             self.assertEqual(
                 connection.execute("SELECT schema_version FROM registry_metadata WHERE singleton = 1").fetchone()[0],
-                2,
+                target_version,
             )
             self.assertIn(
                 "marker",
@@ -262,7 +263,7 @@ class SqliteDatabasesTest(unittest.TestCase):
         try:
             self.assertEqual(
                 connection.execute("SELECT schema_version FROM registry_metadata WHERE singleton = 1").fetchone()[0],
-                1,
+                CURRENT_REGISTRY_SCHEMA_VERSION,
             )
         finally:
             connection.close()

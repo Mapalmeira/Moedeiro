@@ -4,8 +4,9 @@ import time
 from collections.abc import Sequence
 from uuid import UUID
 
-from app.application.registry.exceptions import UserNameUnavailableError, UserNotFoundError
+from app.application.registry.exceptions import LedgerGrantNotFoundError, LedgerLimitReachedError, LedgerNotFoundError, LedgerOwnershipAlreadyExistsError, UserNameUnavailableError, UserNotFoundError
 from app.application.registry.use_cases.cleanup import remove_inactive_records
+from app.application.registry.use_cases.grant import list_ledger_grants, revoke_ledger_grant, set_ledger_owner
 from app.application.registry.use_cases.mfa import disable_mfa
 from app.application.registry.use_cases.password import create_recovery_code
 from app.application.registry.use_cases.user import create_user, delete_user, list_users
@@ -38,6 +39,8 @@ def main(arguments: Sequence[str] | None = None, settings: Settings | None = Non
         return _remove_inactive_records(databases, parsed.days, int(time.time()))
     if parsed.resource == "user":
         return _handle_user(parsed, databases)
+    if parsed.resource == "grant":
+        return _handle_grant(parsed, databases, int(time.time()))
     parser.error(f"Unsupported resource: {parsed.resource}")
 
 
@@ -53,6 +56,8 @@ def _create_parser() -> argparse.ArgumentParser:
     cleanup.add_argument("--days", type=_nonnegative_int, required=True)
     user = resources.add_parser("user", help="Manage users")
     _add_user_actions(user)
+    grant = resources.add_parser("grant", help="Manage ledger grants")
+    _add_grant_actions(grant)
     return parser
 
 
@@ -77,6 +82,18 @@ def _add_user_actions(parser: argparse.ArgumentParser) -> None:
     disable_mfa.add_argument("uuid", type=UUID)
     delete = actions.add_parser("delete")
     delete.add_argument("uuid", type=UUID)
+
+
+def _add_grant_actions(parser: argparse.ArgumentParser) -> None:
+    actions = parser.add_subparsers(dest="action", required=True)
+    list_grants = actions.add_parser("list")
+    list_grants.add_argument("user_uuid", type=UUID, nargs="?")
+    list_grants.add_argument("ledger_uuid", type=UUID, nargs="?")
+    set_owner = actions.add_parser("set-owner")
+    set_owner.add_argument("user_uuid", type=UUID)
+    set_owner.add_argument("ledger_uuid", type=UUID)
+    revoke = actions.add_parser("revoke")
+    revoke.add_argument("grant_uuid", type=UUID)
 
 
 def _handle_invitation(arguments: argparse.Namespace, databases: SqliteDatabases, timestamp: int) -> int:
@@ -139,6 +156,16 @@ def _handle_user(arguments: argparse.Namespace, databases: SqliteDatabases) -> i
     raise ValueError(f"Unsupported user action: {arguments.action}")
 
 
+def _handle_grant(arguments: argparse.Namespace, databases: SqliteDatabases, timestamp: int) -> int:
+    if arguments.action == "list":
+        return _list_grants(databases, arguments.user_uuid, arguments.ledger_uuid)
+    if arguments.action == "set-owner":
+        return _set_ledger_owner(databases, arguments.user_uuid, arguments.ledger_uuid, timestamp)
+    if arguments.action == "revoke":
+        return _revoke_ledger_grant(databases, arguments.grant_uuid, timestamp)
+    raise ValueError(f"Unsupported grant action: {arguments.action}")
+
+
 def _create_user(databases: SqliteDatabases, name: str, timestamp: int) -> int:
     password = getpass.getpass("Password: ")
     if password != getpass.getpass("Confirm password: "):
@@ -156,6 +183,42 @@ def _create_user(databases: SqliteDatabases, name: str, timestamp: int) -> int:
 def _list_users(databases: SqliteDatabases) -> int:
     for user in list_users(databases.open_registry, "name", True):
         print(f"{user.uuid}\t{user.name}\t{user.created_at}")
+    return 0
+
+
+def _list_grants(databases: SqliteDatabases, user_uuid: UUID | None, ledger_uuid: UUID | None) -> int:
+    for grant in list_ledger_grants(databases.open_registry, user_uuid, ledger_uuid):
+        revoked_at = "" if grant.revoked_at is None else grant.revoked_at
+        print(f"{grant.uuid}\t{grant.user_uuid}\t{grant.ledger_uuid}\t{grant.role}\t{grant.created_at}\t{revoked_at}")
+    return 0
+
+
+def _set_ledger_owner(databases: SqliteDatabases, user_uuid: UUID, ledger_uuid: UUID, timestamp: int) -> int:
+    try:
+        set_ledger_owner(databases.open_registry, user_uuid, ledger_uuid, timestamp)
+    except UserNotFoundError:
+        print("User not found")
+        return 1
+    except LedgerNotFoundError:
+        print("Ledger not found")
+        return 1
+    except LedgerOwnershipAlreadyExistsError:
+        print("User already owns ledger")
+        return 1
+    except LedgerLimitReachedError:
+        print("Ledger limit reached")
+        return 1
+    print(f"Set user {user_uuid} as owner of ledger {ledger_uuid}")
+    return 0
+
+
+def _revoke_ledger_grant(databases: SqliteDatabases, grant_uuid: UUID, timestamp: int) -> int:
+    try:
+        revoke_ledger_grant(databases.open_registry, grant_uuid, timestamp)
+    except LedgerGrantNotFoundError:
+        print("Active ledger grant not found")
+        return 1
+    print(f"Revoked ledger grant {grant_uuid}")
     return 0
 
 

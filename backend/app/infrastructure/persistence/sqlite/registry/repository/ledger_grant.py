@@ -45,6 +45,10 @@ class SqliteLedgerGrantRepository(LedgerGrantRepository):
         rows = self.connection.execute(f"SELECT {self._columns} FROM ledger_grant WHERE ledger_uuid = ?", (ledger_uuid.bytes,)).fetchall()
         return [self._to_model(row) for row in rows]
 
+    def list_all(self) -> list[LedgerGrant]:
+        rows = self.connection.execute(f"SELECT {self._columns} FROM ledger_grant ORDER BY created_at ASC, uuid ASC").fetchall()
+        return [self._to_model(row) for row in rows]
+
     @staticmethod
     def _to_model(row: sqlite3.Row) -> LedgerGrant:
         return LedgerGrant.model_validate(dict(row))

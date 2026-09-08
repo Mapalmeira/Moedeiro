@@ -32,6 +32,15 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 31)
 
+    def test_only_one_active_owner_exists_for_each_ledger(self) -> None:
+        first_user = self.create_user()
+        second_user = self.create_user()
+        ledger = self.create_ledger()
+        self.grant_repository.create(first_user.uuid, ledger.uuid, "OWNER", 30)
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.grant_repository.create(second_user.uuid, ledger.uuid, "OWNER", 31)
+
     def test_revoked_grant_can_be_replaced(self) -> None:
         user = self.create_user()
         ledger = self.create_ledger()
@@ -60,10 +69,12 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
         second_ledger = self.create_ledger()
         first = self.create_grant(first_user, first_ledger)
         second = self.create_grant(first_user, second_ledger)
-        third = self.create_grant(second_user, first_ledger)
+        third_ledger = self.create_ledger()
+        third = self.create_grant(second_user, third_ledger)
 
         self.assertCountEqual([grant.uuid for grant in self.grant_repository.list_by_user(first_user.uuid)], [first.uuid, second.uuid])
-        self.assertCountEqual([grant.uuid for grant in self.grant_repository.list_by_ledger(first_ledger.uuid)], [first.uuid, third.uuid])
+        self.assertEqual(self.grant_repository.list_by_ledger(first_ledger.uuid), [first])
+        self.assertEqual(self.grant_repository.list_by_user(second_user.uuid), [third])
 
     def test_delete_inactive_before_removes_only_eligible_grants(self) -> None:
         user = self.create_user()

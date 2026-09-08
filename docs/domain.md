@@ -6,7 +6,7 @@
 
 * **Ledger** is a named financial dataset with its own SQLite database. The registry records its storage path, appearance, and most recent access time; it does not contain its financial records. A user may own up to 10 ledgers.
 
-* **Ledger grant** links a user to a ledger. The current role is `OWNER`; grants can be revoked while retaining their history.
+* **Ledger grant** links a user to a ledger. The current role is `OWNER`; grants can be revoked while retaining their history. A ledger has at most one active owner.
 
 * **User preferences** hold optional presentation settings: language (`pt-BR` or `en`), date, time, and number formats, theme, and IANA timezone.
 
