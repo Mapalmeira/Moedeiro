@@ -19,8 +19,6 @@ class BudgetTest(unittest.TestCase):
             "name": "Monthly",
             "description": "Monthly spending",
             "amount": 0,
-            "icon": "lucide:ReceiptText",
-            "color_code": b"\x80\x80\x80",
         }
         values.update(changes)
         return values
@@ -57,13 +55,6 @@ class BudgetTest(unittest.TestCase):
             with self.subTest(description_length=len(description)):
                 with self.assertRaises(ValidationError):
                     Budget(**self.values(description=description))
-
-    def test_rejects_icon_or_color_outside_limits(self) -> None:
-        invalid_values = (("icon", ""), ("icon", "lucide:" + "x" * 94), ("color_code", b"\x00\x00"), ("color_code", b"\x00" * 4))
-        for field, value in invalid_values:
-            with self.subTest(field=field, length=len(value)):
-                with self.assertRaises(ValidationError):
-                    Budget(**self.values(**{field: value}))
 
 
 if __name__ == "__main__":

@@ -52,4 +52,4 @@ class LedgerRepositoryTestCase(unittest.TestCase):
         selected_account = account or self.create_account()
         selected_category = category or self.create_category()
         repository = SqliteBudgetRepository(self.connection)
-        return repository.create(selected_account.uuid, selected_category.uuid, from_timestamp, to_timestamp, name, "Monthly spending", amount, "lucide:ReceiptText", b"\x80\x80\x80")
+        return repository.create(selected_account.uuid, selected_category.uuid, from_timestamp, to_timestamp, name, "Monthly spending", amount)

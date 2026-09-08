@@ -26,7 +26,7 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
         self.movement_uuid = uuid4().bytes
         self.budget_uuid = uuid4().bytes
         self.connection.execute(
-            "INSERT INTO ledger_metadata VALUES (1, ?, 2, 0)",
+            "INSERT INTO ledger_metadata VALUES (1, ?, 1, 0)",
             (self.ledger_uuid,),
         )
         self.connection.execute(
@@ -50,8 +50,8 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             (self.movement_uuid, self.event_uuid, self.account_uuid, self.category_uuid),
         )
         self.connection.execute(
-            "INSERT INTO budget VALUES (?, 0, 10, 'Monthly', 'Spending', 100, 'lucide:ReceiptText', ?, ?, ?)",
-            (self.budget_uuid, b"\x80\x80\x80", self.account_uuid, self.category_uuid),
+            "INSERT INTO budget VALUES (?, 0, 10, 'Monthly', 'Spending', 100, ?, ?)",
+            (self.budget_uuid, self.account_uuid, self.category_uuid),
         )
 
     def tearDown(self) -> None:
@@ -136,7 +136,7 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
                     self.connection.execute(f"UPDATE {table} SET {column} = ?", (value,))
 
     def test_icon_columns_enforce_only_the_one_to_one_hundred_character_length(self) -> None:
-        for table in ("currency", "account", "category", "budget"):
+        for table in ("currency", "account", "category"):
             for value in ("x", "x" * 100, "not-a-domain-icon", "unicode:ABCD"):
                 with self.subTest(table=table, value=value):
                     self.connection.execute(f"UPDATE {table} SET icon = ?", (value,))
@@ -149,7 +149,7 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
                         self.connection.execute(f"UPDATE {table} SET icon = ?", (value,))
 
     def test_enforces_color_as_rgb_bytes(self) -> None:
-        for table in ("currency", "account", "category", "budget"):
+        for table in ("currency", "account", "category"):
             for color_code in (b"\x00\x00", b"\x00" * 4):
                 with self.subTest(table=table, size=len(color_code)):
                     with self.assertRaises(sqlite3.IntegrityError):

@@ -101,8 +101,6 @@ class BudgetRoutesTest(unittest.TestCase):
             name=name,
             description="Monthly spending",
             amount=amount,
-            icon="lucide:ReceiptText",
-            color_code="#808080",
         )
 
     def create_budget(self, name: str = "Monthly", **changes):
@@ -159,8 +157,6 @@ class BudgetRoutesTest(unittest.TestCase):
                 name="Updated",
                 description="Updated spending",
                 amount=250,
-                icon="lucide:Landmark",
-                color_code="#AABBCC",
             ),
             self.request,
             self.user,

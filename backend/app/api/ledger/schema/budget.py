@@ -1,14 +1,10 @@
-from typing import Annotated, Self
+from typing import Self
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, model_validator
 
-from app.domain.appearance import Icon
 from app.domain.ledger.model.budget import Budget, BudgetAmount, BudgetDescription, BudgetName
 from app.domain.ledger.model.budget_overview import BudgetOverviewItem, BudgetOverviewState
-
-
-HexRgbColorCode = Annotated[str, Field(pattern=r"^#[0-9A-Fa-f]{6}$")]
 
 
 class CreateBudgetRequest(BaseModel):
@@ -19,8 +15,6 @@ class CreateBudgetRequest(BaseModel):
     name: BudgetName
     description: BudgetDescription
     amount: BudgetAmount
-    icon: Icon
-    color_code: HexRgbColorCode
 
     @model_validator(mode="after")
     def validate_period(self) -> Self:
@@ -36,8 +30,6 @@ class UpdateBudgetRequest(BaseModel):
     name: BudgetName
     description: BudgetDescription
     amount: BudgetAmount
-    icon: Icon
-    color_code: HexRgbColorCode
 
     @model_validator(mode="after")
     def validate_period(self) -> Self:
@@ -55,8 +47,6 @@ class BudgetResponse(BaseModel):
     name: BudgetName
     description: BudgetDescription
     amount: BudgetAmount
-    icon: Icon
-    color_code: HexRgbColorCode
 
     @classmethod
     def from_budget(cls, budget: Budget) -> Self:
@@ -69,8 +59,6 @@ class BudgetResponse(BaseModel):
             name=budget.name,
             description=budget.description,
             amount=budget.amount,
-            icon=budget.icon,
-            color_code=f"#{budget.color_code.hex().upper()}",
         )
 
 

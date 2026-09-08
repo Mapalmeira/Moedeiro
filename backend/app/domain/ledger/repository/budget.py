@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.budget import Budget, BudgetAmount, BudgetDescription, BudgetName
 
 
@@ -16,8 +15,6 @@ class BudgetRepository(ABC):
         name: BudgetName,
         description: BudgetDescription,
         amount: BudgetAmount,
-        icon: Icon,
-        color_code: RgbColorCode,
     ) -> Budget:
         pass
 

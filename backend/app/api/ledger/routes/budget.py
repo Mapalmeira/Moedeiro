@@ -31,8 +31,6 @@ def create_ledger_budget(ledger_uuid: UUID, payload: CreateBudgetRequest, reques
             payload.name,
             payload.description,
             payload.amount,
-            payload.icon,
-            bytes.fromhex(payload.color_code[1:]),
         )
     except AccountNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found") from error
@@ -123,8 +121,6 @@ def update_ledger_budget(ledger_uuid: UUID, budget_uuid: UUID, payload: UpdateBu
             payload.name,
             payload.description,
             payload.amount,
-            payload.icon,
-            bytes.fromhex(payload.color_code[1:]),
         )
     except BudgetNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found") from error

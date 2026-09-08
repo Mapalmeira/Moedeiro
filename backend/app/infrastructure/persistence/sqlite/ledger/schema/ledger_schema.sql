@@ -75,8 +75,6 @@ CREATE TABLE budget (
     description TEXT NOT NULL CHECK (length(description) BETWEEN 1 AND 300),
 
     amount INTEGER NOT NULL CHECK (amount >= 0),
-    icon TEXT NOT NULL CHECK (length(icon) BETWEEN 1 AND 100),
-    color_code BLOB NOT NULL CHECK (length(color_code) = 3),
 
     account_uuid BLOB NOT NULL,
     category_uuid BLOB NOT NULL,

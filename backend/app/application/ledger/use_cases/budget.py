@@ -3,7 +3,6 @@ from uuid import UUID
 
 from app.application.ledger.exceptions import AccountNotFoundError, BudgetLimitReachedError, BudgetNameUnavailableError, BudgetNotFoundError, CategoryNotFoundError
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
-from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.limits import MAXIMUM_BUDGETS
 from app.domain.ledger.model.budget import Budget, BudgetAmount, BudgetDescription, BudgetName
 
@@ -17,8 +16,6 @@ def create_budget(
     name: BudgetName,
     description: BudgetDescription,
     amount: BudgetAmount,
-    icon: Icon,
-    color_code: RgbColorCode,
 ) -> Budget:
     with unit_of_work_factory() as unit_of_work:
         if unit_of_work.budget_repository.count() >= MAXIMUM_BUDGETS:
@@ -35,8 +32,6 @@ def create_budget(
             name,
             description,
             amount,
-            icon,
-            color_code,
         )
         unit_of_work.commit()
     return budget
@@ -59,8 +54,6 @@ def update_budget(
     name: BudgetName,
     description: BudgetDescription,
     amount: BudgetAmount,
-    icon: Icon,
-    color_code: RgbColorCode,
 ) -> Budget:
     with unit_of_work_factory() as unit_of_work:
         budget = unit_of_work.budget_repository.get(budget_uuid)
@@ -76,8 +69,6 @@ def update_budget(
                 "name": name,
                 "description": description,
                 "amount": amount,
-                "icon": icon,
-                "color_code": color_code,
             }
         )
         budget_with_name = unit_of_work.budget_repository.get_by_name(updated_budget.name)

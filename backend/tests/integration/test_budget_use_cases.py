@@ -21,7 +21,7 @@ class BudgetUseCasesTest(unittest.TestCase):
         self.temporary_directory = TemporaryDirectory()
         self.database = SqliteDatabase.initialize(Path(self.temporary_directory.name) / "ledger.sqlite", SCHEMA_PATH)
         with self.open_ledger() as unit_of_work:
-            unit_of_work.ledger_metadata_repository.create(uuid4(), 2, 10)
+            unit_of_work.ledger_metadata_repository.create(uuid4(), 1, 10)
             self.currency = unit_of_work.currency_repository.create("Real", "R$", None, 2, "lucide:CircleDollarSign", b"\x10\x20\x30")
             self.category = unit_of_work.category_repository.create("Food", "lucide:Utensils", b"\x70\x80\x90", None)
             self.other_category = unit_of_work.category_repository.create("Leisure", "lucide:Gamepad2", b"\x80\x90\xa0", None)
@@ -45,8 +45,6 @@ class BudgetUseCasesTest(unittest.TestCase):
             name,
             "Monthly spending",
             amount,
-            "lucide:ReceiptText",
-            b"\x80\x80\x80",
         )
 
     def test_create_commits_one_account_relation(self) -> None:
@@ -65,8 +63,8 @@ class BudgetUseCasesTest(unittest.TestCase):
 
     def test_create_rejects_unknown_account_category_duplicate_name_and_invalid_period(self) -> None:
         operations = (
-            (AccountNotFoundError, lambda: create_budget(self.open_ledger, uuid4(), self.category.uuid, 10, 20, "Account", "Description", 100, "lucide:Circle", b"\x10\x20\x30")),
-            (CategoryNotFoundError, lambda: create_budget(self.open_ledger, self.account.uuid, uuid4(), 10, 20, "Category", "Description", 100, "lucide:Circle", b"\x10\x20\x30")),
+            (AccountNotFoundError, lambda: create_budget(self.open_ledger, uuid4(), self.category.uuid, 10, 20, "Account", "Description", 100)),
+            (CategoryNotFoundError, lambda: create_budget(self.open_ledger, self.account.uuid, uuid4(), 10, 20, "Category", "Description", 100)),
         )
         for expected_error, operation in operations:
             with self.subTest(expected_error=expected_error):
@@ -76,7 +74,7 @@ class BudgetUseCasesTest(unittest.TestCase):
         with self.assertRaises(BudgetNameUnavailableError):
             self.create("Existing")
         with self.assertRaises(ValidationError):
-            create_budget(self.open_ledger, self.account.uuid, self.category.uuid, 20, 10, "Invalid", "Description", 100, "lucide:Circle", b"\x10\x20\x30")
+            create_budget(self.open_ledger, self.account.uuid, self.category.uuid, 20, 10, "Invalid", "Description", 100)
 
     def test_update_changes_mutable_fields_and_preserves_account(self) -> None:
         budget = self.create()
@@ -89,8 +87,6 @@ class BudgetUseCasesTest(unittest.TestCase):
             "Updated",
             "Updated spending",
             250,
-            "lucide:Landmark",
-            b"\xaa\xbb\xcc",
         )
         self.assertEqual(updated.account_uuid, budget.account_uuid)
         self.assertEqual(updated.category_uuid, self.other_category.uuid)
@@ -101,11 +97,11 @@ class BudgetUseCasesTest(unittest.TestCase):
         budget = self.create("Original")
         self.create("Existing", self.second_account.uuid)
         with self.assertRaises(BudgetNotFoundError):
-            update_budget(self.open_ledger, uuid4(), self.category.uuid, 20, 30, "Changed", "Changed", 200, "lucide:Circle", b"\x10\x20\x30")
+            update_budget(self.open_ledger, uuid4(), self.category.uuid, 20, 30, "Changed", "Changed", 200)
         with self.assertRaises(CategoryNotFoundError):
-            update_budget(self.open_ledger, budget.uuid, uuid4(), 20, 30, "Changed", "Changed", 200, "lucide:Circle", b"\x10\x20\x30")
+            update_budget(self.open_ledger, budget.uuid, uuid4(), 20, 30, "Changed", "Changed", 200)
         with self.assertRaises(BudgetNameUnavailableError):
-            update_budget(self.open_ledger, budget.uuid, self.category.uuid, 20, 30, "Existing", "Changed", 200, "lucide:Circle", b"\x10\x20\x30")
+            update_budget(self.open_ledger, budget.uuid, self.category.uuid, 20, 30, "Existing", "Changed", 200)
         self.assertEqual(get_budget(self.open_ledger, budget.uuid), budget)
 
     def test_overview_and_attention_delegate_to_read_model(self) -> None:

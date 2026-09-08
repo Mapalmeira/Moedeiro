@@ -17,9 +17,7 @@ class SqliteBudgetOverviewQueryRepository(BudgetOverviewQueryRepository):
         budget.to_timestamp,
         budget.budget_name,
         budget.description,
-        budget.amount,
-        budget.icon,
-        budget.color_code
+        budget.amount
     """
 
     def __init__(self, connection: sqlite3.Connection):
@@ -191,8 +189,6 @@ class SqliteBudgetOverviewQueryRepository(BudgetOverviewQueryRepository):
                 "name": values["budget_name"],
                 "description": values["description"],
                 "amount": values["amount"],
-                "icon": values["icon"],
-                "color_code": values["color_code"],
             }
         )
         state: BudgetOverviewState = values["state"]

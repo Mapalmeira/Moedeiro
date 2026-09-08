@@ -1,7 +1,6 @@
 import sqlite3
 from uuid import UUID, uuid4
 
-from app.domain.appearance import Icon, RgbColorCode
 from app.domain.ledger.model.budget import Budget, BudgetAmount, BudgetDescription, BudgetName
 from app.domain.ledger.repository.budget import BudgetRepository
 
@@ -19,8 +18,6 @@ class SqliteBudgetRepository(BudgetRepository):
         name: BudgetName,
         description: BudgetDescription,
         amount: BudgetAmount,
-        icon: Icon,
-        color_code: RgbColorCode,
     ) -> Budget:
         budget = Budget(
             uuid=uuid4(),
@@ -31,13 +28,11 @@ class SqliteBudgetRepository(BudgetRepository):
             name=name,
             description=description,
             amount=amount,
-            icon=icon,
-            color_code=color_code,
         )
         self.connection.execute(
             """
-            INSERT INTO budget(uuid, account_uuid, category_uuid, from_timestamp, to_timestamp, budget_name, description, amount, icon, color_code)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO budget(uuid, account_uuid, category_uuid, from_timestamp, to_timestamp, budget_name, description, amount)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 budget.uuid.bytes,
@@ -48,8 +43,6 @@ class SqliteBudgetRepository(BudgetRepository):
                 budget.name,
                 budget.description,
                 budget.amount,
-                budget.icon,
-                budget.color_code,
             ),
         )
         return budget
@@ -57,7 +50,7 @@ class SqliteBudgetRepository(BudgetRepository):
     def get(self, uuid: UUID) -> Budget | None:
         row = self.connection.execute(
             """
-            SELECT uuid, account_uuid, category_uuid, from_timestamp, to_timestamp, budget_name AS name, description, amount, icon, color_code
+            SELECT uuid, account_uuid, category_uuid, from_timestamp, to_timestamp, budget_name AS name, description, amount
             FROM budget
             WHERE uuid = ?
             """,
@@ -68,7 +61,7 @@ class SqliteBudgetRepository(BudgetRepository):
     def get_by_name(self, name: BudgetName) -> Budget | None:
         row = self.connection.execute(
             """
-            SELECT uuid, account_uuid, category_uuid, from_timestamp, to_timestamp, budget_name AS name, description, amount, icon, color_code
+            SELECT uuid, account_uuid, category_uuid, from_timestamp, to_timestamp, budget_name AS name, description, amount
             FROM budget
             WHERE budget_name = ?
             """,
@@ -80,7 +73,7 @@ class SqliteBudgetRepository(BudgetRepository):
         self.connection.execute(
             """
             UPDATE budget
-            SET category_uuid = ?, from_timestamp = ?, to_timestamp = ?, budget_name = ?, description = ?, amount = ?, icon = ?, color_code = ?
+            SET category_uuid = ?, from_timestamp = ?, to_timestamp = ?, budget_name = ?, description = ?, amount = ?
             WHERE uuid = ?
             """,
             (
@@ -90,8 +83,6 @@ class SqliteBudgetRepository(BudgetRepository):
                 budget.name,
                 budget.description,
                 budget.amount,
-                budget.icon,
-                budget.color_code,
                 budget.uuid.bytes,
             ),
         )

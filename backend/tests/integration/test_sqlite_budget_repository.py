@@ -43,8 +43,6 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
             "name": "Updated",
             "description": "Changed",
             "amount": 250,
-            "icon": "lucide:Landmark",
-            "color_code": b"\x10\x20\x30",
         })
 
         self.repository.update(updated)
