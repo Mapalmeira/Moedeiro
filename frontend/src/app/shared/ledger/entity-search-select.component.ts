@@ -21,7 +21,7 @@ export interface EntitySearchOption {
   template: `
     <div class="entity-search-select" [class.entity-search-select--up]="opensUp()">
       <button type="button" class="entity-search-select__trigger ui-select-trigger" (click)="toggleList()"
-        [attr.aria-label]="ariaLabel()" aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listId">
+        [disabled]="disabled()" [attr.aria-label]="ariaLabel()" aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listId">
         @if (selectedOption(); as option) {
           @if (option.icon && option.color) {
             <app-entity-badge [icon]="option.icon" [color]="option.color" />
@@ -156,6 +156,7 @@ export class EntitySearchSelectComponent {
   readonly emptyText = input('No results');
   readonly emptyValueText = input('—');
   readonly searchable = input(true);
+  readonly disabled = input(false);
   readonly openDirection = input<'auto' | 'up' | 'down'>('auto');
   readonly valueChange = output<string>();
 
@@ -193,6 +194,7 @@ export class EntitySearchSelectComponent {
   }
 
   toggleList(): void {
+    if (this.disabled()) return;
     this.open() ? this.closeList() : this.openList();
   }
 

@@ -79,6 +79,21 @@ describe('AuthService', () => {
     expect(service.currentUserName()).toBe('alice');
   });
 
+  it('shares one refresh request between concurrent refreshSession callers', () => {
+    const first = vi.fn();
+    const second = vi.fn();
+
+    service.refreshSession().subscribe(first);
+    service.refreshSession().subscribe(second);
+
+    http.expectOne(API_ROUTES.authentication.refresh).flush(null);
+    http.expectOne(API_ROUTES.authentication.session).flush({ name: 'alice' });
+
+    expect(first).toHaveBeenCalledWith(true);
+    expect(second).toHaveBeenCalledWith(true);
+    expect(service.authenticated()).toBe(true);
+  });
+
   it('does not try refresh for non-401 session failures', () => {
     localStorage.setItem('moedeiro.last-auth-name', 'stale');
 

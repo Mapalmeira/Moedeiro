@@ -92,8 +92,8 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
   styles: `
     :host { display: block; height: 100%; min-height: 0; }
     .ledger-sidebar__inner { height: 100%; min-height: 0; display: grid; grid-template-rows: var(--ledger-header-height) minmax(0, 1fr); }
-    .ledger-sidebar__brand-row { width: 100%; display: grid; grid-template-columns: 9fr 1fr; align-items: center; border-bottom: var(--border-width) solid var(--line); }
-    .ledger-sidebar__brand-row app-brand-logo { grid-column: 1; justify-self: center; width: max-content; }
+    .ledger-sidebar__brand-row { width: 100%; display: grid; place-items: center; border-bottom: var(--border-width) solid var(--line); }
+    .ledger-sidebar__brand-row app-brand-logo { width: max-content; }
     .ledger-sidebar__body { min-height: 0; display: flex; flex-direction: column; gap: var(--space-6); padding: var(--space-5) var(--space-4); overflow: hidden; }
     .ledger-nav { display: grid; gap: var(--space-2); }
     .ledger-nav__item {

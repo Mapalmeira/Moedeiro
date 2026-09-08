@@ -1,0 +1,77 @@
+:host {
+  --focus-accent: var(--yellow);
+  --spinner-accent: var(--yellow);
+  --spinner-accent-strong: var(--yellow-strong);
+  display: block;
+  min-width: 0;
+  min-height: 100%;
+}
+.budgets { min-height: 100%; display: flex; flex-direction: column; gap: var(--section-gap); min-width: 0; padding-block-end: var(--button-shadow-offset); }
+.budgets-commandbar { flex: 0 0 auto; min-width: 0; display: grid; grid-template-columns: minmax(0, var(--entity-search-width)) var(--budget-state-filter-width) auto; align-items: start; gap: var(--form-gap); }
+.budgets-search { min-width: 0; }
+.budgets-search:focus-within { border-color: var(--yellow-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--yellow) 32%, transparent); }
+.budgets-create { justify-self: start; white-space: nowrap; }
+.budget-grid { flex: 1 1 auto; min-height: 0; min-width: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--budget-card-min-width)), 1fr)); align-content: start; gap: var(--section-gap); padding-inline-end: var(--button-shadow-offset); padding-block-end: var(--button-shadow-offset); }
+.budget-card {
+  min-width: 0; display: grid; align-content: start; gap: var(--form-gap); padding: var(--space-4);
+  border: var(--border-width) solid var(--line-strong); background: var(--surface); color: var(--text); text-align: left;
+}
+.budget-card:hover { background: color-mix(in srgb, var(--yellow-soft) 28%, var(--surface)); }
+.budget-card__header { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); }
+.budget-card__title { min-width: 0; display: grid; gap: var(--space-1); }
+.budget-card__title strong, .budget-card__title small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.budget-card__title strong { font-size: 1rem; font-weight: 820; }
+.budget-card__title small { color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 650; }
+.budget-card__state { align-self: start; padding: var(--space-1) var(--space-2); border: var(--border-width) solid var(--line); border-radius: var(--radius-sm); background: var(--surface-muted); color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 780; white-space: nowrap; }
+.budget-card__state--green { border-color: var(--green-strong); background: var(--green-soft); color: var(--green-strong); }
+.budget-card__state--yellow { border-color: var(--yellow-strong); background: var(--yellow-soft); color: var(--warning-text); }
+.budget-card__state--danger { border-color: var(--danger); background: var(--danger-soft); color: var(--danger); }
+.budget-card__scope { min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); justify-items: center; gap: var(--space-3); padding-top: var(--space-3); border-top: var(--border-width) solid var(--line); }
+.budget-card__entity { min-width: 0; max-width: 100%; display: flex; align-items: center; justify-content: center; gap: var(--space-2); }
+.budget-card__entity > span:last-child { min-width: 0; display: grid; gap: var(--space-1); }
+.budget-card__entity strong, .budget-card__entity small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.budget-card__entity strong { font-size: var(--control-detail-font-size); font-weight: 720; }
+.budget-card__entity small { color: var(--text-muted); font-size: .7rem; font-weight: 650; }
+.budget-card__amounts { min-width: 0; display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
+.budget-card__amounts strong { min-width: 0; font-size: 1.08rem; font-weight: 850; font-variant-numeric: tabular-nums; }
+.budget-card__amounts strong span { color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 680; }
+.budget-card__amounts > span { flex: 0 0 auto; color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 720; }
+.budget-progress { height: var(--space-3); overflow: hidden; border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-muted); }
+.budget-progress > span { display: block; height: 100%; background: var(--green); }
+.budget-progress--yellow > span { background: var(--yellow); }
+.budget-progress--danger > span { background: var(--danger-token); }
+.budget-card__result { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--space-3); color: var(--text-muted); }
+.budget-card__result strong { min-width: 0; font-size: var(--control-font-size); font-weight: 800; }
+.budget-card__result small { justify-self: end; text-align: right; font-size: var(--control-detail-font-size); font-weight: 650; }
+.budget-card__result--green strong { color: var(--green-strong); }
+.budget-card__result--yellow strong { color: var(--warning-text); }
+.budget-card__result--danger strong { color: var(--danger); }
+.budget-card__future { min-height: 92px; display: grid; place-items: center; align-content: center; gap: var(--space-1); padding: var(--space-3); border: var(--border-width) solid var(--line); border-radius: var(--radius-sm); background: var(--surface-muted); text-align: center; }
+.budget-card__future strong { font-size: 1.12rem; font-weight: 850; font-variant-numeric: tabular-nums; }
+.budget-card__future span, .budget-card__future small { color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 650; }
+.budgets-state { flex: 1 1 auto; min-height: 320px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: var(--space-3); padding: var(--space-6); color: var(--text-muted); text-align: center; }
+.budgets-state--error { align-items: stretch; width: min(100%, var(--dialog-width-standard)); margin: auto; }
+.budgets-state--error .ui-button { align-self: center; color: var(--text); }
+.budget-grid__empty { grid-column: 1 / -1; min-height: 420px; }
+.budget-grid__sentinel { grid-column: 1 / -1; min-height: var(--space-1); display: grid; place-items: center; }
+.budget-grid__sentinel .ui-spinner { --spinner-size: var(--space-5); }
+.budget-delete-layer { --dialog-width: 520px; }
+.budget-delete-icon { background: var(--danger-token); color: var(--on-danger-token); }
+
+@media (max-width: 760px) {
+  .budgets-commandbar { grid-template-columns: minmax(0, 1fr) var(--control-height); }
+  .budgets-search { grid-column: 1; }
+  .budgets-create { grid-column: 2; grid-row: 1; width: calc(var(--control-height) - var(--button-shadow-offset)); min-width: calc(var(--control-height) - var(--button-shadow-offset)); padding: 0; }
+  .budgets-create__label { display: none; }
+  .budgets-state-filter { grid-column: 1 / -1; }
+  .budget-grid { grid-template-columns: minmax(0, 1fr); gap: var(--form-gap); }
+  .budget-card__scope { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: var(--space-3); }
+  .budget-card__entity { max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .budget-card { padding: var(--space-3); }
+  .budget-card__header { grid-template-columns: minmax(0, 1fr); }
+  .budget-card__state { grid-column: 1; justify-self: start; }
+  .budget-card__amounts { align-items: flex-start; flex-direction: column; gap: var(--space-1); }
+}

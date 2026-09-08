@@ -27,6 +27,28 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .ui-button--yellow { --focus-accent: var(--yellow); background: linear-gradient(90deg, var(--yellow-action-start), var(--yellow-action-end)); color: var(--on-yellow); }
 .ui-button--blue { --focus-accent: var(--blue); background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 82%, white), var(--blue)); color: var(--on-blue); }
 
+/* Action content centered across the face plus the rigid projected shadow footprint. */
+.ui-button--projected-centered {
+  display: grid;
+  gap: 0;
+  grid-template-columns: var(--button-shadow-offset) minmax(0, 1fr);
+  grid-template-rows: var(--button-shadow-offset) minmax(0, 1fr);
+}
+.ui-button--projected-centered > .ui-button__content {
+  grid-column: 2;
+  grid-row: 2;
+  place-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--inline-gap);
+}
+.ui-button--control-footprint {
+  min-height: calc(var(--control-height) - var(--button-shadow-offset));
+  height: calc(var(--control-height) - var(--button-shadow-offset));
+  margin-inline-end: var(--button-shadow-offset);
+  margin-block-end: var(--button-shadow-offset);
+}
+
 /* Selection controls retain their state and never use physical press motion. */
 .ui-choice {
   position: relative;

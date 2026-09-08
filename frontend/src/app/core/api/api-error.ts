@@ -44,6 +44,8 @@ export class ApiErrorService {
       'Ledger not found': 'errors.ledgerNotFound',
       'Ledger limit reached': 'errors.ledgerLimitReached',
       'Budget limit reached': 'errors.budgetLimitReached',
+      'Budget name unavailable': 'errors.budgetNameUnavailable',
+      'Budget not found': 'errors.budgetNotFound',
       'Financial event limit reached': 'errors.financialEventLimitReached',
       'Financial event not found': 'errors.financialEventNotFound',
       'Invalid financial event': 'errors.invalidFinancialEvent',

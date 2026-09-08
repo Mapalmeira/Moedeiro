@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
-import { catchError, map, Observable, of, switchMap, tap, throwError } from 'rxjs';
+import { catchError, finalize, map, Observable, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 import { API_ROUTES } from '../api/api.routes';
 import { AuthenticationSession, LoginRequest, PasswordRecoveryRequest, RegistrationRequest } from './auth.models';
@@ -14,6 +14,7 @@ export class AuthService {
 
   readonly authenticated = signal<boolean | null>(null);
   readonly currentUserName = signal<string | null>(this.readStoredUserName());
+  private refreshRequest: Observable<boolean> | null = null;
 
   login(payload: LoginRequest): Observable<void> {
     return this.http.post<void>(API_ROUTES.authentication.login, payload, { withCredentials: true }).pipe(
@@ -50,22 +51,27 @@ export class AuthService {
     return this.http.get<AuthenticationSession>(API_ROUTES.authentication.session, { withCredentials: true }).pipe(
       tap((session) => this.storeUserName(session.name)),
       map(() => true),
-      catchError((error: HttpErrorResponse) => {
-        if (error.status !== 401) {
-          return of(false);
-        }
-        return this.http.post<void>(API_ROUTES.authentication.refresh, {}, { withCredentials: true }).pipe(
-          switchMap(() => this.http.get<AuthenticationSession>(API_ROUTES.authentication.session, { withCredentials: true })),
-          tap((session) => this.storeUserName(session.name)),
-          map(() => true),
-          catchError(() => of(false)),
-        );
-      }),
-      tap((valid) => {
-        this.authenticated.set(valid);
-        if (!valid) this.storeUserName(null);
-      }),
+      catchError((error: HttpErrorResponse) => error.status === 401 ? this.refreshSession() : of(false)),
+      tap((valid) => this.commitSessionState(valid)),
     );
+  }
+
+  refreshSession(): Observable<boolean> {
+    if (this.refreshRequest) return this.refreshRequest;
+
+    const request = this.http.post<void>(API_ROUTES.authentication.refresh, {}, { withCredentials: true }).pipe(
+      switchMap(() => this.http.get<AuthenticationSession>(API_ROUTES.authentication.session, { withCredentials: true })),
+      tap((session) => this.storeUserName(session.name)),
+      map(() => true),
+      catchError(() => of(false)),
+      tap((valid) => this.commitSessionState(valid)),
+      finalize(() => {
+        this.refreshRequest = null;
+      }),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    this.refreshRequest = request;
+    return request;
   }
 
   logout(): Observable<void> {
@@ -87,6 +93,11 @@ export class AuthService {
     this.authenticated.set(false);
     this.storeUserName(null);
     await this.router.navigateByUrl('/', state ? { state } : undefined);
+  }
+
+  private commitSessionState(valid: boolean): void {
+    this.authenticated.set(valid);
+    if (!valid) this.storeUserName(null);
   }
 
   private storeUserName(name: string | null): void {

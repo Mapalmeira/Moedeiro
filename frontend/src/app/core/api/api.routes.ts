@@ -25,4 +25,5 @@ export const API_ROUTES = {
   ledgerCurrencies: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/currencies`,
   ledgerCategories: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/categories`,
   ledgerEvents: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/events`,
+  ledgerBudgets: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/budgets`,
 } as const;

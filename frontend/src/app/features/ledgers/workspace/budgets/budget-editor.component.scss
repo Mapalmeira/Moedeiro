@@ -1,0 +1,13 @@
+:host { --token-accent: var(--yellow); --token-accent-strong: var(--yellow-strong); --focus-accent: var(--yellow); display: block; }
+.budget-editor-layer { --dialog-width: var(--dialog-width-standard); }
+form { display: grid; gap: var(--section-gap); padding: var(--space-5); }
+.budget-editor-fields { min-width: 0; display: grid; align-content: start; gap: var(--form-gap); }
+.budget-scope-grid, .budget-period-grid { min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--form-gap); }
+.field-hint { color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 650; }
+.budget-editor-actions { padding-top: 0; }
+.budget-editor-actions .ui-button { min-width: var(--action-button-min-width); }
+@media (max-width: 720px) {
+  .budget-scope-grid, .budget-period-grid { grid-template-columns: minmax(0, 1fr); }
+  .budget-editor-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .budget-editor-actions .ui-button { width: 100%; min-width: 0; }
+}
