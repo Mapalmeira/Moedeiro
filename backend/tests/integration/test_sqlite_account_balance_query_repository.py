@@ -15,6 +15,8 @@ class SqliteAccountBalanceQueryRepositoryTest(LedgerRepositoryTestCase):
         self.currency = self.create_currency()
         self.account = self.create_account(currency=self.currency)
         self.other_account = self.create_account("Other account", self.currency)
+        self.other_currency = self.create_currency("Dollar")
+        self.foreign_account = self.create_account("Foreign", self.other_currency)
         self.category = self.create_category()
 
     def test_get_balance_at_sums_only_selected_account_through_timestamp(self) -> None:
@@ -42,6 +44,40 @@ class SqliteAccountBalanceQueryRepositoryTest(LedgerRepositoryTestCase):
 
     def test_get_balance_at_returns_zero_for_an_account_without_movements(self) -> None:
         self.assertEqual(self.repository.get_balance_at(self.account.uuid, 10), 0)
+
+    def test_list_balances_at_returns_zero_accounts_and_can_filter_currency(self) -> None:
+        event = self.create_event("Balances", occurred_at=10)
+        self.movement_repository.create(event.uuid, self.account.uuid, self.category.uuid, 100, None)
+        self.movement_repository.create(event.uuid, self.foreign_account.uuid, self.category.uuid, 250, None)
+
+        all_balances = self.repository.list_balances_at(10)
+        selected = self.repository.list_balances_at(10, self.currency.uuid)
+
+        self.assertEqual(
+            {(account_uuid, currency_uuid): balance for account_uuid, currency_uuid, balance in all_balances},
+            {
+                (self.account.uuid, self.currency.uuid): 100,
+                (self.other_account.uuid, self.currency.uuid): 0,
+                (self.foreign_account.uuid, self.other_currency.uuid): 250,
+            },
+        )
+        self.assertEqual(
+            [(account_uuid, currency_uuid, balance) for account_uuid, currency_uuid, balance in selected],
+            [(self.account.uuid, self.currency.uuid, 100), (self.other_account.uuid, self.currency.uuid, 0)],
+        )
+
+
+    def test_list_balances_can_limit_accounts_before_aggregation(self) -> None:
+        event = self.create_event("Balances", occurred_at=10)
+        future = self.create_event("Future", occurred_at=20)
+        self.movement_repository.create(event.uuid, self.account.uuid, self.category.uuid, 100, None)
+        self.movement_repository.create(event.uuid, self.other_account.uuid, self.category.uuid, 200, None)
+        self.movement_repository.create(future.uuid, self.account.uuid, self.category.uuid, 900, None)
+
+        selected = self.repository.list_balances_at(10, self.currency.uuid, 1)
+
+        self.assertEqual(selected, [(self.account.uuid, self.currency.uuid, 100)])
+        self.assertEqual(self.repository.get_currency_balance_at(self.currency.uuid, 10), 300)
 
     def test_queries_raise_for_an_unknown_account(self) -> None:
         account_uuid = uuid4()

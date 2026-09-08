@@ -9,17 +9,20 @@ from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 class FinancialEventFilterTest(unittest.TestCase):
     def test_accepts_all_supported_filter_dimensions(self) -> None:
         account_uuid = uuid4()
+        currency_uuid = uuid4()
         category_uuid = uuid4()
 
         filters = FinancialEventFilter(
             from_timestamp=10,
             to_timestamp=20,
             account_uuid=account_uuid,
+            currency_uuid=currency_uuid,
             category_uuid=category_uuid,
             event_type="TRANSACTION",
         )
 
         self.assertEqual(filters.account_uuid, account_uuid)
+        self.assertEqual(filters.currency_uuid, currency_uuid)
         self.assertEqual(filters.category_uuid, category_uuid)
         self.assertEqual(filters.event_type, "TRANSACTION")
 
@@ -27,6 +30,7 @@ class FinancialEventFilterTest(unittest.TestCase):
         filters = FinancialEventFilter(from_timestamp=10, to_timestamp=20)
 
         self.assertIsNone(filters.category_uuid)
+        self.assertIsNone(filters.currency_uuid)
         self.assertIsNone(filters.event_type)
 
     def test_rejects_multi_value_filter_fields(self) -> None:

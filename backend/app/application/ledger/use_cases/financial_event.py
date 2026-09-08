@@ -1,7 +1,7 @@
 from collections.abc import Callable, Sequence
 from uuid import UUID
 
-from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, FinancialEventLimitReachedError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError, InvalidFinancialEventStructureError
+from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, CurrencyNotFoundError, FinancialEventLimitReachedError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError, InvalidFinancialEventStructureError
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
 from app.domain.ledger.limits import MAXIMUM_FINANCIAL_EVENTS
 from app.domain.ledger.model.financial_event import MAX_SHOPPING_LIST_MOVEMENTS, FinancialEvent, FinancialEventDescription, FinancialEventType
@@ -98,6 +98,8 @@ def list_financial_events_after(
     uuid: UUID | None,
 ) -> list[FinancialEvent]:
     with unit_of_work_factory() as unit_of_work:
+        if filters.currency_uuid is not None and unit_of_work.currency_repository.get(filters.currency_uuid) is None:
+            raise CurrencyNotFoundError
         return unit_of_work.financial_event_repository.list_after(page_size + 1, ascending, filters, occurred_at, uuid)
 
 

@@ -43,3 +43,14 @@ class AccountResponse(BaseModel):
             icon=account.icon,
             color_code=f"#{account.color_code.hex().upper()}",
         )
+
+
+class AccountBalanceResponse(BaseModel):
+    account_uuid: UUID
+    currency_uuid: UUID
+    balance: int
+
+
+class AccountBalanceListResponse(BaseModel):
+    items: list[AccountBalanceResponse]
+    total_balance: int | None

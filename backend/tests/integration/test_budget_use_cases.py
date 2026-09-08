@@ -6,9 +6,9 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.application.ledger.exceptions import AccountNotFoundError, BudgetLimitReachedError, BudgetNameUnavailableError, BudgetNotFoundError, CategoryNotFoundError
+from app.application.ledger.exceptions import AccountNotFoundError, BudgetLimitReachedError, BudgetNameUnavailableError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
 from app.application.ledger.use_cases.budget import create_budget, delete_budget, get_budget, update_budget
-from app.application.ledger.use_cases.budget_overview import list_budget_attention, list_budget_overview
+from app.application.ledger.use_cases.budget_overview import list_budget_overview, list_budgets_for_currency
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
 
@@ -104,17 +104,19 @@ class BudgetUseCasesTest(unittest.TestCase):
             update_budget(self.open_ledger, budget.uuid, self.category.uuid, 20, 30, "Existing", "Changed", 200)
         self.assertEqual(get_budget(self.open_ledger, budget.uuid), budget)
 
-    def test_overview_and_attention_delegate_to_read_model(self) -> None:
-        active = self.create("Active", from_timestamp=10, to_timestamp=30)
+    def test_overview_and_currency_listing_delegate_to_read_model(self) -> None:
+        active_budget = self.create("Active", from_timestamp=10, to_timestamp=30)
         future = self.create("Future", self.second_account.uuid, 30, 40)
-        overview = list_budget_overview(self.open_ledger, 20, ("ACTIVE", "FUTURE"), None, None, 10, None, None)
-        attention = list_budget_attention(self.open_ledger, 20, self.account.uuid, 3)
-        self.assertEqual({item.budget.uuid for item in overview}, {active.uuid, future.uuid})
-        self.assertEqual([item.budget.uuid for item in attention], [active.uuid])
+        overview = list_budget_overview(self.open_ledger, 20, ("ACTIVE", "FUTURE"), None, None, None, 10, None, None)
+        currency_items = list_budgets_for_currency(self.open_ledger, 20, self.currency.uuid, 3)
+        self.assertEqual({item.budget.uuid for item in overview}, {active_budget.uuid, future.uuid})
+        self.assertEqual([item.budget.uuid for item in currency_items], [active_budget.uuid])
         with self.assertRaises(AccountNotFoundError):
-            list_budget_overview(self.open_ledger, 20, ("ACTIVE",), uuid4(), None, 10, None, None)
-        with self.assertRaises(AccountNotFoundError):
-            list_budget_attention(self.open_ledger, 20, uuid4(), 3)
+            list_budget_overview(self.open_ledger, 20, ("ACTIVE",), uuid4(), None, None, 10, None, None)
+        with self.assertRaises(CategoryNotFoundError):
+            list_budget_overview(self.open_ledger, 20, ("ACTIVE",), None, uuid4(), None, 10, None, None)
+        with self.assertRaises(CurrencyNotFoundError):
+            list_budgets_for_currency(self.open_ledger, 20, uuid4(), 3)
 
     def test_delete_removes_budget_and_unknown_budget_is_rejected(self) -> None:
         budget = self.create()

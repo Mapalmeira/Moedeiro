@@ -5,11 +5,43 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from app.api.dependencies.authentication import AuthenticatedUser
 from app.api.dependencies.ledger import ledger_unit_of_work_factory
-from app.application.ledger.exceptions import AccountNotFoundError, QueryPointLimitExceededError
-from app.application.ledger.use_cases.account_balance import get_account_balance, list_account_balance_points
+from app.api.dependencies.pagination import validate_page_size
+from app.api.ledger.schema.account import AccountBalanceListResponse, AccountBalanceResponse
+from app.application.ledger.exceptions import AccountNotFoundError, CurrencyNotFoundError, QueryPointLimitExceededError
+from app.application.ledger.use_cases.account_balance import get_account_balance, list_account_balance_points, list_account_balances
 
 
 router = APIRouter(prefix="/api/ledgers/{ledger_uuid}/accounts/{account_uuid}/balance", tags=["account balance"])
+balances_router = APIRouter(prefix="/api/ledgers/{ledger_uuid}/balances", tags=["account balance"])
+
+
+@balances_router.get("", response_model=AccountBalanceListResponse)
+def list_ledger_account_balances(
+    ledger_uuid: UUID,
+    timestamp: int,
+    request: Request,
+    user: AuthenticatedUser,
+    currency_uuid: UUID | None = None,
+    limit: Annotated[int | None, Query(ge=1)] = None,
+) -> AccountBalanceListResponse:
+    if limit is not None:
+        validate_page_size(request, limit)
+    try:
+        balances, total_balance = list_account_balances(
+            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            timestamp,
+            currency_uuid,
+            limit,
+        )
+    except CurrencyNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Currency not found") from error
+    return AccountBalanceListResponse(
+        items=[
+            AccountBalanceResponse(account_uuid=account_uuid, currency_uuid=balance_currency_uuid, balance=balance)
+            for account_uuid, balance_currency_uuid, balance in balances
+        ],
+        total_balance=total_balance,
+    )
 
 
 @router.get("", response_model=int)

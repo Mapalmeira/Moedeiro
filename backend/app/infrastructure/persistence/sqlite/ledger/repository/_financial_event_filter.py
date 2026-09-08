@@ -17,6 +17,19 @@ def build_financial_event_filter(filters: FinancialEventFilter) -> tuple[str, li
             """
         )
         parameters.append(filters.account_uuid.bytes)
+    if filters.currency_uuid is not None:
+        clauses.append(
+            """
+            EXISTS (
+                SELECT 1
+                FROM financial_movement AS currency_movement
+                JOIN account AS currency_account ON currency_account.uuid = currency_movement.account_uuid
+                WHERE currency_movement.financial_event_uuid = event.uuid
+                  AND currency_account.currency_uuid = ?
+            )
+            """
+        )
+        parameters.append(filters.currency_uuid.bytes)
     if filters.category_uuid is not None:
         clauses.append(
             """

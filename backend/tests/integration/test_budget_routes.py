@@ -12,7 +12,7 @@ from app.api.ledger.routes.budget import (
     create_ledger_budget,
     delete_ledger_budget,
     get_ledger_budget,
-    list_ledger_budget_attention,
+    list_ledger_currency_budget_overview,
     list_ledger_budget_overview,
     update_ledger_budget,
 )
@@ -192,31 +192,34 @@ class BudgetRoutesTest(unittest.TestCase):
         self.create_budget("Future", from_timestamp=30, to_timestamp=40)
 
         with patch("app.api.ledger.routes.budget.time.time", return_value=20):
-            first = list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 1, ["ACTIVE"], None, "a")
-            second = list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 1, ["ACTIVE"], None, None, first.next_cursor)
+            first = list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 1, ["ACTIVE"], search="a")
+            second = list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 1, ["ACTIVE"], cursor=first.next_cursor)
 
         self.assertEqual([item.name for item in first.items], ["Alpha"])
         self.assertEqual([item.name for item in second.items], ["Bravo"])
 
-    def test_overview_and_attention_reject_unknown_account_filter(self) -> None:
+    def test_overview_rejects_unknown_relations_and_currency_overview_rejects_unknown_currency(self) -> None:
         missing = uuid4()
         with patch("app.api.ledger.routes.budget.time.time", return_value=20):
             with self.assertRaises(HTTPException) as overview_error:
                 list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 1, None, missing)
-            with self.assertRaises(HTTPException) as attention_error:
-                list_ledger_budget_attention(self.ledger.uuid, missing, self.request, self.user, 1)
+            with self.assertRaises(HTTPException) as category_error:
+                list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 1, category_uuid=missing)
+            with self.assertRaises(HTTPException) as currency_error:
+                list_ledger_currency_budget_overview(self.ledger.uuid, missing, self.request, self.user, 1)
 
         self.assertEqual((overview_error.exception.status_code, overview_error.exception.detail), (404, "Account not found"))
-        self.assertEqual((attention_error.exception.status_code, attention_error.exception.detail), (404, "Account not found"))
+        self.assertEqual((category_error.exception.status_code, category_error.exception.detail), (404, "Category not found"))
+        self.assertEqual((currency_error.exception.status_code, currency_error.exception.detail), (404, "Currency not found"))
 
-    def test_attention_returns_the_active_budgets_with_highest_usage_first(self) -> None:
+    def test_currency_overview_returns_the_active_budgets_with_highest_usage_first(self) -> None:
         over = self.create_budget("Over", amount=100, from_timestamp=10, to_timestamp=40)
         lower = self.create_budget("Lower", amount=200, from_timestamp=10, to_timestamp=35)
         self.create_budget("Future", from_timestamp=30, to_timestamp=40)
         self.add_spending(15, 120)
 
         with patch("app.api.ledger.routes.budget.time.time", return_value=20):
-            items = list_ledger_budget_attention(self.ledger.uuid, self.account.uuid, self.request, self.user, 2)
+            items = list_ledger_currency_budget_overview(self.ledger.uuid, self.currency.uuid, self.request, self.user, 2)
 
         self.assertEqual([item.uuid for item in items], [over.uuid, lower.uuid])
         self.assertEqual([item.spent_amount for item in items], [120, 120])
@@ -225,7 +228,7 @@ class BudgetRoutesTest(unittest.TestCase):
         with self.assertRaises(HTTPException) as page_error:
             list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 4)
         with self.assertRaises(HTTPException) as cursor_error:
-            list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 1, None, None, None, "not-a-cursor")
+            list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 1, cursor="not-a-cursor")
 
         self.assertEqual(page_error.exception.status_code, 422)
         self.assertEqual(cursor_error.exception.status_code, 422)
@@ -254,13 +257,13 @@ class BudgetRoutesTest(unittest.TestCase):
                 with self.assertRaises(ValidationError):
                     CreateBudgetRequest(**values)
 
-    def test_openapi_exposes_overview_and_attention_before_budget_identifier(self) -> None:
+    def test_openapi_exposes_overview_and_currency_overview_before_budget_identifier(self) -> None:
         paths = self.application.openapi()["paths"]
         self.assertIn("/api/ledgers/{ledger_uuid}/budgets/overview", paths)
-        self.assertIn("/api/ledgers/{ledger_uuid}/budgets/attention", paths)
+        self.assertIn("/api/ledgers/{ledger_uuid}/budgets/currency-overview", paths)
         self.assertIn("/api/ledgers/{ledger_uuid}/budgets/{budget_uuid}", paths)
         self.assertIn("get", paths["/api/ledgers/{ledger_uuid}/budgets/overview"])
-        self.assertIn("get", paths["/api/ledgers/{ledger_uuid}/budgets/attention"])
+        self.assertIn("get", paths["/api/ledgers/{ledger_uuid}/budgets/currency-overview"])
 
 
 if __name__ == "__main__":

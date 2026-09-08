@@ -12,6 +12,7 @@ class BudgetOverviewQueryRepository(ABC):
         timestamp: int,
         states: Collection[BudgetOverviewState],
         account_uuid: UUID | None,
+        category_uuid: UUID | None,
         search: str | None,
         page_size: int,
         cursor_name: str | None,
@@ -20,5 +21,5 @@ class BudgetOverviewQueryRepository(ABC):
         pass
 
     @abstractmethod
-    def list_attention(self, timestamp: int, account_uuid: UUID, limit: int) -> list[BudgetOverviewItem]:
+    def list_for_currency(self, timestamp: int, currency_uuid: UUID, limit: int) -> list[BudgetOverviewItem]:
         pass

@@ -25,6 +25,76 @@ class SqliteAccountBalanceQueryRepository(AccountBalanceQueryRepository):
             raise_query_result_overflow(error)
         return require_sqlite_integer(row["balance"])
 
+    def get_currency_balance_at(self, currency_uuid: UUID, timestamp: int) -> int:
+        try:
+            row = self.connection.execute(
+                """
+                SELECT COALESCE(SUM(CASE WHEN event.uuid IS NOT NULL THEN movement.value * movement.quantity ELSE 0 END), 0) AS balance
+                FROM account
+                LEFT JOIN financial_movement AS movement ON movement.account_uuid = account.uuid
+                LEFT JOIN financial_event AS event
+                  ON event.uuid = movement.financial_event_uuid
+                 AND event.occurred_at <= ?
+                WHERE account.currency_uuid = ?
+                """,
+                (timestamp, currency_uuid.bytes),
+            ).fetchone()
+        except sqlite3.OperationalError as error:
+            raise_query_result_overflow(error)
+        return require_sqlite_integer(row["balance"])
+
+    def list_balances_at(
+        self,
+        timestamp: int,
+        currency_uuid: UUID | None = None,
+        limit: int | None = None,
+    ) -> list[tuple[UUID, UUID, int]]:
+        conditions: list[str] = []
+        parameters: list[object] = []
+        if currency_uuid is not None:
+            conditions.append("currency_uuid = ?")
+            parameters.append(currency_uuid.bytes)
+        where_clause = "" if not conditions else "WHERE " + " AND ".join(conditions)
+        limit_clause = ""
+        if limit is not None:
+            if limit < 1:
+                raise ValueError("limit must be greater than zero")
+            limit_clause = "LIMIT ?"
+            parameters.append(limit)
+        parameters.append(timestamp)
+        try:
+            rows = self.connection.execute(
+                f"""
+                WITH selected_accounts AS MATERIALIZED (
+                    SELECT uuid, currency_uuid, rowid
+                    FROM account
+                    {where_clause}
+                    ORDER BY rowid ASC
+                    {limit_clause}
+                )
+                SELECT
+                    account.uuid AS account_uuid,
+                    account.currency_uuid,
+                    COALESCE(SUM(
+                        CASE WHEN event.uuid IS NOT NULL THEN movement.value * movement.quantity ELSE 0 END
+                    ), 0) AS balance
+                FROM selected_accounts AS account
+                LEFT JOIN financial_movement AS movement ON movement.account_uuid = account.uuid
+                LEFT JOIN financial_event AS event
+                  ON event.uuid = movement.financial_event_uuid
+                 AND event.occurred_at <= ?
+                GROUP BY account.uuid, account.currency_uuid, account.rowid
+                ORDER BY account.rowid ASC
+                """,
+                parameters,
+            ).fetchall()
+        except sqlite3.OperationalError as error:
+            raise_query_result_overflow(error)
+        return [
+            (UUID(bytes=row["account_uuid"]), UUID(bytes=row["currency_uuid"]), require_sqlite_integer(row["balance"]))
+            for row in rows
+        ]
+
     def list_points(self, account_uuid: UUID, from_timestamp: int, point_count: int, point_interval: int) -> list[int]:
         self._validate_point_parameters(point_count, point_interval)
         self._ensure_account_exists(account_uuid)

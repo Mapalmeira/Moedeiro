@@ -9,9 +9,9 @@ from app.api.dependencies.authentication import AuthenticatedUser
 from app.api.dependencies.ledger import ledger_unit_of_work_factory
 from app.api.dependencies.pagination import validate_page_size
 from app.api.ledger.schema.budget import BudgetOverviewPageResponse, BudgetOverviewResponse, BudgetResponse, CreateBudgetRequest, UpdateBudgetRequest
-from app.application.ledger.exceptions import AccountNotFoundError, BudgetLimitReachedError, BudgetNameUnavailableError, BudgetNotFoundError, CategoryNotFoundError
+from app.application.ledger.exceptions import AccountNotFoundError, BudgetLimitReachedError, BudgetNameUnavailableError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
 from app.application.ledger.use_cases.budget import create_budget, delete_budget, get_budget, update_budget
-from app.application.ledger.use_cases.budget_overview import list_budget_attention, list_budget_overview
+from app.application.ledger.use_cases.budget_overview import list_budget_overview, list_budgets_for_currency
 from app.domain.ledger.model.budget import Budget
 from app.domain.ledger.model.budget_overview import BudgetOverviewState
 
@@ -51,6 +51,7 @@ def list_ledger_budget_overview(
     page_size: Annotated[int, Query(ge=1)],
     state: Annotated[list[BudgetOverviewState] | None, Query()] = None,
     account_uuid: UUID | None = None,
+    category_uuid: UUID | None = None,
     search: Annotated[str | None, Query(max_length=50)] = None,
     cursor: Annotated[str | None, Query(max_length=160)] = None,
 ) -> BudgetOverviewPageResponse:
@@ -65,6 +66,7 @@ def list_ledger_budget_overview(
             int(time.time()),
             state or ("FUTURE", "ACTIVE", "FINISHED"),
             account_uuid,
+            category_uuid,
             search.strip() if search and search.strip() else None,
             page_size + 1,
             cursor_name,
@@ -72,6 +74,8 @@ def list_ledger_budget_overview(
         )
     except AccountNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found") from error
+    except CategoryNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found") from error
     next_cursor = None
     if len(items) > page_size:
         items = items[:page_size]
@@ -79,24 +83,24 @@ def list_ledger_budget_overview(
     return BudgetOverviewPageResponse(items=[BudgetOverviewResponse.from_overview(item) for item in items], next_cursor=next_cursor)
 
 
-@router.get("/attention", response_model=list[BudgetOverviewResponse])
-def list_ledger_budget_attention(
+@router.get("/currency-overview", response_model=list[BudgetOverviewResponse])
+def list_ledger_currency_budget_overview(
     ledger_uuid: UUID,
-    account_uuid: UUID,
+    currency_uuid: UUID,
     request: Request,
     user: AuthenticatedUser,
     limit: Annotated[int, Query(ge=1)] = 3,
 ) -> list[BudgetOverviewResponse]:
     validate_page_size(request, limit)
     try:
-        items = list_budget_attention(
+        items = list_budgets_for_currency(
             ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
             int(time.time()),
-            account_uuid,
+            currency_uuid,
             limit,
         )
-    except AccountNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found") from error
+    except CurrencyNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Currency not found") from error
     return [BudgetOverviewResponse.from_overview(item) for item in items]
 
 

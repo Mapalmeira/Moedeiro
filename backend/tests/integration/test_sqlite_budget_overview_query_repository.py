@@ -26,7 +26,7 @@ class SqliteBudgetOverviewQueryRepositoryTest(LedgerRepositoryTestCase):
         self.add_movement(15, -30)
         self.add_movement(20, -5, quantity=2, category=self.child)
 
-        items = self.repository.list_page(20, ("FUTURE", "ACTIVE", "FINISHED"), None, None, 10, None, None)
+        items = self.repository.list_page(20, ("FUTURE", "ACTIVE", "FINISHED"), None, None, None, 10, None, None)
         by_uuid = {item.budget.uuid: item for item in items}
 
         self.assertEqual(by_uuid[finished.uuid].state, "FINISHED")
@@ -46,7 +46,7 @@ class SqliteBudgetOverviewQueryRepositoryTest(LedgerRepositoryTestCase):
         self.add_movement(15, -70, event_type="ACCOUNT_TRANSFER")
         self.add_movement(9, -50)
 
-        item = self.repository.list_page(20, ("ACTIVE",), self.account.uuid, None, 10, None, None)[0]
+        item = self.repository.list_page(20, ("ACTIVE",), self.account.uuid, None, None, 10, None, None)[0]
 
         self.assertEqual(item.budget.uuid, budget.uuid)
         self.assertEqual(item.spent_amount, 30)
@@ -56,7 +56,7 @@ class SqliteBudgetOverviewQueryRepositoryTest(LedgerRepositoryTestCase):
         active = self.create_budget("Active", self.account, self.category, 10, 30, 100)
         self.add_movement(20, -25)
 
-        items = self.repository.list_page(20, ("ACTIVE", "FINISHED"), None, None, 10, None, None)
+        items = self.repository.list_page(20, ("ACTIVE", "FINISHED"), None, None, None, 10, None, None)
         by_uuid = {item.budget.uuid: item for item in items}
 
         self.assertEqual(by_uuid[finished.uuid].spent_amount, 0)
@@ -68,13 +68,24 @@ class SqliteBudgetOverviewQueryRepositoryTest(LedgerRepositoryTestCase):
         self.create_budget("Future", self.account, self.category, 40, 50, 100)
         self.create_budget("Other account", self.other_account, self.category, 10, 30, 100)
 
-        first = self.repository.list_page(20, ("ACTIVE",), self.account.uuid, "a", 1, None, None)
-        second = self.repository.list_page(20, ("ACTIVE",), self.account.uuid, None, 10, first[0].budget.name, first[0].budget.uuid)
+        first = self.repository.list_page(20, ("ACTIVE",), self.account.uuid, None, "a", 1, None, None)
+        second = self.repository.list_page(20, ("ACTIVE",), self.account.uuid, None, None, 10, first[0].budget.name, first[0].budget.uuid)
 
         self.assertEqual([item.budget.uuid for item in first], [alpha.uuid])
         self.assertEqual([item.budget.uuid for item in second], [bravo.uuid])
 
-    def test_attention_orders_over_budget_then_highest_usage_then_earliest_end(self) -> None:
+
+    def test_page_category_filter_includes_descendant_budget_categories(self) -> None:
+        root_budget = self.create_budget("Root", self.account, self.category, 10, 30, 100)
+        child_budget = self.create_budget("Child", self.account, self.child, 10, 30, 100)
+        other = self.create_category("Other")
+        self.create_budget("Other", self.account, other, 10, 30, 100)
+
+        items = self.repository.list_page(20, ("ACTIVE",), None, self.category.uuid, None, 10, None, None)
+
+        self.assertEqual({item.budget.uuid for item in items}, {root_budget.uuid, child_budget.uuid})
+
+    def test_currency_listing_orders_over_budget_then_highest_usage_then_earliest_end(self) -> None:
         over = self.create_budget("Over", self.account, self.category, 10, 50, 100)
         near = self.create_budget("Near", self.account, self.category, 10, 40, 100)
         lower = self.create_budget("Lower", self.account, self.category, 10, 35, 200)
@@ -89,7 +100,12 @@ class SqliteBudgetOverviewQueryRepositoryTest(LedgerRepositoryTestCase):
         event = self.create_event("Near spend", "TRANSACTION", 15)
         self.movements.create(event.uuid, self.account.uuid, other_category.uuid, -95, None, 1)
 
-        items = self.repository.list_attention(20, self.account.uuid, 3)
+        other_currency = self.create_currency("Other currency")
+        foreign_account = self.create_account("Foreign", other_currency)
+        self.create_budget("Foreign budget", foreign_account, self.category, 10, 50, 1)
+        self.add_movement(15, -500, account=foreign_account)
+
+        items = self.repository.list_for_currency(20, self.currency.uuid, 3)
 
         self.assertEqual([item.budget.uuid for item in items], [over.uuid, near.uuid, lower.uuid])
         self.assertEqual([item.spent_amount for item in items], [120, 95, 120])

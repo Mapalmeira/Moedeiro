@@ -3,8 +3,8 @@ from tempfile import TemporaryDirectory
 import unittest
 from uuid import uuid4
 
-from app.application.ledger.exceptions import AccountNotFoundError, QueryPointLimitExceededError
-from app.application.ledger.use_cases.account_balance import get_account_balance, list_account_balance_points
+from app.application.ledger.exceptions import AccountNotFoundError, CurrencyNotFoundError, QueryPointLimitExceededError
+from app.application.ledger.use_cases.account_balance import get_account_balance, list_account_balance_points, list_account_balances
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
 
@@ -50,6 +50,18 @@ class AccountBalanceUseCasesTest(unittest.TestCase):
         points = list_account_balance_points(self.open_ledger, self.account.uuid, 100, 3, 10, 3)
 
         self.assertEqual(points, [80, 80, 110])
+
+    def test_list_balances_returns_accounts_in_the_selected_currency(self) -> None:
+        self.add_movement(10, 100)
+
+        balances, total_balance = list_account_balances(self.open_ledger, 10, self.currency.uuid)
+
+        self.assertEqual(balances, [(self.account.uuid, self.currency.uuid, 100)])
+        self.assertEqual(total_balance, 100)
+
+    def test_list_balances_rejects_unknown_currency(self) -> None:
+        with self.assertRaises(CurrencyNotFoundError):
+            list_account_balances(self.open_ledger, 10, uuid4())
 
     def test_queries_translate_an_unknown_account_to_the_application_error(self) -> None:
         account_uuid = uuid4()

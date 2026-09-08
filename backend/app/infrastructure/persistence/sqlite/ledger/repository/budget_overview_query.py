@@ -28,6 +28,7 @@ class SqliteBudgetOverviewQueryRepository(BudgetOverviewQueryRepository):
         timestamp: int,
         states: Collection[BudgetOverviewState],
         account_uuid: UUID | None,
+        category_uuid: UUID | None,
         search: str | None,
         page_size: int,
         cursor_name: str | None,
@@ -40,7 +41,23 @@ class SqliteBudgetOverviewQueryRepository(BudgetOverviewQueryRepository):
             raise ValueError("budget overview cursor name and UUID must be provided together")
 
         conditions = [f"state IN ({', '.join('?' for _ in selected_states)})"]
-        parameters: list[object] = [timestamp, timestamp, *selected_states]
+        category_filter_cte = ""
+        parameters: list[object] = []
+        if category_uuid is not None:
+            category_filter_cte = """
+            filter_categories(uuid) AS (
+                SELECT uuid FROM category WHERE uuid = ?
+
+                UNION ALL
+
+                SELECT child.uuid
+                FROM category AS child
+                JOIN filter_categories AS parent ON child.parent_uuid = parent.uuid
+            ),
+            """
+            parameters.append(category_uuid.bytes)
+            conditions.append("category_uuid IN (SELECT uuid FROM filter_categories)")
+        parameters.extend((timestamp, timestamp, *selected_states))
         if account_uuid is not None:
             conditions.append("account_uuid = ?")
             parameters.append(account_uuid.bytes)
@@ -53,7 +70,7 @@ class SqliteBudgetOverviewQueryRepository(BudgetOverviewQueryRepository):
         parameters.extend((page_size, timestamp + 1))
 
         query = f"""
-            WITH RECURSIVE classified_budgets AS (
+            WITH RECURSIVE {category_filter_cte}classified_budgets AS (
                 SELECT
                     {self._BUDGET_COLUMNS},
                     CASE
@@ -114,12 +131,13 @@ class SqliteBudgetOverviewQueryRepository(BudgetOverviewQueryRepository):
             raise_query_result_overflow(error)
         return [self._to_overview(row) for row in rows]
 
-    def list_attention(self, timestamp: int, account_uuid: UUID, limit: int) -> list[BudgetOverviewItem]:
+    def list_for_currency(self, timestamp: int, currency_uuid: UUID, limit: int) -> list[BudgetOverviewItem]:
         query = f"""
             WITH RECURSIVE active_budgets AS MATERIALIZED (
                 SELECT {self._BUDGET_COLUMNS}, 'ACTIVE' AS state
                 FROM budget
-                WHERE budget.account_uuid = ?
+                JOIN account ON account.uuid = budget.account_uuid
+                WHERE account.currency_uuid = ?
                   AND budget.from_timestamp <= ?
                   AND budget.to_timestamp > ?
             ),
@@ -167,7 +185,7 @@ class SqliteBudgetOverviewQueryRepository(BudgetOverviewQueryRepository):
             LIMIT ?
         """
         try:
-            rows = self.connection.execute(query, (account_uuid.bytes, timestamp, timestamp, timestamp + 1, limit)).fetchall()
+            rows = self.connection.execute(query, (currency_uuid.bytes, timestamp, timestamp, timestamp + 1, limit)).fetchall()
         except sqlite3.OperationalError as error:
             raise_query_result_overflow(error)
         return [self._to_overview(row) for row in rows]

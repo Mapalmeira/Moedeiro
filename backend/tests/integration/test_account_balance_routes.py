@@ -6,7 +6,7 @@ from uuid import uuid4
 from fastapi import HTTPException, Request
 
 from app.api.ledger.routes.account import create_ledger_account
-from app.api.ledger.routes.account_balance import get_ledger_account_balance, list_ledger_account_balance_points
+from app.api.ledger.routes.account_balance import get_ledger_account_balance, list_ledger_account_balance_points, list_ledger_account_balances
 from app.api.ledger.routes.category import create_ledger_category
 from app.api.ledger.routes.currency import create_ledger_currency
 from app.api.ledger.schema.account import CreateAccountRequest
@@ -87,6 +87,15 @@ class AccountBalanceRoutesTest(unittest.TestCase):
         self.assertEqual(balance, 80)
         self.assertEqual(points, [80, 110])
 
+    def test_balance_list_returns_account_and_currency_balances(self) -> None:
+        self.add_movement(50, 100)
+
+        balances = list_ledger_account_balances(self.ledger.uuid, 50, self.request, self.user, self.currency.uuid, 1)
+
+        self.assertEqual(len(balances.items), 1)
+        self.assertEqual((balances.items[0].account_uuid, balances.items[0].currency_uuid, balances.items[0].balance), (self.account.uuid, self.currency.uuid, 100))
+        self.assertEqual(balances.total_balance, 100)
+
     def test_queries_return_not_found_for_an_unknown_account(self) -> None:
         account_uuid = uuid4()
 
@@ -117,6 +126,9 @@ class AccountBalanceRoutesTest(unittest.TestCase):
     def test_routes_expose_current_and_interval_account_balances(self) -> None:
         paths = self.application.openapi()["paths"]
 
+        balances = paths["/api/ledgers/{ledger_uuid}/balances"]["get"]
+        self.assertIn("200", balances["responses"])
+        self.assertTrue(any(parameter["name"] == "limit" for parameter in balances["parameters"]))
         self.assertIn("200", paths["/api/ledgers/{ledger_uuid}/accounts/{account_uuid}/balance"]["get"]["responses"])
         points = paths["/api/ledgers/{ledger_uuid}/accounts/{account_uuid}/balance/points"]["get"]
         self.assertIn("200", points["responses"])

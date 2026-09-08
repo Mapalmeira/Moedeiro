@@ -142,6 +142,28 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
 
         self.assertEqual(page, [first, second])
 
+    def test_list_after_filters_by_currency_through_event_movements(self) -> None:
+        first_currency = self.create_currency("First currency")
+        second_currency = self.create_currency("Second currency")
+        first_account = self.create_account("First account", first_currency)
+        second_account = self.create_account("Second account", second_currency)
+        category = self.create_category()
+        first = self.create_event("First", occurred_at=10)
+        second = self.create_event("Second", occurred_at=20)
+        movement_repository = SqliteFinancialMovementRepository(self.connection)
+        movement_repository.create(first.uuid, first_account.uuid, category.uuid, -10, None)
+        movement_repository.create(second.uuid, second_account.uuid, category.uuid, -20, None)
+
+        page = self.repository.list_after(
+            10,
+            True,
+            FinancialEventFilter(from_timestamp=0, to_timestamp=100, currency_uuid=second_currency.uuid),
+            None,
+            None,
+        )
+
+        self.assertEqual([event.uuid for event in page], [second.uuid])
+
     def test_list_after_can_reverse_timestamp_direction(self) -> None:
         """Event timestamp is the fixed sort field while its direction remains configurable."""
         first = self.create_event("First", occurred_at=10)

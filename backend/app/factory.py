@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from app.api.ledger.routes.account import router as account_router
-from app.api.ledger.routes.account_balance import router as account_balance_router
+from app.api.ledger.routes.account_balance import balances_router, router as account_balance_router
 from app.api.ledger.routes.budget import router as budget_router
 from app.api.ledger.routes.cash_flow import router as cash_flow_router
 from app.api.ledger.routes.category import router as category_router
@@ -56,6 +56,7 @@ def create_app(settings: Settings | None = None, password_hasher: PasswordHasher
     application.state.rate_limiter = RateLimiter() if rate_limiter is None else rate_limiter
     application.include_router(account_router)
     application.include_router(account_balance_router)
+    application.include_router(balances_router)
     application.include_router(authentication_router)
     application.include_router(budget_router)
     application.include_router(cash_flow_router)

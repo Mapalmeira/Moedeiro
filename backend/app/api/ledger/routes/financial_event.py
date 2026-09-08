@@ -7,7 +7,7 @@ from app.api.dependencies.authentication import AuthenticatedUser
 from app.api.dependencies.ledger import ledger_unit_of_work_factory
 from app.api.dependencies.pagination import validate_page_size
 from app.api.ledger.schema.financial_event import AccountTransferFinancialEventRequest, CreateFinancialEventRequest, FinancialEventPageResponse, FinancialEventResponse, ShoppingListFinancialEventRequest, SimpleFinancialEventRequest, UpdateAccountTransferFinancialEventRequest, UpdateFinancialEventRequest, UpdateShoppingListFinancialEventRequest, UpdateSimpleFinancialEventRequest
-from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, FinancialEventLimitReachedError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError, InvalidFinancialEventStructureError
+from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, CurrencyNotFoundError, FinancialEventLimitReachedError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError, InvalidFinancialEventStructureError
 from app.application.ledger.use_cases.financial_event import create_account_transfer_financial_event, create_shopping_list_financial_event, create_simple_financial_event, delete_financial_event, get_financial_event, list_financial_events_after, update_account_transfer_financial_event, update_shopping_list_financial_event, update_simple_financial_event
 from app.domain.ledger.model.financial_event import FinancialEventType
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
@@ -66,6 +66,7 @@ def list_ledger_financial_events(
     to_timestamp: int,
     page_size: Annotated[int, Query(ge=1)],
     account_uuid: UUID | None = None,
+    currency_uuid: UUID | None = None,
     category_uuid: UUID | None = None,
     event_type: FinancialEventType | None = None,
     ascending: bool = False,
@@ -78,6 +79,7 @@ def list_ledger_financial_events(
         from_timestamp=from_timestamp,
         to_timestamp=to_timestamp,
         account_uuid=account_uuid,
+        currency_uuid=currency_uuid,
         category_uuid=category_uuid,
         event_type=event_type,
     )
@@ -85,9 +87,12 @@ def list_ledger_financial_events(
         cursor_occurred_at, cursor_uuid = _parse_cursor(cursor)
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid cursor") from error
-    events = list_financial_events_after(
-        ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), page_size, ascending, filters, cursor_occurred_at, cursor_uuid
-    )
+    try:
+        events = list_financial_events_after(
+            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), page_size, ascending, filters, cursor_occurred_at, cursor_uuid
+        )
+    except CurrencyNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Currency not found") from error
     next_cursor = None
     if len(events) > page_size:
         events = events[:page_size]
