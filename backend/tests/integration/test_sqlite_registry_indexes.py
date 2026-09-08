@@ -23,6 +23,7 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
     def test_defines_only_indexes_used_by_registry_queries(self) -> None:
         expected_indexes = {
             "ledger_grant_active_user_ledger_idx",
+            "ledger_grant_active_ledger_owner_idx",
             "ledger_grant_user_idx",
             "ledger_grant_ledger_idx",
             "ledger_grant_revoked_idx",

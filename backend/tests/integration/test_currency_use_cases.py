@@ -173,8 +173,6 @@ class CurrencyUseCasesTest(unittest.TestCase):
                 "Monthly",
                 "Monthly food budget",
                 100,
-                "lucide:ReceiptText",
-                b"\x80\x80\x80",
             )
             unit_of_work.commit()
 

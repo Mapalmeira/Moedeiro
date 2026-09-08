@@ -62,9 +62,9 @@ class CategoryRoutesTest(unittest.TestCase):
 
         self.assertEqual(get_ledger_category(self.ledger.uuid, child.uuid, self.request, self.user), child)
         tree = get_ledger_category_tree(self.ledger.uuid, self.request, self.user)
-        self.assertEqual(len(tree), 1)
-        self.assertEqual(tree[0].category, parent)
-        self.assertEqual(tree[0].children[0].category, child)
+        parent_node = next(node for node in tree if node.category.uuid == parent.uuid)
+        self.assertEqual(parent_node.category, parent)
+        self.assertEqual(parent_node.children[0].category, child)
 
     def test_create_and_update_reject_an_unknown_parent(self) -> None:
         category = self.create_category()
@@ -103,7 +103,9 @@ class CategoryRoutesTest(unittest.TestCase):
             self.assertEqual(error.detail, "Category name unavailable")
 
     def test_create_returns_a_fixed_error_when_the_category_limit_is_reached(self) -> None:
-        with patch("app.application.ledger.use_cases.category.MAX_CATEGORY_TREE_SIZE", 2):
+        with self.application.state.databases.open_ledger(f"{self.ledger.uuid}.sqlite") as unit_of_work:
+            current_size = unit_of_work.category_repository.count()
+        with patch("app.application.ledger.use_cases.category.MAX_CATEGORY_TREE_SIZE", current_size + 2):
             self.create_category("First")
             self.create_category("Second")
             with self.assertRaises(HTTPException) as raised:

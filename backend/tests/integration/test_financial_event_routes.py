@@ -47,7 +47,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
         self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="lucide:WalletCards", color_code="#102030"), self.request, self.user)
         with self.application.state.databases.open_ledger(f"{self.ledger.uuid}.sqlite") as unit_of_work:
             real = unit_of_work.currency_repository.get_by_name("Real")
-            dollar = unit_of_work.currency_repository.get_by_name("Dolár")
+            dollar = unit_of_work.currency_repository.get_by_name("Dólar americano")
             assert real is not None
             assert dollar is not None
             self.source = unit_of_work.account_repository.create("Checking", None, real.uuid, "lucide:WalletCards", b"\x30\x40\x50")
@@ -182,11 +182,11 @@ class FinancialEventRoutesTest(unittest.TestCase):
         first = self.create_simple(10)
         second = self.create_simple(20)
 
-        events = list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 0, 30, 1, self.source.uuid, self.food.uuid, "TRANSACTION", True)
+        events = list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 0, 30, 1, self.source.uuid, None, self.food.uuid, "TRANSACTION", True)
         with self.assertRaises(HTTPException) as too_large:
-            list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 0, 30, 3, None, None, None, False)
+            list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 0, 30, 3, None, None, None, None, False)
         with self.assertRaises(HTTPException) as invalid_period:
-            list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 30, 30, 2, None, None, None, False)
+            list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 30, 30, 2, None, None, None, None, False)
 
         self.assertEqual(events.events, [first])
         self.assertIsNotNone(events.next_cursor)
@@ -198,6 +198,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
             30,
             1,
             self.source.uuid,
+            None,
             self.food.uuid,
             "TRANSACTION",
             True,
@@ -361,7 +362,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
     def test_another_user_cannot_discover_or_change_events(self) -> None:
         event = self.create_simple()
         operations = (
-            lambda: list_ledger_financial_events(self.ledger.uuid, self.request, self.other_user, 0, 100, 2, None, None, None, False),
+            lambda: list_ledger_financial_events(self.ledger.uuid, self.request, self.other_user, 0, 100, 2, None, None, None, None, False),
             lambda: get_ledger_financial_event(self.ledger.uuid, event.uuid, self.request, self.other_user),
             lambda: update_ledger_financial_event(self.ledger.uuid, event.uuid, UpdateSimpleFinancialEventRequest(type="TRANSACTION", occurred_at=20, description="Changed", account_uuid=self.source.uuid, category_uuid=self.food.uuid, value=-100), self.request, self.other_user),
             lambda: delete_ledger_financial_event(self.ledger.uuid, event.uuid, self.request, self.other_user),
