@@ -13,7 +13,7 @@ class CreateBudgetRequest(BaseModel):
     from_timestamp: int
     to_timestamp: int
     name: BudgetName
-    description: BudgetDescription
+    description: BudgetDescription | None = None
     amount: BudgetAmount
 
     @model_validator(mode="after")
@@ -28,7 +28,7 @@ class UpdateBudgetRequest(BaseModel):
     from_timestamp: int
     to_timestamp: int
     name: BudgetName
-    description: BudgetDescription
+    description: BudgetDescription | None = None
     amount: BudgetAmount
 
     @model_validator(mode="after")
@@ -45,7 +45,7 @@ class BudgetResponse(BaseModel):
     from_timestamp: int
     to_timestamp: int
     name: BudgetName
-    description: BudgetDescription
+    description: BudgetDescription | None
     amount: BudgetAmount
 
     @classmethod

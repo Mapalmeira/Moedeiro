@@ -240,9 +240,12 @@ class BudgetRoutesTest(unittest.TestCase):
 
     def test_request_schemas_enforce_budget_limits_and_allow_zero(self) -> None:
         self.assertEqual(self.payload(amount=0).amount, 0)
+        payload_without_description = self.payload().model_dump()
+        payload_without_description.pop("description")
+        self.assertIsNone(CreateBudgetRequest(**payload_without_description).description)
+        self.assertEqual(CreateBudgetRequest(**{**payload_without_description, "description": ""}).description, "")
         invalid_values = (
             {**self.payload().model_dump(), "name": ""},
-            {**self.payload().model_dump(), "description": ""},
             {**self.payload().model_dump(), "amount": -1},
             {**self.payload().model_dump(), "from_timestamp": 20, "to_timestamp": 20},
         )

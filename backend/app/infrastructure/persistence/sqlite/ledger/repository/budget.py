@@ -16,7 +16,7 @@ class SqliteBudgetRepository(BudgetRepository):
         from_timestamp: int,
         to_timestamp: int,
         name: BudgetName,
-        description: BudgetDescription,
+        description: BudgetDescription | None,
         amount: BudgetAmount,
     ) -> Budget:
         budget = Budget(

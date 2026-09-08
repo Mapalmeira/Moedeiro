@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, model_validator
 
 BudgetName = Annotated[str, Field(min_length=1, max_length=50)]
-BudgetDescription = Annotated[str, Field(min_length=1, max_length=300)]
+BudgetDescription = Annotated[str, Field(max_length=300)]
 BudgetAmount = Annotated[int, Field(ge=0)]
 
 
@@ -15,7 +15,7 @@ class Budget(BaseModel):
     from_timestamp: int
     to_timestamp: int
     name: BudgetName
-    description: BudgetDescription
+    description: BudgetDescription | None = None
     amount: BudgetAmount
 
     @model_validator(mode="after")

@@ -42,4 +42,4 @@
 
 * **Financial movement** is the accounting entry within an event. It links one account and one category, and contains a non-zero signed `value`, a positive `quantity`, and an optional item name. Its economic impact is `value × quantity`.
 
-* **Budget** sets a non-negative spending limit for exactly one account, one category, and a time period. The account determines the budget currency and cannot be changed after creation. Spending in descendant categories is included. Budgets do not have their own icon or color; account and category appearance identify their scope. Budget names are unique within the ledger. A ledger may contain up to 1,000 budgets.
+* **Budget** sets a non-negative spending limit for exactly one account, one category, and a time period. The account determines the budget currency and cannot be changed after creation. Spending in descendant categories is included. Budget descriptions are optional. Budgets do not have their own icon or color; account and category appearance identify their scope. Budget names are unique within the ledger. A ledger may contain up to 1,000 budgets.

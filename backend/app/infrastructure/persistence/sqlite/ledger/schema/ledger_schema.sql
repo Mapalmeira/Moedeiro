@@ -72,7 +72,7 @@ CREATE TABLE budget (
     from_timestamp INTEGER NOT NULL,
     to_timestamp INTEGER NOT NULL,
     budget_name TEXT NOT NULL UNIQUE CHECK (length(budget_name) BETWEEN 1 AND 50),
-    description TEXT NOT NULL CHECK (length(description) BETWEEN 1 AND 300),
+    description TEXT CHECK (description IS NULL OR length(description) <= 300),
 
     amount INTEGER NOT NULL CHECK (amount >= 0),
 

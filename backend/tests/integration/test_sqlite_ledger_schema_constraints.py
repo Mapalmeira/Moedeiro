@@ -126,7 +126,6 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             ("financial_movement", "item_name", "x" * 51),
             ("budget", "budget_name", ""),
             ("budget", "budget_name", "x" * 51),
-            ("budget", "description", ""),
             ("budget", "description", "x" * 301),
         )
 
@@ -134,6 +133,13 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             with self.subTest(table=table, column=column, size=len(value)):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.connection.execute(f"UPDATE {table} SET {column} = ?", (value,))
+
+    def test_budget_description_is_optional(self) -> None:
+        for value in (None, ""):
+            with self.subTest(value=value):
+                self.connection.execute("UPDATE budget SET description = ?", (value,))
+                stored = self.connection.execute("SELECT description FROM budget").fetchone()[0]
+                self.assertEqual(stored, value)
 
     def test_icon_columns_enforce_only_the_one_to_one_hundred_character_length(self) -> None:
         for table in ("currency", "account", "category"):

@@ -50,11 +50,13 @@ class BudgetTest(unittest.TestCase):
         budget = Budget(**self.values(name="x" * 50))
         self.assertEqual(len(budget.name), 50)
 
-    def test_rejects_description_outside_length_limits(self) -> None:
-        for description in ("", "x" * 301):
-            with self.subTest(description_length=len(description)):
-                with self.assertRaises(ValidationError):
-                    Budget(**self.values(description=description))
+    def test_description_is_optional_and_accepts_empty_text(self) -> None:
+        self.assertIsNone(Budget(**{key: value for key, value in self.values().items() if key != "description"}).description)
+        self.assertEqual(Budget(**self.values(description="")).description, "")
+
+    def test_rejects_description_above_maximum_length(self) -> None:
+        with self.assertRaises(ValidationError):
+            Budget(**self.values(description="x" * 301))
 
 
 if __name__ == "__main__":

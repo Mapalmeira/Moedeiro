@@ -22,6 +22,22 @@ class SqliteBudgetRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(budget.to_timestamp, 20)
         self.assertEqual(budget.amount, 100)
 
+
+    def test_optional_description_is_persisted_as_null(self) -> None:
+        budget = self.repository.create(
+            self.account.uuid,
+            self.category.uuid,
+            10,
+            20,
+            "No description",
+            None,
+            100,
+        )
+
+        stored = self.repository.get(budget.uuid)
+        self.assertIsNotNone(stored)
+        self.assertIsNone(stored.description)
+
     def test_get_by_name_returns_budget_and_unknown_name_returns_none(self) -> None:
         budget = self.create_budget(account=self.account, category=self.category)
         self.assertEqual(self.repository.get_by_name(budget.name), budget)

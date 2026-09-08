@@ -13,7 +13,7 @@ class BudgetRepository(ABC):
         from_timestamp: int,
         to_timestamp: int,
         name: BudgetName,
-        description: BudgetDescription,
+        description: BudgetDescription | None,
         amount: BudgetAmount,
     ) -> Budget:
         pass

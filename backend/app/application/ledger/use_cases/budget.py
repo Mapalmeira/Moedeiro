@@ -14,7 +14,7 @@ def create_budget(
     from_timestamp: int,
     to_timestamp: int,
     name: BudgetName,
-    description: BudgetDescription,
+    description: BudgetDescription | None,
     amount: BudgetAmount,
 ) -> Budget:
     with unit_of_work_factory() as unit_of_work:
@@ -52,7 +52,7 @@ def update_budget(
     from_timestamp: int,
     to_timestamp: int,
     name: BudgetName,
-    description: BudgetDescription,
+    description: BudgetDescription | None,
     amount: BudgetAmount,
 ) -> Budget:
     with unit_of_work_factory() as unit_of_work:
