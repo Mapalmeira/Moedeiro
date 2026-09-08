@@ -8,11 +8,12 @@ from app.application.registry.unit_of_work import RegistryUnitOfWork
 from app.domain.appearance import Icon, RgbColorCode
 from app.domain.registry.limits import MAXIMUM_LEDGERS_PER_USER
 from app.domain.registry.model.ledger import Ledger, LedgerName
+from app.domain.registry.model.user_preferences import Language
 
 
 def create_ledger(
     unit_of_work_factory: Callable[[], RegistryUnitOfWork],
-    initialize_database: Callable[[UUID, int], Path],
+    initialize_database: Callable[[UUID, int, Language], Path],
     delete_database: Callable[[str | Path], None],
     user_uuid: UUID,
     name: LedgerName,
@@ -28,7 +29,9 @@ def create_ledger(
                 raise UserNotFoundError
             if unit_of_work.ledger_repository.count_owned_by_user(user_uuid) >= MAXIMUM_LEDGERS_PER_USER:
                 raise LedgerLimitReachedError
-            database_path = initialize_database(ledger_uuid, timestamp)
+            preferences = unit_of_work.user_preferences_repository.get(user_uuid)
+            language: Language = "pt-BR" if preferences is None else preferences.language
+            database_path = initialize_database(ledger_uuid, timestamp, language)
             ledger = unit_of_work.ledger_repository.create(
                 ledger_uuid,
                 name,

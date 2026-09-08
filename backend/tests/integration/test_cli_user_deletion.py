@@ -33,8 +33,8 @@ class UserDeletionCliTest(unittest.TestCase):
         self.databases.initialize()
         owned_ledger_uuid = uuid4()
         revoked_ledger_uuid = uuid4()
-        owned_ledger_path = self.databases.initialize_ledger(owned_ledger_uuid, 10)
-        revoked_ledger_path = self.databases.initialize_ledger(revoked_ledger_uuid, 10)
+        owned_ledger_path = self.databases.initialize_ledger(owned_ledger_uuid, 10, "pt-BR")
+        revoked_ledger_path = self.databases.initialize_ledger(revoked_ledger_uuid, 10, "pt-BR")
         with self.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 10)
             self.owned_ledger = unit_of_work.ledger_repository.create(owned_ledger_uuid, "Owned", owned_ledger_path.name, "lucide:BookOpen", b"\x80\x80\x80", 10)

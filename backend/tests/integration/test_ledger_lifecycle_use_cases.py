@@ -63,6 +63,19 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
         self.assertEqual(metadata.schema_version, 1)
         self.assertEqual(metadata.created_at, 100)
 
+    def test_create_uses_the_owner_language_for_preloaded_entities(self) -> None:
+        with self.databases.open_registry() as unit_of_work:
+            unit_of_work.user_preferences_repository.save(self.user.uuid, "en", "MDY", "H12", "DOT", "LIGHT", "UTC")
+            unit_of_work.commit()
+
+        ledger = self.create()
+
+        with self.databases.open_ledger(ledger.path) as unit_of_work:
+            currencies = unit_of_work.currency_repository.list_all()
+            categories = unit_of_work.category_repository.get_tree(200)
+        self.assertIn("Brazilian real", [currency.name for currency in currencies])
+        self.assertIn("Food", [node.category.name for node in categories])
+
     def test_creation_limit_is_per_user_and_can_be_reused_after_deletion(self) -> None:
         with patch("app.application.ledger.use_cases.ledger.MAXIMUM_LEDGERS_PER_USER", 1):
             first = self.create()

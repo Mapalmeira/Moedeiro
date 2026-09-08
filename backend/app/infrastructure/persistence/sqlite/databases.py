@@ -2,7 +2,9 @@ from pathlib import Path
 from time import time_ns
 from uuid import UUID
 
+from app.domain.registry.model.user_preferences import Language
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
+from app.infrastructure.persistence.sqlite.ledger.defaults import CATEGORY_TREE, CategoryDefault, category_name, default_currencies
 from app.infrastructure.persistence.sqlite.ledger.schema_version import CURRENT_LEDGER_SCHEMA_VERSION
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
 from app.infrastructure.persistence.sqlite.migration import SqliteSchemaMigrator
@@ -10,60 +12,26 @@ from app.infrastructure.persistence.sqlite.registry.schema_version import CURREN
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
 
 
-_DEFAULT_LEDGER_CURRENCIES = (
-    ("Real", "R$ ", None, 2, "unicode:R$", bytes.fromhex("FFD51A")),
-    ("Dolár", "$ ", None, 2, "lucide:DollarSign", bytes.fromhex("2E7D32")),
-    ("Euro", "€ ", None, 2, "lucide:Euro", bytes.fromhex("003399")),
-    ("Bitcoin", None, " BTC", 8, "lucide:Bitcoin", bytes.fromhex("AE5400")),
-    ("Iene", "¥ ", None, 0, "lucide:JapaneseYen", bytes.fromhex("BC002D")),
-    ("Libra", "£ ", None, 2, "lucide:PoundSterling", bytes.fromhex("5B2C6F")),
-)
-
-
 class SqliteDatabases:
-    def __init__(
-        self,
-        registry_db_path: Path,
-        registry_schema_path: Path,
-        ledger_dbs_dir: Path,
-        ledger_schema_path: Path,
-    ):
+    def __init__(self, registry_db_path: Path, registry_schema_path: Path, ledger_dbs_dir: Path, ledger_schema_path: Path):
         self.registry_database = SqliteDatabase(registry_db_path)
         self.registry_schema_path = registry_schema_path
         self.ledger_dbs_dir = ledger_dbs_dir
         self.ledger_schema_path = ledger_schema_path
-        self.registry_migrator = SqliteSchemaMigrator(
-            "registry_metadata",
-            CURRENT_REGISTRY_SCHEMA_VERSION,
-            registry_schema_path.parent / "migrations",
-        )
-        self.ledger_migrator = SqliteSchemaMigrator(
-            "ledger_metadata",
-            CURRENT_LEDGER_SCHEMA_VERSION,
-            ledger_schema_path.parent / "migrations",
-        )
+        self.registry_migrator = SqliteSchemaMigrator("registry_metadata", CURRENT_REGISTRY_SCHEMA_VERSION, registry_schema_path.parent / "migrations")
+        self.ledger_migrator = SqliteSchemaMigrator("ledger_metadata", CURRENT_LEDGER_SCHEMA_VERSION, ledger_schema_path.parent / "migrations")
 
     def initialize(self) -> None:
         self._initialize_storage()
         ledger_paths = self._ledger_paths()
         registry_requires_migration = self.registry_migrator.requires_migration(self.registry_database)
-        ledgers_requiring_migration = [
-            path for path in ledger_paths if self.ledger_migrator.requires_migration(SqliteDatabase(path))
-        ]
+        ledgers_requiring_migration = [path for path in ledger_paths if self.ledger_migrator.requires_migration(SqliteDatabase(path))]
         if registry_requires_migration or ledgers_requiring_migration:
             backup_timestamp = time_ns()
             if registry_requires_migration:
-                self._backup_database(
-                    self.registry_database,
-                    self.registry_database.path.parent / "backups",
-                    backup_timestamp,
-                )
+                self._backup_database(self.registry_database, self.registry_database.path.parent / "backups", backup_timestamp)
             for ledger_path in ledgers_requiring_migration:
-                self._backup_database(
-                    SqliteDatabase(ledger_path),
-                    self.ledger_dbs_dir / "backup",
-                    backup_timestamp,
-                )
+                self._backup_database(SqliteDatabase(ledger_path), self.ledger_dbs_dir / "backup", backup_timestamp)
         if registry_requires_migration:
             self.registry_migrator.migrate(self.registry_database)
         for ledger_path in ledgers_requiring_migration:
@@ -77,21 +45,20 @@ class SqliteDatabases:
 
     def _initialize_storage(self) -> None:
         self.ledger_dbs_dir.mkdir(parents=True, exist_ok=True)
-        if not self.registry_database.path.exists():
-            database_initialized = False
-            try:
-                self.registry_database = SqliteDatabase.initialize(
-                    self.registry_database.path,
-                    self.registry_schema_path,
-                )
-                database_initialized = True
-                with self.open_registry() as unit_of_work:
-                    unit_of_work.registry_metadata_repository.create(CURRENT_REGISTRY_SCHEMA_VERSION)
-                    unit_of_work.commit()
-            except Exception:
-                if database_initialized:
-                    self.registry_database.path.unlink(missing_ok=True)
-                raise
+        if self.registry_database.path.exists():
+            return
+
+        initialized = False
+        try:
+            self.registry_database = SqliteDatabase.initialize(self.registry_database.path, self.registry_schema_path)
+            initialized = True
+            with self.open_registry() as unit_of_work:
+                unit_of_work.registry_metadata_repository.create(CURRENT_REGISTRY_SCHEMA_VERSION)
+                unit_of_work.commit()
+        except Exception:
+            if initialized:
+                self.registry_database.path.unlink(missing_ok=True)
+            raise
 
     def get_ledger_path(self, ledger_uuid: UUID) -> Path:
         return self.ledger_dbs_dir / f"{ledger_uuid}.sqlite"
@@ -99,26 +66,33 @@ class SqliteDatabases:
     def delete_ledger_database(self, path: str | Path) -> None:
         self._resolve_ledger_path(path).unlink(missing_ok=True)
 
-    def initialize_ledger(self, ledger_uuid: UUID, created_at: int) -> Path:
+    def initialize_ledger(self, ledger_uuid: UUID, created_at: int, language: Language) -> Path:
         path = self.get_ledger_path(ledger_uuid)
-        database_initialized = False
+        initialized = False
         try:
             database = SqliteDatabase.initialize(path, self.ledger_schema_path)
-            database_initialized = True
+            initialized = True
             with SqliteLedgerUnitOfWork(database) as unit_of_work:
                 unit_of_work.ledger_metadata_repository.create(ledger_uuid, CURRENT_LEDGER_SCHEMA_VERSION, created_at)
-                for currency in _DEFAULT_LEDGER_CURRENCIES:
+                for currency in default_currencies(language):
                     unit_of_work.currency_repository.create(*currency)
+                self._create_categories(unit_of_work, CATEGORY_TREE, language)
                 unit_of_work.commit()
             database.enable_wal()
         except Exception:
-            if database_initialized:
+            if initialized:
                 path.unlink(missing_ok=True)
             raise
         return path
 
     def open_registry(self) -> SqliteRegistryUnitOfWork:
         return SqliteRegistryUnitOfWork(self.registry_database)
+
+    @staticmethod
+    def _create_categories(unit_of_work: SqliteLedgerUnitOfWork, categories: tuple[CategoryDefault, ...], language: Language, parent_uuid: UUID | None = None) -> None:
+        for category_default in categories:
+            category = unit_of_work.category_repository.create(category_name(category_default.key, language), category_default.icon, category_default.color_code, parent_uuid)
+            SqliteDatabases._create_categories(unit_of_work, category_default.children, language, category.uuid)
 
     def open_ledger(self, path: str | Path) -> SqliteLedgerUnitOfWork:
         ledger_path = self._resolve_ledger_path(path)

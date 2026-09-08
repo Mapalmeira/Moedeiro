@@ -54,7 +54,7 @@ class SqliteDatabasesTest(unittest.TestCase):
         self.databases.initialize()
         with self.databases.open_registry() as unit_of_work:
             ledger_uuid = uuid4()
-            ledger_path = self.databases.initialize_ledger(ledger_uuid, 10)
+            ledger_path = self.databases.initialize_ledger(ledger_uuid, 10, "pt-BR")
             ledger = unit_of_work.ledger_repository.create(ledger_uuid, "Existing", ledger_path.name, "lucide:BookOpen", b"\x80\x80\x80", 10)
             unit_of_work.commit()
 
@@ -114,7 +114,7 @@ class SqliteDatabasesTest(unittest.TestCase):
         self.databases.initialize()
         ledger_uuid = uuid4()
 
-        path = self.databases.initialize_ledger(ledger_uuid, 100)
+        path = self.databases.initialize_ledger(ledger_uuid, 100, "pt-BR")
 
         self.assertEqual(path, self.ledger_dbs_dir / f"{ledger_uuid}.sqlite")
         with self.databases.open_ledger(path) as unit_of_work:
@@ -128,11 +128,11 @@ class SqliteDatabasesTest(unittest.TestCase):
             ],
             [
                 ("Bitcoin", None, " BTC", 8, "lucide:Bitcoin", bytes.fromhex("AE5400")),
-                ("Dolár", "$ ", None, 2, "lucide:DollarSign", bytes.fromhex("2E7D32")),
+                ("Dólar americano", "US$ ", None, 2, "lucide:DollarSign", bytes.fromhex("2563EB")),
                 ("Euro", "€ ", None, 2, "lucide:Euro", bytes.fromhex("003399")),
-                ("Iene", "¥ ", None, 0, "lucide:JapaneseYen", bytes.fromhex("BC002D")),
-                ("Libra", "£ ", None, 2, "lucide:PoundSterling", bytes.fromhex("5B2C6F")),
-                ("Real", "R$ ", None, 2, "unicode:R$", bytes.fromhex("FFD51A")),
+                ("Iene japonês", "¥ ", None, 0, "lucide:JapaneseYen", bytes.fromhex("BC002D")),
+                ("Libra esterlina", "£ ", None, 2, "lucide:PoundSterling", bytes.fromhex("5B2C6F")),
+                ("Real", "R$ ", None, 2, "unicode:R$", bytes.fromhex("16A34A")),
             ],
         )
         self.assertEqual(metadata.ledger_uuid, ledger_uuid)
@@ -144,10 +144,24 @@ class SqliteDatabasesTest(unittest.TestCase):
         finally:
             connection.close()
 
+    def test_initialize_ledger_uses_the_requested_language_for_defaults(self) -> None:
+        self.databases.initialize()
+
+        path = self.databases.initialize_ledger(uuid4(), 100, "en")
+
+        with self.databases.open_ledger(path) as unit_of_work:
+            currency_names = [currency.name for currency in unit_of_work.currency_repository.list_all()]
+            category_names = [node.category.name for node in unit_of_work.category_repository.get_tree(200)]
+
+        self.assertIn("Brazilian real", currency_names)
+        self.assertIn("US dollar", currency_names)
+        self.assertIn("Food", category_names)
+        self.assertIn("Taxes", category_names)
+
     def test_initialize_enables_wal_for_an_existing_ledger(self) -> None:
         self.databases.initialize()
         ledger_uuid = uuid4()
-        path = self.databases.initialize_ledger(ledger_uuid, 100)
+        path = self.databases.initialize_ledger(ledger_uuid, 100, "pt-BR")
         connection = sqlite3.connect(path)
         try:
             connection.execute("PRAGMA journal_mode = DELETE")
@@ -165,10 +179,10 @@ class SqliteDatabasesTest(unittest.TestCase):
     def test_initialize_ledger_never_overwrites_an_existing_database(self) -> None:
         self.databases.initialize()
         ledger_uuid = uuid4()
-        path = self.databases.initialize_ledger(ledger_uuid, 100)
+        path = self.databases.initialize_ledger(ledger_uuid, 100, "pt-BR")
 
         with self.assertRaises(FileExistsError):
-            self.databases.initialize_ledger(ledger_uuid, 100)
+            self.databases.initialize_ledger(ledger_uuid, 100, "pt-BR")
 
         self.assertTrue(path.is_file())
         with self.databases.open_ledger(path) as unit_of_work:
@@ -193,7 +207,7 @@ class SqliteDatabasesTest(unittest.TestCase):
             side_effect=RuntimeError("metadata failed"),
         ):
             with self.assertRaisesRegex(RuntimeError, "metadata failed"):
-                self.databases.initialize_ledger(ledger_uuid, 100)
+                self.databases.initialize_ledger(ledger_uuid, 100, "pt-BR")
 
         self.assertFalse(path.exists())
 
@@ -207,14 +221,14 @@ class SqliteDatabasesTest(unittest.TestCase):
             side_effect=RuntimeError("currency failed"),
         ):
             with self.assertRaisesRegex(RuntimeError, "currency failed"):
-                self.databases.initialize_ledger(ledger_uuid, 100)
+                self.databases.initialize_ledger(ledger_uuid, 100, "pt-BR")
 
         self.assertFalse(path.exists())
 
     def test_initialize_backs_up_only_the_registry_when_only_it_requires_a_migration(self) -> None:
         self.databases.initialize()
         ledger_uuid = uuid4()
-        self.databases.initialize_ledger(ledger_uuid, 10)
+        self.databases.initialize_ledger(ledger_uuid, 10, "pt-BR")
         migrations_directory = self.directory / "registry_migrations"
         migrations_directory.mkdir()
         (migrations_directory / "0002_add_marker.sql").write_text(
@@ -256,7 +270,7 @@ class SqliteDatabasesTest(unittest.TestCase):
     def test_initialize_rejects_a_ledger_from_a_newer_release(self) -> None:
         self.databases.initialize()
         ledger_uuid = uuid4()
-        ledger_path = self.databases.initialize_ledger(ledger_uuid, 10)
+        ledger_path = self.databases.initialize_ledger(ledger_uuid, 10, "pt-BR")
         with self.databases.open_registry() as unit_of_work:
             unit_of_work.ledger_repository.create(
                 ledger_uuid,
