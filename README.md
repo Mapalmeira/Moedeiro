@@ -39,6 +39,7 @@ The interactive flow view transforms income and expenses into a visual map. Unde
 * International date, time, number and timezone preferences
 * Light and dark themes
 * Private access with server side sessions and optional TOTP protection
+* Administrative CLI for invitations, user management and ownership grants
 
 ## Data ownership
 
