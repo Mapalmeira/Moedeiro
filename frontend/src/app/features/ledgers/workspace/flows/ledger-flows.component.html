@@ -1,0 +1,67 @@
+<section class="flows">
+  <header class="flows-controls">
+    <label class="flows-control flows-account-control">
+      <span>{{ i18n.t('flows.account') }}</span>
+      <app-entity-search-select [options]="accountOptions()" [value]="selectedAccountUuid()"
+        [ariaLabel]="i18n.t('flows.account')" [searchPlaceholder]="i18n.t('flows.searchAccount')"
+        [emptyText]="i18n.t('flows.noAccounts')" [disabled]="resourcesLoading() || !accounts().length"
+        (valueChange)="selectAccount($event)" />
+    </label>
+
+    <div class="flows-visualization-controls">
+      <app-period-selector class="flows-period-control" [mode]="periodMode()" [month]="selectedMonth()"
+        [rangeFromDate]="rangeFromDate()" [rangeToDate]="rangeToDate()" [locale]="locale()"
+        (modeChange)="setPeriodMode($event)" (monthChange)="selectMonth($event)"
+        (rangeFromDateChange)="setRangeFromDate($event)" (rangeToDateChange)="setRangeToDate($event)" />
+
+      <label class="flows-control flows-detail-control">
+        <span class="flows-detail-control__heading">{{ i18n.t('flows.categoryDetail') }}</span>
+        <span class="flows-slider">
+          <input type="range" min="1" [max]="detailLevels.length" step="1" [value]="detailLevel()" (input)="updateDetailLevel($event)"
+            [attr.aria-label]="i18n.t('flows.categoryDetail')" [attr.aria-valuetext]="i18n.t('flows.level', { level: detailLevel() })" />
+          <span class="flows-slider__ticks" aria-hidden="true">
+            @for (level of detailLevels; track level) { <span>{{ level }}</span> }
+          </span>
+        </span>
+      </label>
+    </div>
+  </header>
+
+  @if (error()) {
+    <div class="flows-error">
+      <app-form-message [text]="error()!" />
+      <button type="button" class="ui-button" (click)="retry()">{{ i18n.t('workspace.retry') }}</button>
+    </div>
+  } @else if (resourcesLoading()) {
+    <div class="flows-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
+  } @else if (!accounts().length) {
+    <div class="flows-state"><app-icon name="wallet" [size]="28" />{{ i18n.t('flows.noAccounts') }}</div>
+  } @else {
+    <section class="flows-card ui-card ui-projected-surface ui-projection--surface">
+      <header class="flows-card__header">
+        <div class="flows-card__heading">
+          <h2>{{ i18n.t('flows.diagramTitle') }}</h2>
+        </div>
+        <div class="flows-totals" aria-live="polite">
+          <span><small>{{ i18n.t('home.income') }}</small><strong class="flows-total--income">{{ incomeLabel() }}</strong></span>
+          <span><small>{{ i18n.t('home.expense') }}</small><strong class="flows-total--expense">{{ expenseLabel() }}</strong></span>
+        </div>
+      </header>
+
+      <div class="flows-card__body">
+        @if (loading() && !graph()) {
+          <div class="flows-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
+        } @else if (graph(); as sankey) {
+          @if (sankey.nodes.length) {
+            @if (selectedCurrency(); as currency) {
+              <app-cash-flow-sankey [graph]="sankey" [currency]="currency" [numberFormat]="preferences.current().number_format"
+                [ariaLabel]="i18n.t('flows.diagramAria', { account: selectedAccount()?.name ?? '' })" />
+            }
+          } @else {
+            <div class="flows-state"><app-icon name="chart" [size]="28" />{{ i18n.t('flows.empty') }}</div>
+          }
+        }
+      </div>
+    </section>
+  }
+</section>

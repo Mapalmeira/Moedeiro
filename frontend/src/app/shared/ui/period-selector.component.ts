@@ -45,21 +45,19 @@ export type PeriodMode = 'month' | 'range';
     :host {
       display: block;
       min-width: 0;
-      container-type: inline-size;
-      container-name: period-selector;
     }
     .period-selector {
       min-width: 0;
       display: grid;
       gap: var(--field-gap);
       font-size: var(--control-font-size);
-      font-weight: 650;
+      font-weight: var(--control-font-weight);
     }
     .period-selector__label { line-height: var(--control-line-height); }
     .period-selector__row {
       min-width: 0;
       display: flex;
-      align-items: flex-start;
+      align-items: flex-end;
       gap: var(--form-gap);
     }
     .period-selector__switch {
@@ -67,14 +65,16 @@ export type PeriodMode = 'month' | 'range';
       display: flex;
       align-items: flex-start;
       gap: var(--space-2);
+      padding-inline-end: var(--compact-shadow-offset);
+      padding-block-end: var(--compact-shadow-offset);
     }
     .period-selector__switch .ui-press-toggle { min-height: var(--control-height); }
     .period-selector__month { flex: 0 1 var(--period-month-select-width); width: var(--period-month-select-width); min-width: 0; }
     .period-selector__range {
-      flex: 1 1 auto;
+      flex: 0 1 auto;
       min-width: 0;
       display: grid;
-      grid-template-columns: minmax(var(--period-date-field-min-width), 1fr) auto minmax(var(--period-date-field-min-width), 1fr);
+      grid-template-columns: minmax(var(--period-date-field-min-width), var(--period-date-field-width)) auto minmax(var(--period-date-field-min-width), var(--period-date-field-width));
       align-items: center;
       gap: var(--space-2);
     }
@@ -100,7 +100,7 @@ export type PeriodMode = 'month' | 'range';
       border: 0;
     }
 
-    @container period-selector (max-width: 520px) {
+    @container (max-width: 620px) {
       .period-selector__row { display: grid; grid-template-columns: minmax(0, 1fr); }
       .period-selector__switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
       .period-selector__switch .ui-press-toggle { min-width: 0; }

@@ -23,9 +23,13 @@ export const LEDGER_LAYOUT_ROUTES: Routes = [
     loadComponent: () => import('../../features/ledgers/workspace/budgets/ledger-budgets.component').then((m) => m.LedgerBudgetsComponent),
   },
   {
+    path: 'flows',
+    data: ledgerSectionRouteData('flows'),
+    loadComponent: () => import('../../features/ledgers/workspace/flows/ledger-flows.component').then((m) => m.LedgerFlowsComponent),
+  },
+  {
     path: 'analytics',
-    data: ledgerSectionRouteData('analytics'),
-    loadComponent: () => import('../../features/ledgers/workspace/analytics/ledger-analytics.component').then((m) => m.LedgerAnalyticsComponent),
+    redirectTo: 'flows',
   },
   {
     path: 'accounts',

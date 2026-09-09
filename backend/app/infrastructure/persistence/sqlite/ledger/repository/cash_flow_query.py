@@ -2,6 +2,7 @@ import sqlite3
 from uuid import UUID
 
 from app.domain.ledger.model.cash_flow import CashFlow
+from app.domain.ledger.model.cash_flow_sankey import CashFlowCategoryTotal
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 from app.domain.ledger.repository.cash_flow_query import CashFlowQueryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository._numeric import raise_query_result_overflow, require_sqlite_integer
@@ -73,6 +74,36 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
         return [
             self._to_model(rows_by_point.get(point_start), currency_uuid)
             for point_start in range(filters.from_timestamp, filters.to_timestamp, point_width)
+        ]
+
+    def list_category_totals(self, account_uuid: UUID, filters: FinancialEventFilter) -> list[CashFlowCategoryTotal]:
+        try:
+            rows = self.connection.execute(
+                """
+                SELECT
+                    movement.category_uuid,
+                    COALESCE(SUM(CASE WHEN movement.value > 0 THEN movement.value * movement.quantity ELSE 0 END), 0) AS income,
+                    COALESCE(SUM(CASE WHEN movement.value < 0 THEN -movement.value * movement.quantity ELSE 0 END), 0) AS expense
+                FROM financial_event AS event
+                JOIN financial_movement AS movement ON movement.financial_event_uuid = event.uuid
+                WHERE event.occurred_at >= ?
+                  AND event.occurred_at < ?
+                  AND event.type <> ?
+                  AND movement.account_uuid = ?
+                GROUP BY movement.category_uuid
+                ORDER BY movement.category_uuid ASC
+                """,
+                (filters.from_timestamp, filters.to_timestamp, "ACCOUNT_TRANSFER", account_uuid.bytes),
+            ).fetchall()
+        except sqlite3.OperationalError as error:
+            raise_query_result_overflow(error)
+        return [
+            CashFlowCategoryTotal(
+                category_uuid=UUID(bytes=row["category_uuid"]),
+                income=require_sqlite_integer(row["income"]),
+                expense=require_sqlite_integer(row["expense"]),
+            )
+            for row in rows
         ]
 
     @staticmethod

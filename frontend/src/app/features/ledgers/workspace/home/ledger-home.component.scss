@@ -16,8 +16,8 @@
 .home-period-row { min-width: 0; display: flex; align-items: flex-end; gap: var(--form-gap); }
 .home-period-switch { flex: 0 0 auto; display: flex; align-items: flex-start; gap: var(--space-2); padding-inline-end: var(--compact-shadow-offset); padding-block-end: var(--compact-shadow-offset); }
 .home-period-switch .ui-press-toggle { min-height: var(--control-height); }
-.home-month-select { width: min(240px, 30cqw); }
-.home-range-fields { min-width: 0; display: grid; grid-template-columns: minmax(140px, 170px) auto minmax(140px, 170px); align-items: center; gap: var(--space-2); }
+.home-month-select { width: min(var(--period-month-select-width), 30cqw); }
+.home-range-fields { min-width: 0; display: grid; grid-template-columns: minmax(var(--period-date-field-min-width), var(--period-date-field-width)) auto minmax(var(--period-date-field-min-width), var(--period-date-field-width)); align-items: center; gap: var(--space-2); }
 .home-range-field { width: auto; }
 .home-range-field__label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .home-range-separator { min-height: var(--control-height); display: grid; place-items: center; color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 650; white-space: nowrap; }

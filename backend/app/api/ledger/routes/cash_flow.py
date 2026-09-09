@@ -5,9 +5,10 @@ from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from app.api.dependencies.authentication import AuthenticatedUser
 from app.api.dependencies.ledger import ledger_unit_of_work_factory
-from app.api.ledger.schema.cash_flow import CashFlowResponse
+from app.api.ledger.schema.cash_flow import CashFlowResponse, CashFlowSankeyResponse
 from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, CurrencyNotFoundError, InvalidQueryParameterError, QueryPointLimitExceededError
-from app.application.ledger.use_cases.cash_flow import get_cash_flow_summary, list_cash_flow_points
+from app.application.ledger.use_cases.cash_flow import get_cash_flow_sankey, get_cash_flow_summary, list_cash_flow_points
+from app.domain.ledger.model.category import MAX_CATEGORY_DEPTH
 from app.domain.ledger.model.financial_event import FinancialEventType
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 
@@ -76,6 +77,32 @@ def list_ledger_cash_flow_points(
     except InvalidQueryParameterError as error:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid query parameters") from error
     return [CashFlowResponse.from_cash_flow(point) for point in points]
+
+
+@router.get("/sankey", response_model=CashFlowSankeyResponse)
+def get_ledger_cash_flow_sankey(
+    ledger_uuid: UUID,
+    account_uuid: UUID,
+    from_timestamp: int,
+    to_timestamp: int,
+    detail_level: Annotated[int, Query(ge=1, le=MAX_CATEGORY_DEPTH)],
+    request: Request,
+    user: AuthenticatedUser,
+) -> CashFlowSankeyResponse:
+    if from_timestamp >= to_timestamp:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="from_timestamp must be less than to_timestamp")
+    try:
+        sankey = get_cash_flow_sankey(
+            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            account_uuid,
+            FinancialEventFilter(from_timestamp=from_timestamp, to_timestamp=to_timestamp, account_uuid=account_uuid),
+            detail_level,
+        )
+    except AccountNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found") from error
+    except InvalidQueryParameterError as error:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid query parameters") from error
+    return CashFlowSankeyResponse.from_sankey(sankey)
 
 
 def _filters(from_timestamp: int, to_timestamp: int, account_uuid: UUID | None, category_uuid: UUID | None, event_type: FinancialEventType | None) -> FinancialEventFilter:

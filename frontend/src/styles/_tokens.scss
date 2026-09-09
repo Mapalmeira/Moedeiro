@@ -13,6 +13,7 @@
   --blue: #488dfc;
   --blue-strong: #2467d5;
   --blue-soft: #edf4ff;
+  --orange: #ea580c;
   --on-green: #07130c;
   --on-yellow: #171200;
   --on-blue: #ffffff;
@@ -76,6 +77,11 @@
   --action-button-min-width: 200px;
   --spinner-size: 20px;
   --entity-search-width: 420px;
+  --period-month-select-width: 240px;
+  --period-date-field-width: 170px;
+  --period-date-field-min-width: 140px;
+  --range-track-height: 8px;
+  --range-thumb-size: 22px;
   --search-dropdown-max-height: 340px;
   --activity-date-column-width: 110px;
   --activity-type-column-width: 190px;
@@ -86,6 +92,8 @@
   --budget-card-min-width: 340px;
   --budget-category-filter-width: 240px;
   --budget-state-filter-width: 280px;
+  --flow-account-filter-width: 300px;
+  --flow-detail-control-width: 280px;
   --ledger-sidebar-width: 268px;
   --sidebar-brand-font-size: 2rem;
   --category-tree-indent: var(--space-8);
@@ -159,6 +167,7 @@
   --blue: #488dfc;
   --blue-strong: #4e88e8;
   --blue-soft: #17263d;
+  --orange: #f97316;
   --danger: #ef7777;
   --danger-soft: #351d20;
   --danger-token: #c93440;

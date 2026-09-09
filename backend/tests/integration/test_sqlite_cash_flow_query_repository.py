@@ -176,6 +176,28 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(summary.expense, 40)
         self.assertEqual(summary.event_count, 1)
 
+    def test_list_category_totals_groups_account_movements_by_category_and_excludes_transfers(self) -> None:
+        groceries = self.create_category("Groceries")
+        salary = self.create_category("Salary")
+        income = self.create_event("Salary", occurred_at=100)
+        expense = self.create_event("Groceries", occurred_at=120)
+        transfer = self.create_event("Transfer", type="ACCOUNT_TRANSFER", occurred_at=140)
+        other_account_event = self.create_event("Other account", occurred_at=150)
+        self.movement_repository.create(income.uuid, self.account.uuid, salary.uuid, 100, None, 2)
+        self.movement_repository.create(expense.uuid, self.account.uuid, groceries.uuid, -25, None, 3)
+        self.movement_repository.create(transfer.uuid, self.account.uuid, groceries.uuid, -500, None)
+        self.movement_repository.create(other_account_event.uuid, self.other_account.uuid, groceries.uuid, -700, None)
+
+        totals = self.repository.list_category_totals(
+            self.account.uuid,
+            FinancialEventFilter(from_timestamp=100, to_timestamp=200, account_uuid=self.account.uuid),
+        )
+
+        by_category = {total.category_uuid: (total.income, total.expense) for total in totals}
+        self.assertEqual(by_category[salary.uuid], (200, 0))
+        self.assertEqual(by_category[groceries.uuid], (0, 75))
+        self.assertEqual(len(by_category), 2)
+
     def test_list_points_groups_flow_from_caller_day_boundary_and_orders_it(self) -> None:
         """Daily buckets are anchored to the supplied first local-day timestamp."""
         self.add_movement("Second day", 86400 + 100, -20)

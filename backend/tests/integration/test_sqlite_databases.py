@@ -151,12 +151,19 @@ class SqliteDatabasesTest(unittest.TestCase):
 
         with self.databases.open_ledger(path) as unit_of_work:
             currency_names = [currency.name for currency in unit_of_work.currency_repository.list_all()]
-            category_names = [node.category.name for node in unit_of_work.category_repository.get_tree(200)]
+            category_tree = unit_of_work.category_repository.get_tree(200)
+
+        def category_names(nodes):
+            return [node.category.name for node in nodes] + [name for node in nodes for name in category_names(node.children)]
 
         self.assertIn("Brazilian real", currency_names)
         self.assertIn("US dollar", currency_names)
-        self.assertIn("Food", category_names)
-        self.assertIn("Taxes", category_names)
+        self.assertIn("Food", category_names(category_tree))
+        self.assertIn("Taxes", category_names(category_tree))
+        self.assertIn("Rent", category_names(category_tree))
+        self.assertIn("Condominium", category_names(category_tree))
+        self.assertIn("Internet", category_names(category_tree))
+        self.assertIn("Cell phone", category_names(category_tree))
 
     def test_initialize_enables_wal_for_an_existing_ledger(self) -> None:
         self.databases.initialize()

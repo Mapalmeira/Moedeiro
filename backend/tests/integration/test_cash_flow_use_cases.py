@@ -4,7 +4,7 @@ import unittest
 from uuid import uuid4
 
 from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, CurrencyNotFoundError, InvalidQueryParameterError, QueryPointLimitExceededError
-from app.application.ledger.use_cases.cash_flow import get_cash_flow_summary, list_cash_flow_points
+from app.application.ledger.use_cases.cash_flow import get_cash_flow_sankey, get_cash_flow_summary, list_cash_flow_points
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.ledger.unit_of_work import SqliteLedgerUnitOfWork
@@ -51,6 +51,70 @@ class CashFlowUseCasesTest(unittest.TestCase):
         self.assertEqual(summary.event_count, 2)
         self.assertEqual(summary.income_movement_count, 1)
         self.assertEqual(summary.expense_movement_count, 1)
+
+    def test_sankey_truncates_category_paths_at_the_requested_detail_level(self) -> None:
+        with self.open_ledger() as unit_of_work:
+            root = unit_of_work.category_repository.create("Root", "lucide:Circle", b"\x11\x22\x33", None)
+            child = unit_of_work.category_repository.create("Child", "lucide:Circle", b"\x22\x33\x44", root.uuid)
+            leaf = unit_of_work.category_repository.create("Leaf", "lucide:Circle", b"\x33\x44\x55", child.uuid)
+            income = unit_of_work.financial_event_repository.create(120, "Income", "TRANSACTION")
+            expense = unit_of_work.financial_event_repository.create(130, "Expense", "TRANSACTION")
+            unit_of_work.financial_movement_repository.create(income.uuid, self.account.uuid, leaf.uuid, 100, None)
+            unit_of_work.financial_movement_repository.create(expense.uuid, self.account.uuid, leaf.uuid, -40, None)
+            unit_of_work.commit()
+
+        sankey = get_cash_flow_sankey(
+            self.open_ledger,
+            self.account.uuid,
+            FinancialEventFilter(from_timestamp=100, to_timestamp=200, account_uuid=self.account.uuid),
+            2,
+        )
+
+        self.assertEqual((sankey.income, sankey.expense), (100, 40))
+        self.assertEqual(sankey.detail_level, 2)
+        node_ids = {node.id for node in sankey.nodes}
+        self.assertIn(f"income:{root.uuid}", node_ids)
+        self.assertIn(f"income:{child.uuid}", node_ids)
+        self.assertNotIn(f"income:{leaf.uuid}", node_ids)
+        self.assertIn(f"expense:{root.uuid}", node_ids)
+        self.assertIn(f"expense:{child.uuid}", node_ids)
+        self.assertNotIn(f"expense:{leaf.uuid}", node_ids)
+        links = {(link.source, link.target): link.value for link in sankey.links}
+        self.assertEqual(links[(f"income:{root.uuid}", f"income:{child.uuid}")], 100)
+        self.assertEqual(links[(f"income:{child.uuid}", f"account:{self.account.uuid}")], 100)
+        self.assertEqual(links[(f"account:{self.account.uuid}", f"expense:{root.uuid}")], 40)
+        self.assertEqual(links[(f"expense:{root.uuid}", f"expense:{child.uuid}")], 40)
+
+    def test_sankey_compacts_columns_when_selected_detail_exceeds_the_used_hierarchy(self) -> None:
+        with self.open_ledger() as unit_of_work:
+            root = unit_of_work.category_repository.create("Root", "lucide:Circle", b"\x11\x22\x33", None)
+            child = unit_of_work.category_repository.create("Child", "lucide:Circle", b"\x22\x33\x44", root.uuid)
+            income = unit_of_work.financial_event_repository.create(120, "Income", "TRANSACTION")
+            expense = unit_of_work.financial_event_repository.create(130, "Expense", "TRANSACTION")
+            unit_of_work.financial_movement_repository.create(income.uuid, self.account.uuid, child.uuid, 100, None)
+            unit_of_work.financial_movement_repository.create(expense.uuid, self.account.uuid, child.uuid, -40, None)
+            unit_of_work.commit()
+
+        sankey = get_cash_flow_sankey(
+            self.open_ledger,
+            self.account.uuid,
+            FinancialEventFilter(from_timestamp=100, to_timestamp=200, account_uuid=self.account.uuid),
+            5,
+        )
+
+        columns = {node.id: node.column for node in sankey.nodes}
+        self.assertEqual(columns[f"income:{root.uuid}"], 0)
+        self.assertEqual(columns[f"income:{child.uuid}"], 1)
+        self.assertEqual(columns[f"account:{self.account.uuid}"], 2)
+        self.assertEqual(columns[f"expense:{root.uuid}"], 3)
+        self.assertEqual(columns[f"expense:{child.uuid}"], 4)
+
+    def test_sankey_rejects_invalid_detail_level_and_unknown_account(self) -> None:
+        filters = FinancialEventFilter(from_timestamp=100, to_timestamp=200)
+        with self.assertRaises(InvalidQueryParameterError):
+            get_cash_flow_sankey(self.open_ledger, self.account.uuid, filters, 0)
+        with self.assertRaises(AccountNotFoundError):
+            get_cash_flow_sankey(self.open_ledger, uuid4(), filters, 1)
 
     def test_points_cover_the_filter_and_retain_a_short_final_interval(self) -> None:
         self.add_movement(100, 50)

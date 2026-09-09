@@ -6,7 +6,7 @@ from uuid import uuid4
 from fastapi import HTTPException, Request
 
 from app.api.ledger.routes.account import create_ledger_account
-from app.api.ledger.routes.cash_flow import get_ledger_cash_flow, list_ledger_cash_flow_points
+from app.api.ledger.routes.cash_flow import get_ledger_cash_flow, get_ledger_cash_flow_sankey, list_ledger_cash_flow_points
 from app.api.ledger.routes.category import create_ledger_category
 from app.api.ledger.routes.currency import create_ledger_currency
 from app.api.ledger.schema.account import CreateAccountRequest
@@ -86,6 +86,18 @@ class CashFlowRoutesTest(unittest.TestCase):
         self.assertEqual((summary.income, summary.expense), (100, 60))
         self.assertEqual([(point.income, point.expense) for point in points], [(100, 0), (0, 60)])
 
+    def test_sankey_returns_account_category_flow(self) -> None:
+        self.add_movement(100, 50, 2)
+        self.add_movement(120, -20, 3)
+
+        sankey = get_ledger_cash_flow_sankey(self.ledger.uuid, self.account.uuid, 100, 200, 1, self.request, self.user)
+
+        self.assertEqual((sankey.income, sankey.expense), (100, 60))
+        self.assertEqual(sankey.account_uuid, self.account.uuid)
+        self.assertEqual(sankey.currency_uuid, self.currency.uuid)
+        self.assertTrue(any(node.kind == "account" for node in sankey.nodes))
+        self.assertTrue(sankey.links)
+
     def test_queries_map_unknown_currency_account_and_category(self) -> None:
         operations = (
             ("Currency not found", lambda: get_ledger_cash_flow(self.ledger.uuid, uuid4(), 0, 10, self.request, self.user)),
@@ -125,6 +137,11 @@ class CashFlowRoutesTest(unittest.TestCase):
         self.assertIn("200", points["responses"])
         point_width = next(parameter for parameter in points["parameters"] if parameter["name"] == "point_width")
         self.assertEqual(point_width["schema"]["minimum"], 1)
+        sankey = paths["/api/ledgers/{ledger_uuid}/cash-flow/sankey"]["get"]
+        self.assertIn("200", sankey["responses"])
+        detail_level = next(parameter for parameter in sankey["parameters"] if parameter["name"] == "detail_level")
+        self.assertEqual(detail_level["schema"]["minimum"], 1)
+        self.assertEqual(detail_level["schema"]["maximum"], 5)
 
 
 if __name__ == "__main__":

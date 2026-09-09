@@ -58,6 +58,7 @@ CATEGORY_TREE: tuple[CategoryDefault, ...] = (
         color_code=RED,
         children=(
             CategoryDefault(key="rent", icon="lucide:Building2", color_code=RED),
+            CategoryDefault(key="condominium", icon="lucide:Building", color_code=RED),
             CategoryDefault(
                 key="household_bills",
                 icon="lucide:Lightbulb",
@@ -67,6 +68,7 @@ CATEGORY_TREE: tuple[CategoryDefault, ...] = (
                     CategoryDefault(key="water", icon="lucide:Waves", color_code=CYAN),
                     CategoryDefault(key="gas", icon="lucide:Flame", color_code=YELLOW),
                     CategoryDefault(key="internet", icon="lucide:Wifi", color_code=BLUE),
+                    CategoryDefault(key="cellphone", icon="lucide:Smartphone", color_code=BLUE),
                 ),
             ),
             CategoryDefault(
