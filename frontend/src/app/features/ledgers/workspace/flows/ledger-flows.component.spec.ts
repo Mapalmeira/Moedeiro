@@ -7,6 +7,7 @@ import { I18nService } from '../../../../core/i18n/i18n.service';
 import { CashFlowSankey } from '../../../../core/ledgers/cash-flow.models';
 import { CashFlowService } from '../../../../core/ledgers/cash-flow.service';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
+import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
 import { PreferencesService } from '../../../../core/preferences/preferences.service';
@@ -69,6 +70,7 @@ describe('LedgerFlowsComponent', () => {
     cashFlow.sankey.mockReturnValue(of(graph));
     TestBed.configureTestingModule({
       providers: [
+        LedgerWorkspaceStateService,
         { provide: LedgerContextService, useValue: { ledgerUuid: ledgerUuid.asReadonly() } },
         { provide: LedgerEntitiesService, useValue: entities },
         { provide: CashFlowService, useValue: cashFlow },

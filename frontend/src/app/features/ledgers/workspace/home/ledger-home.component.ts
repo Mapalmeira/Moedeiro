@@ -15,6 +15,7 @@ import { LedgerCategory, LedgerCategoryTreeNode } from '../../../../core/ledgers
 import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categories.service';
 import { LedgerAccount, LedgerAccountBalance, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
+import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
 import { formatEventDate, formatEventTime, nextDateInput, zonedDateInput, zonedDateTimeToEpochSeconds } from '../../../../core/preferences/date-time-format';
 import { PreferencesService } from '../../../../core/preferences/preferences.service';
@@ -116,6 +117,7 @@ export class LedgerHomeComponent {
   private readonly budgetsService = inject(LedgerBudgetsService);
   private readonly cashFlowService = inject(CashFlowService);
   private readonly errors = inject(ApiErrorService);
+  private readonly workspaceState = inject(LedgerWorkspaceStateService);
   private readonly destroyRef = inject(DestroyRef);
   private resourcesRequest?: Subscription;
   private dashboardRequest?: Subscription;
@@ -324,7 +326,7 @@ export class LedgerHomeComponent {
     effect(() => {
       const ledgerUuid = this.context.ledgerUuid();
       untracked(() => {
-        this.reset();
+        this.reset(ledgerUuid);
         if (ledgerUuid) this.loadResources();
       });
     });
@@ -351,25 +353,34 @@ export class LedgerHomeComponent {
   }
 
   selectCurrency(value: string): void {
-    if (value !== this.selectedCurrencyUuid()) this.selectedCurrencyUuid.set(value);
+    if (value !== this.selectedCurrencyUuid()) {
+      this.selectedCurrencyUuid.set(value);
+      this.saveViewState();
+    }
   }
 
   selectMonth(value: string): void {
-    if (/^\d{4}-\d{2}$/.test(value) && value !== this.selectedMonth()) this.selectedMonth.set(value);
+    if (/^\d{4}-\d{2}$/.test(value) && value !== this.selectedMonth()) {
+      this.selectedMonth.set(value);
+      this.saveViewState();
+    }
   }
 
   setPeriodMode(mode: PeriodMode): void {
     if (mode === this.periodMode()) return;
     if (mode === 'range' && (!this.rangeFromDate() || !this.rangeToDate())) this.seedRangeFromMonth();
     this.periodMode.set(mode);
+    this.saveViewState();
   }
 
   updateRangeFrom(value: string): void {
     this.rangeFromDate.set(value);
+    this.saveViewState();
   }
 
   updateRangeTo(value: string): void {
     this.rangeToDate.set(value);
+    this.saveViewState();
   }
 
   setFlowMode(mode: FlowMode): void {
@@ -377,6 +388,7 @@ export class LedgerHomeComponent {
     this.flowMode.set(mode);
     this.hoveredChartIndex.set(null);
     this.pinnedChartIndex.set(null);
+    this.saveViewState();
   }
 
   hoverChart(event: PointerEvent): void {
@@ -432,6 +444,7 @@ export class LedgerHomeComponent {
         this.categories.set(this.flattenCategories(categoryTree));
         const current = this.selectedCurrencyUuid();
         if (!currencies.some(currency => currency.uuid === current)) this.selectedCurrencyUuid.set(currencies[0]?.uuid ?? '');
+        this.saveViewState();
         this.resourcesLoading.set(false);
         this.resourcesReady.set(true);
       },
@@ -559,22 +572,36 @@ export class LedgerHomeComponent {
     return { icon: 'wallet', tone: 'green' };
   }
 
-  private reset(): void {
+  private reset(ledgerUuid: string | null): void {
     this.resourcesRequest?.unsubscribe();
     this.dashboardRequest?.unsubscribe();
     this.accounts.set([]);
     this.currencies.set([]);
     this.categories.set([]);
     this.clearDashboard();
-    this.selectedCurrencyUuid.set('');
-    this.selectedMonth.set(this.currentMonth());
-    this.periodMode.set('month');
-    this.rangeFromDate.set('');
-    this.rangeToDate.set('');
-    this.flowMode.set('instant');
+    const saved = ledgerUuid ? this.workspaceState.getHome(ledgerUuid) : null;
+    this.selectedCurrencyUuid.set(saved?.currency_uuid ?? '');
+    this.selectedMonth.set(saved?.month ?? this.currentMonth());
+    this.periodMode.set(saved?.period_mode ?? 'month');
+    this.rangeFromDate.set(saved?.range_from_date ?? '');
+    this.rangeToDate.set(saved?.range_to_date ?? '');
+    this.flowMode.set(saved?.flow_mode ?? 'instant');
     this.resourcesReady.set(false);
     this.resourcesLoading.set(false);
     this.loading.set(false);
     this.error.set(null);
+  }
+
+  private saveViewState(): void {
+    const ledgerUuid = this.context.ledgerUuid();
+    if (!ledgerUuid) return;
+    this.workspaceState.setHome(ledgerUuid, {
+      currency_uuid: this.selectedCurrencyUuid(),
+      month: this.selectedMonth(),
+      period_mode: this.periodMode(),
+      range_from_date: this.rangeFromDate(),
+      range_to_date: this.rangeToDate(),
+      flow_mode: this.flowMode(),
+    });
   }
 }

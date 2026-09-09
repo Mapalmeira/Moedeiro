@@ -13,6 +13,7 @@ import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.
 import { FinancialEvent, FinancialEventFilters, FinancialEventType } from '../../../../core/ledgers/financial-events.models';
 import { FinancialEventsService } from '../../../../core/ledgers/financial-events.service';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
+import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { formatEventDate, formatEventTime, zonedDateInput, zonedDateTimeToEpochSeconds } from '../../../../core/preferences/date-time-format';
 import { PreferencesService } from '../../../../core/preferences/preferences.service';
 import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.component';
@@ -58,6 +59,7 @@ export class LedgerActivityComponent {
   private readonly categoriesService = inject(LedgerCategoriesService);
   private readonly errors = inject(ApiErrorService);
   private readonly preferences = inject(PreferencesService);
+  private readonly workspaceState = inject(LedgerWorkspaceStateService);
   private readonly destroyRef = inject(DestroyRef);
   private workspaceRequest?: Subscription;
   private eventsRequest?: Subscription;
@@ -222,6 +224,7 @@ export class LedgerActivityComponent {
   });
 
   constructor() {
+    this.filters.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.saveFilters());
     effect(() => {
       const ledgerUuid = this.context.ledgerUuid();
       untracked(() => {
@@ -229,7 +232,7 @@ export class LedgerActivityComponent {
         this.eventsRequest?.unsubscribe();
         this.moreRequest?.unsubscribe();
         this.balanceRequest?.unsubscribe();
-        this.resetFilters();
+        this.restoreFilters(ledgerUuid);
         this.resetTransientState();
         if (ledgerUuid) this.loadWorkspace();
       });
@@ -466,7 +469,7 @@ export class LedgerActivityComponent {
     };
   }
 
-  private resetFilters(): void {
+  private resetFilters(emitEvent = true): void {
     const timezone = this.preferences.current().timezone;
     const today = zonedDateInput(Math.floor(Date.now() / 1000), timezone);
     this.filters.reset({
@@ -475,8 +478,23 @@ export class LedgerActivityComponent {
       account_uuid: '',
       category_uuid: '',
       event_type: '',
-    });
+    }, { emitEvent });
     this.filterError.set(null);
+  }
+
+  private restoreFilters(ledgerUuid: string | null): void {
+    const saved = ledgerUuid ? this.workspaceState.getActivity(ledgerUuid) : null;
+    if (saved) {
+      this.filters.reset(saved, { emitEvent: false });
+      this.filterError.set(null);
+      return;
+    }
+    this.resetFilters(false);
+  }
+
+  private saveFilters(): void {
+    const ledgerUuid = this.context.ledgerUuid();
+    if (ledgerUuid) this.workspaceState.setActivity(ledgerUuid, this.filters.getRawValue());
   }
 
   private resetTransientState(): void {

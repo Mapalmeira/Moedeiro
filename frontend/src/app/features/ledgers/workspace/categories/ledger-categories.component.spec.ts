@@ -7,6 +7,7 @@ import { I18nService } from '../../../../core/i18n/i18n.service';
 import { LedgerCategory, LedgerCategoryTreeNode } from '../../../../core/ledgers/ledger-categories.models';
 import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categories.service';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
+import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { LedgerCategoriesComponent } from './ledger-categories.component';
 
 const food: LedgerCategory = { uuid: 'food', name: 'Alimentação', icon: 'lucide:Utensils', color_code: '#21E683', parent_uuid: null };
@@ -31,6 +32,7 @@ describe('LedgerCategoriesComponent', () => {
     categoriesService.getTree.mockReturnValue(of(tree));
     TestBed.configureTestingModule({
       providers: [
+        LedgerWorkspaceStateService,
         { provide: LedgerCategoriesService, useValue: categoriesService },
         { provide: LedgerContextService, useValue: { ledgerUuid: ledgerUuid.asReadonly() } },
         { provide: ApiErrorService, useValue: { message: vi.fn(() => 'error') } },

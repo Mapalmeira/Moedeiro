@@ -11,6 +11,7 @@ import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categor
 import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
+import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { PreferencesService } from '../../../../core/preferences/preferences.service';
 import { LedgerBudgetsComponent } from './ledger-budgets.component';
 
@@ -84,6 +85,7 @@ describe('LedgerBudgetsComponent', () => {
     budgetsService.overview.mockReturnValue(of({ items: [budget], next_cursor: null }));
     TestBed.configureTestingModule({
       providers: [
+        LedgerWorkspaceStateService,
         { provide: LedgerBudgetsService, useValue: budgetsService },
         { provide: LedgerEntitiesService, useValue: entitiesService },
         { provide: LedgerCategoriesService, useValue: categoriesService },

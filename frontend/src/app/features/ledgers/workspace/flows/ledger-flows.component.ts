@@ -8,6 +8,7 @@ import { formatCurrencyAmount } from '../../../../core/ledgers/currency-format';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
 import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
+import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 import { nextDateInput, zonedDateInput, zonedDateTimeToEpochSeconds } from '../../../../core/preferences/date-time-format';
 import { PreferencesService } from '../../../../core/preferences/preferences.service';
@@ -37,6 +38,7 @@ export class LedgerFlowsComponent {
   private readonly entities = inject(LedgerEntitiesService);
   private readonly cashFlow = inject(CashFlowService);
   private readonly errors = inject(ApiErrorService);
+  private readonly workspaceState = inject(LedgerWorkspaceStateService);
   private readonly destroyRef = inject(DestroyRef);
   private resourcesRequest?: Subscription;
   private graphRequest?: Subscription;
@@ -85,7 +87,7 @@ export class LedgerFlowsComponent {
     effect(() => {
       const ledgerUuid = this.context.ledgerUuid();
       untracked(() => {
-        this.reset();
+        this.reset(ledgerUuid);
         if (ledgerUuid) this.loadResources();
       });
     });
@@ -113,30 +115,42 @@ export class LedgerFlowsComponent {
   }
 
   selectAccount(value: string): void {
-    if (value !== this.selectedAccountUuid()) this.selectedAccountUuid.set(value);
+    if (value !== this.selectedAccountUuid()) {
+      this.selectedAccountUuid.set(value);
+      this.saveViewState();
+    }
   }
 
   setPeriodMode(mode: PeriodMode): void {
     if (mode === this.periodMode()) return;
     if (mode === 'range' && (!this.rangeFromDate() || !this.rangeToDate())) this.seedRangeFromMonth();
     this.periodMode.set(mode);
+    this.saveViewState();
   }
 
   selectMonth(value: string): void {
-    if (/^\d{4}-\d{2}$/.test(value) && value !== this.selectedMonth()) this.selectedMonth.set(value);
+    if (/^\d{4}-\d{2}$/.test(value) && value !== this.selectedMonth()) {
+      this.selectedMonth.set(value);
+      this.saveViewState();
+    }
   }
 
   setRangeFromDate(value: string): void {
     this.rangeFromDate.set(value);
+    this.saveViewState();
   }
 
   setRangeToDate(value: string): void {
     this.rangeToDate.set(value);
+    this.saveViewState();
   }
 
   updateDetailLevel(event: Event): void {
     const value = Number((event.target as HTMLInputElement).value);
-    if (Number.isInteger(value) && value >= 1 && value <= MAX_CATEGORY_DETAIL_LEVEL) this.detailLevel.set(value);
+    if (Number.isInteger(value) && value >= 1 && value <= MAX_CATEGORY_DETAIL_LEVEL) {
+      this.detailLevel.set(value);
+      this.saveViewState();
+    }
   }
 
   retry(): void {
@@ -165,6 +179,7 @@ export class LedgerFlowsComponent {
         this.currencies.set(currencies);
         const selected = this.selectedAccountUuid();
         if (!accounts.some(account => account.uuid === selected)) this.selectedAccountUuid.set(accounts[0]?.uuid ?? '');
+        this.saveViewState();
         this.resourcesReady.set(true);
       },
       error: error => this.error.set(this.errors.message(error, 'errors.flowsLoadFailed')),
@@ -230,21 +245,35 @@ export class LedgerFlowsComponent {
     return zonedDateInput(Math.floor(Date.now() / 1000), this.preferences.current().timezone).slice(0, 7);
   }
 
-  private reset(): void {
+  private reset(ledgerUuid: string | null): void {
     this.resourcesRequest?.unsubscribe();
     this.graphRequest?.unsubscribe();
     this.accounts.set([]);
     this.currencies.set([]);
-    this.selectedAccountUuid.set('');
-    this.selectedMonth.set(this.currentMonth());
-    this.periodMode.set('month');
-    this.rangeFromDate.set('');
-    this.rangeToDate.set('');
-    this.detailLevel.set(DEFAULT_CATEGORY_DETAIL_LEVEL);
+    const saved = ledgerUuid ? this.workspaceState.getFlows(ledgerUuid) : null;
+    this.selectedAccountUuid.set(saved?.account_uuid ?? '');
+    this.selectedMonth.set(saved?.month ?? this.currentMonth());
+    this.periodMode.set(saved?.period_mode ?? 'month');
+    this.rangeFromDate.set(saved?.range_from_date ?? '');
+    this.rangeToDate.set(saved?.range_to_date ?? '');
+    this.detailLevel.set(saved?.detail_level ?? DEFAULT_CATEGORY_DETAIL_LEVEL);
     this.graph.set(null);
     this.resourcesReady.set(false);
     this.resourcesLoading.set(false);
     this.loading.set(false);
     this.error.set(null);
+  }
+
+  private saveViewState(): void {
+    const ledgerUuid = this.context.ledgerUuid();
+    if (!ledgerUuid) return;
+    this.workspaceState.setFlows(ledgerUuid, {
+      account_uuid: this.selectedAccountUuid(),
+      month: this.selectedMonth(),
+      period_mode: this.periodMode(),
+      range_from_date: this.rangeFromDate(),
+      range_to_date: this.rangeToDate(),
+      detail_level: this.detailLevel(),
+    });
   }
 }

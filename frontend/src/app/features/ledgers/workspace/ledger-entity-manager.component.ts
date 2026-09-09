@@ -7,6 +7,7 @@ import { formatCurrencyAmount } from '../../../core/ledgers/currency-format';
 import { LedgerAccount, LedgerAccountBalance, LedgerCurrency } from '../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../core/ledgers/ledger-entities.service';
 import { LedgerContextService } from '../../../core/ledgers/ledger-context.service';
+import { LedgerWorkspaceStateService } from '../../../core/ledgers/ledger-workspace-state.service';
 import { PreferencesService } from '../../../core/preferences/preferences.service';
 import { EntityBadgeComponent } from '../../../shared/ledger/entity-badge.component';
 import { FormMessageComponent } from '../../../shared/ui/form-message.component';
@@ -27,6 +28,7 @@ type Entity = LedgerAccount | LedgerCurrency;
 export class LedgerEntityManagerComponent {
   private readonly entities = inject(LedgerEntitiesService);
   readonly context = inject(LedgerContextService);
+  private readonly workspaceState = inject(LedgerWorkspaceStateService);
   private readonly errors = inject(ApiErrorService);
   private readonly preferences = inject(PreferencesService);
   private readonly destroyRef = inject(DestroyRef);
@@ -75,7 +77,7 @@ export class LedgerEntityManagerComponent {
       const uuid = this.context.ledgerUuid();
       this.kind();
       untracked(() => {
-        this.search.set('');
+        this.search.set(uuid ? this.workspaceState.getEntitySearch(uuid, this.kind()) ?? '' : '');
         this.editorOpen.set(false);
         this.editing.set(null);
         this.deleting.set(null);
@@ -86,7 +88,10 @@ export class LedgerEntityManagerComponent {
   }
 
   filter(event: Event): void {
-    this.search.set((event.target as HTMLInputElement).value);
+    const search = (event.target as HTMLInputElement).value;
+    this.search.set(search);
+    const ledgerUuid = this.context.ledgerUuid();
+    if (ledgerUuid) this.workspaceState.setEntitySearch(ledgerUuid, this.kind(), search);
   }
 
   edit(item: Entity): void {

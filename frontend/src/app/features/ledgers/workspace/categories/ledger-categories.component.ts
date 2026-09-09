@@ -6,6 +6,7 @@ import { I18nService } from '../../../../core/i18n/i18n.service';
 import { LedgerCategory, LedgerCategoryTreeNode } from '../../../../core/ledgers/ledger-categories.models';
 import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categories.service';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
+import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
 import { IconComponent } from '../../../../shared/ui/icon.component';
@@ -41,6 +42,7 @@ export class LedgerCategoriesComponent {
   private readonly categoriesService = inject(LedgerCategoriesService);
   private readonly errors = inject(ApiErrorService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly workspaceState = inject(LedgerWorkspaceStateService);
   readonly context = inject(LedgerContextService);
   readonly i18n = inject(I18nService);
   private loadRequest?: Subscription;
@@ -126,7 +128,7 @@ export class LedgerCategoriesComponent {
     effect(() => {
       const ledgerUuid = this.context.ledgerUuid();
       untracked(() => {
-        this.resetViewState();
+        this.resetViewState(ledgerUuid);
         if (ledgerUuid) this.load();
       });
     });
@@ -140,6 +142,7 @@ export class LedgerCategoriesComponent {
   filter(event: Event): void {
     this.search.set((event.target as HTMLInputElement).value);
     this.operationError.set(null);
+    this.saveViewState();
   }
 
   load(): void {
@@ -157,6 +160,7 @@ export class LedgerCategoriesComponent {
   toggleRoot(event: Event): void {
     event.stopPropagation();
     this.rootCollapsed.update(value => !value);
+    this.saveViewState();
   }
 
   toggleCategory(event: Event, categoryUuid: string): void {
@@ -164,6 +168,7 @@ export class LedgerCategoriesComponent {
     const next = new Set(this.collapsed());
     next.has(categoryUuid) ? next.delete(categoryUuid) : next.add(categoryUuid);
     this.collapsed.set(next);
+    this.saveViewState();
   }
 
   openCreate(parentUuid: string | null, event?: Event): void {
@@ -363,6 +368,7 @@ export class LedgerCategoriesComponent {
       currentUuid = byUuid.get(currentUuid)?.parent_uuid ?? null;
     }
     this.collapsed.set(next);
+    this.saveViewState();
   }
 
   private updatePointerDropTarget(clientX: number, clientY: number): void {
@@ -420,13 +426,14 @@ export class LedgerCategoriesComponent {
     return `calc(var(--category-tree-start) + ${increments.join(' + ')})`;
   }
 
-  private resetViewState(): void {
+  private resetViewState(ledgerUuid: string | null): void {
     this.loadRequest?.unsubscribe();
     this.mutationRequest?.unsubscribe();
     this.tree.set([]);
-    this.search.set('');
-    this.collapsed.set(new Set<string>());
-    this.rootCollapsed.set(false);
+    const saved = ledgerUuid ? this.workspaceState.getCategoryView(ledgerUuid) : null;
+    this.search.set(saved?.search ?? '');
+    this.collapsed.set(new Set(saved?.collapsed ?? []));
+    this.rootCollapsed.set(saved?.root_collapsed ?? false);
     this.draggingUuid.set(null);
     this.dropTarget.set(null);
     this.movingUuid.set(null);
@@ -437,6 +444,16 @@ export class LedgerCategoriesComponent {
     this.deleting.set(null);
     this.operationError.set(null);
     this.error.set(null);
+  }
+
+  private saveViewState(): void {
+    const ledgerUuid = this.context.ledgerUuid();
+    if (!ledgerUuid) return;
+    this.workspaceState.setCategoryView(ledgerUuid, {
+      search: this.search(),
+      collapsed: [...this.collapsed()],
+      root_collapsed: this.rootCollapsed(),
+    });
   }
 
   private flattenCategories(nodes: readonly LedgerCategoryTreeNode[]): LedgerCategory[] {

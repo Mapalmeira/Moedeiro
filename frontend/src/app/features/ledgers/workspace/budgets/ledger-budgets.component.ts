@@ -10,6 +10,7 @@ import { LedgerBudgetsService } from '../../../../core/ledgers/ledger-budgets.se
 import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
+import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { formatCurrencyAmount } from '../../../../core/ledgers/currency-format';
 import { formatEventDate } from '../../../../core/preferences/date-time-format';
 import { PreferencesService } from '../../../../core/preferences/preferences.service';
@@ -64,6 +65,7 @@ export class LedgerBudgetsComponent {
   private readonly entities = inject(LedgerEntitiesService);
   private readonly categoriesService = inject(LedgerCategoriesService);
   private readonly errors = inject(ApiErrorService);
+  private readonly workspaceState = inject(LedgerWorkspaceStateService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly searchChanges = new Subject<string>();
   private overviewRequest?: Subscription;
@@ -192,13 +194,14 @@ export class LedgerBudgetsComponent {
   constructor() {
     this.searchChanges.pipe(debounceTime(200), distinctUntilChanged(), takeUntilDestroyed(this.destroyRef)).subscribe(value => {
       this.search.set(value);
+      this.saveViewState();
       this.load(true);
     });
     effect(() => {
       const ledgerUuid = this.context.ledgerUuid();
       untracked(() => {
         this.closeEditor();
-        this.categoryFilterUuid.set('');
+        this.restoreViewState(ledgerUuid);
         this.items.set([]);
         this.nextCursor.set(null);
         if (ledgerUuid) this.loadWorkspace();
@@ -207,17 +210,21 @@ export class LedgerBudgetsComponent {
   }
 
   updateSearch(event: Event): void {
-    this.searchChanges.next((event.target as HTMLInputElement).value);
+    const value = (event.target as HTMLInputElement).value;
+    this.saveViewState(value);
+    this.searchChanges.next(value);
   }
 
   updateStates(states: readonly LedgerBudgetState[]): void {
     this.states.set(states);
+    this.saveViewState();
     this.load(true);
   }
 
   updateCategoryFilter(categoryUuid: string): void {
     if (categoryUuid === this.categoryFilterUuid()) return;
     this.categoryFilterUuid.set(categoryUuid);
+    this.saveViewState();
     this.load(true);
   }
 
@@ -238,6 +245,7 @@ export class LedgerBudgetsComponent {
         const categories = this.flattenCategories(tree);
         this.categories.set(categories);
         if (this.categoryFilterUuid() && !categories.some(category => category.uuid === this.categoryFilterUuid())) this.categoryFilterUuid.set('');
+        this.saveViewState();
         this.resourcesLoading.set(false);
         this.load(true);
       },
@@ -335,6 +343,23 @@ export class LedgerBudgetsComponent {
     };
     visit(nodes);
     return result;
+  }
+
+  private restoreViewState(ledgerUuid: string | null): void {
+    const saved = ledgerUuid ? this.workspaceState.getBudgets(ledgerUuid) : null;
+    this.states.set(saved?.states ?? ALL_STATES);
+    this.categoryFilterUuid.set(saved?.category_uuid ?? '');
+    this.search.set(saved?.search ?? '');
+  }
+
+  private saveViewState(search = this.search()): void {
+    const ledgerUuid = this.context.ledgerUuid();
+    if (!ledgerUuid) return;
+    this.workspaceState.setBudgets(ledgerUuid, {
+      states: this.states(),
+      category_uuid: this.categoryFilterUuid(),
+      search,
+    });
   }
 
   private categoryPath(category: LedgerCategory, byUuid: ReadonlyMap<string, LedgerCategory>): string {

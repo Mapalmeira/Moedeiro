@@ -9,6 +9,7 @@ import { FinancialEventsService } from '../../../../core/ledgers/financial-event
 import { LedgerBudgetsService } from '../../../../core/ledgers/ledger-budgets.service';
 import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categories.service';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
+import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
 import { PreferencesService } from '../../../../core/preferences/preferences.service';
@@ -59,6 +60,7 @@ describe('LedgerHomeComponent', () => {
     ledgerUuid.set('ledger');
     TestBed.configureTestingModule({
       providers: [
+        LedgerWorkspaceStateService,
         { provide: LedgerContextService, useValue: { ledgerUuid: ledgerUuid.asReadonly() } },
         { provide: LedgerEntitiesService, useValue: entities },
         { provide: LedgerCategoriesService, useValue: categories },

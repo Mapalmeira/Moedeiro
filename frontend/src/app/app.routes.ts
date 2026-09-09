@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard, guestGuard } from './core/auth/auth.guard';
 import { LedgerContextService } from './core/ledgers/ledger-context.service';
+import { LedgerWorkspaceStateService } from './core/ledgers/ledger-workspace-state.service';
 import { AuthenticatedShellService } from './layouts/authenticated-layout/authenticated-shell.service';
 import { LEDGER_LAYOUT_ROUTES } from './layouts/ledger-layout/ledger-layout.routes';
 
@@ -23,7 +24,7 @@ export const routes: Routes = [
       },
       {
         path: 'ledgers/:ledgerUuid',
-        providers: [LedgerContextService],
+        providers: [LedgerContextService, LedgerWorkspaceStateService],
         loadComponent: () => import('./layouts/ledger-layout/ledger-layout.component').then((m) => m.LedgerLayoutComponent),
         children: LEDGER_LAYOUT_ROUTES,
       },
