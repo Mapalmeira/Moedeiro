@@ -46,9 +46,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) repeat(3, minmax(0, 1fr));
   gap: var(--form-gap);
-  align-items: end;
+  align-items: center;
 }
-.activity-filter-grid > .field { min-width: 0; }
+.activity-filter-grid > .field { min-width: 0; align-self: center; }
 .activity-period-filter { min-width: 0; }
 .activity-filter-actions { display: flex; gap: var(--space-3); padding-block-end: var(--button-shadow-offset); }
 .activity-filter-actions .ui-button { min-width: 0; }

@@ -12,17 +12,17 @@
   align-items: flex-start;
   gap: var(--form-gap);
 }
+.flows-filter-controls {
+  min-width: min(100%, calc(var(--flow-account-filter-width) + var(--period-month-select-width)));
+  flex: 1 1 calc(var(--flow-account-filter-width) + var(--period-month-select-width) + var(--form-gap));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--form-gap);
+}
 .flows-account-control {
   flex: 0 1 var(--flow-account-filter-width);
   width: min(100%, var(--flow-account-filter-width));
-}
-.flows-visualization-controls {
-  min-width: min(100%, calc(var(--period-month-select-width) + var(--flow-detail-control-width)));
-  flex: 1 1 calc(var(--period-month-select-width) + var(--flow-detail-control-width) + var(--space-10));
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: var(--form-gap);
 }
 .flows-period-control {
   flex: 0 0 auto;
@@ -86,9 +86,8 @@
 
 @container (max-width: 760px) {
   .flows { grid-template-rows: auto auto; }
-  .flows-account-control { flex-basis: 100%; width: 100%; }
-  .flows-visualization-controls { flex-basis: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
-  .flows-period-control, .flows-detail-control { width: 100%; max-width: none; }
+  .flows-filter-controls { flex-basis: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
+  .flows-account-control, .flows-period-control, .flows-detail-control { width: 100%; max-width: none; }
   .flows-card { min-height: 520px; }
   .flows-card__header { align-items: flex-start; flex-direction: column; }
   .flows-totals { width: 100%; justify-content: space-between; }
