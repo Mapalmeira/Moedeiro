@@ -128,4 +128,31 @@ describe('LedgerHomeComponent', () => {
     }));
     expect(budgets.currencyOverview).toHaveBeenLastCalledWith('ledger', currency.uuid, periodEnd, 3);
   });
+
+  it('pins the chart only for touch input and restores hover after a mouse movement', () => {
+    const component = createComponent();
+    TestBed.tick();
+    const chart = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    vi.spyOn(chart, 'getBoundingClientRect').mockReturnValue({ left: 0, width: 1_000 } as DOMRect);
+    const pointerEvent = (pointerType: string) => ({ pointerType, currentTarget: chart, clientX: 500 } as unknown as PointerEvent);
+
+    component.pinChart(pointerEvent('touch'));
+    expect(component.pinnedChartIndex()).toBe(0);
+
+    component.hoverChart(pointerEvent('mouse'));
+    expect(component.pinnedChartIndex()).toBeNull();
+    expect(component.hoveredChartIndex()).toBe(0);
+
+    component.pinChart(pointerEvent('mouse'));
+    expect(component.pinnedChartIndex()).toBeNull();
+  });
+
+  it('clears a pinned chart point after an outside interaction', () => {
+    const component = createComponent();
+    component.pinnedChartIndex.set(0);
+
+    component.clearChartSelectionOnOutsidePointerDown();
+
+    expect(component.pinnedChartIndex()).toBeNull();
+  });
 });

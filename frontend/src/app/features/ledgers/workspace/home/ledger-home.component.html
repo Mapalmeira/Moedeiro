@@ -47,9 +47,9 @@
             <button type="button" class="ui-press-toggle" [attr.aria-pressed]="flowMode() === 'cumulative'" (click)="setFlowMode('cumulative')">{{ i18n.t('home.cumulative') }}</button>
           </div>
         </header>
-        <div class="flow-chart" [attr.aria-label]="i18n.t('home.flowInPeriod')">
+        <div class="flow-chart" [attr.aria-label]="i18n.t('home.flowInPeriod')" (pointerdown)="keepChartSelection($event)">
           <svg [attr.viewBox]="'0 0 ' + chartWidth + ' ' + chartHeight" preserveAspectRatio="xMidYMid meet" role="img" tabindex="0"
-            (pointermove)="hoverChart($event)" (pointerleave)="leaveChart()" (click)="pinChart($event)"
+            (pointermove)="hoverChart($event)" (pointerleave)="leaveChart()" (pointerup)="pinChart($event)"
             (keydown.arrowleft)="moveChartSelection(-1, $event)" (keydown.arrowright)="moveChartSelection(1, $event)"
             (keydown.escape)="clearChartSelection()">
             @for (tick of chartTicks(); track tick.y) {

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { Subscription, finalize, forkJoin } from 'rxjs';
@@ -394,6 +394,7 @@ export class LedgerHomeComponent {
 
   hoverChart(event: PointerEvent): void {
     if (event.pointerType && event.pointerType !== 'mouse') return;
+    this.pinnedChartIndex.set(null);
     this.hoveredChartIndex.set(this.chartIndexAt(event));
   }
 
@@ -401,10 +402,20 @@ export class LedgerHomeComponent {
     this.hoveredChartIndex.set(null);
   }
 
-  pinChart(event: MouseEvent): void {
+  pinChart(event: PointerEvent): void {
+    if (event.pointerType === 'mouse') return;
     const index = this.chartIndexAt(event);
     if (index === null) return;
     this.pinnedChartIndex.update(current => current === index ? null : index);
+  }
+
+  keepChartSelection(event: PointerEvent): void {
+    event.stopPropagation();
+  }
+
+  @HostListener('document:pointerdown')
+  clearChartSelectionOnOutsidePointerDown(): void {
+    this.clearChartSelection();
   }
 
   moveChartSelection(delta: number, event: Event): void {
