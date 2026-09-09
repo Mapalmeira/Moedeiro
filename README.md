@@ -54,6 +54,10 @@ Start with the [installation guide](docs/installation.md). The remaining documen
 * [Security and concurrency](docs/security.md)
 * [Domain model](docs/domain.md)
 
+## Contributing
+
+Bug fixes, tests, documentation, and new translations are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing commands, and pull request guidance.
+
 ## Third party assets
 
 Language flag graphics are provided by [Twemoji](https://github.com/jdecked/twemoji), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
