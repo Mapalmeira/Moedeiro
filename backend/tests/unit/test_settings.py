@@ -42,7 +42,7 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(settings.password_recovery_ip_attempts_rate_limit, "10/hour")
         self.assertEqual(settings.totp_setup_ip_attempts_rate_limit, "5/minute")
         self.assertEqual(settings.refresh_ip_attempts_rate_limit, "10/minute")
-        self.assertEqual(settings.authenticated_user_operations_rate_limit, "80/minute")
+        self.assertEqual(settings.authenticated_user_operations_rate_limit, "100/minute")
         self.assertEqual(settings.sync_route_concurrency, 40)
         self.assertEqual(settings.credential_operation_concurrency, 8)
         self.assertEqual(settings.password_hash_concurrency, 2)

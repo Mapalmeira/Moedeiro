@@ -30,7 +30,7 @@ class Settings(BaseModel):
     password_recovery_ip_attempts_rate_limit: str = Field(default="10/hour", min_length=1)
     totp_setup_ip_attempts_rate_limit: str = Field(default="5/minute", min_length=1)
     refresh_ip_attempts_rate_limit: str = Field(default="10/minute", min_length=1)
-    authenticated_user_operations_rate_limit: str = Field(default="80/minute", min_length=1)
+    authenticated_user_operations_rate_limit: str = Field(default="100/minute", min_length=1)
     sync_route_concurrency: int = Field(default=40, gt=0)
     credential_operation_concurrency: int = Field(default=8, gt=0)
     password_hash_concurrency: int = Field(default=2, gt=0)
