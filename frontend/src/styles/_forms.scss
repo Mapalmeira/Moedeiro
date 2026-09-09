@@ -75,7 +75,24 @@
 .icon-action:hover { background: var(--surface-muted); }
 
 .checkbox { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 500; cursor: pointer; }
-.checkbox input { width: 18px; height: 18px; margin: 0; accent-color: var(--green-strong); }
+.checkbox__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+.checkbox__control {
+  --icon-badge-size: var(--inline-icon-size);
+  border-color: var(--line);
+  background: var(--surface);
+  color: transparent;
+}
+.checkbox__input:checked + .checkbox__control { border-color: var(--line-strong); background: var(--green); color: var(--on-green); }
+.checkbox__input:focus-visible + .checkbox__control { border-color: var(--green-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 32%, transparent); }
 
 .field-error {
   margin: 0;

@@ -68,7 +68,11 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
             </label>
 
             <div class="login-options">
-              <label class="checkbox"><input type="checkbox" formControlName="remember" /> <span>{{ i18n.t('auth.remember') }}</span></label>
+              <label class="checkbox">
+                <input class="checkbox__input" type="checkbox" formControlName="remember" />
+                <span class="checkbox__control ui-icon-badge" aria-hidden="true"><app-icon name="check" [size]="14" /></span>
+                <span>{{ i18n.t('auth.remember') }}</span>
+              </label>
               <button class="text-button" type="button" (click)="recoveryOpen.set(true)">{{ i18n.t('auth.forgotPassword') }}</button>
             </div>
 
