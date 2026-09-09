@@ -28,12 +28,12 @@ import { ThemeToggleComponent } from './theme-toggle.component';
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      padding: clamp(30px, 4.5vw, 56px) var(--space-page) 48px;
+      padding: var(--page-shell-padding-start) var(--space-page) var(--page-shell-padding-end);
     }
     .auth-shell__controls {
       position: absolute;
       z-index: var(--layer-page-controls);
-      top: var(--space-6);
+      top: var(--page-shell-control-offset);
       left: var(--space-page);
       right: var(--space-page);
       display: flex;
@@ -58,7 +58,7 @@ import { ThemeToggleComponent } from './theme-toggle.component';
       align-self: end;
       display: grid;
       justify-items: center;
-      margin-bottom: var(--space-8);
+      margin-bottom: var(--page-shell-brand-gap);
       text-align: center;
     }
     .auth-shell__content {
@@ -68,10 +68,10 @@ import { ThemeToggleComponent } from './theme-toggle.component';
     }
 
     @media (max-width: 860px), (max-height: 760px) {
-      .auth-shell { padding-top: 92px; }
-      .auth-shell__controls { top: 20px; }
+      .auth-shell { padding-top: var(--page-shell-compact-padding-start); }
+      .auth-shell__controls { top: var(--page-shell-compact-control-offset); }
       .auth-shell__body { display: block; margin-block: auto; padding-block: var(--section-gap); }
-      .auth-shell__header { margin-bottom: var(--space-8); }
+      .auth-shell__header { margin-bottom: var(--page-shell-brand-gap); }
     }
     @media (max-width: 430px) {
       .auth-shell__controls { gap: var(--space-3); }

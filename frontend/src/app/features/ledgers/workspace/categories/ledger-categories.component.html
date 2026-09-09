@@ -9,12 +9,12 @@
 
   @if (operationError()) { <app-form-message [text]="operationError()!" /> }
   @if (error()) {
-    <div class="categories-state categories-state--error">
+    <div class="ui-retry-state">
       <app-form-message [text]="error()!" />
-      <button class="ui-button ui-button--blue" type="button" (click)="load()">{{ i18n.t('workspace.retry') }}</button>
+      <button class="ui-button" type="button" (click)="load()">{{ i18n.t('workspace.retry') }}</button>
     </div>
   } @else {
-    <div class="categories-body">
+    <div class="categories-body ui-workspace-card-space">
       <div class="category-tree ui-card ui-projected-surface ui-projection--surface">
         <div class="category-root"
           [class.category-row--drop-target]="dropTarget() === rootDropTarget"
@@ -34,7 +34,7 @@
         </div>
 
       @if (loading() && tree().length === 0) {
-        <div class="categories-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
+        <div class="ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
       } @else {
         <div class="category-rows" #categoryRows>
           @for (row of visibleRows(); track row.category.uuid) {

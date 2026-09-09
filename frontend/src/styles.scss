@@ -71,6 +71,58 @@ a { color: var(--link); }
   color: var(--text);
 }
 
+/* The routed page fills the available height on desktop. Responsive pages
+   switch to intrinsic height when their cards stack, so the scroll container
+   includes the whole page and its trailing padding. */
+.ui-workspace-page {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+/* Frames reserve the projected footprint internally; cards that participate
+   directly in flex/grid reserve the same footprint through their outer size. */
+.ui-workspace-card-space:not(.ui-card) {
+  padding-block-end: var(--workspace-card-bottom-space);
+}
+.ui-card.ui-workspace-card-space {
+  margin-block-end: var(--workspace-card-bottom-space);
+}
+
+.ui-loading-state,
+.ui-retry-state {
+  flex: 1 1 auto;
+  align-self: stretch;
+  min-width: 0;
+  min-height: var(--feedback-state-min-height);
+  display: grid;
+  grid-auto-rows: max-content;
+  place-content: center;
+  justify-items: center;
+  padding: var(--space-5);
+  text-align: center;
+}
+.ui-loading-state {
+  gap: var(--space-3);
+  color: var(--text-muted);
+}
+.ui-retry-state {
+  grid-template-columns: minmax(0, var(--feedback-state-width));
+  gap: var(--form-gap);
+}
+.ui-retry-state > app-form-message { width: 100%; }
+.ui-retry-state > .ui-button {
+  width: min(100%, var(--action-button-min-width));
+  min-width: 0;
+  justify-self: center;
+  margin-inline-end: var(--button-shadow-offset);
+  margin-block-end: var(--button-shadow-offset);
+  color: var(--text);
+}
+
 /* Shared icon/text groups align the complete projected footprint, not only the
    painted icon face. Explicit line-height also removes font-metric drift. */
 .ui-heading-with-icon {
@@ -120,14 +172,35 @@ a { color: var(--link); }
 }
 
 .ui-spinner {
+  box-sizing: border-box;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 var(--spinner-size);
   width: var(--spinner-size);
   height: var(--spinner-size);
-  border: var(--border-width) solid color-mix(in srgb, var(--spinner-accent, var(--green)) 28%, var(--line));
+  margin-inline-end: var(--icon-shadow-offset);
+  margin-block-end: var(--icon-shadow-offset);
+  border: var(--border-width) solid var(--line-strong);
+  border-radius: var(--radius-icon);
+  background: color-mix(in srgb, var(--spinner-accent, var(--green)) 18%, var(--surface));
+  box-shadow: var(--icon-shadow);
+}
+.ui-spinner::after {
+  content: '';
+  box-sizing: border-box;
+  width: var(--spinner-mark-size);
+  height: var(--spinner-mark-size);
+  border: var(--border-width) solid color-mix(in srgb, var(--spinner-accent, var(--green)) 32%, var(--line));
   border-top-color: var(--spinner-accent-strong, var(--green-strong));
+  border-right-color: var(--spinner-accent-strong, var(--green-strong));
   border-radius: 50%;
-  animation: ui-spin .7s linear infinite;
+  animation: ui-spin var(--motion-spinner) linear infinite;
 }
 @keyframes ui-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ui-spinner::after { animation: none; }
+}
 
 .ui-dialog-backdrop {
   position: fixed;

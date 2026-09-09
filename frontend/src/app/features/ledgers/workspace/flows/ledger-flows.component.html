@@ -28,16 +28,16 @@
   </header>
 
   @if (error()) {
-    <div class="flows-error">
+    <div class="ui-retry-state">
       <app-form-message [text]="error()!" />
       <button type="button" class="ui-button" (click)="retry()">{{ i18n.t('workspace.retry') }}</button>
     </div>
   } @else if (resourcesLoading()) {
-    <div class="flows-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
+    <div class="ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
   } @else if (!accounts().length) {
     <div class="flows-state"><app-icon name="wallet" [size]="28" />{{ i18n.t('flows.noAccounts') }}</div>
   } @else {
-    <section class="flows-card ui-card ui-projected-surface ui-projection--surface">
+    <section class="flows-card ui-workspace-card-space ui-card ui-projected-surface ui-projection--surface">
       <header class="flows-card__header">
         <div class="flows-card__heading">
           <h2>{{ i18n.t('flows.diagramTitle') }}</h2>
@@ -52,7 +52,7 @@
         @if (invalidRange()) {
           <div class="flows-state" role="status"><app-icon name="calendar" [size]="28" />{{ i18n.t('common.invalidPeriod') }}</div>
         } @else if (loading() && !graph()) {
-          <div class="flows-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
+          <div class="ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
         } @else if (graph(); as sankey) {
           @if (sankey.nodes.length) {
             @if (selectedCurrency(); as currency) {

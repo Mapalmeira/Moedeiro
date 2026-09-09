@@ -14,12 +14,12 @@
   </header>
 
   @if (error()) {
-    <div class="home-error">
+    <div class="home-error ui-retry-state">
       <app-form-message [text]="error()!" />
       <button type="button" class="ui-button" (click)="retry()">{{ i18n.t('workspace.retry') }}</button>
     </div>
   } @else if (resourcesLoading() || (loading() && !balances().length && !cashFlow().length)) {
-    <div class="home-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
+    <div class="home-loading ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
   } @else if (!currencies().length) {
     <div class="home-state"><app-icon name="coins" [size]="28" />{{ i18n.t('home.noCurrencies') }}</div>
   } @else if (invalidRange()) {
@@ -38,7 +38,7 @@
       }
     </div>
 
-    <div class="home-grid">
+    <div class="home-grid ui-workspace-card-space">
       <section class="home-card home-card--flow ui-card ui-projected-surface ui-projection--surface">
         <header class="home-card__header">
           <h2>{{ i18n.t('home.flowInPeriod') }}</h2>

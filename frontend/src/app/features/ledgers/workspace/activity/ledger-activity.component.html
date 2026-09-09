@@ -30,7 +30,7 @@
     }
   </div>
 
-  <section class="activity-panel ui-card ui-projected-surface ui-projection--surface">
+  <section class="activity-panel ui-workspace-card-space ui-card ui-projected-surface ui-projection--surface">
     <form class="activity-filters" [formGroup]="filters" (ngSubmit)="applyFilters()">
       <div class="activity-filter-grid">
         <div class="period-filter">
@@ -98,12 +98,12 @@
       </header>
 
       @if (error()) {
-        <div class="activity-state activity-state--error">
+        <div class="ui-retry-state">
           <app-form-message [text]="error()!" />
           <button class="ui-button" type="button" (click)="applyFilters()">{{ i18n.t('workspace.retry') }}</button>
         </div>
       } @else if (loading()) {
-        <div class="activity-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
+        <div class="ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
       } @else if (!events().length) {
         <div class="activity-state">
           <app-icon name="arrow-left-right" [size]="28" />

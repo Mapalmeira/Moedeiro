@@ -75,7 +75,8 @@
   --menu-item-height: 44px;
   --list-row-height: 68px;
   --action-button-min-width: 200px;
-  --spinner-size: 20px;
+  --spinner-size: var(--space-6);
+  --spinner-mark-size: calc(var(--spinner-size) / 2);
   --entity-search-width: 420px;
   --period-month-select-width: 240px;
   --period-date-field-width: 170px;
@@ -89,6 +90,8 @@
   --activity-quantity-column-width: 84px;
   --activity-create-menu-width: 330px;
   --activity-state-min-height: 240px;
+  --feedback-state-min-height: 240px;
+  --feedback-state-width: calc(var(--dialog-width-standard) - (2 * var(--space-12)));
   --budget-card-min-width: 340px;
   --budget-category-filter-width: 240px;
   --budget-state-filter-width: 280px;
@@ -136,12 +139,22 @@
 
   --space-page: clamp(18px, 4vw, 56px);
 
+  /* Shared page-shell and workspace geometry. */
+  --page-shell-padding-start: clamp(30px, 4.5vw, 56px);
+  --page-shell-padding-end: var(--space-12);
+  --page-shell-control-offset: var(--space-6);
+  --page-shell-compact-control-offset: var(--space-5);
+  --page-shell-brand-gap: var(--space-8);
+  --page-shell-compact-padding-start: 92px;
+  --workspace-card-bottom-space: var(--button-shadow-offset);
+
   /* Motion families: actions press quickly; selections/disclosures transition without moving. */
   --motion-press: 80ms;
   --motion-focus: 120ms;
   --motion-selection: 160ms;
   --motion-disclosure: 160ms;
   --motion-panel: 220ms;
+  --motion-spinner: 720ms;
   --motion-panel-easing: cubic-bezier(.2, .8, .2, 1);
   --motion-feedback: 420ms;
   --press-offset: 2px;

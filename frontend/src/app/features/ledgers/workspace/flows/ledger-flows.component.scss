@@ -1,13 +1,9 @@
-:host { display: block; min-width: 0; min-height: 100%; height: 100%; }
 .flows {
-  container-type: inline-size;
   min-width: 0;
-  min-height: 100%;
-  height: 100%;
+  min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: var(--section-gap);
-  padding-block-end: var(--button-shadow-offset);
 }
 .flows-controls {
   min-width: 0;
@@ -81,12 +77,15 @@
 .flows-total--income { color: var(--green-strong); }
 .flows-total--expense { color: var(--danger); }
 .flows-card__body { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+.flows-card__body > .ui-loading-state { height: 100%; }
 .flows-card__body app-cash-flow-sankey { height: 100%; }
 .flows-state { min-height: 320px; height: 100%; display: flex; flex-direction: column; place-content: center; place-items: center; gap: var(--space-3); padding: var(--space-5); color: var(--text-muted); text-align: center; }
-.flows-error { display: grid; justify-items: center; gap: var(--form-gap); padding: var(--space-5); }
+@container ledger-section (max-width: 760px) {
+  :host { height: auto; min-height: 100%; grid-template-rows: auto; }
+}
 
 @container (max-width: 760px) {
-  .flows { height: auto; grid-template-rows: auto auto; }
+  .flows { grid-template-rows: auto auto; }
   .flows-account-control { flex-basis: 100%; width: 100%; }
   .flows-visualization-controls { flex-basis: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
   .flows-period-control, .flows-detail-control { width: 100%; max-width: none; }

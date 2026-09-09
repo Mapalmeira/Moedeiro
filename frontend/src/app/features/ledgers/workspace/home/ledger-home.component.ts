@@ -104,6 +104,7 @@ const CHART_MAX_BAR_GAP = 1;
 
 @Component({
   selector: 'app-ledger-home',
+  host: { class: 'ui-workspace-page' },
   standalone: true,
   imports: [RouterLink, EntityBadgeComponent, EntitySearchSelectComponent, FormMessageComponent, IconComponent, PeriodSelectorComponent],
   templateUrl: './ledger-home.component.html',
@@ -180,7 +181,7 @@ export class LedgerHomeComponent {
       { label: this.i18n.t('home.balance'), value: formatCurrencyAmount(this.currencyBalance(), currency, numberFormat), icon: 'wallet' as IconName, tone: 'green' as Tone },
       { label: this.i18n.t('home.income'), value: formatCurrencyAmount(this.totalIncome(), currency, numberFormat), icon: 'coins' as IconName, tone: 'blue' as Tone },
       { label: this.i18n.t('home.expense'), value: formatCurrencyAmount(this.totalExpense(), currency, numberFormat), icon: 'arrow-right' as IconName, tone: 'yellow' as Tone },
-      { label: this.i18n.t('home.netFlow'), value: formatCurrencyAmount(this.netFlow(), currency, numberFormat), icon: 'chart' as IconName, tone: this.netFlow() < 0 ? 'yellow' as Tone : 'green' as Tone },
+      { label: this.i18n.t('home.variation'), value: formatCurrencyAmount(this.netFlow(), currency, numberFormat), icon: 'chart' as IconName, tone: this.netFlow() < 0 ? 'yellow' as Tone : 'green' as Tone },
     ];
   });
 

@@ -46,6 +46,7 @@ interface ActivityEventRow {
 
 @Component({
   selector: 'app-ledger-activity',
+  host: { class: 'ui-workspace-page' },
   standalone: true,
   imports: [ReactiveFormsModule, FinancialEventEditorComponent, EntityBadgeComponent, EntitySearchSelectComponent, FormMessageComponent, IconComponent, InfiniteScrollTriggerDirective],
   templateUrl: './ledger-activity.component.html',

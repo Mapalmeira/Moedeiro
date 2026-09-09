@@ -49,27 +49,22 @@ import { AuthenticatedShellService } from './authenticated-shell.service';
       min-height: 100dvh;
       display: grid;
       grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
-      padding: var(--space-5) var(--space-page);
+      padding: var(--page-shell-padding-start) var(--space-page) var(--page-shell-padding-end);
     }
     .app-page--ledger { display: block; padding: 0; }
-    .top-area { grid-row: 1; align-self: end; display: grid; place-items: center; margin-bottom: var(--space-8); }
+    .top-area { grid-row: 1; align-self: end; display: grid; place-items: center; margin-bottom: var(--page-shell-brand-gap); }
     .top-area__brand { display: grid; justify-items: center; text-align: center; }
-    .account-wrap { position: absolute; top: var(--space-7); right: var(--space-page); z-index: var(--layer-page-controls); width: min(230px, calc(100vw - (2 * var(--space-page)))); }
+    .account-wrap { position: absolute; top: var(--page-shell-control-offset); right: var(--space-page); z-index: var(--layer-page-controls); width: min(230px, calc(100vw - (2 * var(--space-page)))); }
     .content-area { grid-row: 2; width: min(1180px, 100%); min-height: 0; margin: 0 auto; }
     .content-area--ledger { width: 100%; min-height: 100dvh; margin: 0; }
     .floating-message { position: fixed; right: var(--space-5); bottom: var(--space-5); width: min(430px, calc(100vw - (2 * var(--space-5)))); z-index: var(--layer-toast); }
-    @media (max-width: 700px) {
+    @media (max-width: 860px), (max-height: 760px) {
       .app-page:not(.app-page--ledger) {
-        grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
-        padding: 76px var(--space-page) var(--space-5);
+        display: block;
+        padding-top: var(--page-shell-compact-padding-start);
       }
-      .top-area { align-self: end; margin-bottom: var(--space-6); }
-      .account-wrap { top: var(--space-4); }
-      .content-area:not(.content-area--ledger) { align-self: center; margin: 0 auto; }
-    }
-    @media (max-height: 620px) {
-      .app-page:not(.app-page--ledger) { display: block; padding-top: 88px; }
-      .top-area { margin-bottom: var(--space-6); }
+      .top-area { margin-bottom: var(--page-shell-brand-gap); padding-top: var(--section-gap); }
+      .account-wrap { top: var(--page-shell-compact-control-offset); }
       .content-area:not(.content-area--ledger) { margin: 0 auto; }
     }
     @media (max-width: 520px) {

@@ -137,7 +137,7 @@ import { ledgerSectionByKey } from './ledger-sections';
     .ledger-main__token--neutral { background: var(--surface-muted); color: var(--text); }
     .ledger-main__title-wrap { min-width: 0; }
     .ledger-main__title-wrap h1 { margin: 0; font-size: clamp(1.45rem, 2vw, 1.8rem); line-height: var(--heading-line-height); letter-spacing: -.03em; }
-    .ledger-section-content { min-height: 0; padding: var(--space-5); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
+    .ledger-section-content { container: ledger-section / inline-size; min-height: 0; padding: var(--space-5); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
     .placeholder-card { min-height: 320px; display: grid; place-items: center; align-content: center; gap: var(--space-3); margin: var(--space-5); padding: clamp(28px, 6vw, 52px); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); text-align: center; }
     .placeholder-card__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-2); }
     .placeholder-card--loading { min-height: 280px; }

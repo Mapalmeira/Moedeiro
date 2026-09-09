@@ -20,14 +20,14 @@
   }
 
   @if (error() && !items().length) {
-    <div class="budgets-state budgets-state--error">
+    <div class="ui-retry-state">
       <app-form-message [text]="error()!" />
       <button class="ui-button" type="button" (click)="loadWorkspace()">{{ i18n.t('workspace.retry') }}</button>
     </div>
   } @else if (resourcesLoading() || loading()) {
-    <div class="budgets-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
+    <div class="ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
   } @else {
-    <div class="budget-grid" id="budgets-list-title">
+    <div class="budget-grid ui-workspace-card-space" id="budgets-list-title">
       @for (card of cards(); track card.budget.uuid) {
         <button type="button" class="budget-card ui-card ui-projected-surface ui-projection--surface" (click)="openEdit(card.budget)">
           <header class="budget-card__header">

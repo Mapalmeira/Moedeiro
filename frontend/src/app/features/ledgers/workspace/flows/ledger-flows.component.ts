@@ -28,6 +28,7 @@ const DEFAULT_CATEGORY_DETAIL_LEVEL = 3;
 
 @Component({
   selector: 'app-ledger-flows',
+  host: { class: 'ui-workspace-page' },
   standalone: true,
   imports: [CashFlowSankeyComponent, EntitySearchSelectComponent, FormMessageComponent, IconComponent, PeriodSelectorComponent],
   templateUrl: './ledger-flows.component.html',

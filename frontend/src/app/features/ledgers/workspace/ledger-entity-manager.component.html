@@ -17,12 +17,14 @@
   @if (items().length >= 300) { <app-form-message kind="info" [text]="i18n.t('workspace.limit')" /> }
 
   @if (error()) {
-    <app-form-message [text]="error()!" />
-    <button class="ui-button retry" type="button" (click)="load()">{{ i18n.t('workspace.retry') }}</button>
+    <div class="ui-retry-state">
+      <app-form-message [text]="error()!" />
+      <button class="ui-button" type="button" (click)="load()">{{ i18n.t('workspace.retry') }}</button>
+    </div>
   } @else if (loading()) {
-    <div class="state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
+    <div class="ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
   } @else {
-    <div class="manager-body">
+    <div class="manager-body ui-workspace-card-space">
       <div class="entity-list ui-card ui-projected-surface ui-projection--surface" [attr.aria-label]="title()">
         @if (rows().length) {
           <div class="entity-list__header" aria-hidden="true"><span class="entity-list__header-name">{{ title() }}</span><span class="entity-list__header-balance">{{ i18n.t('workspace.balance') }}</span></div>

@@ -9,12 +9,12 @@
   min-width: 0;
   min-height: 100%;
 }
-.budgets { container-type: inline-size; min-height: 100%; display: flex; flex-direction: column; gap: var(--section-gap); min-width: 0; padding-block-end: var(--button-shadow-offset); }
+.budgets { container-type: inline-size; min-height: 100%; display: flex; flex-direction: column; gap: var(--section-gap); min-width: 0; }
 .budgets-commandbar { flex: 0 0 auto; min-width: 0; display: grid; grid-template-columns: minmax(0, var(--entity-search-width)) var(--budget-category-filter-width) var(--budget-state-filter-width) auto; align-items: start; gap: var(--form-gap); }
 .budgets-search, .budgets-category-filter, .budgets-state-filter { min-width: 0; }
 .budgets-search:focus-within { border-color: var(--yellow-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--yellow) 32%, transparent); }
 .budgets-create { justify-self: start; }
-.budget-grid { flex: 1 1 auto; min-height: 0; min-width: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--budget-card-min-width)), 1fr)); align-content: start; gap: var(--section-gap); padding-inline-end: var(--button-shadow-offset); padding-block-end: var(--button-shadow-offset); }
+.budget-grid { flex: 1 1 auto; min-height: 0; min-width: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--budget-card-min-width)), 1fr)); align-content: start; gap: var(--section-gap); padding-inline-end: var(--button-shadow-offset); }
 .budget-card {
   min-width: 0; display: grid; align-content: start; gap: var(--form-gap); padding: var(--space-4);
   border: var(--border-width) solid var(--line-strong); background: var(--surface); color: var(--text); text-align: left;
@@ -51,8 +51,6 @@
 .budget-card__future strong { font-size: 1.12rem; font-weight: 850; font-variant-numeric: tabular-nums; }
 .budget-card__future span, .budget-card__future small { color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 650; }
 .budgets-state { flex: 1 1 auto; min-height: 320px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: var(--space-3); padding: var(--space-6); color: var(--text-muted); text-align: center; }
-.budgets-state--error { align-items: stretch; width: min(100%, var(--dialog-width-standard)); margin: auto; }
-.budgets-state--error .ui-button { align-self: center; color: var(--text); }
 .budget-grid__empty { grid-column: 1 / -1; min-height: 420px; }
 .budget-grid__sentinel { grid-column: 1 / -1; min-height: var(--space-1); display: grid; place-items: center; }
 .budget-grid__sentinel .ui-spinner { --spinner-size: var(--space-5); }

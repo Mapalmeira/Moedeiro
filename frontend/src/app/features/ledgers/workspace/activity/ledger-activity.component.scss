@@ -1,14 +1,9 @@
 :host {
   --spinner-accent: var(--green);
   --spinner-accent-strong: var(--green-strong);
-  display: block;
-  height: 100%;
-  min-width: 0;
-  min-height: 0;
-  container-type: inline-size;
   container-name: activity-workspace;
 }
-.activity { height: 100%; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--section-gap); padding-block-end: var(--button-shadow-offset); }
+.activity { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--section-gap); }
 .activity-commandbar { flex: 0 0 auto; display: flex; align-items: flex-start; flex-wrap: wrap; gap: var(--form-gap); padding-inline-end: var(--button-shadow-offset); }
 .activity-commandbar__notice { --message-compact-min-height: calc(var(--control-height) + var(--button-shadow-offset)); }
 .create-menu { position: relative; }
@@ -106,8 +101,6 @@
 .activity-list__sentinel--loading { min-height: var(--control-height); }
 .activity-list__load-spinner { --spinner-size: var(--space-4); }
 .activity-state { flex: 1 1 auto; min-height: var(--activity-state-min-height); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: var(--space-3); padding: var(--space-6); color: var(--text-muted); text-align: center; }
-.activity-state--error { align-items: stretch; justify-content: center; max-width: calc(var(--dialog-width-standard) - (2 * var(--space-12))); margin: auto; width: 100%; }
-.activity-state--error .ui-button { align-self: center; color: var(--text); }
 .activity-delete-layer { --dialog-width: 520px; }
 .activity-delete-icon { background: var(--danger-token); color: var(--on-danger-token); }
 
@@ -118,8 +111,12 @@
   .activity-filter-actions { justify-content: flex-end; padding-block-end: 0; }
 }
 
+@container ledger-section (max-width: 1040px) {
+  :host { height: auto; min-height: 100%; grid-template-rows: auto; }
+}
+
 @container activity-workspace (max-width: 1040px) {
-  .activity { height: auto; min-height: 100%; gap: var(--form-gap); }
+  .activity { gap: var(--form-gap); }
   :is(.activity-panel, .activity-list) { flex: 0 0 auto; min-height: var(--activity-state-min-height); overflow: visible; }
   .activity-list__header { align-items: flex-start; flex-direction: column; }
   .activity-list__summary { justify-content: flex-start; }
