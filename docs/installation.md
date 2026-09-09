@@ -10,7 +10,7 @@ Every installation has three persistent elements:
 
 ## Preparation
 
-### 1. Generate the TOTP encryption key
+### Generate the TOTP encryption key
 
 Generate a key once:
 
