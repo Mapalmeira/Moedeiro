@@ -66,7 +66,7 @@ const SURPLUS_NODE_ID = 'surplus';
   selector: 'app-cash-flow-sankey',
   standalone: true,
   template: `
-    <div class="sankey-shell">
+    <div class="sankey-shell" (pointerdown)="hideTouchValue($event)">
       <div class="sankey-viewport">
         <div class="sankey-canvas">
         <svg class="sankey" [attr.viewBox]="'0 0 ' + layout().width + ' ' + layout().height"
@@ -79,13 +79,15 @@ const SURPLUS_NODE_ID = 'surplus';
                 [class.sankey__link--surplus]="link.tone === 'surplus'"
                 [attr.d]="link.path" [attr.stroke-width]="link.width"
                 [attr.aria-label]="formatValue(link.value)"
-                (pointerenter)="showValue($event, link.value)" (pointermove)="showValue($event, link.value)" (pointerleave)="hideValue()" />
+                (pointerenter)="showValue($event, link.value)" (pointermove)="showValue($event, link.value)"
+                (pointerup)="showTouchValue($event, link.value)" (pointerleave)="hideValue($event)" />
             }
           </g>
           <g class="sankey__nodes">
             @for (node of layout().nodes; track node.id) {
               <g class="sankey__node-group" [attr.aria-label]="node.label + ': ' + formatValue(node.value)"
-                (pointerenter)="showValue($event, node.value)" (pointermove)="showValue($event, node.value)" (pointerleave)="hideValue()">
+                (pointerenter)="showValue($event, node.value)" (pointermove)="showValue($event, node.value)"
+                (pointerup)="showTouchValue($event, node.value)" (pointerleave)="hideValue($event)">
                 <rect class="sankey__node"
                   [class.sankey__node--income]="node.tone === 'income'"
                   [class.sankey__node--expense]="node.tone === 'expense'"
@@ -191,12 +193,26 @@ export class CashFlowSankeyComponent {
 
   readonly layout = computed<SankeyLayout>(() => this.buildLayout(this.graph()));
   readonly tooltip = signal<SankeyTooltip | null>(null);
+  readonly touchValuePinned = signal(false);
 
   showValue(event: PointerEvent, value: number): void {
     this.tooltip.set({ value: this.formatValue(value), x: event.clientX, y: event.clientY });
   }
 
-  hideValue(): void {
+  showTouchValue(event: PointerEvent, value: number): void {
+    if (event.pointerType !== 'touch') return;
+    this.touchValuePinned.set(true);
+    this.showValue(event, value);
+  }
+
+  hideTouchValue(event: PointerEvent): void {
+    if (event.pointerType !== 'touch') return;
+    this.touchValuePinned.set(false);
+    this.tooltip.set(null);
+  }
+
+  hideValue(event?: PointerEvent): void {
+    if (event?.pointerType === 'touch' && this.touchValuePinned()) return;
     this.tooltip.set(null);
   }
 

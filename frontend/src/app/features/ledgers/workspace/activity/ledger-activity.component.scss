@@ -49,11 +49,7 @@
   align-items: end;
 }
 .activity-filter-grid > .field { min-width: 0; }
-.period-filter { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: var(--space-2); }
-.period-filter .field, .period-filter input { min-width: 0; width: 100%; }
-.period-filter__separator { align-self: end; min-height: var(--control-height); display: grid; place-items: center; color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 650; }
-.period-filter__to { align-self: end; }
-.period-filter__mobile-label { visibility: hidden; }
+.activity-period-filter { min-width: 0; }
 .activity-filter-actions { display: flex; gap: var(--space-3); padding-block-end: var(--button-shadow-offset); }
 .activity-filter-actions .ui-button { min-width: 0; }
 
@@ -107,7 +103,7 @@
 @container activity-workspace (max-width: 1100px) {
   .activity-filters { grid-template-columns: minmax(0, 1fr); }
   .activity-filter-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .period-filter { grid-column: 1 / -1; }
+  .activity-period-filter { grid-column: 1 / -1; }
   .activity-filter-actions { justify-content: flex-end; padding-block-end: 0; }
 }
 
@@ -155,28 +151,13 @@
   .activity-commandbar { justify-content: flex-start; }
   .create-menu, .create-menu__trigger, .create-menu__dropdown { width: 100%; }
   .activity-filter-grid { grid-template-columns: minmax(0, 1fr); }
-  .period-filter { grid-column: auto; }
+  .activity-period-filter { grid-column: auto; }
   .activity-filter-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .activity-filter-actions .ui-button { min-width: 0; }
 }
 
 @container activity-workspace (max-width: 520px) {
   .activity-filters { padding: var(--space-3); }
-  .period-filter { grid-template-columns: minmax(0, 1fr); gap: var(--form-gap); }
-  .period-filter__separator { display: none; }
-  .period-filter .field { grid-template-columns: var(--space-6) minmax(0, 1fr); align-items: center; gap: var(--space-2); }
-  .period-filter__label {
-    min-height: var(--control-height);
-    display: grid;
-    place-items: center;
-    color: var(--text-muted);
-    font-size: var(--control-detail-font-size);
-    font-weight: 650;
-    line-height: var(--control-line-height);
-    text-align: center;
-  }
-  .period-filter .field > input { grid-column: 2; }
-  .period-filter__mobile-label { visibility: visible; }
   .activity-filter-actions { grid-template-columns: minmax(0, 1fr); }
   :is(.activity-row__accounts, .activity-row__category, .activity-row__value) { grid-template-columns: minmax(90px, 34%) minmax(0, 1fr); }
 }

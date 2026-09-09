@@ -21,6 +21,7 @@ import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../sha
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
 import { IconComponent, IconName } from '../../../../shared/ui/icon.component';
 import { InfiniteScrollTriggerDirective } from '../../../../shared/ui/infinite-scroll-trigger.directive';
+import { PeriodMode, PeriodSelectorComponent } from '../../../../shared/ui/period-selector.component';
 import { FinancialEventEditorComponent } from './financial-event-editor.component';
 
 const EVENT_BATCH_SIZE = 40;
@@ -48,7 +49,7 @@ interface ActivityEventRow {
   selector: 'app-ledger-activity',
   host: { class: 'ui-workspace-page' },
   standalone: true,
-  imports: [ReactiveFormsModule, FinancialEventEditorComponent, EntityBadgeComponent, EntitySearchSelectComponent, FormMessageComponent, IconComponent, InfiniteScrollTriggerDirective],
+  imports: [ReactiveFormsModule, FinancialEventEditorComponent, EntityBadgeComponent, EntitySearchSelectComponent, FormMessageComponent, IconComponent, InfiniteScrollTriggerDirective, PeriodSelectorComponent],
   templateUrl: './ledger-activity.component.html',
   styleUrl: './ledger-activity.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -69,6 +70,9 @@ export class LedgerActivityComponent {
   readonly context = inject(LedgerContextService);
   readonly i18n = inject(I18nService);
   readonly categoryIconPreviewLimit = 2;
+  readonly periodMode = signal<PeriodMode>('month');
+  readonly selectedMonth = signal(this.currentMonth());
+  readonly locale = computed(() => this.i18n.language() === 'en' ? 'en-US' : 'pt-BR');
 
   readonly accounts = signal<LedgerAccount[]>([]);
   readonly currencies = signal<LedgerCurrency[]>([]);
@@ -313,6 +317,23 @@ export class LedgerActivityComponent {
     this.filters.controls[name].markAsDirty();
   }
 
+  setPeriodMode(mode: PeriodMode): void {
+    if (mode === this.periodMode()) return;
+    this.periodMode.set(mode);
+    if (mode === 'month') this.syncMonthToFilters();
+  }
+
+  selectMonth(value: string): void {
+    if (!/^\d{4}-\d{2}$/.test(value) || value === this.selectedMonth()) return;
+    this.selectedMonth.set(value);
+    if (this.periodMode() === 'month') this.syncMonthToFilters();
+  }
+
+  setRangeDate(name: 'from_date' | 'to_date', value: string): void {
+    this.filters.controls[name].setValue(value);
+    this.filters.controls[name].markAsDirty();
+  }
+
   loadMore(): void {
     const cursor = this.nextCursor();
     const ledgerUuid = this.context.ledgerUuid();
@@ -471,11 +492,12 @@ export class LedgerActivityComponent {
   }
 
   private resetFilters(emitEvent = true): void {
-    const timezone = this.preferences.current().timezone;
-    const today = zonedDateInput(Math.floor(Date.now() / 1000), timezone);
+    this.periodMode.set('month');
+    this.selectedMonth.set(this.currentMonth());
+    const dates = this.monthDates(this.selectedMonth());
     this.filters.reset({
-      from_date: `${today.slice(0, 8)}01`,
-      to_date: today,
+      from_date: dates?.from ?? '',
+      to_date: dates?.to ?? '',
       account_uuid: '',
       category_uuid: '',
       event_type: '',
@@ -487,6 +509,9 @@ export class LedgerActivityComponent {
     const saved = ledgerUuid ? this.workspaceState.getActivity(ledgerUuid) : null;
     if (saved) {
       this.filters.reset(saved, { emitEvent: false });
+      const month = this.monthForRange(saved.from_date, saved.to_date);
+      this.periodMode.set(month ? 'month' : 'range');
+      this.selectedMonth.set(month ?? (saved.from_date.slice(0, 7) || this.currentMonth()));
       this.filterError.set(null);
       return;
     }
@@ -523,6 +548,33 @@ export class LedgerActivityComponent {
     const destination = event.movements.find(movement => movement.value > 0) ?? null;
     const source = destination ? event.movements.find(movement => movement.value < 0 && movement.account_uuid !== destination.account_uuid) ?? null : null;
     return source && destination ? [source, destination] : event.movements;
+  }
+
+  private syncMonthToFilters(): void {
+    const dates = this.monthDates(this.selectedMonth());
+    if (!dates) return;
+    this.filters.patchValue({ from_date: dates.from, to_date: dates.to });
+  }
+
+  private monthForRange(from: string, to: string): string | null {
+    const month = from.slice(0, 7);
+    const dates = this.monthDates(month);
+    return dates?.from === from && dates.to === to ? month : null;
+  }
+
+  private monthDates(month: string): { from: string; to: string } | null {
+    const match = /^(\d{4})-(\d{2})$/.exec(month);
+    if (!match) return null;
+    const year = Number(match[1]);
+    const monthNumber = Number(match[2]);
+    if (monthNumber < 1 || monthNumber > 12) return null;
+    const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+    const prefix = `${String(year).padStart(4, '0')}-${String(monthNumber).padStart(2, '0')}`;
+    return { from: `${prefix}-01`, to: `${prefix}-${String(lastDay).padStart(2, '0')}` };
+  }
+
+  private currentMonth(): string {
+    return zonedDateInput(Math.floor(Date.now() / 1000), this.preferences.current().timezone).slice(0, 7);
   }
 
   private nextDate(value: string): string | null {

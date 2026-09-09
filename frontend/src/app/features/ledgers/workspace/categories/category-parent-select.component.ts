@@ -12,13 +12,13 @@ export const ROOT_CATEGORY_VALUE = '__root__';
   imports: [DropdownSearchAutofocusDirective, EntityBadgeComponent, IconComponent],
   template: `
     <div class="parent-select">
-      <button type="button" class="parent-select__trigger ui-select-trigger" (click)="toggleList()"
+      <button type="button" class="parent-select__trigger ui-select-trigger ui-trigger-with-icon" (click)="toggleList()"
         [attr.aria-label]="ariaLabel()" aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listId">
         @if (selectedCategory(); as category) {
           <app-entity-badge [icon]="category.icon" [color]="category.color_code" [size]="30" />
           <span class="parent-select__value">{{ category.name }}</span>
         } @else {
-          <span class="parent-select__root-icon ui-icon-badge ui-projected-icon"><app-icon name="folder" [size]="17" /></span>
+          <span class="parent-select__root-icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon"><app-icon name="folder" [size]="17" /></span>
           <span class="parent-select__value">{{ rootLabel() }}</span>
         }
         <app-icon class="ui-select-chevron" name="chevron-down" [size]="17" />
@@ -35,14 +35,14 @@ export const ROOT_CATEGORY_VALUE = '__root__';
 
           <div class="parent-select__list" role="listbox">
             @if (rootVisible()) {
-              <button type="button" role="option" [attr.aria-selected]="value() === rootValue" (click)="chooseRoot()">
-                <span class="parent-select__root-icon ui-icon-badge ui-projected-icon"><app-icon name="folder" [size]="17" /></span>
+              <button type="button" class="ui-menu-option-with-icon" role="option" [attr.aria-selected]="value() === rootValue" (click)="chooseRoot()">
+                <span class="parent-select__root-icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon"><app-icon name="folder" [size]="17" /></span>
                 <span class="parent-select__option-name">{{ rootLabel() }}</span>
                 @if (value() === rootValue) { <app-icon name="check" [size]="16" /> }
               </button>
             }
             @for (category of filteredCategories(); track category.uuid) {
-              <button type="button" role="option" [attr.aria-selected]="value() === category.uuid" (click)="choose(category.uuid)">
+              <button type="button" class="ui-menu-option-with-icon" role="option" [attr.aria-selected]="value() === category.uuid" (click)="choose(category.uuid)">
                 <app-entity-badge [icon]="category.icon" [color]="category.color_code" [size]="30" />
                 <span class="parent-select__option-name">{{ category.name }}</span>
                 @if (value() === category.uuid) { <app-icon name="check" [size]="16" /> }
@@ -62,11 +62,6 @@ export const ROOT_CATEGORY_VALUE = '__root__';
     .parent-select__trigger {
       width: 100%;
       height: var(--control-height);
-      display: grid;
-      grid-template-columns: var(--control-icon-footprint) minmax(0, 1fr) var(--chevron-track-size);
-      align-items: center;
-      gap: var(--space-3);
-      padding: 0 var(--control-padding-inline);
       text-align: left;
     }
     .parent-select__trigger[aria-expanded='true'] {
@@ -80,11 +75,6 @@ export const ROOT_CATEGORY_VALUE = '__root__';
     .parent-select__list button {
       width: 100%;
       min-height: var(--menu-item-height);
-      display: grid;
-      grid-template-columns: var(--control-icon-footprint) minmax(0, 1fr) var(--inline-icon-size);
-      align-items: center;
-      gap: var(--space-2);
-      padding: var(--space-2) var(--space-3);
       border: 0;
       border-radius: var(--radius-sm);
       background: transparent;
@@ -96,7 +86,6 @@ export const ROOT_CATEGORY_VALUE = '__root__';
     }
     .parent-select__list button:not([aria-selected='true']):hover { background: var(--surface-muted); }
     .parent-select__list button[aria-selected='true'], .parent-select__list button[aria-selected='true']:hover { background: var(--blue-soft); }
-    .parent-select__root-icon { background: var(--surface-muted); color: var(--text); }
     .parent-select__empty { padding: var(--space-3); color: var(--text-muted); font-size: var(--control-font-size); text-align: center; }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

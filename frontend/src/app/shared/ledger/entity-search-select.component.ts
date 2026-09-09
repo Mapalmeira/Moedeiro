@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
 import { ENTITY_BADGE_DEFAULT_SYMBOL_SIZE, EntityBadgeComponent } from './entity-badge.component';
 import { DropdownSearchAutofocusDirective } from '../ui/dropdown-search-autofocus.directive';
 import { IconComponent, IconName } from '../ui/icon.component';
@@ -21,7 +21,7 @@ export interface EntitySearchOption {
   imports: [DropdownSearchAutofocusDirective, EntityBadgeComponent, IconComponent],
   template: `
     <div class="entity-search-select" [class.entity-search-select--up]="opensUp()">
-      <button type="button" class="entity-search-select__trigger ui-select-trigger" (click)="toggleList()"
+      <button type="button" class="entity-search-select__trigger ui-select-trigger ui-trigger-with-icon" (click)="toggleList()"
         [disabled]="disabled()" [attr.aria-label]="ariaLabel()" aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listId">
         @if (selectedOption(); as option) {
           @if (option.icon && option.color) {
@@ -59,7 +59,7 @@ export interface EntitySearchOption {
 
           <div class="entity-search-select__list" role="listbox">
             @for (option of filteredOptions(); track option.value) {
-              <button type="button" role="option" [attr.aria-selected]="value() === option.value" (click)="choose(option.value)">
+              <button type="button" class="ui-menu-option-with-icon" role="option" [attr.aria-selected]="value() === option.value" (click)="choose(option.value)">
                 @if (option.icon && option.color) {
                   <app-entity-badge [icon]="option.icon" [color]="option.color" />
                 } @else if (option.uiIcon) {
@@ -91,11 +91,6 @@ export interface EntitySearchOption {
     .entity-search-select__trigger {
       width: 100%;
       height: var(--control-height);
-      display: grid;
-      grid-template-columns: var(--control-icon-footprint) minmax(0, 1fr) var(--chevron-track-size);
-      align-items: center;
-      gap: var(--space-2);
-      padding: 0 var(--control-padding-inline) 0 var(--space-2);
       text-align: left;
     }
     .entity-search-select__trigger[aria-expanded='true'] {
@@ -125,11 +120,6 @@ export interface EntitySearchOption {
     .entity-search-select__list button {
       width: 100%;
       min-height: var(--menu-item-height);
-      display: grid;
-      grid-template-columns: var(--control-icon-footprint) minmax(0, 1fr) var(--inline-icon-size);
-      align-items: center;
-      gap: var(--space-2);
-      padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
       border: 0;
       border-radius: var(--radius-sm);
       background: transparent;
@@ -149,6 +139,7 @@ export class EntitySearchSelectComponent {
   readonly optionIconSize = ENTITY_BADGE_DEFAULT_SYMBOL_SIZE;
   private static nextId = 0;
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly options = input.required<readonly EntitySearchOption[]>();
   readonly value = input('');
@@ -178,6 +169,20 @@ export class EntitySearchSelectComponent {
     return this.searchableOptions().filter(entry => entry.searchText.includes(needle)).map(entry => entry.option);
   });
 
+  constructor() {
+    const visualViewport = typeof window === 'undefined' ? null : window.visualViewport;
+    if (!visualViewport) return;
+    const reposition = () => {
+      if (this.open()) this.resolvePanelGeometry();
+    };
+    visualViewport.addEventListener('resize', reposition);
+    visualViewport.addEventListener('scroll', reposition);
+    this.destroyRef.onDestroy(() => {
+      visualViewport.removeEventListener('resize', reposition);
+      visualViewport.removeEventListener('scroll', reposition);
+    });
+  }
+
   @HostListener('document:mousedown', ['$event'])
   closeWhenClickingOutside(event: MouseEvent): void {
     if (!this.open() || this.host.nativeElement.contains(event.target as Node)) return;
@@ -201,8 +206,11 @@ export class EntitySearchSelectComponent {
 
   openList(): void {
     this.query.set('');
-    this.resolvePanelGeometry();
+    this.opensUp.set(false);
     this.open.set(true);
+    queueMicrotask(() => {
+      if (this.open()) this.resolvePanelGeometry();
+    });
   }
 
   closeList(): void {
@@ -235,12 +243,23 @@ export class EntitySearchSelectComponent {
     const triggerBounds = trigger.getBoundingClientRect();
     const dialog = this.host.nativeElement.closest<HTMLElement>('.ui-dialog-surface');
     const dialogBounds = dialog?.getBoundingClientRect();
-    const topBoundary = Math.max(0, dialogBounds?.top ?? 0);
-    const bottomBoundary = Math.min(window.innerHeight, dialogBounds?.bottom ?? window.innerHeight);
+    const visualViewport = window.visualViewport;
+    const viewportTop = visualViewport?.offsetTop ?? 0;
+    const viewportBottom = viewportTop + (visualViewport?.height ?? window.innerHeight);
+    const topBoundary = Math.max(viewportTop, dialogBounds?.top ?? viewportTop);
+    const bottomBoundary = Math.min(viewportBottom, dialogBounds?.bottom ?? viewportBottom);
     const spaceAbove = Math.max(0, triggerBounds.top - topBoundary);
     const spaceBelow = Math.max(0, bottomBoundary - triggerBounds.bottom);
+    const styles = getComputedStyle(this.host.nativeElement);
+    const panelGap = Number.parseFloat(styles.getPropertyValue('--space-2')) || 0;
+    const maxPanelHeight = Number.parseFloat(styles.getPropertyValue('--search-dropdown-max-height')) || Number.POSITIVE_INFINITY;
+    const panel = this.host.nativeElement.querySelector<HTMLElement>('.entity-search-select__panel');
+    const desiredHeight = Math.min(panel?.scrollHeight ?? maxPanelHeight, maxPanelHeight);
+    const usableAbove = Math.max(0, spaceAbove - panelGap);
+    const usableBelow = Math.max(0, spaceBelow - panelGap);
     const direction = this.openDirection();
-    const opensUp = direction === 'up' || (direction === 'auto' && spaceAbove > spaceBelow);
+    const autoOpensUp = desiredHeight > usableBelow && (desiredHeight <= usableAbove || usableAbove > usableBelow);
+    const opensUp = direction === 'up' || (direction === 'auto' && autoOpensUp);
 
     this.opensUp.set(opensUp);
     this.availableHeight.set(opensUp ? spaceAbove : spaceBelow);

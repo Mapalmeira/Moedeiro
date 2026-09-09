@@ -57,7 +57,7 @@ export type PeriodMode = 'month' | 'range';
     .period-selector__row {
       min-width: 0;
       display: flex;
-      align-items: flex-end;
+      align-items: center;
       gap: var(--form-gap);
     }
     .period-selector__switch {

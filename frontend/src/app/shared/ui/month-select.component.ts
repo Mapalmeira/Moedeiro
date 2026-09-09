@@ -48,7 +48,7 @@ interface MonthOption {
     :host { display: block; min-width: 0; }
     .month-select { position: relative; min-width: 0; }
     .month-select__trigger { width: 100%; height: var(--control-height); padding-block: 0; text-align: left; }
-    .month-select__panel { position: absolute; z-index: var(--layer-dropdown); top: calc(100% + var(--space-2)); left: 0; width: min(340px, 84vw); }
+    .month-select__panel { position: absolute; z-index: var(--layer-dropdown); top: calc(100% + var(--space-2)); left: 0; width: 100%; }
     .month-select__year { display: grid; grid-template-columns: var(--icon-button-size) minmax(0, 1fr) var(--icon-button-size); align-items: center; gap: var(--space-2); }
     .month-select__year-nav { border-width: var(--border-width); border-color: var(--line-strong); }
     .month-select__year-input { width: 100%; height: var(--icon-button-size); min-width: 0; padding: 0 var(--space-2); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-sm); outline: none; background: var(--surface); color: var(--text); text-align: center; font-size: var(--control-font-size); font-weight: 800; font-variant-numeric: tabular-nums; }
@@ -56,7 +56,6 @@ interface MonthOption {
     .month-select__months { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
     .month-select__month { min-width: 0; min-height: var(--menu-item-height); padding-inline: var(--space-2); }
     @media (max-width: 420px) {
-      .month-select__panel { width: min(300px, calc(100vw - (2 * var(--space-4)))); }
       .month-select__months { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   `,
