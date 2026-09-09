@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatEventDate, formatEventTime, zonedDateInput, zonedDateTimeToEpochSeconds, zonedTimeInput } from './date-time-format';
+import { formatEventDate, formatEventTime, nextDateInput, zonedDateInput, zonedDateTimeToEpochSeconds, zonedTimeInput } from './date-time-format';
 
 describe('ledger date and time formatting', () => {
   it('converts a wall clock time with seconds in the preference time zone to epoch seconds', () => {
@@ -21,5 +21,12 @@ describe('ledger date and time formatting', () => {
     expect(formatEventDate(timestamp, 'America/Sao_Paulo', 'DMY')).toBe('07/09/2026');
     expect(formatEventTime(timestamp, 'America/Sao_Paulo', 'H24')).toBe('15:50:07');
     expect(formatEventTime(timestamp, 'America/Sao_Paulo', 'H12')).toBe('03:50:07 PM');
+  });
+
+  it('advances real calendar dates and rejects impossible ones', () => {
+    expect(nextDateInput('2026-09-30')).toBe('2026-10-01');
+    expect(nextDateInput('2024-02-29')).toBe('2024-03-01');
+    expect(nextDateInput('2026-02-29')).toBeNull();
+    expect(nextDateInput('2026-02-31')).toBeNull();
   });
 });

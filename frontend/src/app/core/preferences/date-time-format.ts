@@ -63,6 +63,21 @@ export function zonedTimeInput(timestampSeconds: number, timezone: string): stri
   return `${String(parts.hour).padStart(2, '0')}:${String(parts.minute).padStart(2, '0')}:${String(parts.second).padStart(2, '0')}`;
 }
 
+/** Returns the following calendar date without normalizing impossible input dates. */
+export function nextDateInput(value: string): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(0);
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCFullYear(year, month - 1, day);
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  date.setUTCDate(date.getUTCDate() + 1);
+  return `${String(date.getUTCFullYear()).padStart(4, '0')}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
+
 export function formatEventDate(timestampSeconds: number, timezone: string, format: DateFormat): string {
   const parts = partsAt(timestampSeconds * 1000, timezone);
   const day = String(parts.day).padStart(2, '0');
