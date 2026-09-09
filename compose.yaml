@@ -1,6 +1,6 @@
 services:
   moedeiro:
-    image: mapalmeira/moedeiro:VERSION
+    image: docker.io/mapalmeira/moedeiro:latest
     restart: on-failure
 
     ports:

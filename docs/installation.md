@@ -22,7 +22,11 @@ chmod 600 /etc/moedeiro/totp.key
 
 The key encrypts TOTP seeds stored in the registry. If the key is lost, the stored TOTP seeds can no longer be decrypted. An administrator must revoke the affected users' TOTP enrollments, after which those users may enroll TOTP again.
 
-### 2. Prepare persistent container storage
+## Container installation
+
+Moedeiro can be installed with either Docker Compose or Podman Quadlet. Choose one container runtime and follow the corresponding section below.
+
+### Prepare persistent container storage
 
 Choose a host directory for persistent registry and ledger data. The examples in this documentation use `/srv/moedeiro`:
 
@@ -35,15 +39,11 @@ These directories are mounted into the container's `/data` paths and must remain
 
 You may use a different host path by changing the corresponding volume mounts in the container configuration.
 
-## Container installation
-
-Moedeiro can be installed with either Docker Compose or Podman Quadlet. Choose one container runtime and follow the corresponding section below.
-
 ### Container image
 
-A pre-built image is available on Docker Hub as `mapalmeira/moedeiro`.
+The published image is `docker.io/mapalmeira/moedeiro:latest`. Both the Compose and Quadlet examples below use it, so a local image build are not required.
 
-Build the image locally with your chosen container runtime if you wish.
+But you may build the image locally with your chosen container runtime if you wish. For example, from the repository's root:
 
 With Docker:
 
@@ -65,13 +65,7 @@ podman build \
 
 ### Docker Compose installation
 
-Edit `compose.yaml` for the host where Moedeiro will run.
-
-Set the image:
-
-```yaml
-image: mapalmeira/moedeiro:VERSION
-```
+Copy `compose.yaml` to the host where Moedeiro will run.
 
 Set the host port:
 
@@ -117,7 +111,7 @@ Description=Moedeiro personal finance service
 
 [Container]
 ContainerName=moedeiro
-Image=mapalmeira/moedeiro:VERSION
+Image=docker.io/mapalmeira/moedeiro:latest
 Volume=/srv/moedeiro/registry:/data/registry:Z
 Volume=/srv/moedeiro/ledgers:/data/ledgers:Z
 PublishPort=8080:8000
@@ -128,12 +122,6 @@ Restart=on-failure
 
 [Install]
 WantedBy=default.target
-```
-
-Set the image:
-
-```ini
-Image=mapalmeira/moedeiro:VERSION
 ```
 
 Set the host port:
@@ -173,8 +161,6 @@ source .venv/bin/activate
 python -m pip install --constraint ./backend/requirements.lock --editable ./backend
 ```
 
-The constraint file pins direct and transitive dependencies. The build backend is pinned in `backend/pyproject.toml`.
-
 This installs the backend dependencies and the `moedeiro` command while keeping the installed package linked to the repository checkout. The native storage and frontend defaults therefore resolve against the standard repository layout.
 
 Install the locked frontend dependencies and create the production bundle:
@@ -183,7 +169,7 @@ Install the locked frontend dependencies and create the production bundle:
 (cd frontend && npm ci && npm run build:production)
 ```
 
-The bundle is written to `frontend/dist/moedeiro/browser`. Rebuild it after changing the frontend before restarting the service.
+The bundle is written to `frontend/dist/moedeiro/browser`.
 
 Set the TOTP encryption key:
 
