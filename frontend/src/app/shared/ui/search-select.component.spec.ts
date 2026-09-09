@@ -25,6 +25,14 @@ describe('SearchSelectComponent', () => {
     expect(component.filteredOptions()).toEqual(['Europe/London']);
   });
 
+  it('focuses the search field when the dropdown opens', () => {
+    component.openList();
+    fixture.detectChanges();
+
+    const searchInput = fixture.nativeElement.querySelector('input[type="search"]') as HTMLInputElement;
+    expect(document.activeElement).toBe(searchInput);
+  });
+
   it('emits a selected value and closes the dropdown', () => {
     const selected = vi.fn();
     component.valueChange.subscribe(selected);

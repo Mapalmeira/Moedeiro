@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, HostListener, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { DropdownSearchAutofocusDirective } from '../ui/dropdown-search-autofocus.directive';
 import { InfiniteScrollTriggerDirective } from '../ui/infinite-scroll-trigger.directive';
 import { IconComponent } from '../ui/icon.component';
 import { LedgerColorFieldComponent } from './ledger-color-field.component';
@@ -16,7 +17,7 @@ type IconMode = 'lucide' | 'unicode';
 @Component({
   selector: 'app-ledger-appearance-fields',
   standalone: true,
-  imports: [ReactiveFormsModule, IconComponent, LedgerIconComponent, InfiniteScrollTriggerDirective, LedgerColorFieldComponent],
+  imports: [ReactiveFormsModule, IconComponent, LedgerIconComponent, DropdownSearchAutofocusDirective, InfiniteScrollTriggerDirective, LedgerColorFieldComponent],
   template: `
     <app-ledger-color-field [colorControl]="colorControl()" />
     <section class="appearance-field icon-field">
@@ -33,7 +34,7 @@ type IconMode = 'lucide' | 'unicode';
             </button>
             @if (pickerOpen()) {
               <div class="picker-panel ui-dropdown-panel" (keydown.escape)="closePicker($event)">
-                <label class="icon-search ui-dropdown-search"><app-icon name="search" [size]="18" /><input type="search" [attr.aria-label]="i18n.t('ledgers.editor.icon')" [value]="search()" (input)="updateSearch($event)" autofocus /></label>
+                <label class="icon-search ui-dropdown-search"><app-icon name="search" [size]="18" /><input type="search" [attr.aria-label]="i18n.t('ledgers.editor.icon')" [value]="search()" (input)="updateSearch($event)" appDropdownSearchAutofocus /></label>
                 <div class="icon-grid" role="group" [attr.aria-label]="i18n.t('ledgers.editor.icon')">
                   @for (entry of visibleIcons(); track entry.id) { <button type="button" class="ui-choice icon-choice" (click)="selectLucide(entry.id)" [title]="entry.label"><app-ledger-icon [icon]="'lucide:' + entry.id" [size]="22" /><span>{{ entry.label }}</span></button> }
                   @if (hasMoreIcons()) {

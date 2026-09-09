@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { DropdownSearchAutofocusDirective } from './dropdown-search-autofocus.directive';
 import { IconComponent } from './icon.component';
 
 @Component({
   selector: 'app-search-select',
   standalone: true,
-  imports: [IconComponent],
+  imports: [DropdownSearchAutofocusDirective, IconComponent],
   template: `
     <div class="search-select" [class.search-select--up]="openDirection() === 'up'">
       <button type="button" class="search-select__trigger ui-select-trigger" (click)="toggleList()"
@@ -26,7 +27,7 @@ import { IconComponent } from './icon.component';
               (input)="updateQuery($event)"
               (keydown.escape)="closeList()"
               (keydown.enter)="selectFirst($event)"
-              autofocus />
+              appDropdownSearchAutofocus />
           </label>
 
           <div class="search-select__list" role="listbox">

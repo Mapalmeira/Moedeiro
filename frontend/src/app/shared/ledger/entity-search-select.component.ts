@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
 import { ENTITY_BADGE_DEFAULT_SYMBOL_SIZE, EntityBadgeComponent } from './entity-badge.component';
+import { DropdownSearchAutofocusDirective } from '../ui/dropdown-search-autofocus.directive';
 import { IconComponent, IconName } from '../ui/icon.component';
 
 export type EntitySearchOptionTone = 'green' | 'yellow' | 'blue' | 'neutral';
@@ -17,7 +18,7 @@ export interface EntitySearchOption {
 @Component({
   selector: 'app-entity-search-select',
   standalone: true,
-  imports: [EntityBadgeComponent, IconComponent],
+  imports: [DropdownSearchAutofocusDirective, EntityBadgeComponent, IconComponent],
   template: `
     <div class="entity-search-select" [class.entity-search-select--up]="opensUp()">
       <button type="button" class="entity-search-select__trigger ui-select-trigger" (click)="toggleList()"
@@ -52,7 +53,7 @@ export interface EntitySearchOption {
               <app-icon name="search" [size]="17" />
               <input type="search" autocomplete="off" [attr.aria-label]="searchPlaceholder() || ariaLabel()"
                 [placeholder]="searchPlaceholder()" [value]="query()" (input)="updateQuery($event)"
-                (keydown.escape)="closeList()" (keydown.enter)="selectFirst($event)" autofocus />
+                (keydown.escape)="closeList()" (keydown.enter)="selectFirst($event)" appDropdownSearchAutofocus />
             </label>
           }
 

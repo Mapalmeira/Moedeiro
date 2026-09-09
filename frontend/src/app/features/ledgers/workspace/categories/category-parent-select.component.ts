@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
 import { LedgerCategory } from '../../../../core/ledgers/ledger-categories.models';
 import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.component';
+import { DropdownSearchAutofocusDirective } from '../../../../shared/ui/dropdown-search-autofocus.directive';
 import { IconComponent } from '../../../../shared/ui/icon.component';
 
 export const ROOT_CATEGORY_VALUE = '__root__';
@@ -8,7 +9,7 @@ export const ROOT_CATEGORY_VALUE = '__root__';
 @Component({
   selector: 'app-category-parent-select',
   standalone: true,
-  imports: [EntityBadgeComponent, IconComponent],
+  imports: [DropdownSearchAutofocusDirective, EntityBadgeComponent, IconComponent],
   template: `
     <div class="parent-select">
       <button type="button" class="parent-select__trigger ui-select-trigger" (click)="toggleList()"
@@ -29,7 +30,7 @@ export const ROOT_CATEGORY_VALUE = '__root__';
             <app-icon name="search" [size]="17" />
             <input type="search" autocomplete="off" [attr.aria-label]="searchPlaceholder() || ariaLabel()"
               [placeholder]="searchPlaceholder()" [value]="query()" (input)="updateQuery($event)"
-              (keydown.escape)="closeList()" (keydown.enter)="selectFirst($event)" autofocus />
+              (keydown.escape)="closeList()" (keydown.enter)="selectFirst($event)" appDropdownSearchAutofocus />
           </label>
 
           <div class="parent-select__list" role="listbox">
