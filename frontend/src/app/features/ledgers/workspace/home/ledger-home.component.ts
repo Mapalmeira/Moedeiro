@@ -16,16 +16,15 @@ import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categor
 import { LedgerAccount, LedgerAccountBalance, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
-import { formatEventDate, formatEventTime, zonedDateInput, zonedDateTimeToEpochSeconds } from '../../../../core/preferences/date-time-format';
+import { formatEventDate, formatEventTime, nextDateInput, zonedDateInput, zonedDateTimeToEpochSeconds } from '../../../../core/preferences/date-time-format';
 import { PreferencesService } from '../../../../core/preferences/preferences.service';
 import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.component';
 import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
 import { IconComponent, IconName } from '../../../../shared/ui/icon.component';
-import { MonthSelectComponent } from '../../../../shared/ui/month-select.component';
+import { PeriodMode, PeriodSelectorComponent } from '../../../../shared/ui/period-selector.component';
 
 type FlowMode = 'instant' | 'cumulative';
-type PeriodMode = 'month' | 'range';
 type Tone = 'green' | 'yellow' | 'blue' | 'neutral';
 
 interface HomeAccountRow {
@@ -105,7 +104,7 @@ const CHART_MAX_BAR_GAP = 1;
 @Component({
   selector: 'app-ledger-home',
   standalone: true,
-  imports: [RouterLink, EntityBadgeComponent, EntitySearchSelectComponent, FormMessageComponent, IconComponent, MonthSelectComponent],
+  imports: [RouterLink, EntityBadgeComponent, EntitySearchSelectComponent, FormMessageComponent, IconComponent, PeriodSelectorComponent],
   templateUrl: './ledger-home.component.html',
   styleUrl: './ledger-home.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -167,6 +166,7 @@ export class LedgerHomeComponent {
   })));
   readonly selectedCurrency = computed(() => this.currencyByUuid().get(this.selectedCurrencyUuid()) ?? null);
   readonly dashboardRange = computed(() => this.periodMode() === 'month' ? this.monthRange(this.selectedMonth()) : this.customRange());
+  readonly invalidRange = computed(() => this.periodMode() === 'range' && !!this.rangeFromDate() && !!this.rangeToDate() && !this.dashboardRange());
   readonly totalIncome = computed(() => this.cashFlow().reduce((sum, point) => sum + point.income, 0));
   readonly totalExpense = computed(() => this.cashFlow().reduce((sum, point) => sum + point.expense, 0));
   readonly netFlow = computed(() => this.totalIncome() - this.totalExpense());
@@ -333,7 +333,16 @@ export class LedgerHomeComponent {
       const currencyUuid = this.selectedCurrencyUuid();
       const range = this.dashboardRange();
       const ready = this.resourcesReady();
-      if (ledgerUuid && currencyUuid && range && ready) untracked(() => this.loadDashboard());
+      if (!ready) return;
+      if (ledgerUuid && currencyUuid && range) {
+        untracked(() => this.loadDashboard());
+      } else {
+        untracked(() => {
+          this.dashboardRequest?.unsubscribe();
+          this.clearDashboard();
+          this.loading.set(false);
+        });
+      }
     });
     this.destroyRef.onDestroy(() => {
       this.resourcesRequest?.unsubscribe();
@@ -355,12 +364,12 @@ export class LedgerHomeComponent {
     this.periodMode.set(mode);
   }
 
-  updateRangeFrom(event: Event): void {
-    this.rangeFromDate.set((event.target as HTMLInputElement).value);
+  updateRangeFrom(value: string): void {
+    this.rangeFromDate.set(value);
   }
 
-  updateRangeTo(event: Event): void {
-    this.rangeToDate.set((event.target as HTMLInputElement).value);
+  updateRangeTo(value: string): void {
+    this.rangeToDate.set(value);
   }
 
   setFlowMode(mode: FlowMode): void {
@@ -439,14 +448,12 @@ export class LedgerHomeComponent {
     const range = this.dashboardRange();
     if (!ledgerUuid || !currencyUuid || !range) return;
     this.dashboardRequest?.unsubscribe();
+    this.clearDashboard();
     this.loading.set(true);
     this.error.set(null);
-    this.hoveredChartIndex.set(null);
-    this.pinnedChartIndex.set(null);
-    const now = Math.floor(Date.now() / 1000);
-    const balanceTimestamp = Math.min(now, range.to - 1);
+    const periodEndTimestamp = range.to - 1;
     this.dashboardRequest = forkJoin({
-      balances: this.entities.listBalances(ledgerUuid, balanceTimestamp, currencyUuid, HOME_ACCOUNT_COUNT),
+      balances: this.entities.listBalances(ledgerUuid, periodEndTimestamp, currencyUuid, HOME_ACCOUNT_COUNT),
       cashFlow: this.cashFlowService.points(ledgerUuid, currencyUuid, range.from, range.to, DAY_SECONDS),
       events: this.eventsService.list(ledgerUuid, {
         from_timestamp: range.from,
@@ -455,7 +462,7 @@ export class LedgerHomeComponent {
         page_size: RECENT_EVENT_COUNT,
         ascending: false,
       }),
-      budgets: this.budgetsService.currencyOverview(ledgerUuid, currencyUuid, ACTIVE_BUDGET_COUNT),
+      budgets: this.budgetsService.currencyOverview(ledgerUuid, currencyUuid, periodEndTimestamp, ACTIVE_BUDGET_COUNT),
     }).pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.loading.set(false)),
@@ -511,7 +518,7 @@ export class LedgerHomeComponent {
   private customRange(): { from: number; to: number } | null {
     const fromDate = this.rangeFromDate();
     const toDate = this.rangeToDate();
-    const nextToDate = this.nextDateInput(toDate);
+    const nextToDate = nextDateInput(toDate);
     if (!fromDate || !nextToDate) return null;
     const timezone = this.preferences.current().timezone;
     const from = zonedDateTimeToEpochSeconds(fromDate, '00:00:00', timezone);
@@ -527,15 +534,6 @@ export class LedgerHomeComponent {
     this.rangeToDate.set(zonedDateInput(range.to - 1, timezone));
   }
 
-  private nextDateInput(value: string): string | null {
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    if (!match) return null;
-    const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
-    if (Number.isNaN(date.getTime())) return null;
-    date.setUTCDate(date.getUTCDate() + 1);
-    return `${String(date.getUTCFullYear()).padStart(4, '0')}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
-  }
-
   private currentMonth(): string {
     const timezone = this.preferences.current().timezone;
     return zonedDateInput(Math.floor(Date.now() / 1000), timezone).slice(0, 7);
@@ -543,6 +541,16 @@ export class LedgerHomeComponent {
 
   private flattenCategories(nodes: readonly LedgerCategoryTreeNode[]): LedgerCategory[] {
     return nodes.flatMap(node => [node.category, ...this.flattenCategories(node.children)]);
+  }
+
+  private clearDashboard(): void {
+    this.balances.set([]);
+    this.currencyBalance.set(0);
+    this.cashFlow.set([]);
+    this.recentEvents.set([]);
+    this.activeBudgets.set([]);
+    this.hoveredChartIndex.set(null);
+    this.pinnedChartIndex.set(null);
   }
 
   private eventPresentation(type: FinancialEvent['type']): { icon: IconName; tone: Tone } {
@@ -557,19 +565,13 @@ export class LedgerHomeComponent {
     this.accounts.set([]);
     this.currencies.set([]);
     this.categories.set([]);
-    this.balances.set([]);
-    this.currencyBalance.set(0);
-    this.cashFlow.set([]);
-    this.recentEvents.set([]);
-    this.activeBudgets.set([]);
+    this.clearDashboard();
     this.selectedCurrencyUuid.set('');
     this.selectedMonth.set(this.currentMonth());
     this.periodMode.set('month');
     this.rangeFromDate.set('');
     this.rangeToDate.set('');
     this.flowMode.set('instant');
-    this.hoveredChartIndex.set(null);
-    this.pinnedChartIndex.set(null);
     this.resourcesReady.set(false);
     this.resourcesLoading.set(false);
     this.loading.set(false);

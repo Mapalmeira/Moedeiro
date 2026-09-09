@@ -7,26 +7,10 @@
         [emptyText]="i18n.t('home.noCurrencies')" [disabled]="resourcesLoading() || !currencies().length"
         (valueChange)="selectCurrency($event)" />
     </label>
-    <div class="home-control home-period-control">
-      <span>{{ i18n.t('home.period') }}</span>
-      <div class="home-period-row">
-        <div class="home-period-switch" role="group" [attr.aria-label]="i18n.t('home.period')">
-          <button type="button" class="ui-press-toggle" [attr.aria-pressed]="periodMode() === 'month'" (click)="setPeriodMode('month')">{{ i18n.t('home.periodMonth') }}</button>
-          <button type="button" class="ui-press-toggle" [attr.aria-pressed]="periodMode() === 'range'" (click)="setPeriodMode('range')">{{ i18n.t('home.periodRange') }}</button>
-        </div>
-        @if (periodMode() === 'month') {
-          <app-month-select class="home-month-select" [value]="selectedMonth()" [locale]="locale()" [ariaLabel]="i18n.t('home.period')"
-            [previousYearLabel]="i18n.t('home.previousYear')" [nextYearLabel]="i18n.t('home.nextYear')" [yearLabel]="i18n.t('home.year')"
-            (valueChange)="selectMonth($event)" />
-        } @else {
-          <div class="home-range-fields">
-            <label class="field home-range-field"><span class="home-range-field__label">{{ i18n.t('home.from') }}</span><input type="date" [value]="rangeFromDate()" (change)="updateRangeFrom($event)" /></label>
-            <span class="home-range-separator" aria-hidden="true">{{ i18n.t('home.to') }}</span>
-            <label class="field home-range-field"><span class="home-range-field__label">{{ i18n.t('home.to') }}</span><input type="date" [value]="rangeToDate()" (change)="updateRangeTo($event)" /></label>
-          </div>
-        }
-      </div>
-    </div>
+    <app-period-selector class="home-period-control" [mode]="periodMode()" [month]="selectedMonth()"
+      [rangeFromDate]="rangeFromDate()" [rangeToDate]="rangeToDate()" [locale]="locale()"
+      (modeChange)="setPeriodMode($event)" (monthChange)="selectMonth($event)"
+      (rangeFromDateChange)="updateRangeFrom($event)" (rangeToDateChange)="updateRangeTo($event)" />
   </header>
 
   @if (error()) {
@@ -38,6 +22,8 @@
     <div class="home-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
   } @else if (!currencies().length) {
     <div class="home-state"><app-icon name="coins" [size]="28" />{{ i18n.t('home.noCurrencies') }}</div>
+  } @else if (invalidRange()) {
+    <div class="home-state" role="status"><app-icon name="calendar" [size]="28" />{{ i18n.t('common.invalidPeriod') }}</div>
   } @else {
     <div class="home-metrics">
       @for (card of metricCards(); track card.label) {

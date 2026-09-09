@@ -28,9 +28,9 @@ export class LedgerBudgetsService {
     return this.http.get<LedgerBudgetOverviewPage>(`${API_ROUTES.ledgerBudgets(ledgerUuid)}/overview`, { params, withCredentials: true });
   }
 
-  currencyOverview(ledgerUuid: string, currencyUuid: string, limit = 3): Observable<LedgerBudgetOverview[]> {
+  currencyOverview(ledgerUuid: string, currencyUuid: string, timestamp: number, limit = 3): Observable<LedgerBudgetOverview[]> {
     return this.http.get<LedgerBudgetOverview[]>(`${API_ROUTES.ledgerBudgets(ledgerUuid)}/currency-overview`, {
-      params: { currency_uuid: currencyUuid, limit },
+      params: { currency_uuid: currencyUuid, timestamp, limit },
       withCredentials: true,
     });
   }
