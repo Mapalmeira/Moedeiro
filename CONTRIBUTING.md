@@ -10,7 +10,7 @@ Every pull request must be associated with an issue. Open the issue before start
 
 Moedeiro has an Angular frontend and a Python backend. The supported tool versions are defined in [`frontend/package.json`](frontend/package.json) and [`backend/pyproject.toml`](backend/pyproject.toml).
 
-### Frontend
+### 1. Frontend
 
 Install the locked dependencies and start the development server:
 
@@ -20,7 +20,7 @@ npm ci
 npm start
 ```
 
-### Backend
+### 2. Backend
 
 From the repository root, create a virtual environment and install the backend with its dependencies:
 
@@ -30,7 +30,18 @@ source .venv/bin/activate
 python -m pip install --constraint ./backend/requirements.lock --editable './backend[test]'
 ```
 
-See the [installation guide](docs/installation.md) for the TOTP key, storage, and service startup instructions needed to run the complete application.
+### Running the complete application locally
+
+1. See the [installation guide](docs/installation.md) for the TOTP key and storage configuration.
+
+2. Start the backend without requiring a compiled frontend:
+
+```sh
+moedeiro start --api-only
+```
+
+3. Keep it running in one terminal, run `npm start` from `frontend` in another, and open `http://127.0.0.1:4200`.
+
 
 ## Testing changes
 

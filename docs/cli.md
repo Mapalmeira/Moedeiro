@@ -27,6 +27,20 @@ podman exec moedeiro moedeiro --help
 
 If a native installation intentionally overrides `REGISTRY_DB_PATH` or `LEDGER_DBS_DIR`, those overrides must also be present when running administrative subcommands so that they operate on the same databases as the service.
 
+## Starting the service
+
+The regular command starts the API and serves the compiled frontend:
+
+```sh
+moedeiro start [--host HOST] [--port PORT]
+```
+
+During frontend development, start only the API so that no compiled frontend is required:
+
+```sh
+moedeiro start --api-only
+```
+
 ## Inviting users
 
 User registration requires an invitation issued by an operator:
