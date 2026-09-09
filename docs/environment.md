@@ -21,7 +21,7 @@ The container image uses a different filesystem layout, so the `Containerfile` s
 | `FRONTEND_DIST_PATH` | `/app/frontend`                  |
 
 
-## Security
+## Encryption
 
 | Variable              | Default | Purpose                                                                  |
 | --------------------- | ------- | ------------------------------------------------------------------------ |
