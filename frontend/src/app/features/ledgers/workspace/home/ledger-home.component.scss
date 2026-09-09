@@ -74,7 +74,8 @@
 .flow-legend__dot--expense { background: var(--yellow); }
 .flow-legend__dot--cumulative { background: var(--blue); }
 
-.home-list, .budget-list { min-width: 0; min-height: 0; display: grid; align-content: start; overflow-y: auto; overscroll-behavior: contain; }
+.home-list { min-width: 0; min-height: 0; display: grid; align-content: start; overflow-y: auto; overscroll-behavior: contain; }
+.budget-list { min-width: 0; min-height: 0; display: grid; align-content: start; }
 .home-list-row { min-width: 0; min-height: var(--list-row-height); display: grid; grid-template-columns: var(--control-icon-footprint) minmax(0, 1fr) auto; grid-template-areas: "icon copy meta"; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--line); color: var(--text); text-decoration: none; }
 .home-list-row:hover, .budget-row:hover { background: var(--surface-muted); }
 .home-list-row__icon { grid-area: icon; }
