@@ -1,5 +1,7 @@
 import type { NumberFormat } from '../preferences/preferences.models';
 
+const numberFormatters = new Map<string, Intl.NumberFormat>();
+
 export interface CurrencyFormatDefinition {
   prefix: string | null;
   suffix: string | null;
@@ -18,10 +20,16 @@ export function formatCurrencyPreview(currency: CurrencyFormatDefinition, format
 export function formatCurrencyNumber(value: number, decimalPlaces: number, format: NumberFormat): string {
   const precision = clampedPrecision(decimalPlaces);
   const divisor = 10 ** precision;
-  return new Intl.NumberFormat(format === 'COMMA' ? 'de-DE' : 'en-US', {
-    minimumFractionDigits: precision,
-    maximumFractionDigits: precision,
-  }).format(Math.abs(value) / divisor);
+  const key = `${format}:${precision}`;
+  let formatter = numberFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(format === 'COMMA' ? 'de-DE' : 'en-US', {
+      minimumFractionDigits: precision,
+      maximumFractionDigits: precision,
+    });
+    numberFormatters.set(key, formatter);
+  }
+  return formatter.format(Math.abs(value) / divisor);
 }
 
 export function formatCurrencyAmount(value: number, currency: CurrencyFormatDefinition, format: NumberFormat): string {
