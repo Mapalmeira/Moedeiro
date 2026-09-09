@@ -85,7 +85,7 @@ def get_cash_flow_sankey(
                     side=side,
                     label=category.name,
                     color_code=category.color_code,
-                    column=level if side == "income" else displayed_depth + 1 + level,
+                    column=displayed_depth - 1 - level if side == "income" else displayed_depth + 1 + level,
                     order=order_by_uuid[category.uuid],
                     value=0,
                     category_uuid=category.uuid,
@@ -93,7 +93,9 @@ def get_cash_flow_sankey(
             node_values[node_id] = node_values.get(node_id, 0) + amount
 
         if side == "income":
-            chain = [*ids, account_id]
+            # Income approaches the account from the left. More detail belongs
+            # further from it, mirroring the expense hierarchy on the right.
+            chain = [*reversed(ids), account_id]
         else:
             chain = [account_id, *ids]
         for source, target in zip(chain, chain[1:], strict=False):

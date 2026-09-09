@@ -80,8 +80,8 @@ class CashFlowUseCasesTest(unittest.TestCase):
         self.assertIn(f"expense:{child.uuid}", node_ids)
         self.assertNotIn(f"expense:{leaf.uuid}", node_ids)
         links = {(link.source, link.target): link.value for link in sankey.links}
-        self.assertEqual(links[(f"income:{root.uuid}", f"income:{child.uuid}")], 100)
-        self.assertEqual(links[(f"income:{child.uuid}", f"account:{self.account.uuid}")], 100)
+        self.assertEqual(links[(f"income:{child.uuid}", f"income:{root.uuid}")], 100)
+        self.assertEqual(links[(f"income:{root.uuid}", f"account:{self.account.uuid}")], 100)
         self.assertEqual(links[(f"account:{self.account.uuid}", f"expense:{root.uuid}")], 40)
         self.assertEqual(links[(f"expense:{root.uuid}", f"expense:{child.uuid}")], 40)
 
@@ -103,8 +103,8 @@ class CashFlowUseCasesTest(unittest.TestCase):
         )
 
         columns = {node.id: node.column for node in sankey.nodes}
-        self.assertEqual(columns[f"income:{root.uuid}"], 0)
-        self.assertEqual(columns[f"income:{child.uuid}"], 1)
+        self.assertEqual(columns[f"income:{root.uuid}"], 1)
+        self.assertEqual(columns[f"income:{child.uuid}"], 0)
         self.assertEqual(columns[f"account:{self.account.uuid}"], 2)
         self.assertEqual(columns[f"expense:{root.uuid}"], 3)
         self.assertEqual(columns[f"expense:{child.uuid}"], 4)
