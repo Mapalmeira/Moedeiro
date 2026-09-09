@@ -26,10 +26,9 @@ BLUE = bytes.fromhex("2563EB")
 BLUE_EURO = bytes.fromhex("003399")
 BROWN = bytes.fromhex("AE5400")
 CYAN = bytes.fromhex("0891B2")
-GOLD = bytes.fromhex("CA8A04")
+FOOD_BROWN = bytes.fromhex("9A3500")
 GREEN = bytes.fromhex("16A34A")
 INDIGO = bytes.fromhex("4F46E5")
-ORANGE = bytes.fromhex("EA580C")
 PINK = bytes.fromhex("DB2777")
 PURPLE = bytes.fromhex("7C3AED")
 PURPLE_POUND = bytes.fromhex("5B2C6F")
@@ -45,11 +44,12 @@ CATEGORY_TREE: tuple[CategoryDefault, ...] = (
     CategoryDefault(
         key="food",
         icon="lucide:Utensils",
-        color_code=ORANGE,
+        color_code=FOOD_BROWN,
         children=(
-            CategoryDefault(key="groceries", icon="lucide:ShoppingBasket", color_code=ORANGE),
-            CategoryDefault(key="restaurants", icon="lucide:CookingPot", color_code=ORANGE),
-            CategoryDefault(key="snacks", icon="lucide:Coffee", color_code=GOLD),
+            CategoryDefault(key="groceries", icon="lucide:ShoppingBasket", color_code=FOOD_BROWN),
+            CategoryDefault(key="restaurants", icon="lucide:CookingPot", color_code=FOOD_BROWN),
+            CategoryDefault(key="delivery", icon="lucide:Motorbike", color_code=FOOD_BROWN),
+            CategoryDefault(key="snacks", icon="lucide:Coffee", color_code=FOOD_BROWN),
         ),
     ),
     CategoryDefault(
@@ -183,6 +183,7 @@ CATEGORY_TREE: tuple[CategoryDefault, ...] = (
         color_code=GREEN,
         children=(
             CategoryDefault(key="salary", icon="lucide:BanknoteArrowUp", color_code=GREEN),
+            CategoryDefault(key="earnings", icon="lucide:ChartNoAxesCombined", color_code=GREEN),
             CategoryDefault(key="allowance", icon="lucide:WalletCards", color_code=GREEN),
             CategoryDefault(key="scholarship", icon="lucide:GraduationCap", color_code=GREEN),
         ),
