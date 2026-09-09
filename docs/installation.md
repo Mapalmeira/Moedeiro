@@ -12,15 +12,15 @@ Every installation has three persistent elements:
 
 ### 1. Generate the TOTP encryption key
 
-Create a directory for the key and generate it:
+Generate a key once:
 
 ```sh
-mkdir -p /etc/moedeiro
-openssl rand -base64 32 | tr '+/' '-_' > /etc/moedeiro/totp.key
-chmod 600 /etc/moedeiro/totp.key
+export TOTP_ENCRYPTION_KEY="$(openssl rand -base64 32 | tr '+/' '-_')"
 ```
 
-The key encrypts TOTP seeds stored in the registry. If the key is lost, the stored TOTP seeds can no longer be decrypted. An administrator must revoke the affected users' TOTP enrollments, after which those users may enroll TOTP again.
+Store the generated value in your chosen secret store before closing the shell. It can be a password manager, a platform secret manager, a systemd credential, a protected environment file, or a Podman secret. The same value must be supplied as `TOTP_ENCRYPTION_KEY` whenever the service starts.
+
+The key encrypts TOTP seeds stored in the registry. If the key is lost, the stored TOTP seeds can no longer be decrypted. An administrator must revoke the affected users' TOTP enrollments, after which those users may enroll TOTP again. Do not put the key in the image, the registry database, or source control.
 
 ## Container installation
 
@@ -41,9 +41,15 @@ You may use a different host path by changing the corresponding volume mounts in
 
 ### Container image
 
-The published image is `docker.io/mapalmeira/moedeiro:latest`. Both the Compose and Quadlet examples below use it, so a local image build are not required.
+The published image is `docker.io/mapalmeira/moedeiro:latest`. Both the Compose and Quadlet examples below use it, so a local image build is not required.
 
-But you may build the image locally with your chosen container runtime if you wish. For example, from the repository's root:
+But you may build the image locally with your chosen container runtime if you wish. From the repository's root, first install the locked frontend dependencies and create the production bundle:
+
+```sh
+(cd frontend && npm ci && npm run build:production)
+```
+
+Then build the image for your local architecture:
 
 With Docker:
 
@@ -81,10 +87,10 @@ ports:
   - "127.0.0.1:8080:8000"
 ```
 
-Start Moedeiro while supplying the TOTP encryption key:
+Ensure `TOTP_ENCRYPTION_KEY` is available in the environment from your chosen secret store, then start Moedeiro:
 
 ```sh
-TOTP_ENCRYPTION_KEY="$(cat /etc/moedeiro/totp.key)" docker compose up --detach
+docker compose up --detach
 ```
 
 Check the container status:
@@ -97,10 +103,10 @@ docker compose ps moedeiro
 
 Quadlet runs Moedeiro as a systemd-managed Podman container.
 
-Add the TOTP encryption key to Podman:
+Create a Podman secret directly from the environment variable:
 
 ```sh
-podman secret create moedeiro_totp_encryption_key /etc/moedeiro/totp.key
+printf '%s' "$TOTP_ENCRYPTION_KEY" | podman secret create moedeiro_totp_encryption_key -
 ```
 
 Create `~/.config/containers/systemd/moedeiro.container`:
@@ -171,11 +177,7 @@ Install the locked frontend dependencies and create the production bundle:
 
 The bundle is written to `frontend/dist/moedeiro/browser`.
 
-Set the TOTP encryption key:
-
-```sh
-export TOTP_ENCRYPTION_KEY="$(cat /etc/moedeiro/totp.key)"
-```
+Ensure the TOTP encryption key is available as `TOTP_ENCRYPTION_KEY` in the process environment, loading it from your chosen secret store.
 
 Start Moedeiro:
 
