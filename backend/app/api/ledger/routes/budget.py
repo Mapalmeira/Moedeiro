@@ -90,12 +90,13 @@ def list_ledger_currency_budget_overview(
     request: Request,
     user: AuthenticatedUser,
     limit: Annotated[int, Query(ge=1)] = 3,
+    timestamp: int | None = None,
 ) -> list[BudgetOverviewResponse]:
     validate_page_size(request, limit)
     try:
         items = list_budgets_for_currency(
             ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
-            int(time.time()),
+            int(time.time()) if timestamp is None else timestamp,
             currency_uuid,
             limit,
         )

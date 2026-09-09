@@ -224,6 +224,23 @@ class BudgetRoutesTest(unittest.TestCase):
         self.assertEqual([item.uuid for item in items], [over.uuid, lower.uuid])
         self.assertEqual([item.spent_amount for item in items], [120, 120])
 
+    def test_currency_overview_uses_the_requested_historical_timestamp(self) -> None:
+        july = self.create_budget("July", from_timestamp=10, to_timestamp=20)
+        self.create_budget("September", from_timestamp=30, to_timestamp=40)
+        self.add_spending(15, 25)
+
+        items = list_ledger_currency_budget_overview(
+            self.ledger.uuid,
+            self.currency.uuid,
+            self.request,
+            self.user,
+            3,
+            timestamp=19,
+        )
+
+        self.assertEqual([item.uuid for item in items], [july.uuid])
+        self.assertEqual(items[0].spent_amount, 25)
+
     def test_page_size_and_invalid_cursor_are_rejected(self) -> None:
         with self.assertRaises(HTTPException) as page_error:
             list_ledger_budget_overview(self.ledger.uuid, self.request, self.user, 4)
