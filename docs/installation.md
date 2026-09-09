@@ -28,22 +28,18 @@ Moedeiro can be installed with either Docker Compose or Podman Quadlet. Choose o
 
 ### Prepare persistent container storage
 
-Choose a host directory for persistent registry and ledger data. The examples in this documentation use `/srv/moedeiro`:
+Choose a host directory for persistent registry and ledger data. The examples in this documentation use `/srv/moedeiro` but you may use a different host path.
 
 ```sh
 mkdir -p /srv/moedeiro/registry
 mkdir -p /srv/moedeiro/ledgers
 ```
 
-These directories must remain available throughout Moedeiro's lifecycle.
-
-You may use a different host path by changing the corresponding volume mounts in the container configuration.
-
 ### Container image
 
-The published image is `docker.io/mapalmeira/moedeiro:latest`. Both the Compose and Quadlet examples below use it, so a local image build is not required.
+A prebuilt container image is available at `docker.io/mapalmeira/moedeiro:latest`. The Compose and Quadlet examples below use this image, so building it locally is not required.
 
-But you may build the image locally with your chosen container runtime if you wish. From the repository's root, first install the locked frontend dependencies and create the production bundle:
+If you prefer to build the image yourself using your container runtime of choice, you can do so from the repository root. First, install the locked frontend dependencies and build it:
 
 ```sh
 (cd frontend && npm ci && npm run build:production)
@@ -71,29 +67,15 @@ podman build \
 
 ### Docker Compose installation
 
-Copy `compose.yaml` to the host where Moedeiro will run.
-
-Set the host port:
-
-```yaml
-ports:
-  - "8080:8000"
-```
-
-A host address can also be specified:
-
-```yaml
-ports:
-  - "127.0.0.1:8080:8000"
-```
-
-Ensure `TOTP_ENCRYPTION_KEY` is available in the environment, then start Moedeiro:
+1. Copy `compose.yaml` to the host where Moedeiro will run.
+2. Ensure `TOTP_ENCRYPTION_KEY` is available in the environment
+3. Start Moedeiro:
 
 ```sh
 docker compose up --detach
 ```
 
-Check the container status:
+4. Check the container status:
 
 ```sh
 docker compose ps moedeiro
@@ -101,15 +83,14 @@ docker compose ps moedeiro
 
 ### Podman Quadlet installation
 
-Quadlet runs Moedeiro as a systemd-managed Podman container.
-
-Create a Podman secret directly from the environment variable:
+1. Ensure `TOTP_ENCRYPTION_KEY` is available in the environment
+2. Create a Podman secret directly from the `TOTP_ENCRYPTION_KEY` environment variable:
 
 ```sh
 printf '%s' "$TOTP_ENCRYPTION_KEY" | podman secret create moedeiro_totp_encryption_key -
 ```
 
-Create `~/.config/containers/systemd/moedeiro.container`:
+3. Create `~/.config/containers/systemd/moedeiro.container`:
 
 ```ini
 [Unit]
@@ -130,26 +111,14 @@ Restart=on-failure
 WantedBy=default.target
 ```
 
-Set the host port:
-
-```ini
-PublishPort=8080:8000
-```
-
-A host address can also be specified:
-
-```ini
-PublishPort=127.0.0.1:8080:8000
-```
-
-Load the unit and start Moedeiro:
+4. Load the unit and start Moedeiro:
 
 ```sh
 systemctl --user daemon-reload
 systemctl --user start moedeiro
 ```
 
-Check the service status:
+5. Check the service status:
 
 ```sh
 systemctl --user status moedeiro
@@ -159,7 +128,7 @@ systemctl --user status moedeiro
 
 A native installation runs Moedeiro directly on the host. Building the web interface requires Node.js 24 with npm 11, while the service itself requires Python 3.14.
 
-Create a virtual environment and install the backend package in editable mode from the repository root:
+1. Create a virtual environment and install the backend package from the repository root:
 
 ```sh
 python3 -m venv .venv
@@ -169,33 +138,25 @@ python -m pip install --constraint ./backend/requirements.lock --editable ./back
 
 This installs the backend dependencies and the `moedeiro` command.
 
-Install the locked frontend dependencies and create the production bundle:
+2. Install the locked frontend dependencies and build the frontend:
 
 ```sh
 (cd frontend && npm ci && npm run build:production)
 ```
 
-Ensure the TOTP encryption key is available as `TOTP_ENCRYPTION_KEY` in the process environment.
+3. Ensure the TOTP encryption key is available as `TOTP_ENCRYPTION_KEY` in the process environment.
 
-Start Moedeiro:
+4. Start Moedeiro:
 
 ```sh
 moedeiro start
 ```
 
-The native default is `127.0.0.1:8000`. To select another address or port:
+5. The native default is `127.0.0.1:8000`. To select another address or port:
 
 ```sh
 moedeiro start --host 127.0.0.1 --port 8080
 ```
-
-## Database migrations
-
-Moedeiro checks the schema version of the registry and ledger databases when it starts. Supported older schemas are migrated automatically.
-
-Before modifying a database, Moedeiro creates a backup of its current state in a `backups` directory alongside the persistent data. This provides a recovery point if a schema migration fails or an upgrade needs to be rolled back.
-
-Databases created by a newer, incompatible version of Moedeiro are rejected during startup.
 
 ## Application settings
 
@@ -212,7 +173,5 @@ See [Environment settings](environment.md) for the available settings, their def
 ## Next steps
 
 Use the [Command line interface](cli.md) for operator tasks such as creating invitations, managing users, and cleaning inactive records.
-
-FastAPI's interactive API reference is available from the running service at `/docs`.
 
 If Moedeiro will be exposed through an HTTPS reverse proxy, continue with [Reverse proxy](reverse-proxy.md).
