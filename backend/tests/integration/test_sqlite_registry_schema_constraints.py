@@ -135,11 +135,18 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
 
     def test_enforces_user_preference_limits(self) -> None:
         self.connection.execute("INSERT INTO user_preferences VALUES (?, 'pt-BR', 'DMY', 'H24', 'COMMA', 'DARK', 'UTC')", (self.user_uuid,))
-        invalid_updates = (("language", "pt"), ("date_format", "INVALID"), ("time_format", "INVALID"), ("number_format", "INVALID"), ("theme", "SYSTEM"), ("timezone", ""), ("timezone", "x" * 51))
+        invalid_updates = (("date_format", "INVALID"), ("time_format", "INVALID"), ("number_format", "INVALID"), ("theme", "SYSTEM"), ("timezone", ""), ("timezone", "x" * 51))
         for column, value in invalid_updates:
             with self.subTest(column=column):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.connection.execute(f"UPDATE user_preferences SET {column} = ?", (value,))
+
+    def test_language_is_not_limited_by_the_database_schema(self) -> None:
+        self.connection.execute("INSERT INTO user_preferences VALUES (?, 'es', 'DMY', 'H24', 'COMMA', 'DARK', 'UTC')", (self.user_uuid,))
+
+        language = self.connection.execute("SELECT language FROM user_preferences WHERE user_uuid = ?", (self.user_uuid,)).fetchone()[0]
+
+        self.assertEqual(language, "es")
 
     def test_revoked_grant_allows_a_new_active_relation(self) -> None:
         self.connection.execute("UPDATE ledger_grant SET revoked_at = 40 WHERE uuid = ?", (self.grant_uuid,))
