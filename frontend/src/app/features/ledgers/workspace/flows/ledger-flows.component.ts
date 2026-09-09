@@ -9,7 +9,7 @@ import { LedgerContextService } from '../../../../core/ledgers/ledger-context.se
 import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
 import { I18nService } from '../../../../core/i18n/i18n.service';
-import { zonedDateInput, zonedDateTimeToEpochSeconds } from '../../../../core/preferences/date-time-format';
+import { nextDateInput, zonedDateInput, zonedDateTimeToEpochSeconds } from '../../../../core/preferences/date-time-format';
 import { PreferencesService } from '../../../../core/preferences/preferences.service';
 import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
@@ -77,6 +77,7 @@ export class LedgerFlowsComponent {
     return account ? this.currencyByUuid().get(account.currency_uuid) ?? null : null;
   });
   readonly selectedRange = computed<TimestampRange | null>(() => this.periodMode() === 'month' ? this.monthRange(this.selectedMonth()) : this.customRange());
+  readonly invalidRange = computed(() => this.periodMode() === 'range' && !!this.rangeFromDate() && !!this.rangeToDate() && !this.selectedRange());
   readonly incomeLabel = computed(() => this.formatAmount(this.graph()?.income ?? 0));
   readonly expenseLabel = computed(() => this.formatAmount(this.graph()?.expense ?? 0));
 
@@ -176,6 +177,7 @@ export class LedgerFlowsComponent {
     const range = this.selectedRange();
     if (!ledgerUuid || !accountUuid || !range) return;
     this.graphRequest?.unsubscribe();
+    this.graph.set(null);
     this.loading.set(true);
     this.error.set(null);
     this.graphRequest = this.cashFlow.sankey(ledgerUuid, accountUuid, range.from, range.to, this.detailLevel()).pipe(
@@ -208,7 +210,7 @@ export class LedgerFlowsComponent {
 
   private customRange(): TimestampRange | null {
     const fromDate = this.rangeFromDate();
-    const nextToDate = this.nextDateInput(this.rangeToDate());
+    const nextToDate = nextDateInput(this.rangeToDate());
     if (!fromDate || !nextToDate) return null;
     const timezone = this.preferences.current().timezone;
     const from = zonedDateTimeToEpochSeconds(fromDate, '00:00:00', timezone);
@@ -222,15 +224,6 @@ export class LedgerFlowsComponent {
     const timezone = this.preferences.current().timezone;
     this.rangeFromDate.set(zonedDateInput(range.from, timezone));
     this.rangeToDate.set(zonedDateInput(range.to - 1, timezone));
-  }
-
-  private nextDateInput(value: string): string | null {
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    if (!match) return null;
-    const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
-    if (Number.isNaN(date.getTime())) return null;
-    date.setUTCDate(date.getUTCDate() + 1);
-    return `${String(date.getUTCFullYear()).padStart(4, '0')}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
   }
 
   private currentMonth(): string {

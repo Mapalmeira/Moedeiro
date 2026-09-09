@@ -48,8 +48,10 @@
         </div>
       </header>
 
-      <div class="flows-card__body">
-        @if (loading() && !graph()) {
+      <div class="flows-card__body" [attr.aria-busy]="loading()">
+        @if (invalidRange()) {
+          <div class="flows-state" role="status"><app-icon name="calendar" [size]="28" />{{ i18n.t('common.invalidPeriod') }}</div>
+        } @else if (loading() && !graph()) {
           <div class="flows-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
         } @else if (graph(); as sankey) {
           @if (sankey.nodes.length) {
