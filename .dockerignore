@@ -11,6 +11,5 @@ backend/.pytest_cache
 backend/tests
 
 frontend/node_modules
-frontend/dist
 frontend/.angular
 frontend/coverage
