@@ -39,6 +39,18 @@ class ServerLifecycleTest(unittest.TestCase):
 
     @patch("app.server.uvicorn.run")
     @patch("app.server.create_app")
+    def test_start_can_run_without_mounting_the_frontend(self, create_app, uvicorn_run) -> None:
+        settings = self.settings()
+        application = create_app.return_value
+
+        result = start(settings, mount_frontend=False)
+
+        self.assertEqual(result, 0)
+        create_app.assert_called_once_with(settings=settings, mount_frontend=False)
+        uvicorn_run.assert_called_once_with(application, host="127.0.0.1", port=8000)
+
+    @patch("app.server.uvicorn.run")
+    @patch("app.server.create_app")
     def test_start_requires_the_totp_key_before_creating_the_application(self, create_app, uvicorn_run) -> None:
         output = StringIO()
 

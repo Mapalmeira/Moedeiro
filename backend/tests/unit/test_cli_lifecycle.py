@@ -33,6 +33,7 @@ class CliLifecycleTest(unittest.TestCase):
             self.settings,
             "0.0.0.0",
             9000,
+            mount_frontend=True,
         )
 
     @patch("app.cli.start_server", return_value=0)
@@ -44,6 +45,19 @@ class CliLifecycleTest(unittest.TestCase):
             self.settings,
             "127.0.0.1",
             8000,
+            mount_frontend=True,
+        )
+
+    @patch("app.cli.start_server", return_value=0)
+    def test_start_can_serve_only_the_api(self, start_server) -> None:
+        result = main(["start", "--api-only"], self.settings)
+
+        self.assertEqual(result, 0)
+        start_server.assert_called_once_with(
+            self.settings,
+            "127.0.0.1",
+            8000,
+            mount_frontend=False,
         )
 
 

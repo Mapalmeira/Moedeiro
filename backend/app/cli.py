@@ -24,7 +24,12 @@ def main(arguments: Sequence[str] | None = None, settings: Settings | None = Non
     parsed = parser.parse_args(arguments)
     selected_settings = Settings.from_environment() if settings is None else settings
     if parsed.resource == "start":
-        return start_server(selected_settings, parsed.host, parsed.port)
+        return start_server(
+            selected_settings,
+            parsed.host,
+            parsed.port,
+            mount_frontend=not parsed.api_only,
+        )
 
     databases = SqliteDatabases(
         selected_settings.registry_db_path,
@@ -50,6 +55,11 @@ def _create_parser() -> argparse.ArgumentParser:
     start = resources.add_parser("start", help="Start the Moedeiro service")
     start.add_argument("--host", default=DEFAULT_HOST)
     start.add_argument("--port", type=_port, default=DEFAULT_PORT)
+    start.add_argument(
+        "--api-only",
+        action="store_true",
+        help="Serve the API without mounting the compiled frontend",
+    )
     invitation = resources.add_parser("invitation", help="Manage user invitations")
     _add_invitation_actions(invitation)
     cleanup = resources.add_parser("cleanup", help="Remove inactive registry records")
