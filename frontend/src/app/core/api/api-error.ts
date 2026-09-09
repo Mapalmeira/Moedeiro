@@ -30,6 +30,9 @@ export class ApiErrorService {
   }
 
   private knownDetail(detail: string, fallback: string): string {
+    const pointLimit = /^Point count cannot exceed (\d+)$/.exec(detail);
+    if (pointLimit) return this.i18n.t('errors.queryPointLimit', { limit: pointLimit[1] });
+
     const known: Partial<Record<string, TranslationKey>> = {
       'Invalid session': 'errors.sessionExpired',
       'TOTP required': 'errors.totpRequired',

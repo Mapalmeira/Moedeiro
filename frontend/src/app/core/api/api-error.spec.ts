@@ -66,6 +66,14 @@ describe('ApiErrorService', () => {
     expect(service.message(error, 'errors.loginFailed')).toBe(i18n.t('errors.loginFailed'));
   });
 
+  it('explains when a query would return too many points', () => {
+    const error = new HttpErrorResponse({ status: 422, error: { detail: 'Point count cannot exceed 500' } });
+
+    expect(service.message(error, 'errors.homeLoadFailed')).toBe(
+      i18n.t('errors.queryPointLimit', { limit: 500 }),
+    );
+  });
+
   it('maps validation errors to their field', () => {
     const error = new HttpErrorResponse({
       status: 422,
