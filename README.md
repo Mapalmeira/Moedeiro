@@ -20,7 +20,7 @@ Record simple entries, itemized shopping lists and transfers between accounts. P
 
 ![Moedeiro budget cards showing progress and status](docs/prints/budgets.png)
 
-Turn intentions into visible limits. Moedeiro follows real spending across category trees, highlights budgets that need attention and keeps completed periods available for comparison.
+Moedeiro follows real spending across category trees, highlights budgets that need attention and keeps completed periods available for comparison.
 
 ## Cash flow
 
@@ -40,10 +40,7 @@ The interactive flow view transforms income and expenses into a visual map. Unde
 * Light and dark themes
 * Private access with server side sessions and optional TOTP protection
 * Administrative CLI for invitations, user management and ownership grants
-
-## Data ownership
-
-Moedeiro runs as one compact FastAPI service and stores data in SQLite. User access and ledger ownership live in a registry database, while each ledger has its own independent database. This keeps financial datasets portable, easy to back up and isolated from one another.
+* Automatic database migrations with backups.
 
 ## Get started
 
