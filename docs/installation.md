@@ -20,7 +20,7 @@ export TOTP_ENCRYPTION_KEY="$(openssl rand -base64 32 | tr '+/' '-_')"
 
 Store the generated value in your chosen secret store before closing the shell. It can be a password manager, a platform secret manager, a systemd credential, a protected environment file, or a Podman secret. The same value must be supplied as `TOTP_ENCRYPTION_KEY` whenever the service starts.
 
-The key encrypts TOTP seeds stored in the registry. If the key is lost, the stored TOTP seeds can no longer be decrypted. An administrator must revoke the affected users' TOTP enrollments, after which those users may enroll TOTP again. Do not put the key in the image, the registry database, or source control.
+The key encrypts TOTP seeds stored in the registry. If the key is lost, the stored TOTP seeds can no longer be decrypted. In that case, an administrator must revoke the affected users' TOTP enrollments, after which those users may enroll TOTP again.
 
 ## Container installation
 
@@ -35,7 +35,7 @@ mkdir -p /srv/moedeiro/registry
 mkdir -p /srv/moedeiro/ledgers
 ```
 
-These directories are mounted into the container's `/data` paths and must remain available throughout Moedeiro's lifecycle.
+These directories must remain available throughout Moedeiro's lifecycle.
 
 You may use a different host path by changing the corresponding volume mounts in the container configuration.
 
@@ -87,7 +87,7 @@ ports:
   - "127.0.0.1:8080:8000"
 ```
 
-Ensure `TOTP_ENCRYPTION_KEY` is available in the environment from your chosen secret store, then start Moedeiro:
+Ensure `TOTP_ENCRYPTION_KEY` is available in the environment, then start Moedeiro:
 
 ```sh
 docker compose up --detach
@@ -167,7 +167,7 @@ source .venv/bin/activate
 python -m pip install --constraint ./backend/requirements.lock --editable ./backend
 ```
 
-This installs the backend dependencies and the `moedeiro` command while keeping the installed package linked to the repository checkout. The native storage and frontend defaults therefore resolve against the standard repository layout.
+This installs the backend dependencies and the `moedeiro` command.
 
 Install the locked frontend dependencies and create the production bundle:
 
@@ -175,9 +175,7 @@ Install the locked frontend dependencies and create the production bundle:
 (cd frontend && npm ci && npm run build:production)
 ```
 
-The bundle is written to `frontend/dist/moedeiro/browser`.
-
-Ensure the TOTP encryption key is available as `TOTP_ENCRYPTION_KEY` in the process environment, loading it from your chosen secret store.
+Ensure the TOTP encryption key is available as `TOTP_ENCRYPTION_KEY` in the process environment.
 
 Start Moedeiro:
 
@@ -185,7 +183,7 @@ Start Moedeiro:
 moedeiro start
 ```
 
-The service remains attached to the current process. The native default is `127.0.0.1:8000`. To select another address or port:
+The native default is `127.0.0.1:8000`. To select another address or port:
 
 ```sh
 moedeiro start --host 127.0.0.1 --port 8080
@@ -218,24 +216,3 @@ Use the [Command line interface](cli.md) for operator tasks such as creating inv
 FastAPI's interactive API reference is available from the running service at `/docs`.
 
 If Moedeiro will be exposed through an HTTPS reverse proxy, continue with [Reverse proxy](reverse-proxy.md).
-
-## Backend dependency updates and tests
-
-Direct dependency versions in `backend/pyproject.toml` were checked against
-[PyPI](https://pypi.org/) on 2026-09-05. `backend/requirements.lock` also pins
-transitive dependencies and the optional HTTP test client.
-
-To install the test dependencies and run the backend suite from the repository root:
-
-```sh
-python -m pip install --constraint ./backend/requirements.lock --editable './backend[test]'
-(cd backend && python -m unittest discover -s tests)
-```
-
-To refresh the lock after updating the exact versions in `pyproject.toml`:
-
-```sh
-(cd backend && uv pip compile --upgrade --universal --extra test pyproject.toml --output-file requirements.lock)
-```
-
-Review the resolved versions and rerun the backend suite before committing an update.
