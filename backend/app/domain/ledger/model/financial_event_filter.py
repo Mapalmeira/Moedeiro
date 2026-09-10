@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from app.domain.ledger.model.financial_event import FinancialEventType
+from app.domain.ledger.model.financial_event import FinancialEventDescription, FinancialEventType
 
 
 class FinancialEventFilter(BaseModel):
@@ -23,6 +23,7 @@ class FinancialEventFilter(BaseModel):
     currency_uuid: UUID | None = None
     category_uuid: UUID | None = None
     event_type: FinancialEventType | None = None
+    description_search: FinancialEventDescription | None = None
 
     @model_validator(mode="after")
     def validate_period(self) -> Self:

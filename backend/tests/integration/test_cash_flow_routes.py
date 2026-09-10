@@ -70,9 +70,9 @@ class CashFlowRoutesTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()
 
-    def add_movement(self, occurred_at: int, value: int, quantity: int = 1) -> None:
+    def add_movement(self, occurred_at: int, value: int, quantity: int = 1, description: str = "Movement") -> None:
         with self.application.state.databases.open_ledger(f"{self.ledger.uuid}.sqlite") as unit_of_work:
-            event = unit_of_work.financial_event_repository.create(occurred_at, "Movement", "TRANSACTION")
+            event = unit_of_work.financial_event_repository.create(occurred_at, description, "TRANSACTION")
             unit_of_work.financial_movement_repository.create(event.uuid, self.account.uuid, self.category.uuid, value, None, quantity)
             unit_of_work.commit()
 
@@ -85,6 +85,33 @@ class CashFlowRoutesTest(unittest.TestCase):
 
         self.assertEqual((summary.income, summary.expense), (100, 60))
         self.assertEqual([(point.income, point.expense) for point in points], [(100, 0), (0, 60)])
+
+    def test_summary_and_points_filter_by_event_description(self) -> None:
+        self.add_movement(100, 50, description="Salary")
+        self.add_movement(250, -20, description="Dinner")
+
+        summary = get_ledger_cash_flow(
+            self.ledger.uuid,
+            self.currency.uuid,
+            100,
+            300,
+            self.request,
+            self.user,
+            description_search="DINN",
+        )
+        points = list_ledger_cash_flow_points(
+            self.ledger.uuid,
+            self.currency.uuid,
+            100,
+            300,
+            150,
+            self.request,
+            self.user,
+            description_search="DINN",
+        )
+
+        self.assertEqual((summary.income, summary.expense), (0, 20))
+        self.assertEqual([(point.income, point.expense) for point in points], [(0, 0), (0, 20)])
 
     def test_sankey_returns_account_category_flow(self) -> None:
         self.add_movement(100, 50, 2)

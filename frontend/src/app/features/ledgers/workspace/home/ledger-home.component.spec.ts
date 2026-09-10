@@ -60,7 +60,7 @@ describe('LedgerHomeComponent', () => {
     listBalances: vi.fn(() => of({ items: [], total_balance: 0 })),
   };
   const categories = { getTree: vi.fn(() => of([])) };
-  const events = { list: vi.fn(() => of({ events: [], next_cursor: null })) };
+  const events = { list: vi.fn(() => of({ events: [], next_cursor: null, total_count: 0 })) };
   const budgets = { currencyOverview: vi.fn(() => of([])) };
   const cashFlow = { summary: vi.fn(() => of(point)), points: vi.fn(() => of([point])) };
 

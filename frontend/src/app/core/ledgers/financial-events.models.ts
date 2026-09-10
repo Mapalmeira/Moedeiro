@@ -22,6 +22,7 @@ export interface FinancialEvent {
 export interface FinancialEventPage {
   events: FinancialEvent[];
   next_cursor: string | null;
+  total_count: number;
 }
 
 export interface FinancialEventFilters {
@@ -32,6 +33,7 @@ export interface FinancialEventFilters {
   currency_uuid?: string | null;
   category_uuid?: string | null;
   event_type?: FinancialEventType | null;
+  description_search?: string | null;
   cursor?: string | null;
   ascending?: boolean;
 }

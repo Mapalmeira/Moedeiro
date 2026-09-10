@@ -189,6 +189,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
             list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 30, 30, 2, None, None, None, None, False)
 
         self.assertEqual(events.events, [first])
+        self.assertEqual(events.total_count, 2)
         self.assertIsNotNone(events.next_cursor)
         next_page = list_ledger_financial_events(
             self.ledger.uuid,
@@ -205,9 +206,32 @@ class FinancialEventRoutesTest(unittest.TestCase):
             events.next_cursor,
         )
         self.assertEqual(next_page.events, [second])
+        self.assertEqual(next_page.total_count, 2)
         self.assertIsNone(next_page.next_cursor)
         self.assertEqual(too_large.exception.status_code, 422)
         self.assertEqual(invalid_period.exception.status_code, 422)
+
+    def test_list_filters_by_description_and_returns_matching_total(self) -> None:
+        self.create_simple(10)
+        dinner = create_ledger_financial_event(
+            self.ledger.uuid,
+            SimpleFinancialEventRequest(type="TRANSACTION", occurred_at=20, description="Dinner", account_uuid=self.source.uuid, category_uuid=self.food.uuid, value=-100),
+            self.request,
+            self.user,
+        )
+
+        events = list_ledger_financial_events(
+            self.ledger.uuid,
+            self.request,
+            self.user,
+            0,
+            30,
+            2,
+            description_search="DINN",
+        )
+
+        self.assertEqual(events.events, [dinner])
+        self.assertEqual(events.total_count, 1)
 
     def test_get_update_and_delete_simple_event(self) -> None:
         event = self.create_simple()

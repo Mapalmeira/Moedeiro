@@ -53,10 +53,8 @@
         </label>
 
         <label class="field">
-          <span>{{ i18n.t('activity.eventType') }}</span>
-          <app-entity-search-select [options]="eventTypeFilterOptions()" [value]="filters.controls.event_type.value"
-            [ariaLabel]="i18n.t('activity.eventType')" [searchable]="false"
-            (valueChange)="setFilterValue('event_type', $event)" />
+          <span>{{ i18n.t('activity.searchDescription') }}</span>
+          <input type="search" formControlName="description_search" />
         </label>
       </div>
 
@@ -71,7 +69,7 @@
     }
     <section class="activity-list">
       <header class="activity-list__header">
-        <span class="activity-list__loaded">{{ i18n.t('activity.loadedEvents', { count: events().length }) }}</span>
+        <span class="activity-list__loaded">{{ i18n.t('activity.loadedEvents', { loaded: events().length, total: totalEventCount() }) }}</span>
         <div class="activity-list__summary">
           @if (appliedAccount()) {
             @if (summaryLoading()) {

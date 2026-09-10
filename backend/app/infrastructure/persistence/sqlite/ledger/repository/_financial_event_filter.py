@@ -1,4 +1,5 @@
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
+from app.infrastructure.persistence.sqlite.search import escape_like, normalize_search
 
 
 def build_financial_event_filter(filters: FinancialEventFilter) -> tuple[str, list[bytes | str | int]]:
@@ -58,5 +59,10 @@ def build_financial_event_filter(filters: FinancialEventFilter) -> tuple[str, li
     if filters.event_type is not None:
         clauses.append("event.type = ?")
         parameters.append(filters.event_type)
+    if filters.description_search:
+        clauses.append("normalize_search(event.description) LIKE ? ESCAPE '\\'")
+        normalized_search = normalize_search(filters.description_search)
+        assert normalized_search is not None
+        parameters.append(f"%{escape_like(normalized_search)}%")
 
     return "WHERE " + " AND ".join(clauses), parameters

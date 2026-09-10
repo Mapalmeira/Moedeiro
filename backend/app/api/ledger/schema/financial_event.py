@@ -124,3 +124,4 @@ class FinancialEventResponse(BaseModel):
 class FinancialEventPageResponse(BaseModel):
     events: list[FinancialEventResponse]
     next_cursor: str | None
+    total_count: int

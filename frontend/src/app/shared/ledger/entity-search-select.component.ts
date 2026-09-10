@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { normalizeSearchText } from '../search-normalization';
 import { ENTITY_BADGE_DEFAULT_SYMBOL_SIZE, EntityBadgeComponent } from './entity-badge.component';
 import { DropdownSearchAutofocusDirective } from '../ui/dropdown-search-autofocus.directive';
 import { IconComponent, IconName } from '../ui/icon.component';
@@ -160,11 +161,11 @@ export class EntitySearchSelectComponent {
   private readonly optionIndex = computed(() => new Map(this.options().map(option => [option.value, option] as const)));
   private readonly searchableOptions = computed(() => this.options().map(option => ({
     option,
-    searchText: `${option.label} ${option.detail ?? ''}`.toLocaleLowerCase(),
+    searchText: normalizeSearchText(`${option.label} ${option.detail ?? ''}`),
   })));
   readonly selectedOption = computed(() => this.optionIndex().get(this.value()) ?? null);
   readonly filteredOptions = computed(() => {
-    const needle = this.query().trim().toLocaleLowerCase();
+    const needle = normalizeSearchText(this.query().trim());
     if (!needle || !this.searchable()) return this.options();
     return this.searchableOptions().filter(entry => entry.searchText.includes(needle)).map(entry => entry.option);
   });

@@ -7,6 +7,7 @@ import { Ledger } from '../../../core/ledgers/ledger.models';
 import { LedgerService } from '../../../core/ledgers/ledger.service';
 import { bestContrastingForeground } from '../../../shared/ledger/ledger-appearance';
 import { LedgerIconComponent } from '../../../shared/ledger/ledger-icon.component';
+import { normalizeSearchText } from '../../../shared/search-normalization';
 import { FormMessageComponent } from '../../../shared/ui/form-message.component';
 import { IconComponent } from '../../../shared/ui/icon.component';
 import { LedgerDeleteDialogComponent } from '../ledger-delete-dialog.component';
@@ -153,9 +154,9 @@ export class LedgerSelectorComponent {
   readonly deletingLedger = signal<Ledger | null>(null);
 
   readonly filteredLedgers = computed(() => {
-    const query = this.search().trim().toLocaleLowerCase();
+    const query = normalizeSearchText(this.search().trim());
     const ledgers = this.ledgers.ledgers();
-    return query ? ledgers.filter((ledger) => ledger.name.toLocaleLowerCase().includes(query)) : ledgers;
+    return query ? ledgers.filter((ledger) => normalizeSearchText(ledger.name).includes(query)) : ledgers;
   });
 
   readonly selectedLedger = computed(() => {
@@ -196,7 +197,7 @@ export class LedgerSelectorComponent {
     this.menuLedgerUuid.set(null);
 
     const selected = this.selectedLedger();
-    if (selected && !selected.name.toLocaleLowerCase().includes(value.trim().toLocaleLowerCase())) {
+    if (selected && !normalizeSearchText(selected.name).includes(normalizeSearchText(value.trim()))) {
       this.selectedUuid.set(null);
     }
   }

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
 import { LedgerCategory } from '../../../../core/ledgers/ledger-categories.models';
 import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.component';
+import { normalizeSearchText } from '../../../../shared/search-normalization';
 import { DropdownSearchAutofocusDirective } from '../../../../shared/ui/dropdown-search-autofocus.directive';
 import { IconComponent } from '../../../../shared/ui/icon.component';
 
@@ -113,13 +114,13 @@ export class CategoryParentSelectComponent {
     return this.categories().filter(category => !excluded.has(category.uuid));
   });
   readonly filteredCategories = computed(() => {
-    const needle = this.query().trim().toLocaleLowerCase();
+    const needle = normalizeSearchText(this.query().trim());
     if (!needle) return this.availableCategories();
-    return this.availableCategories().filter(category => category.name.toLocaleLowerCase().includes(needle));
+    return this.availableCategories().filter(category => normalizeSearchText(category.name).includes(needle));
   });
   readonly rootVisible = computed(() => {
-    const needle = this.query().trim().toLocaleLowerCase();
-    return !needle || this.rootLabel().toLocaleLowerCase().includes(needle);
+    const needle = normalizeSearchText(this.query().trim());
+    return !needle || normalizeSearchText(this.rootLabel()).includes(needle);
   });
   readonly selectedCategory = computed(() => this.categories().find(category => category.uuid === this.value()) ?? null);
 

@@ -24,6 +24,7 @@ describe('CashFlowService', () => {
       account_uuid: 'account',
       category_uuid: 'category',
       event_type: 'TRANSACTION',
+      description_search: 'dinner',
     }).subscribe();
 
     const request = http.expectOne(candidate => candidate.url === API_ROUTES.ledgerCashFlow('ledger/id'));
@@ -35,6 +36,7 @@ describe('CashFlowService', () => {
     expect(request.request.params.get('account_uuid')).toBe('account');
     expect(request.request.params.get('category_uuid')).toBe('category');
     expect(request.request.params.get('event_type')).toBe('TRANSACTION');
+    expect(request.request.params.get('description_search')).toBe('dinner');
     request.flush({});
   });
 

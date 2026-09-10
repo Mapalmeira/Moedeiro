@@ -82,6 +82,7 @@ export class LedgerActivityComponent {
   readonly currencies = signal<LedgerCurrency[]>([]);
   readonly categoryTree = signal<LedgerCategoryTreeNode[]>([]);
   readonly events = signal<FinancialEvent[]>([]);
+  readonly totalEventCount = signal(0);
   readonly loading = signal(false);
   readonly loadingMore = signal(false);
   readonly error = signal<string | null>(null);
@@ -106,7 +107,7 @@ export class LedgerActivityComponent {
     to_date: [''],
     account_uuid: [''],
     category_uuid: [''],
-    event_type: ['' as '' | FinancialEventType],
+    description_search: [''],
   });
 
   readonly categories = computed(() => this.flattenCategories(this.categoryTree()));
@@ -147,12 +148,6 @@ export class LedgerActivityComponent {
         color: category.color_code,
       };
     }),
-  ]);
-  readonly eventTypeFilterOptions = computed<readonly EntitySearchOption[]>(() => [
-    { value: '', label: this.i18n.t('activity.allTypes'), uiIcon: 'layers', tone: 'neutral' },
-    { value: 'TRANSACTION', label: this.i18n.t('activity.typeSimple'), uiIcon: 'wallet', tone: 'green' },
-    { value: 'SHOPPING_LIST', label: this.i18n.t('activity.typeShopping'), uiIcon: 'shopping-cart', tone: 'yellow' },
-    { value: 'ACCOUNT_TRANSFER', label: this.i18n.t('activity.typeTransfer'), uiIcon: 'arrow-left-right', tone: 'blue' },
   ]);
   readonly canCreate = computed(() => this.accounts().length > 0 && this.categories().length > 0);
   readonly appliedAccount = computed(() => {
@@ -331,12 +326,7 @@ export class LedgerActivityComponent {
     this.loadEvents();
   }
 
-  setFilterValue(name: 'account_uuid' | 'category_uuid' | 'event_type', value: string): void {
-    if (name === 'event_type') {
-      this.filters.controls.event_type.setValue(value as '' | FinancialEventType);
-      this.filters.controls.event_type.markAsDirty();
-      return;
-    }
+  setFilterValue(name: 'account_uuid' | 'category_uuid', value: string): void {
     this.filters.controls[name].setValue(value);
     this.filters.controls[name].markAsDirty();
   }
@@ -372,6 +362,7 @@ export class LedgerActivityComponent {
       next: page => {
         this.events.update(current => [...current, ...page.events]);
         this.nextCursor.set(page.next_cursor);
+        this.totalEventCount.set(page.total_count);
       },
       error: error => this.error.set(this.errors.message(error, 'errors.financialEventsLoadFailed')),
     });
@@ -469,6 +460,7 @@ export class LedgerActivityComponent {
       next: page => {
         this.events.set(page.events);
         this.nextCursor.set(page.next_cursor);
+        this.totalEventCount.set(page.total_count);
       },
       error: error => this.error.set(this.errors.message(error, 'errors.financialEventsLoadFailed')),
     });
@@ -533,7 +525,7 @@ export class LedgerActivityComponent {
       page_size: EVENT_BATCH_SIZE,
       account_uuid: value.account_uuid || null,
       category_uuid: value.category_uuid || null,
-      event_type: value.event_type || null,
+      description_search: value.description_search.trim() || null,
       ascending: false,
     };
   }
@@ -547,7 +539,7 @@ export class LedgerActivityComponent {
       to_date: dates?.to ?? '',
       account_uuid: '',
       category_uuid: '',
-      event_type: '',
+      description_search: '',
     }, { emitEvent });
     this.filterError.set(null);
   }
@@ -555,7 +547,7 @@ export class LedgerActivityComponent {
   private restoreFilters(ledgerUuid: string | null): void {
     const saved = ledgerUuid ? this.workspaceState.getActivity(ledgerUuid) : null;
     if (saved) {
-      this.filters.reset(saved, { emitEvent: false });
+      this.filters.reset({ ...saved, description_search: saved.description_search ?? '' }, { emitEvent: false });
       const month = this.monthForRange(saved.from_date, saved.to_date);
       this.periodMode.set(month ? 'month' : 'range');
       this.selectedMonth.set(month ?? (saved.from_date.slice(0, 7) || this.currentMonth()));
@@ -575,6 +567,7 @@ export class LedgerActivityComponent {
     this.currencies.set([]);
     this.categoryTree.set([]);
     this.events.set([]);
+    this.totalEventCount.set(0);
     this.nextCursor.set(null);
     this.appliedFilters.set(null);
     this.accountBalance.set(null);

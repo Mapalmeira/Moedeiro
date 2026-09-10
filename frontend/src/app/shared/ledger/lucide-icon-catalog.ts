@@ -1,4 +1,5 @@
 import { icons, isLucideIconComponent, LucideIcon } from '@lucide/angular';
+import { normalizeSearchText } from '../search-normalization';
 
 export interface LucideCatalogIcon {
   id: string;
@@ -25,7 +26,7 @@ for (const [name, component] of Object.entries(icons)) {
     catalogById.set(id, {
       id,
       label,
-      searchText: `${label} ${id}`.toLocaleLowerCase(),
+      searchText: normalizeSearchText(`${label} ${id}`),
       component,
     });
   }

@@ -2,6 +2,8 @@ import sqlite3
 from pathlib import Path
 from typing import Self
 
+from app.infrastructure.persistence.sqlite.search import normalize_search
+
 
 class SqliteDatabase:
     def __init__(self, path: Path):
@@ -12,6 +14,7 @@ class SqliteDatabase:
         try:
             connection.row_factory = sqlite3.Row
             connection.execute("PRAGMA foreign_keys = ON")
+            connection.create_function("normalize_search", 1, normalize_search, deterministic=True)
         except Exception:
             connection.close()
             raise

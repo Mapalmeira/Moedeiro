@@ -14,7 +14,7 @@ Built for people who want the polish of a modern finance app with the control of
 
 ![Moedeiro activity view with categorized financial events](docs/prints/activity.png)
 
-Record simple entries, itemized shopping lists and transfers between accounts. Powerful filters make it easy to find any movement by period, account, category or event type.
+Record simple entries, itemized shopping lists and transfers between accounts. Powerful filters make it easy to find any movement by period, account, category or description.
 
 ## Budgets
 

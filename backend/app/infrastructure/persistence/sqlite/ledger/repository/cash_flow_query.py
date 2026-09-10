@@ -5,6 +5,7 @@ from app.domain.ledger.model.cash_flow import CashFlow
 from app.domain.ledger.model.cash_flow_sankey import CashFlowCategoryTotal
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 from app.domain.ledger.repository.cash_flow_query import CashFlowQueryRepository
+from app.infrastructure.persistence.sqlite.ledger.repository._financial_event_filter import build_financial_event_filter
 from app.infrastructure.persistence.sqlite.ledger.repository._numeric import raise_query_result_overflow, require_sqlite_integer
 
 
@@ -113,12 +114,9 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
 
     @staticmethod
     def _filtered_events(filters: FinancialEventFilter) -> tuple[str, list[bytes | str | int]]:
-        clauses = ["event.occurred_at >= ?", "event.occurred_at < ?", "event.type <> ?"]
-        parameters: list[bytes | str | int] = [filters.from_timestamp, filters.to_timestamp, "ACCOUNT_TRANSFER"]
-        if filters.event_type is not None:
-            clauses.append("event.type = ?")
-            parameters.append(filters.event_type)
-        return "WHERE " + " AND ".join(clauses), parameters
+        event_filters = filters.model_copy(update={"account_uuid": None, "currency_uuid": None, "category_uuid": None})
+        where_clause, parameters = build_financial_event_filter(event_filters)
+        return f"{where_clause} AND event.type <> ?", [*parameters, "ACCOUNT_TRANSFER"]
 
     @staticmethod
     def _movement_filter(filters: FinancialEventFilter) -> tuple[str, list[bytes]]:

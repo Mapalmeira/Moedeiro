@@ -142,6 +142,18 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
 
         self.assertEqual(page, [first, second])
 
+    def test_list_after_and_count_matching_filter_by_description(self) -> None:
+        first = self.create_event("Café beans", occurred_at=10)
+        literal_percent = self.create_event("Café 100%", occurred_at=20)
+        self.create_event("Tea", occurred_at=30)
+
+        coffee_filters = FinancialEventFilter(from_timestamp=0, to_timestamp=100, description_search="CAFE")
+        literal_filters = FinancialEventFilter(from_timestamp=0, to_timestamp=100, description_search="100%")
+
+        self.assertEqual(self.repository.list_after(10, True, coffee_filters, None, None), [first, literal_percent])
+        self.assertEqual(self.repository.count_matching(coffee_filters), 2)
+        self.assertEqual(self.repository.list_after(10, True, literal_filters, None, None), [literal_percent])
+
     def test_list_after_filters_by_currency_through_event_movements(self) -> None:
         first_currency = self.create_currency("First currency")
         second_currency = self.create_currency("Second currency")

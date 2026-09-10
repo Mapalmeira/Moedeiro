@@ -8,6 +8,7 @@ import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categor
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
 import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.component';
+import { normalizeSearchText } from '../../../../shared/search-normalization';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
 import { IconComponent } from '../../../../shared/ui/icon.component';
 import { CategoryEditorComponent } from './category-editor.component';
@@ -75,13 +76,13 @@ export class LedgerCategoriesComponent {
   readonly allCategories = computed(() => this.flattenCategories(this.tree()));
   readonly categoryByUuid = computed(() => new Map(this.allCategories().map(category => [category.uuid, category] as const)));
   readonly searchVisibleUuids = computed<ReadonlySet<string> | null>(() => {
-    const query = this.search().trim().toLocaleLowerCase();
+    const query = normalizeSearchText(this.search().trim());
     if (!query) return null;
 
     const byUuid = this.categoryByUuid();
     const visible = new Set<string>();
     for (const category of this.allCategories()) {
-      if (!category.name.toLocaleLowerCase().includes(query)) continue;
+      if (!normalizeSearchText(category.name).includes(query)) continue;
       let current: LedgerCategory | undefined = category;
       while (current && !visible.has(current.uuid)) {
         visible.add(current.uuid);

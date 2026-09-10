@@ -1,5 +1,4 @@
 import { Injectable } from '@angular/core';
-import { FinancialEventType } from './financial-events.models';
 import { LedgerBudgetState } from './ledger-budgets.models';
 
 type PeriodMode = 'month' | 'range';
@@ -11,7 +10,7 @@ export interface ActivityFilterState {
   to_date: string;
   account_uuid: string;
   category_uuid: string;
-  event_type: '' | FinancialEventType;
+  description_search: string;
 }
 
 export interface HomeViewState {

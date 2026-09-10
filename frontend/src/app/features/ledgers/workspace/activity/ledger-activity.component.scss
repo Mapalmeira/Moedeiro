@@ -102,7 +102,7 @@
 
 @container activity-workspace (max-width: 1100px) {
   .activity-filters { grid-template-columns: minmax(0, 1fr); }
-  .activity-filter-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .activity-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .activity-period-filter { grid-column: 1 / -1; }
   .activity-filter-actions { justify-content: flex-end; padding-block-end: 0; }
 }

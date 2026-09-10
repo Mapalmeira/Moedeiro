@@ -10,19 +10,19 @@ describe('SearchSelectComponent', () => {
     await TestBed.configureTestingModule({ imports: [SearchSelectComponent] }).compileComponents();
     fixture = TestBed.createComponent(SearchSelectComponent);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput('options', ['America/Sao_Paulo', 'Europe/London', 'Asia/Tokyo']);
+    fixture.componentRef.setInput('options', ['América/São_Paulo', 'Europe/London', 'Asia/Tokyo']);
     fixture.componentRef.setInput('value', 'America/Sao_Paulo');
     fixture.componentRef.setInput('searchPlaceholder', 'Search');
     fixture.detectChanges();
   });
 
-  it('opens with an empty query and filters case-insensitively', () => {
+  it('opens with an empty query and ignores case and accents when filtering', () => {
     component.query.set('stale');
     component.openList();
     expect(component.query()).toBe('');
 
-    component.query.set('europe');
-    expect(component.filteredOptions()).toEqual(['Europe/London']);
+    component.query.set('america/sao');
+    expect(component.filteredOptions()).toEqual(['América/São_Paulo']);
   });
 
   it('focuses the search field when the dropdown opens', () => {

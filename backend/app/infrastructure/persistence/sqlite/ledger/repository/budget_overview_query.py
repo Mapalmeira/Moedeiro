@@ -6,6 +6,7 @@ from app.domain.ledger.model.budget import Budget
 from app.domain.ledger.model.budget_overview import BudgetOverviewItem, BudgetOverviewState
 from app.domain.ledger.repository.budget_overview_query import BudgetOverviewQueryRepository
 from app.infrastructure.persistence.sqlite.ledger.repository._numeric import raise_query_result_overflow, require_sqlite_integer
+from app.infrastructure.persistence.sqlite.search import escape_like, normalize_search
 
 
 class SqliteBudgetOverviewQueryRepository(BudgetOverviewQueryRepository):
@@ -62,8 +63,10 @@ class SqliteBudgetOverviewQueryRepository(BudgetOverviewQueryRepository):
             conditions.append("account_uuid = ?")
             parameters.append(account_uuid.bytes)
         if search:
-            conditions.append("LOWER(budget_name) LIKE ? ESCAPE '\\'")
-            parameters.append(f"%{self._escape_like(search.lower())}%")
+            conditions.append("normalize_search(budget_name) LIKE ? ESCAPE '\\'")
+            normalized_search = normalize_search(search)
+            assert normalized_search is not None
+            parameters.append(f"%{escape_like(normalized_search)}%")
         if cursor_name is not None and cursor_uuid is not None:
             conditions.append("(budget_name > ? OR (budget_name = ? AND uuid > ?))")
             parameters.extend((cursor_name, cursor_name, cursor_uuid.bytes))
@@ -189,10 +192,6 @@ class SqliteBudgetOverviewQueryRepository(BudgetOverviewQueryRepository):
         except sqlite3.OperationalError as error:
             raise_query_result_overflow(error)
         return [self._to_overview(row) for row in rows]
-
-    @staticmethod
-    def _escape_like(value: str) -> str:
-        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
     @staticmethod
     def _to_overview(row: sqlite3.Row) -> BudgetOverviewItem:

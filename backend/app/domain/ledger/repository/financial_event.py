@@ -39,6 +39,10 @@ class FinancialEventRepository(ABC):
         pass
 
     @abstractmethod
+    def count_matching(self, filters: FinancialEventFilter) -> int:
+        pass
+
+    @abstractmethod
     def count(self) -> int:
         pass
 

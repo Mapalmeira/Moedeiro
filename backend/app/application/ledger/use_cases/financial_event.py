@@ -103,6 +103,16 @@ def list_financial_events_after(
         return unit_of_work.financial_event_repository.list_after(page_size + 1, ascending, filters, occurred_at, uuid)
 
 
+def count_financial_events(
+    unit_of_work_factory: Callable[[], LedgerUnitOfWork],
+    filters: FinancialEventFilter,
+) -> int:
+    with unit_of_work_factory() as unit_of_work:
+        if filters.currency_uuid is not None and unit_of_work.currency_repository.get(filters.currency_uuid) is None:
+            raise CurrencyNotFoundError
+        return unit_of_work.financial_event_repository.count_matching(filters)
+
+
 def update_simple_financial_event(
     unit_of_work_factory: Callable[[], LedgerUnitOfWork],
     event_uuid: UUID,

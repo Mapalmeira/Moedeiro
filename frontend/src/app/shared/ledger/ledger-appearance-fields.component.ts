@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, HostListener, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { normalizeSearchText } from '../search-normalization';
 import { DropdownSearchAutofocusDirective } from '../ui/dropdown-search-autofocus.directive';
 import { InfiniteScrollTriggerDirective } from '../ui/infinite-scroll-trigger.directive';
 import { IconComponent } from '../ui/icon.component';
@@ -82,7 +83,7 @@ export class LedgerAppearanceFieldsComponent {
   readonly search = signal('');
   readonly visibleIconCount = signal(ICON_BATCH_SIZE);
   readonly filteredIcons = computed(() => {
-    const query = this.search().trim().toLocaleLowerCase();
+    const query = normalizeSearchText(this.search().trim());
     return query ? LUCIDE_ICON_CATALOG.filter(entry => entry.searchText.includes(query)) : LUCIDE_ICON_CATALOG;
   });
   readonly visibleIcons = computed(() => this.filteredIcons().slice(0, this.visibleIconCount()));

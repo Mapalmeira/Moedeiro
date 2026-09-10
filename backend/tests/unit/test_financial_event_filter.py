@@ -19,12 +19,14 @@ class FinancialEventFilterTest(unittest.TestCase):
             currency_uuid=currency_uuid,
             category_uuid=category_uuid,
             event_type="TRANSACTION",
+            description_search="Dinner",
         )
 
         self.assertEqual(filters.account_uuid, account_uuid)
         self.assertEqual(filters.currency_uuid, currency_uuid)
         self.assertEqual(filters.category_uuid, category_uuid)
         self.assertEqual(filters.event_type, "TRANSACTION")
+        self.assertEqual(filters.description_search, "Dinner")
 
     def test_uses_none_when_optional_filters_are_absent(self) -> None:
         filters = FinancialEventFilter(from_timestamp=10, to_timestamp=20)
@@ -62,6 +64,12 @@ class FinancialEventFilterTest(unittest.TestCase):
             FinancialEventFilter.model_validate(
                 {"from_timestamp": 10, "to_timestamp": 20, "event_type": "UNKNOWN"}
             )
+
+    def test_applies_description_length_constraints(self) -> None:
+        for description in ("", "x" * 301):
+            with self.subTest(description_length=len(description)):
+                with self.assertRaises(ValidationError):
+                    FinancialEventFilter(from_timestamp=10, to_timestamp=20, description_search=description)
 
 
 if __name__ == "__main__":

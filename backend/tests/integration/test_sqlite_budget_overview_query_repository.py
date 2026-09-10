@@ -74,6 +74,13 @@ class SqliteBudgetOverviewQueryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual([item.budget.uuid for item in first], [alpha.uuid])
         self.assertEqual([item.budget.uuid for item in second], [bravo.uuid])
 
+    def test_page_search_ignores_case_and_accents(self) -> None:
+        cafe = self.create_budget("Café", self.account, self.category, 10, 30, 100)
+
+        items = self.repository.list_page(20, ("ACTIVE",), self.account.uuid, None, "CAFE", 10, None, None)
+
+        self.assertEqual([item.budget.uuid for item in items], [cafe.uuid])
+
 
     def test_page_category_filter_includes_descendant_budget_categories(self) -> None:
         root_budget = self.create_budget("Root", self.account, self.category, 10, 30, 100)

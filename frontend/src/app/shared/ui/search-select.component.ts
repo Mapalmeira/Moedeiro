@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { normalizeSearchText } from '../search-normalization';
 import { DropdownSearchAutofocusDirective } from './dropdown-search-autofocus.directive';
 import { IconComponent } from './icon.component';
 
@@ -103,9 +104,9 @@ export class SearchSelectComponent {
   readonly listId = `search-select-${SearchSelectComponent.nextId++}`;
 
   readonly filteredOptions = computed(() => {
-    const needle = this.query().trim().toLocaleLowerCase();
+    const needle = normalizeSearchText(this.query().trim());
     if (!needle) return this.options();
-    return this.options().filter((option) => option.toLocaleLowerCase().includes(needle));
+    return this.options().filter((option) => normalizeSearchText(option).includes(needle));
   });
 
   @HostListener('document:mousedown', ['$event'])

@@ -10,6 +10,7 @@ import { LedgerContextService } from '../../../core/ledgers/ledger-context.servi
 import { LedgerWorkspaceStateService } from '../../../core/ledgers/ledger-workspace-state.service';
 import { PreferencesService } from '../../../core/preferences/preferences.service';
 import { EntityBadgeComponent } from '../../../shared/ledger/entity-badge.component';
+import { normalizeSearchText } from '../../../shared/search-normalization';
 import { FormMessageComponent } from '../../../shared/ui/form-message.component';
 import { IconComponent } from '../../../shared/ui/icon.component';
 import { EntityEditorComponent } from './entity-editor.component';
@@ -55,8 +56,8 @@ export class LedgerEntityManagerComponent {
   readonly deletingBusy = signal(false);
   readonly deleteError = signal<string | null>(null);
   readonly filtered = computed(() => {
-    const query = this.search().trim().toLocaleLowerCase();
-    return this.items().filter(item => item.name.toLocaleLowerCase().includes(query));
+    const query = normalizeSearchText(this.search().trim());
+    return this.items().filter(item => normalizeSearchText(item.name).includes(query));
   });
   readonly rows = computed(() => this.filtered().map(item => {
     const currency = 'currency_uuid' in item ? this.currencyByUuid().get(item.currency_uuid) ?? null : item;

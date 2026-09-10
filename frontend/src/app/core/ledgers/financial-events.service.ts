@@ -24,6 +24,7 @@ export class FinancialEventsService {
     if (filters.currency_uuid) params = params.set('currency_uuid', filters.currency_uuid);
     if (filters.category_uuid) params = params.set('category_uuid', filters.category_uuid);
     if (filters.event_type) params = params.set('event_type', filters.event_type);
+    if (filters.description_search?.trim()) params = params.set('description_search', filters.description_search.trim());
     if (filters.cursor) params = params.set('cursor', filters.cursor);
     return this.http.get<FinancialEventPage>(API_ROUTES.ledgerEvents(ledgerUuid), { params, withCredentials: true });
   }

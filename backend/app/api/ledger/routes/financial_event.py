@@ -8,8 +8,8 @@ from app.api.dependencies.ledger import ledger_unit_of_work_factory
 from app.api.dependencies.pagination import validate_page_size
 from app.api.ledger.schema.financial_event import AccountTransferFinancialEventRequest, CreateFinancialEventRequest, FinancialEventPageResponse, FinancialEventResponse, ShoppingListFinancialEventRequest, SimpleFinancialEventRequest, UpdateAccountTransferFinancialEventRequest, UpdateFinancialEventRequest, UpdateShoppingListFinancialEventRequest, UpdateSimpleFinancialEventRequest
 from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, CurrencyNotFoundError, FinancialEventLimitReachedError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError, InvalidFinancialEventStructureError
-from app.application.ledger.use_cases.financial_event import create_account_transfer_financial_event, create_shopping_list_financial_event, create_simple_financial_event, delete_financial_event, get_financial_event, list_financial_events_after, update_account_transfer_financial_event, update_shopping_list_financial_event, update_simple_financial_event
-from app.domain.ledger.model.financial_event import FinancialEventType
+from app.application.ledger.use_cases.financial_event import count_financial_events, create_account_transfer_financial_event, create_shopping_list_financial_event, create_simple_financial_event, delete_financial_event, get_financial_event, list_financial_events_after, update_account_transfer_financial_event, update_shopping_list_financial_event, update_simple_financial_event
+from app.domain.ledger.model.financial_event import FinancialEventDescription, FinancialEventType
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 
 
@@ -71,6 +71,7 @@ def list_ledger_financial_events(
     event_type: FinancialEventType | None = None,
     ascending: bool = False,
     cursor: Annotated[str | None, Query(max_length=53)] = None,
+    description_search: FinancialEventDescription | None = None,
 ) -> FinancialEventPageResponse:
     validate_page_size(request, page_size)
     if from_timestamp >= to_timestamp:
@@ -82,6 +83,7 @@ def list_ledger_financial_events(
         currency_uuid=currency_uuid,
         category_uuid=category_uuid,
         event_type=event_type,
+        description_search=description_search,
     )
     try:
         cursor_occurred_at, cursor_uuid = _parse_cursor(cursor)
@@ -91,13 +93,14 @@ def list_ledger_financial_events(
         events = list_financial_events_after(
             ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), page_size, ascending, filters, cursor_occurred_at, cursor_uuid
         )
+        total_count = count_financial_events(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), filters)
     except CurrencyNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Currency not found") from error
     next_cursor = None
     if len(events) > page_size:
         events = events[:page_size]
         next_cursor = _format_cursor(events[-1])
-    return FinancialEventPageResponse(events=[FinancialEventResponse.from_event(event) for event in events], next_cursor=next_cursor)
+    return FinancialEventPageResponse(events=[FinancialEventResponse.from_event(event) for event in events], next_cursor=next_cursor, total_count=total_count)
 
 
 def _format_cursor(event) -> str:

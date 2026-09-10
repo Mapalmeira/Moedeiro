@@ -147,6 +147,17 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(summary.expense, 0)
         self.assertEqual(summary.income_movement_count, 1)
 
+    def test_summary_and_points_filter_by_event_description(self) -> None:
+        self.add_movement("Salary", 100, 100)
+        self.add_movement("Café dinner", 200, -20)
+        filters = FinancialEventFilter(from_timestamp=0, to_timestamp=300, description_search="CAFE")
+
+        summary = self.repository.get_summary(self.currency.uuid, filters)
+        points = self.repository.list_points(self.currency.uuid, filters, 150)
+
+        self.assertEqual((summary.income, summary.expense, summary.event_count), (0, 20, 1))
+        self.assertEqual([(point.income, point.expense) for point in points], [(0, 0), (0, 20)])
+
     def test_summary_and_points_multiply_unit_values_without_multiplying_movement_counts(self) -> None:
         income = self.create_event("Multiple income", occurred_at=100)
         expense = self.create_event("Multiple expense", occurred_at=110)

@@ -71,6 +71,18 @@ class SqliteFinancialEventRepository(FinancialEventRepository):
         ).fetchall()
         return self._to_models(rows)
 
+    def count_matching(self, filters: FinancialEventFilter) -> int:
+        where_clause, parameters = build_financial_event_filter(filters)
+        row = self.connection.execute(
+            f"""
+            SELECT COUNT(*)
+            FROM financial_event AS event
+            {where_clause}
+            """,
+            parameters,
+        ).fetchone()
+        return int(row[0])
+
     def _to_models(self, rows: list[sqlite3.Row]) -> list[FinancialEvent]:
         if not rows:
             return []

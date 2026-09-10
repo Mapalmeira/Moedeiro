@@ -9,7 +9,7 @@ describe('LedgerWorkspaceStateService', () => {
       to_date: '2026-09-09',
       account_uuid: 'account',
       category_uuid: 'category',
-      event_type: 'TRANSACTION' as const,
+      description_search: 'coffee',
     };
 
     service.setActivity('ledger-a', filters);
