@@ -18,7 +18,7 @@
       <app-form-message [text]="error()!" />
       <button type="button" class="ui-button" (click)="retry()">{{ i18n.t('workspace.retry') }}</button>
     </div>
-  } @else if (resourcesLoading() || (loading() && !balances().length && !cashFlow().length)) {
+  } @else if (resourcesLoading() || (loading() && !cashFlowSummary())) {
     <div class="home-loading ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
   } @else if (!currencies().length) {
     <div class="home-state"><app-icon name="coins" [size]="28" />{{ i18n.t('home.noCurrencies') }}</div>
@@ -38,15 +38,24 @@
       }
     </div>
 
-    <div class="home-grid ui-workspace-card-space">
+    <div #homeGrid class="home-grid ui-workspace-card-space">
       <section class="home-card home-card--flow ui-card ui-projected-surface ui-projection--surface">
         <header class="home-card__header">
           <h2>{{ i18n.t('home.flowInPeriod') }}</h2>
-          <div class="flow-switch" role="group" [attr.aria-label]="i18n.t('home.flowView')">
-            <button type="button" class="ui-press-toggle" [attr.aria-pressed]="flowMode() === 'instant'" (click)="setFlowMode('instant')">{{ i18n.t('home.instantaneous') }}</button>
-            <button type="button" class="ui-press-toggle" [attr.aria-pressed]="flowMode() === 'cumulative'" (click)="setFlowMode('cumulative')">{{ i18n.t('home.cumulative') }}</button>
+          <div class="flow-card-controls">
+            <app-entity-search-select class="flow-account-select" [options]="flowAccountOptions()" [value]="selectedFlowAccountUuid()"
+              [ariaLabel]="i18n.t('flows.account')" [searchPlaceholder]="i18n.t('flows.searchAccount')"
+              [emptyText]="i18n.t('flows.noAccounts')" [disabled]="resourcesLoading() || !selectedCurrencyUuid()"
+              (valueChange)="selectFlowAccount($event)" />
+            <div class="flow-switch" role="group" [attr.aria-label]="i18n.t('home.flowView')">
+              <button type="button" class="ui-press-toggle" [attr.aria-pressed]="flowMode() === 'instant'" (click)="setFlowMode('instant')">{{ i18n.t('home.instantaneous') }}</button>
+              <button type="button" class="ui-press-toggle" [attr.aria-pressed]="flowMode() === 'cumulative'" (click)="setFlowMode('cumulative')">{{ i18n.t('home.cumulative') }}</button>
+            </div>
           </div>
         </header>
+        @if (flowLoading()) {
+          <div class="flow-chart-loading ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
+        } @else {
         <div class="flow-chart" [attr.aria-label]="i18n.t('home.flowInPeriod')" (pointerdown)="keepChartSelection($event)">
           <svg [attr.viewBox]="'0 0 ' + chartWidth + ' ' + chartHeight" preserveAspectRatio="xMidYMid meet" role="img" tabindex="0"
             (pointermove)="hoverChart($event)" (pointerleave)="leaveChart()" (pointerup)="pinChart($event)"
@@ -89,8 +98,9 @@
               }
             </div>
           }
-          @if (totalIncome() === 0 && totalExpense() === 0) { <span class="flow-chart__empty">{{ i18n.t('home.noFlow') }}</span> }
+          @if (chartIncome() === 0 && chartExpense() === 0) { <span class="flow-chart__empty">{{ i18n.t('home.noFlow') }}</span> }
         </div>
+        }
         <footer class="flow-legend">
           @if (flowMode() === 'instant') {
             <span><i class="flow-legend__dot flow-legend__dot--income"></i>{{ i18n.t('home.income') }}</span>
@@ -103,7 +113,7 @@
 
       <section class="home-card home-card--list ui-card ui-projected-surface ui-projection--surface">
         <header class="home-card__header"><h2>{{ i18n.t('ledgerShell.accounts') }}</h2><a [routerLink]="['/ledgers', context.ledgerUuid(), 'accounts']">{{ i18n.t('home.viewAll') }} →</a></header>
-        <div class="home-list">
+        <div #accountsList class="home-list">
           @for (row of accountRows(); track row.account.uuid) {
             <a class="home-list-row" [routerLink]="['/ledgers', context.ledgerUuid(), 'accounts']">
               <app-entity-badge class="home-list-row__icon" [icon]="row.account.icon" [color]="row.account.color_code" />
@@ -116,7 +126,7 @@
 
       <section class="home-card ui-card ui-projected-surface ui-projection--surface">
         <header class="home-card__header"><h2>{{ i18n.t('ledgerShell.budgets') }}</h2><a [routerLink]="['/ledgers', context.ledgerUuid(), 'budgets']">{{ i18n.t('home.viewAll') }} →</a></header>
-        <div class="budget-list">
+        <div #budgetList class="budget-list">
           @for (row of budgetRows(); track row.budget.uuid) {
             <a class="budget-row" [routerLink]="['/ledgers', context.ledgerUuid(), 'budgets']">
               <span class="budget-row__title"><strong>{{ row.budget.name }}</strong><small>{{ row.account?.name ?? i18n.t('home.unavailable') }} · {{ row.category?.name ?? i18n.t('home.unavailable') }}</small></span>
@@ -129,7 +139,7 @@
 
       <section class="home-card home-card--list ui-card ui-projected-surface ui-projection--surface">
         <header class="home-card__header"><h2>{{ i18n.t('home.recentActivity') }}</h2><a [routerLink]="['/ledgers', context.ledgerUuid(), 'activity']">{{ i18n.t('home.viewAll') }} →</a></header>
-        <div class="home-list">
+        <div #eventsList class="home-list">
           @for (row of eventRows(); track row.event.uuid) {
             <a class="home-list-row home-event-row" [routerLink]="['/ledgers', context.ledgerUuid(), 'activity']">
               <span class="home-list-row__icon home-event-row__icon ui-icon-badge ui-projected-icon" [class.ui-icon-badge--green]="row.tone === 'green'" [class.ui-icon-badge--yellow]="row.tone === 'yellow'" [class.ui-icon-badge--blue]="row.tone === 'blue'"><app-icon [name]="row.icon" [size]="18" /></span>

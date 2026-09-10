@@ -22,6 +22,7 @@ describe('LedgerWorkspaceStateService', () => {
     const service = new LedgerWorkspaceStateService();
     service.setHome('ledger', {
       currency_uuid: 'currency',
+      flow_account_uuid: 'account',
       month: '2026-09',
       period_mode: 'month',
       range_from_date: '',

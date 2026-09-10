@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { Subscription, finalize, forkJoin } from 'rxjs';
@@ -81,10 +81,14 @@ interface ChartTickView {
   label: string;
 }
 
+interface HomePreviewLimits {
+  accounts: number;
+  budgets: number;
+  events: number;
+}
+
 const DAY_SECONDS = 86_400;
-const RECENT_EVENT_COUNT = 4;
-const ACTIVE_BUDGET_COUNT = 3;
-const HOME_ACCOUNT_COUNT = 5;
+const COMPACT_HOME_PREVIEW_LIMITS: HomePreviewLimits = { accounts: 5, budgets: 3, events: 4 };
 const WARNING_BUDGET_USAGE_PERCENT = 80;
 const CHART_WIDTH = 1000;
 const CHART_HEIGHT = 300;
@@ -122,6 +126,9 @@ export class LedgerHomeComponent {
   private readonly destroyRef = inject(DestroyRef);
   private resourcesRequest?: Subscription;
   private dashboardRequest?: Subscription;
+  private chartRequest?: Subscription;
+  private previewObserver?: ResizeObserver;
+  private dashboardScopeKey: string | null = null;
 
   readonly context = inject(LedgerContextService);
   readonly preferences = inject(PreferencesService);
@@ -132,10 +139,12 @@ export class LedgerHomeComponent {
   readonly categories = signal<LedgerCategory[]>([]);
   readonly balances = signal<LedgerAccountBalance[]>([]);
   readonly currencyBalance = signal(0);
+  readonly cashFlowSummary = signal<CashFlowPoint | null>(null);
   readonly cashFlow = signal<CashFlowPoint[]>([]);
   readonly recentEvents = signal<FinancialEvent[]>([]);
   readonly activeBudgets = signal<LedgerBudgetOverview[]>([]);
   readonly selectedCurrencyUuid = signal('');
+  readonly selectedFlowAccountUuid = signal('');
   readonly selectedMonth = signal(this.currentMonth());
   readonly periodMode = signal<PeriodMode>('month');
   readonly rangeFromDate = signal('');
@@ -146,7 +155,14 @@ export class LedgerHomeComponent {
   readonly resourcesReady = signal(false);
   readonly resourcesLoading = signal(false);
   readonly loading = signal(false);
+  readonly flowLoading = signal(false);
   readonly error = signal<string | null>(null);
+  readonly previewLimits = signal<HomePreviewLimits>(COMPACT_HOME_PREVIEW_LIMITS);
+
+  readonly homeGrid = viewChild<ElementRef<HTMLElement>>('homeGrid');
+  readonly accountsList = viewChild<ElementRef<HTMLElement>>('accountsList');
+  readonly budgetList = viewChild<ElementRef<HTMLElement>>('budgetList');
+  readonly eventsList = viewChild<ElementRef<HTMLElement>>('eventsList');
 
   readonly chartWidth = CHART_WIDTH;
   readonly chartHeight = CHART_HEIGHT;
@@ -167,12 +183,26 @@ export class LedgerHomeComponent {
     icon: currency.icon,
     color: currency.color_code,
   })));
+  readonly flowAccountOptions = computed<EntitySearchOption[]>(() => [
+    { value: '', label: this.i18n.t('activity.allAccounts'), uiIcon: 'building', tone: 'neutral' },
+    ...this.accounts()
+      .filter(account => account.currency_uuid === this.selectedCurrencyUuid())
+      .map(account => ({
+        value: account.uuid,
+        label: account.name,
+        detail: account.note,
+        icon: account.icon,
+        color: account.color_code,
+      })),
+  ]);
   readonly selectedCurrency = computed(() => this.currencyByUuid().get(this.selectedCurrencyUuid()) ?? null);
   readonly dashboardRange = computed(() => this.periodMode() === 'month' ? this.monthRange(this.selectedMonth()) : this.customRange());
   readonly invalidRange = computed(() => this.periodMode() === 'range' && !!this.rangeFromDate() && !!this.rangeToDate() && !this.dashboardRange());
-  readonly totalIncome = computed(() => this.cashFlow().reduce((sum, point) => sum + point.income, 0));
-  readonly totalExpense = computed(() => this.cashFlow().reduce((sum, point) => sum + point.expense, 0));
+  readonly totalIncome = computed(() => this.cashFlowSummary()?.income ?? 0);
+  readonly totalExpense = computed(() => this.cashFlowSummary()?.expense ?? 0);
   readonly netFlow = computed(() => this.totalIncome() - this.totalExpense());
+  readonly chartIncome = computed(() => this.cashFlow().reduce((sum, point) => sum + point.income, 0));
+  readonly chartExpense = computed(() => this.cashFlow().reduce((sum, point) => sum + point.expense, 0));
   readonly metricCards = computed(() => {
     const currency = this.selectedCurrency();
     if (!currency) return [];
@@ -335,27 +365,64 @@ export class LedgerHomeComponent {
       const ledgerUuid = this.context.ledgerUuid();
       const currencyUuid = this.selectedCurrencyUuid();
       const range = this.dashboardRange();
+      const previewLimits = this.previewLimits();
       const ready = this.resourcesReady();
       if (!ready) return;
       if (ledgerUuid && currencyUuid && range) {
-        untracked(() => this.loadDashboard());
+        untracked(() => this.loadDashboard(previewLimits));
       } else {
         untracked(() => {
           this.dashboardRequest?.unsubscribe();
           this.clearDashboard();
+          this.dashboardScopeKey = null;
           this.loading.set(false);
+        });
+      }
+    });
+    effect(() => {
+      const grid = this.homeGrid();
+      const accountsList = this.accountsList();
+      const budgetList = this.budgetList();
+      const eventsList = this.eventsList();
+      untracked(() => this.observePreviewCapacity(grid, accountsList, budgetList, eventsList));
+    });
+    effect(() => {
+      const ledgerUuid = this.context.ledgerUuid();
+      const currencyUuid = this.selectedCurrencyUuid();
+      const range = this.dashboardRange();
+      const flowAccountUuid = this.selectedFlowAccountUuid();
+      const ready = this.resourcesReady();
+      if (!ready) return;
+      if (ledgerUuid && currencyUuid && range) {
+        untracked(() => this.loadChart(flowAccountUuid));
+      } else {
+        untracked(() => {
+          this.chartRequest?.unsubscribe();
+          this.clearChart();
+          this.flowLoading.set(false);
         });
       }
     });
     this.destroyRef.onDestroy(() => {
       this.resourcesRequest?.unsubscribe();
       this.dashboardRequest?.unsubscribe();
+      this.chartRequest?.unsubscribe();
+      this.previewObserver?.disconnect();
     });
   }
 
   selectCurrency(value: string): void {
     if (value !== this.selectedCurrencyUuid()) {
       this.selectedCurrencyUuid.set(value);
+      this.resetFlowAccountForCurrency();
+      this.saveViewState();
+    }
+  }
+
+  selectFlowAccount(value: string): void {
+    if (value && !this.accounts().some(account => account.uuid === value && account.currency_uuid === this.selectedCurrencyUuid())) return;
+    if (value !== this.selectedFlowAccountUuid()) {
+      this.selectedFlowAccountUuid.set(value);
       this.saveViewState();
     }
   }
@@ -441,6 +508,7 @@ export class LedgerHomeComponent {
     if (!ledgerUuid) return;
     this.resourcesRequest?.unsubscribe();
     this.dashboardRequest?.unsubscribe();
+    this.chartRequest?.unsubscribe();
     this.resourcesReady.set(false);
     this.resourcesLoading.set(true);
     this.loading.set(false);
@@ -456,6 +524,7 @@ export class LedgerHomeComponent {
         this.categories.set(this.flattenCategories(categoryTree));
         const current = this.selectedCurrencyUuid();
         if (!currencies.some(currency => currency.uuid === current)) this.selectedCurrencyUuid.set(currencies[0]?.uuid ?? '');
+        this.resetFlowAccountForCurrency();
         this.saveViewState();
         this.resourcesLoading.set(false);
         this.resourcesReady.set(true);
@@ -467,38 +536,73 @@ export class LedgerHomeComponent {
     });
   }
 
-  private loadDashboard(): void {
+  private loadDashboard(previewLimits: HomePreviewLimits): void {
     const ledgerUuid = this.context.ledgerUuid();
     const currencyUuid = this.selectedCurrencyUuid();
     const range = this.dashboardRange();
     if (!ledgerUuid || !currencyUuid || !range) return;
     this.dashboardRequest?.unsubscribe();
-    this.clearDashboard();
+    const scopeKey = `${ledgerUuid}/${currencyUuid}/${range.from}/${range.to}`;
+    if (scopeKey !== this.dashboardScopeKey) {
+      this.clearDashboard();
+      this.dashboardScopeKey = scopeKey;
+    }
     this.loading.set(true);
     this.error.set(null);
     const periodEndTimestamp = range.to - 1;
     this.dashboardRequest = forkJoin({
-      balances: this.entities.listBalances(ledgerUuid, periodEndTimestamp, currencyUuid, HOME_ACCOUNT_COUNT),
-      cashFlow: this.cashFlowService.points(ledgerUuid, currencyUuid, range.from, range.to, DAY_SECONDS),
+      balances: this.entities.listBalances(ledgerUuid, periodEndTimestamp, currencyUuid, previewLimits.accounts),
+      cashFlowSummary: this.cashFlowService.summary(ledgerUuid, currencyUuid, {
+        from_timestamp: range.from,
+        to_timestamp: range.to,
+        account_uuid: null,
+        category_uuid: null,
+        event_type: null,
+      }),
       events: this.eventsService.list(ledgerUuid, {
         from_timestamp: range.from,
         to_timestamp: range.to,
         currency_uuid: currencyUuid,
-        page_size: RECENT_EVENT_COUNT,
+        page_size: previewLimits.events,
         ascending: false,
       }),
-      budgets: this.budgetsService.currencyOverview(ledgerUuid, currencyUuid, periodEndTimestamp, ACTIVE_BUDGET_COUNT),
+      budgets: this.budgetsService.currencyOverview(ledgerUuid, currencyUuid, periodEndTimestamp, previewLimits.budgets),
     }).pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.loading.set(false)),
     ).subscribe({
-      next: ({ balances, cashFlow, events, budgets }) => {
+      next: ({ balances, cashFlowSummary, events, budgets }) => {
         this.balances.set(balances.items);
         this.currencyBalance.set(balances.total_balance ?? 0);
-        this.cashFlow.set(cashFlow);
+        this.cashFlowSummary.set(cashFlowSummary);
         this.recentEvents.set(events.events);
         this.activeBudgets.set(budgets);
       },
+      error: error => this.error.set(this.errors.message(error, 'errors.homeLoadFailed')),
+    });
+  }
+
+  private loadChart(flowAccountUuid: string): void {
+    const ledgerUuid = this.context.ledgerUuid();
+    const currencyUuid = this.selectedCurrencyUuid();
+    const range = this.dashboardRange();
+    if (!ledgerUuid || !currencyUuid || !range) return;
+    this.chartRequest?.unsubscribe();
+    this.clearChart();
+    this.flowLoading.set(true);
+    this.error.set(null);
+    this.chartRequest = this.cashFlowService.points(
+      ledgerUuid,
+      currencyUuid,
+      range.from,
+      range.to,
+      DAY_SECONDS,
+      { account_uuid: flowAccountUuid || null },
+    ).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.flowLoading.set(false)),
+    ).subscribe({
+      next: cashFlow => this.cashFlow.set(cashFlow),
       error: error => this.error.set(this.errors.message(error, 'errors.homeLoadFailed')),
     });
   }
@@ -571,11 +675,63 @@ export class LedgerHomeComponent {
   private clearDashboard(): void {
     this.balances.set([]);
     this.currencyBalance.set(0);
-    this.cashFlow.set([]);
+    this.cashFlowSummary.set(null);
     this.recentEvents.set([]);
     this.activeBudgets.set([]);
+  }
+
+  private clearChart(): void {
+    this.cashFlow.set([]);
     this.hoveredChartIndex.set(null);
     this.pinnedChartIndex.set(null);
+  }
+
+  private resetFlowAccountForCurrency(): void {
+    const accountUuid = this.selectedFlowAccountUuid();
+    if (accountUuid && !this.accounts().some(account => account.uuid === accountUuid && account.currency_uuid === this.selectedCurrencyUuid())) {
+      this.selectedFlowAccountUuid.set('');
+    }
+  }
+
+  private observePreviewCapacity(
+    grid: ElementRef<HTMLElement> | undefined,
+    accountsList: ElementRef<HTMLElement> | undefined,
+    budgetList: ElementRef<HTMLElement> | undefined,
+    eventsList: ElementRef<HTMLElement> | undefined,
+  ): void {
+    this.previewObserver?.disconnect();
+    if (!grid || !accountsList || !budgetList || !eventsList || typeof ResizeObserver === 'undefined') return;
+    const update = () => this.updatePreviewCapacity(grid.nativeElement, accountsList.nativeElement, budgetList.nativeElement, eventsList.nativeElement);
+    this.previewObserver = new ResizeObserver(update);
+    this.previewObserver.observe(grid.nativeElement);
+    this.previewObserver.observe(accountsList.nativeElement);
+    this.previewObserver.observe(budgetList.nativeElement);
+    this.previewObserver.observe(eventsList.nativeElement);
+    update();
+  }
+
+  private updatePreviewCapacity(grid: HTMLElement, accountsList: HTMLElement, budgetList: HTMLElement, eventsList: HTMLElement): void {
+    const cards = grid.querySelectorAll<HTMLElement>(':scope > .home-card');
+    if (cards.length < 2 || Math.abs(cards[0].getBoundingClientRect().top - cards[1].getBoundingClientRect().top) > 1) {
+      this.setPreviewLimits(COMPACT_HOME_PREVIEW_LIMITS);
+      return;
+    }
+    this.setPreviewLimits({
+      accounts: this.previewCapacity(accountsList),
+      budgets: this.previewCapacity(budgetList),
+      events: this.previewCapacity(eventsList),
+    });
+  }
+
+  private previewCapacity(list: HTMLElement): number {
+    const row = list.querySelector<HTMLElement>(':scope > a');
+    const rowHeight = row?.getBoundingClientRect().height ?? Number.parseFloat(getComputedStyle(list).getPropertyValue('--list-row-height'));
+    return Number.isFinite(rowHeight) && rowHeight > 0 ? Math.max(1, Math.floor(list.clientHeight / rowHeight)) : 1;
+  }
+
+  private setPreviewLimits(next: HomePreviewLimits): void {
+    const current = this.previewLimits();
+    if (current.accounts !== next.accounts || current.budgets !== next.budgets || current.events !== next.events) this.previewLimits.set(next);
   }
 
   private eventPresentation(type: FinancialEvent['type']): { icon: IconName; tone: Tone } {
@@ -587,12 +743,16 @@ export class LedgerHomeComponent {
   private reset(ledgerUuid: string | null): void {
     this.resourcesRequest?.unsubscribe();
     this.dashboardRequest?.unsubscribe();
+    this.chartRequest?.unsubscribe();
     this.accounts.set([]);
     this.currencies.set([]);
     this.categories.set([]);
     this.clearDashboard();
+    this.clearChart();
+    this.dashboardScopeKey = null;
     const saved = ledgerUuid ? this.workspaceState.getHome(ledgerUuid) : null;
     this.selectedCurrencyUuid.set(saved?.currency_uuid ?? '');
+    this.selectedFlowAccountUuid.set(saved?.flow_account_uuid ?? '');
     this.selectedMonth.set(saved?.month ?? this.currentMonth());
     this.periodMode.set(saved?.period_mode ?? 'month');
     this.rangeFromDate.set(saved?.range_from_date ?? '');
@@ -601,6 +761,7 @@ export class LedgerHomeComponent {
     this.resourcesReady.set(false);
     this.resourcesLoading.set(false);
     this.loading.set(false);
+    this.flowLoading.set(false);
     this.error.set(null);
   }
 
@@ -609,6 +770,7 @@ export class LedgerHomeComponent {
     if (!ledgerUuid) return;
     this.workspaceState.setHome(ledgerUuid, {
       currency_uuid: this.selectedCurrencyUuid(),
+      flow_account_uuid: this.selectedFlowAccountUuid(),
       month: this.selectedMonth(),
       period_mode: this.periodMode(),
       range_from_date: this.rangeFromDate(),

@@ -10,7 +10,7 @@ import { LedgerBudgetsService } from '../../../../core/ledgers/ledger-budgets.se
 import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categories.service';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
 import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
-import { LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
+import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
 import { PreferencesService } from '../../../../core/preferences/preferences.service';
 import { LedgerHomeComponent } from './ledger-home.component';
@@ -34,6 +34,15 @@ const point = {
   expense_movement_count: 1,
 };
 
+const account: LedgerAccount = {
+  uuid: 'account',
+  name: 'Principal',
+  note: null,
+  currency_uuid: currency.uuid,
+  icon: 'lucide:WalletCards',
+  color_code: '#21E683',
+};
+
 describe('LedgerHomeComponent', () => {
   const ledgerUuid = signal('ledger');
   const language = signal<'pt-BR' | 'en'>('pt-BR');
@@ -46,14 +55,14 @@ describe('LedgerHomeComponent', () => {
     timezone: 'UTC',
   });
   const entities = {
-    listAccounts: vi.fn(() => of([])),
+    listAccounts: vi.fn(() => of([account])),
     listCurrencies: vi.fn(() => of([currency])),
     listBalances: vi.fn(() => of({ items: [], total_balance: 0 })),
   };
   const categories = { getTree: vi.fn(() => of([])) };
   const events = { list: vi.fn(() => of({ events: [], next_cursor: null })) };
   const budgets = { currencyOverview: vi.fn(() => of([])) };
-  const cashFlow = { points: vi.fn(() => of([point])) };
+  const cashFlow = { summary: vi.fn(() => of(point)), points: vi.fn(() => of([point])) };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -91,6 +100,26 @@ describe('LedgerHomeComponent', () => {
     expect(component.totalExpense()).toBe(40_00);
   });
 
+  it('filters only the period chart by the selected account', () => {
+    const component = createComponent();
+    TestBed.tick();
+
+    component.selectFlowAccount(account.uuid);
+    TestBed.tick();
+
+    expect(cashFlow.points).toHaveBeenLastCalledWith(
+      'ledger',
+      currency.uuid,
+      expect.any(Number),
+      expect.any(Number),
+      86_400,
+      { account_uuid: account.uuid },
+    );
+    expect(TestBed.inject(LedgerWorkspaceStateService).getHome('ledger')?.flow_account_uuid).toBe(account.uuid);
+    expect(component.totalIncome()).toBe(point.income);
+    expect(component.totalExpense()).toBe(point.expense);
+  });
+
   it('clears dashboard data and reports an invalid custom period', () => {
     const component = createComponent();
     TestBed.tick();
@@ -119,7 +148,7 @@ describe('LedgerHomeComponent', () => {
     const to = Date.parse('2026-08-01T00:00:00Z') / 1000;
     const periodEnd = to - 1;
     expect(entities.listBalances).toHaveBeenLastCalledWith('ledger', periodEnd, currency.uuid, 5);
-    expect(cashFlow.points).toHaveBeenLastCalledWith('ledger', currency.uuid, from, to, 86_400);
+    expect(cashFlow.points).toHaveBeenLastCalledWith('ledger', currency.uuid, from, to, 86_400, { account_uuid: null });
     expect(events.list).toHaveBeenLastCalledWith('ledger', expect.objectContaining({
       from_timestamp: from,
       to_timestamp: to,

@@ -38,8 +38,8 @@ describe('CashFlowService', () => {
     request.flush({});
   });
 
-  it('requests points with the complete query and credentials', () => {
-    service.points('ledger/id', 'currency', 10, 20, 5).subscribe();
+  it('requests points with the applied filters and credentials', () => {
+    service.points('ledger/id', 'currency', 10, 20, 5, { account_uuid: 'account' }).subscribe();
 
     const request = http.expectOne(candidate => candidate.url === `${API_ROUTES.ledgerCashFlow('ledger/id')}/points`);
     expect(request.request.method).toBe('GET');
@@ -48,6 +48,7 @@ describe('CashFlowService', () => {
     expect(request.request.params.get('from_timestamp')).toBe('10');
     expect(request.request.params.get('to_timestamp')).toBe('20');
     expect(request.request.params.get('point_width')).toBe('5');
+    expect(request.request.params.get('account_uuid')).toBe('account');
     request.flush([]);
   });
 

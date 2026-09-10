@@ -16,6 +16,7 @@ export interface ActivityFilterState {
 
 export interface HomeViewState {
   currency_uuid: string;
+  flow_account_uuid: string;
   month: string;
   period_mode: PeriodMode;
   range_from_date: string;

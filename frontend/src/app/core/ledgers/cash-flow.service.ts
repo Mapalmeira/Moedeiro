@@ -30,12 +30,16 @@ export class CashFlowService {
     fromTimestamp: number,
     toTimestamp: number,
     pointWidth: number,
+    filters: Pick<FinancialEventFilters, 'account_uuid' | 'category_uuid' | 'event_type'> = {},
   ): Observable<CashFlowPoint[]> {
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set('currency_uuid', currencyUuid)
       .set('from_timestamp', fromTimestamp)
       .set('to_timestamp', toTimestamp)
       .set('point_width', pointWidth);
+    if (filters.account_uuid) params = params.set('account_uuid', filters.account_uuid);
+    if (filters.category_uuid) params = params.set('category_uuid', filters.category_uuid);
+    if (filters.event_type) params = params.set('event_type', filters.event_type);
     return this.http.get<CashFlowPoint[]>(`${API_ROUTES.ledgerCashFlow(ledgerUuid)}/points`, { params, withCredentials: true });
   }
 
