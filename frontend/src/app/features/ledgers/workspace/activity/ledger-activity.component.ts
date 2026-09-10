@@ -5,6 +5,8 @@ import { FormBuilder } from '@angular/forms';
 import { Subscription, finalize, forkJoin } from 'rxjs';
 import { ApiErrorService } from '../../../../core/api/api-error';
 import { I18nService } from '../../../../core/i18n/i18n.service';
+import { CashFlowPoint } from '../../../../core/ledgers/cash-flow.models';
+import { CashFlowService } from '../../../../core/ledgers/cash-flow.service';
 import { LedgerCategory, LedgerCategoryTreeNode } from '../../../../core/ledgers/ledger-categories.models';
 import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categories.service';
 import { formatCurrencyAmount } from '../../../../core/ledgers/currency-format';
@@ -59,6 +61,7 @@ export class LedgerActivityComponent {
   private readonly eventsService = inject(FinancialEventsService);
   private readonly entitiesService = inject(LedgerEntitiesService);
   private readonly categoriesService = inject(LedgerCategoriesService);
+  private readonly cashFlowService = inject(CashFlowService);
   private readonly errors = inject(ApiErrorService);
   private readonly preferences = inject(PreferencesService);
   private readonly workspaceState = inject(LedgerWorkspaceStateService);
@@ -67,6 +70,7 @@ export class LedgerActivityComponent {
   private eventsRequest?: Subscription;
   private moreRequest?: Subscription;
   private balanceRequest?: Subscription;
+  private summaryRequest?: Subscription;
   readonly context = inject(LedgerContextService);
   readonly i18n = inject(I18nService);
   readonly categoryIconPreviewLimit = 2;
@@ -93,6 +97,9 @@ export class LedgerActivityComponent {
   readonly accountBalance = signal<number | null>(null);
   readonly balanceLoading = signal(false);
   readonly balanceUnavailable = signal(false);
+  readonly cashFlowSummary = signal<CashFlowPoint | null>(null);
+  readonly summaryLoading = signal(false);
+  readonly summaryUnavailable = signal(false);
 
   readonly filters = this.fb.nonNullable.group({
     from_date: [''],
@@ -162,6 +169,21 @@ export class LedgerActivityComponent {
   readonly accountBalanceTone = computed<ActivityValueTone>(() => {
     const balance = this.accountBalance();
     return balance === null ? 'neutral' : balance < 0 ? 'negative' : balance > 0 ? 'positive' : 'neutral';
+  });
+  readonly formattedCashFlowSummary = computed(() => {
+    const account = this.appliedAccount();
+    const summary = this.cashFlowSummary();
+    if (!account || !summary) return null;
+    const currency = this.currencyByUuid().get(account.currency_uuid);
+    if (!currency) return null;
+    const numberFormat = this.preferences.current().number_format;
+    const variation = summary.income - summary.expense;
+    return {
+      income: formatCurrencyAmount(summary.income, currency, numberFormat),
+      expense: formatCurrencyAmount(summary.expense, currency, numberFormat),
+      variation: formatCurrencyAmount(variation, currency, numberFormat),
+      variationTone: variation < 0 ? 'negative' as ActivityValueTone : variation > 0 ? 'positive' as ActivityValueTone : 'neutral' as ActivityValueTone,
+    };
   });
   readonly eventRows = computed<readonly ActivityEventRow[]>(() => {
     const preferences = this.preferences.current();
@@ -237,6 +259,7 @@ export class LedgerActivityComponent {
         this.eventsRequest?.unsubscribe();
         this.moreRequest?.unsubscribe();
         this.balanceRequest?.unsubscribe();
+        this.summaryRequest?.unsubscribe();
         this.restoreFilters(ledgerUuid);
         this.resetTransientState();
         if (ledgerUuid) this.loadWorkspace();
@@ -247,6 +270,7 @@ export class LedgerActivityComponent {
       this.eventsRequest?.unsubscribe();
       this.moreRequest?.unsubscribe();
       this.balanceRequest?.unsubscribe();
+      this.summaryRequest?.unsubscribe();
     });
   }
 
@@ -435,6 +459,7 @@ export class LedgerActivityComponent {
     this.nextCursor.set(null);
     this.appliedFilters.set(query);
     this.loadAccountBalance(query);
+    this.loadCashFlowSummary(query);
     this.eventsRequest?.unsubscribe();
     this.moreRequest?.unsubscribe();
     this.eventsRequest = this.eventsService.list(ledgerUuid, query).pipe(
@@ -466,6 +491,28 @@ export class LedgerActivityComponent {
     ).subscribe({
       next: balance => this.accountBalance.set(balance),
       error: () => this.balanceUnavailable.set(true),
+    });
+  }
+
+  private loadCashFlowSummary(filters: Omit<FinancialEventFilters, 'cursor'>): void {
+    const ledgerUuid = this.context.ledgerUuid();
+    this.summaryRequest?.unsubscribe();
+    this.cashFlowSummary.set(null);
+    this.summaryUnavailable.set(false);
+    const account = filters.account_uuid ? this.accountByUuid().get(filters.account_uuid) ?? null : null;
+    const currency = account ? this.currencyByUuid().get(account.currency_uuid) ?? null : null;
+    if (!ledgerUuid || !currency) {
+      this.summaryLoading.set(false);
+      return;
+    }
+
+    this.summaryLoading.set(true);
+    this.summaryRequest = this.cashFlowService.summary(ledgerUuid, currency.uuid, filters).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.summaryLoading.set(false)),
+    ).subscribe({
+      next: summary => this.cashFlowSummary.set(summary),
+      error: () => this.summaryUnavailable.set(true),
     });
   }
 
@@ -533,6 +580,9 @@ export class LedgerActivityComponent {
     this.accountBalance.set(null);
     this.balanceLoading.set(false);
     this.balanceUnavailable.set(false);
+    this.cashFlowSummary.set(null);
+    this.summaryLoading.set(false);
+    this.summaryUnavailable.set(false);
     this.createMenuOpen.set(false);
     this.editorType.set(null);
     this.editingEvent.set(null);

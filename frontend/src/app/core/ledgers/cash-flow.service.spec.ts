@@ -17,6 +17,27 @@ describe('CashFlowService', () => {
 
   afterEach(() => http.verify());
 
+  it('requests a summary with the applied activity filters and credentials', () => {
+    service.summary('ledger/id', 'currency', {
+      from_timestamp: 10,
+      to_timestamp: 20,
+      account_uuid: 'account',
+      category_uuid: 'category',
+      event_type: 'TRANSACTION',
+    }).subscribe();
+
+    const request = http.expectOne(candidate => candidate.url === API_ROUTES.ledgerCashFlow('ledger/id'));
+    expect(request.request.method).toBe('GET');
+    expect(request.request.withCredentials).toBe(true);
+    expect(request.request.params.get('currency_uuid')).toBe('currency');
+    expect(request.request.params.get('from_timestamp')).toBe('10');
+    expect(request.request.params.get('to_timestamp')).toBe('20');
+    expect(request.request.params.get('account_uuid')).toBe('account');
+    expect(request.request.params.get('category_uuid')).toBe('category');
+    expect(request.request.params.get('event_type')).toBe('TRANSACTION');
+    request.flush({});
+  });
+
   it('requests points with the complete query and credentials', () => {
     service.points('ledger/id', 'currency', 10, 20, 5).subscribe();
 

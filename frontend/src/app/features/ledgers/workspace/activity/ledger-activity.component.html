@@ -74,14 +74,34 @@
         <span class="activity-list__loaded">{{ i18n.t('activity.loadedEvents', { count: events().length }) }}</span>
         <div class="activity-list__summary">
           @if (appliedAccount()) {
+            @if (summaryLoading()) {
+              <span class="ui-spinner activity-list__summary-spinner" aria-hidden="true"></span>
+            } @else if (formattedCashFlowSummary(); as summary) {
+              <span class="activity-list__metric">
+                <span class="activity-list__metric-label">{{ i18n.t('home.income') }}</span>
+                <strong class="activity-list__summary-value activity-list__summary-value--positive">{{ summary.income }}</strong>
+              </span>
+              <span class="activity-list__metric">
+                <span class="activity-list__metric-label">{{ i18n.t('home.expense') }}</span>
+                <strong class="activity-list__summary-value activity-list__summary-value--negative">{{ summary.expense }}</strong>
+              </span>
+              <span class="activity-list__metric">
+                <span class="activity-list__metric-label">{{ i18n.t('home.variation') }}</span>
+                <strong class="activity-list__summary-value"
+                  [class.activity-list__summary-value--negative]="summary.variationTone === 'negative'"
+                  [class.activity-list__summary-value--positive]="summary.variationTone === 'positive'">{{ summary.variation }}</strong>
+              </span>
+            } @else if (summaryUnavailable()) {
+              <span class="activity-list__summary-unavailable">{{ i18n.t('activity.summaryUnavailable') }}</span>
+            }
             <span class="activity-list__balance">
               <span class="activity-list__balance-label">{{ i18n.t('activity.periodEndBalance') }}</span>
               @if (balanceLoading()) {
                 <span class="ui-spinner activity-list__balance-spinner" aria-hidden="true"></span>
               } @else if (formattedAccountBalance(); as balance) {
-                <strong class="activity-list__balance-value"
-                  [class.activity-list__balance-value--negative]="accountBalanceTone() === 'negative'"
-                  [class.activity-list__balance-value--positive]="accountBalanceTone() === 'positive'">{{ balance }}</strong>
+                <strong class="activity-list__summary-value"
+                  [class.activity-list__summary-value--negative]="accountBalanceTone() === 'negative'"
+                  [class.activity-list__summary-value--positive]="accountBalanceTone() === 'positive'">{{ balance }}</strong>
               } @else if (balanceUnavailable()) {
                 <span>{{ i18n.t('activity.balanceUnavailable') }}</span>
               }
