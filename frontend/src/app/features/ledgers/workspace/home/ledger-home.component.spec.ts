@@ -159,6 +159,75 @@ describe('LedgerHomeComponent', () => {
     expect(budgets.currencyOverview).toHaveBeenLastCalledWith('ledger', currency.uuid, periodEnd, 10);
   });
 
+  it('widens chart points to keep long periods within 100 points', () => {
+    const component = createComponent();
+    TestBed.tick();
+
+    component.setPeriodMode('range');
+    component.updateRangeFrom('2026-01-01');
+    component.updateRangeTo('2026-04-11');
+    TestBed.tick();
+
+    const from = Date.parse('2026-01-01T00:00:00Z') / 1000;
+    const to = Date.parse('2026-04-12T00:00:00Z') / 1000;
+    expect(cashFlow.points).toHaveBeenLastCalledWith(
+      'ledger',
+      currency.uuid,
+      from,
+      to,
+      2 * 86_400,
+      { account_uuid: null },
+    );
+    expect(Math.ceil((to - from) / (2 * 86_400))).toBeLessThanOrEqual(100);
+
+    component.cashFlow.set([point, point]);
+    expect(component.chartPoints()[1]?.date).toBe('03/01/2026');
+  });
+
+  it('shows only the date parts needed to distinguish the selected range', () => {
+    const component = createComponent();
+    TestBed.tick();
+
+    component.setPeriodMode('range');
+    component.updateRangeFrom('2025-12-01');
+    component.updateRangeTo('2026-02-28');
+    TestBed.tick();
+
+    component.cashFlow.set(Array.from({ length: 60 }, () => point));
+    expect(component.chartPoints()[35]?.label).toBe('05/01/2026');
+
+    component.updateRangeFrom('2026-01-20');
+    component.updateRangeTo('2026-02-10');
+    TestBed.tick();
+
+    component.cashFlow.set(Array.from({ length: 22 }, () => point));
+    expect(component.chartPoints()[13]?.label).toBe('02/02');
+
+    component.updateRangeFrom('2026-01-01');
+    component.updateRangeTo('2026-01-21');
+    TestBed.tick();
+
+    component.cashFlow.set(Array.from({ length: 21 }, () => point));
+    expect(component.chartPoints()[1]?.label).toBe('2');
+  });
+
+  it('uses the label cadence without forcing the first or last chart date', () => {
+    const component = createComponent();
+    TestBed.tick();
+
+    component.setPeriodMode('range');
+    component.updateRangeFrom('2025-12-01');
+    component.updateRangeTo('2026-02-28');
+    TestBed.tick();
+
+    component.cashFlow.set(Array.from({ length: 60 }, () => point));
+    const points = component.chartPoints();
+
+    expect(points[0]?.showLabel).toBe(false);
+    expect(points[5]?.showLabel).toBe(true);
+    expect(points[59]?.showLabel).toBe(false);
+  });
+
   it('changes only the rendered preview capacity when the home geometry changes', () => {
     const component = createComponent();
     TestBed.tick();
@@ -172,6 +241,18 @@ describe('LedgerHomeComponent', () => {
     expect(entities.listBalances).toHaveBeenCalledTimes(balanceRequests);
     expect(events.list).toHaveBeenCalledTimes(eventRequests);
     expect(budgets.currencyOverview).toHaveBeenCalledTimes(budgetRequests);
+  });
+
+  it('centers the instantaneous cursor through the shared income and expense column', () => {
+    const component = createComponent();
+    TestBed.tick();
+
+    const chartPoint = component.chartPoints()[0]!;
+    const expectedColumnX = chartPoint.x - chartPoint.barWidth / 2;
+
+    expect(chartPoint.incomeX).toBeCloseTo(expectedColumnX);
+    expect(chartPoint.expenseX).toBeCloseTo(expectedColumnX);
+    expect(chartPoint.incomeY + chartPoint.incomeHeight).toBeCloseTo(component.chartZeroY);
   });
 
   it('pins the chart only for touch input and restores hover after a mouse movement', () => {

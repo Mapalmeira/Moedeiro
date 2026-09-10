@@ -27,6 +27,7 @@ import { PeriodMode, PeriodSelectorComponent } from '../../../../shared/ui/perio
 
 type FlowMode = 'instant' | 'cumulative';
 type Tone = 'green' | 'yellow' | 'blue' | 'neutral';
+type ChartDateLabelDetail = 'day' | 'month' | 'year';
 
 interface HomeAccountRow {
   account: LedgerAccount;
@@ -62,7 +63,8 @@ interface ChartPointView {
   x: number;
   xPercent: number;
   barWidth: number;
-  barGap: number;
+  incomeX: number;
+  expenseX: number;
   incomeY: number;
   incomeHeight: number;
   expenseHeight: number;
@@ -101,11 +103,11 @@ const CHART_PLOT_WIDTH = CHART_WIDTH - CHART_LEFT - CHART_RIGHT;
 const CHART_PLOT_HEIGHT = CHART_HEIGHT - CHART_TOP - CHART_BOTTOM;
 const CHART_ZERO_Y = CHART_TOP + CHART_PLOT_HEIGHT / 2;
 const CHART_X_LABEL_TARGET_COUNT = 10;
+const CHART_X_LABEL_WITH_YEAR_TARGET_COUNT = 6;
+const CHART_MAX_POINTS = 100;
 const CHART_BAR_WIDTH_RATIO = .38;
-const CHART_BAR_GAP_RATIO = .05;
 const CHART_MIN_BAR_WIDTH = .25;
 const CHART_MAX_BAR_WIDTH = 16;
-const CHART_MAX_BAR_GAP = 1;
 
 @Component({
   selector: 'app-ledger-home',
@@ -310,35 +312,38 @@ export class LedgerHomeComponent {
     const scale = (CHART_PLOT_HEIGHT / 2) / max;
     const slot = CHART_PLOT_WIDTH / Math.max(1, points.length);
     const barWidth = Math.max(CHART_MIN_BAR_WIDTH, Math.min(CHART_MAX_BAR_WIDTH, slot * CHART_BAR_WIDTH_RATIO));
-    const barGap = Math.min(CHART_MAX_BAR_GAP, slot * CHART_BAR_GAP_RATIO);
-    const labelStride = Math.max(1, Math.ceil(points.length / CHART_X_LABEL_TARGET_COUNT));
     const currency = this.selectedCurrency();
     const preferences = this.preferences.current();
     const range = this.dashboardRange();
     if (!currency || !range) return [];
+    const labelDetail: ChartDateLabelDetail = this.periodMode() === 'range'
+      ? this.chartDateLabelDetail(range, preferences.timezone)
+      : 'day';
+    const labelTargetCount = labelDetail === 'year' ? CHART_X_LABEL_WITH_YEAR_TARGET_COUNT : CHART_X_LABEL_TARGET_COUNT;
+    const labelStride = Math.max(1, Math.ceil(points.length / labelTargetCount));
+    const labelOffset = Math.floor(labelStride / 2);
+    const pointWidth = this.chartPointWidth(range);
     return points.map((point, index) => {
       const x = CHART_LEFT + slot * index + slot / 2;
       const incomeHeight = point.income * scale;
       const expenseHeight = point.expense * scale;
       const cumulativeValue = cumulative[index] ?? 0;
-      const pointTimestamp = range.from + index * DAY_SECONDS;
+      const pointTimestamp = range.from + index * pointWidth;
       const pointDateInput = zonedDateInput(pointTimestamp, preferences.timezone);
-      const day = String(Number(pointDateInput.slice(8, 10)));
-      const shortDate = this.i18n.language() === 'en'
-        ? `${pointDateInput.slice(5, 7)}/${pointDateInput.slice(8, 10)}`
-        : `${pointDateInput.slice(8, 10)}/${pointDateInput.slice(5, 7)}`;
+      const shortDate = this.chartDateLabel(pointDateInput, labelDetail);
       return {
         index,
         x,
         xPercent: Math.min(86, Math.max(14, x / CHART_WIDTH * 100)),
         barWidth,
-        barGap,
+        incomeX: x - barWidth / 2,
+        expenseX: x - barWidth / 2,
         incomeY: CHART_ZERO_Y - incomeHeight,
         incomeHeight,
         expenseHeight,
         cumulativeY: CHART_ZERO_Y - cumulativeValue * scale,
-        label: this.periodMode() === 'month' ? day : shortDate,
-        showLabel: index === 0 || index === points.length - 1 || (index % labelStride === 0 && points.length - 1 - index >= labelStride),
+        label: shortDate,
+        showLabel: index % labelStride === labelOffset,
         date: formatEventDate(pointTimestamp, preferences.timezone, preferences.date_format),
         income: formatCurrencyAmount(point.income, currency, preferences.number_format),
         expense: formatCurrencyAmount(point.expense, currency, preferences.number_format),
@@ -596,7 +601,7 @@ export class LedgerHomeComponent {
       currencyUuid,
       range.from,
       range.to,
-      DAY_SECONDS,
+      this.chartPointWidth(range),
       { account_uuid: flowAccountUuid || null },
     ).pipe(
       takeUntilDestroyed(this.destroyRef),
@@ -605,6 +610,28 @@ export class LedgerHomeComponent {
       next: cashFlow => this.cashFlow.set(cashFlow),
       error: error => this.error.set(this.errors.message(error, 'errors.homeLoadFailed')),
     });
+  }
+
+  private chartPointWidth(range: { from: number; to: number }): number {
+    const days = (range.to - range.from) / DAY_SECONDS;
+    return Math.max(1, Math.ceil(days / CHART_MAX_POINTS)) * DAY_SECONDS;
+  }
+
+  private chartDateLabelDetail(range: { from: number; to: number }, timezone: string): ChartDateLabelDetail {
+    const fromDate = zonedDateInput(range.from, timezone);
+    const toDate = zonedDateInput(range.to - 1, timezone);
+    if (fromDate.slice(0, 4) !== toDate.slice(0, 4)) return 'year';
+    if (fromDate.slice(0, 7) !== toDate.slice(0, 7)) return 'month';
+    return 'day';
+  }
+
+  private chartDateLabel(dateInput: string, detail: ChartDateLabelDetail): string {
+    const year = dateInput.slice(0, 4);
+    const month = dateInput.slice(5, 7);
+    const day = dateInput.slice(8, 10);
+    if (detail === 'day') return String(Number(day));
+    if (this.i18n.language() === 'en') return detail === 'year' ? `${month}/${day}/${year}` : `${month}/${day}`;
+    return detail === 'year' ? `${day}/${month}/${year}` : `${day}/${month}`;
   }
 
   private chartIndexAt(event: MouseEvent | PointerEvent): number | null {

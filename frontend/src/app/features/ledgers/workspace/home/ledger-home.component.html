@@ -70,8 +70,8 @@
 
             @if (flowMode() === 'instant') {
               @for (point of chartPoints(); track point.index) {
-                <rect class="flow-chart__income" [attr.x]="point.x - point.barWidth - point.barGap" [attr.y]="point.incomeY" [attr.width]="point.barWidth" [attr.height]="point.incomeHeight" />
-                <rect class="flow-chart__expense" [attr.x]="point.x + point.barGap" [attr.y]="chartZeroY" [attr.width]="point.barWidth" [attr.height]="point.expenseHeight" />
+                <rect class="flow-chart__income" [attr.x]="point.incomeX" [attr.y]="point.incomeY" [attr.width]="point.barWidth" [attr.height]="point.incomeHeight" />
+                <rect class="flow-chart__expense" [attr.x]="point.expenseX" [attr.y]="chartZeroY" [attr.width]="point.barWidth" [attr.height]="point.expenseHeight" />
                 @if (point.showLabel) { <text class="flow-chart__label" [attr.x]="point.x" [attr.y]="chartHeight - 12" text-anchor="middle">{{ point.label }}</text> }
               }
             } @else {

@@ -50,7 +50,7 @@
 .flow-chart__point { fill: var(--blue); stroke: var(--line-strong); stroke-width: 1.5; }
 .flow-chart__cursor { stroke: var(--blue-strong); stroke-width: 2; stroke-dasharray: 6 5; pointer-events: none; }
 .flow-chart__label, .flow-chart__y-label { fill: var(--text-muted); font-weight: 650; pointer-events: none; }
-.flow-chart__label { font-size: 24px; }
+.flow-chart__label { font-size: var(--chart-x-label-font-size); }
 .flow-chart__y-label { font-size: 22px; font-variant-numeric: tabular-nums; }
 .flow-chart__tooltip {
   position: absolute;
