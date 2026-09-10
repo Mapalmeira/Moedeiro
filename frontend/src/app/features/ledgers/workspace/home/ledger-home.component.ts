@@ -88,7 +88,8 @@ interface HomePreviewLimits {
 }
 
 const DAY_SECONDS = 86_400;
-const COMPACT_HOME_PREVIEW_LIMITS: HomePreviewLimits = { accounts: 5, budgets: 3, events: 4 };
+const HOME_PREVIEW_FETCH_LIMIT = 10;
+const INITIAL_HOME_PREVIEW_LIMITS: HomePreviewLimits = { accounts: 5, budgets: 3, events: 4 };
 const WARNING_BUDGET_USAGE_PERCENT = 80;
 const CHART_WIDTH = 1000;
 const CHART_HEIGHT = 300;
@@ -128,6 +129,7 @@ export class LedgerHomeComponent {
   private dashboardRequest?: Subscription;
   private chartRequest?: Subscription;
   private previewObserver?: ResizeObserver;
+  private previewContentObserver?: MutationObserver;
   private dashboardScopeKey: string | null = null;
 
   readonly context = inject(LedgerContextService);
@@ -157,9 +159,8 @@ export class LedgerHomeComponent {
   readonly loading = signal(false);
   readonly flowLoading = signal(false);
   readonly error = signal<string | null>(null);
-  readonly previewLimits = signal<HomePreviewLimits>(COMPACT_HOME_PREVIEW_LIMITS);
+  readonly previewLimits = signal<HomePreviewLimits>(INITIAL_HOME_PREVIEW_LIMITS);
 
-  readonly homeGrid = viewChild<ElementRef<HTMLElement>>('homeGrid');
   readonly accountsList = viewChild<ElementRef<HTMLElement>>('accountsList');
   readonly budgetList = viewChild<ElementRef<HTMLElement>>('budgetList');
   readonly eventsList = viewChild<ElementRef<HTMLElement>>('eventsList');
@@ -220,14 +221,14 @@ export class LedgerHomeComponent {
     if (!currency) return [];
     const accounts = this.accountByUuid();
     const numberFormat = this.preferences.current().number_format;
-    return this.balances().flatMap(balance => {
+    return this.balances().flatMap<HomeAccountRow>(balance => {
       const account = accounts.get(balance.account_uuid);
       return account ? [{
         account,
         balance: formatCurrencyAmount(balance.balance, currency, numberFormat),
         balanceTone: balance.balance > 0 ? 'positive' : balance.balance < 0 ? 'negative' : 'neutral',
       }] : [];
-    });
+    }).slice(0, this.previewLimits().accounts);
   });
 
   readonly budgetRows = computed<HomeBudgetRow[]>(() => {
@@ -236,7 +237,7 @@ export class LedgerHomeComponent {
     const accounts = this.accountByUuid();
     const categories = this.categoryByUuid();
     const format = this.preferences.current().number_format;
-    return this.activeBudgets().map(budget => {
+    return this.activeBudgets().map<HomeBudgetRow>(budget => {
       const spent = budget.spent_amount ?? 0;
       const usage = budget.amount === 0 ? (spent > 0 ? Number.POSITIVE_INFINITY : 0) : spent / budget.amount * 100;
       return {
@@ -249,7 +250,7 @@ export class LedgerHomeComponent {
         progress: Number.isFinite(usage) ? Math.min(100, Math.max(0, usage)) : 100,
         tone: spent > budget.amount ? 'danger' : usage >= WARNING_BUDGET_USAGE_PERCENT ? 'yellow' : 'green',
       };
-    });
+    }).slice(0, this.previewLimits().budgets);
   });
 
   readonly eventRows = computed<HomeEventRow[]>(() => {
@@ -258,7 +259,7 @@ export class LedgerHomeComponent {
     const accountByUuid = this.accountByUuid();
     const categoryByUuid = this.categoryByUuid();
     const preferences = this.preferences.current();
-    return this.recentEvents().map(event => {
+    return this.recentEvents().map<HomeEventRow>(event => {
       const movements = event.movements.filter(movement => accountByUuid.get(movement.account_uuid)?.currency_uuid === currency.uuid);
       const value = movements.reduce((sum, movement) => sum + movement.value * movement.quantity, 0);
       const accountNames = [...new Set(movements.map(movement => accountByUuid.get(movement.account_uuid)?.name).filter((name): name is string => !!name))];
@@ -274,7 +275,7 @@ export class LedgerHomeComponent {
         value: formatCurrencyAmount(value, currency, preferences.number_format),
         valueTone: value > 0 ? 'positive' : value < 0 ? 'negative' : 'neutral',
       };
-    });
+    }).slice(0, this.previewLimits().events);
   });
 
   readonly cumulativeValues = computed(() => {
@@ -365,11 +366,10 @@ export class LedgerHomeComponent {
       const ledgerUuid = this.context.ledgerUuid();
       const currencyUuid = this.selectedCurrencyUuid();
       const range = this.dashboardRange();
-      const previewLimits = this.previewLimits();
       const ready = this.resourcesReady();
       if (!ready) return;
       if (ledgerUuid && currencyUuid && range) {
-        untracked(() => this.loadDashboard(previewLimits));
+        untracked(() => this.loadDashboard());
       } else {
         untracked(() => {
           this.dashboardRequest?.unsubscribe();
@@ -380,11 +380,10 @@ export class LedgerHomeComponent {
       }
     });
     effect(() => {
-      const grid = this.homeGrid();
       const accountsList = this.accountsList();
       const budgetList = this.budgetList();
       const eventsList = this.eventsList();
-      untracked(() => this.observePreviewCapacity(grid, accountsList, budgetList, eventsList));
+      untracked(() => this.observePreviewCapacity(accountsList, budgetList, eventsList));
     });
     effect(() => {
       const ledgerUuid = this.context.ledgerUuid();
@@ -408,6 +407,7 @@ export class LedgerHomeComponent {
       this.dashboardRequest?.unsubscribe();
       this.chartRequest?.unsubscribe();
       this.previewObserver?.disconnect();
+      this.previewContentObserver?.disconnect();
     });
   }
 
@@ -536,7 +536,7 @@ export class LedgerHomeComponent {
     });
   }
 
-  private loadDashboard(previewLimits: HomePreviewLimits): void {
+  private loadDashboard(): void {
     const ledgerUuid = this.context.ledgerUuid();
     const currencyUuid = this.selectedCurrencyUuid();
     const range = this.dashboardRange();
@@ -551,7 +551,7 @@ export class LedgerHomeComponent {
     this.error.set(null);
     const periodEndTimestamp = range.to - 1;
     this.dashboardRequest = forkJoin({
-      balances: this.entities.listBalances(ledgerUuid, periodEndTimestamp, currencyUuid, previewLimits.accounts),
+      balances: this.entities.listBalances(ledgerUuid, periodEndTimestamp, currencyUuid, HOME_PREVIEW_FETCH_LIMIT),
       cashFlowSummary: this.cashFlowService.summary(ledgerUuid, currencyUuid, {
         from_timestamp: range.from,
         to_timestamp: range.to,
@@ -563,10 +563,10 @@ export class LedgerHomeComponent {
         from_timestamp: range.from,
         to_timestamp: range.to,
         currency_uuid: currencyUuid,
-        page_size: previewLimits.events,
+        page_size: HOME_PREVIEW_FETCH_LIMIT,
         ascending: false,
       }),
-      budgets: this.budgetsService.currencyOverview(ledgerUuid, currencyUuid, periodEndTimestamp, previewLimits.budgets),
+      budgets: this.budgetsService.currencyOverview(ledgerUuid, currencyUuid, periodEndTimestamp, HOME_PREVIEW_FETCH_LIMIT),
     }).pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.loading.set(false)),
@@ -694,28 +694,28 @@ export class LedgerHomeComponent {
   }
 
   private observePreviewCapacity(
-    grid: ElementRef<HTMLElement> | undefined,
     accountsList: ElementRef<HTMLElement> | undefined,
     budgetList: ElementRef<HTMLElement> | undefined,
     eventsList: ElementRef<HTMLElement> | undefined,
   ): void {
     this.previewObserver?.disconnect();
-    if (!grid || !accountsList || !budgetList || !eventsList || typeof ResizeObserver === 'undefined') return;
-    const update = () => this.updatePreviewCapacity(grid.nativeElement, accountsList.nativeElement, budgetList.nativeElement, eventsList.nativeElement);
-    this.previewObserver = new ResizeObserver(update);
-    this.previewObserver.observe(grid.nativeElement);
-    this.previewObserver.observe(accountsList.nativeElement);
-    this.previewObserver.observe(budgetList.nativeElement);
-    this.previewObserver.observe(eventsList.nativeElement);
-    update();
+    this.previewContentObserver?.disconnect();
+    if (!accountsList || !budgetList || !eventsList) return;
+
+    const lists = [accountsList.nativeElement, budgetList.nativeElement, eventsList.nativeElement] as const;
+    const resize = () => this.updatePreviewCapacity(...lists);
+    if (typeof ResizeObserver !== 'undefined') {
+      this.previewObserver = new ResizeObserver(resize);
+      lists.forEach(list => this.previewObserver?.observe(list));
+    }
+    if (typeof MutationObserver !== 'undefined') {
+      this.previewContentObserver = new MutationObserver(() => this.clampPreviewCapacity(...lists));
+      lists.forEach(list => this.previewContentObserver?.observe(list, { childList: true }));
+    }
+    resize();
   }
 
-  private updatePreviewCapacity(grid: HTMLElement, accountsList: HTMLElement, budgetList: HTMLElement, eventsList: HTMLElement): void {
-    const cards = grid.querySelectorAll<HTMLElement>(':scope > .home-card');
-    if (cards.length < 2 || Math.abs(cards[0].getBoundingClientRect().top - cards[1].getBoundingClientRect().top) > 1) {
-      this.setPreviewLimits(COMPACT_HOME_PREVIEW_LIMITS);
-      return;
-    }
+  private updatePreviewCapacity(accountsList: HTMLElement, budgetList: HTMLElement, eventsList: HTMLElement): void {
     this.setPreviewLimits({
       accounts: this.previewCapacity(accountsList),
       budgets: this.previewCapacity(budgetList),
@@ -723,10 +723,37 @@ export class LedgerHomeComponent {
     });
   }
 
+  private clampPreviewCapacity(accountsList: HTMLElement, budgetList: HTMLElement, eventsList: HTMLElement): void {
+    const current = this.previewLimits();
+    this.setPreviewLimits({
+      accounts: Math.min(current.accounts, this.fullyVisiblePreviewRows(accountsList, current.accounts)),
+      budgets: Math.min(current.budgets, this.fullyVisiblePreviewRows(budgetList, current.budgets)),
+      events: Math.min(current.events, this.fullyVisiblePreviewRows(eventsList, current.events)),
+    });
+  }
+
   private previewCapacity(list: HTMLElement): number {
-    const row = list.querySelector<HTMLElement>(':scope > a');
-    const rowHeight = row?.getBoundingClientRect().height ?? Number.parseFloat(getComputedStyle(list).getPropertyValue('--list-row-height'));
-    return Number.isFinite(rowHeight) && rowHeight > 0 ? Math.max(1, Math.floor(list.clientHeight / rowHeight)) : 1;
+    const rows = [...list.querySelectorAll<HTMLElement>(':scope > a')];
+    const measuredRowHeight = rows.reduce((height, row) => Math.max(height, row.getBoundingClientRect().height), 0);
+    const fallbackRowHeight = Number.parseFloat(getComputedStyle(list).getPropertyValue('--list-row-height'));
+    const rowHeight = measuredRowHeight || fallbackRowHeight;
+    const listHeight = list.getBoundingClientRect().height;
+    return Number.isFinite(rowHeight) && rowHeight > 0 && listHeight > 0
+      ? Math.min(HOME_PREVIEW_FETCH_LIMIT, Math.max(1, Math.floor(listHeight / rowHeight)))
+      : 1;
+  }
+
+  private fullyVisiblePreviewRows(list: HTMLElement, fallback: number): number {
+    const listBounds = list.getBoundingClientRect();
+    const rows = [...list.querySelectorAll<HTMLElement>(':scope > a')];
+    if (!rows.length || listBounds.height <= 0) return fallback;
+    let visible = 0;
+    for (const row of rows) {
+      const bounds = row.getBoundingClientRect();
+      if (bounds.top < listBounds.top || bounds.bottom > listBounds.bottom) break;
+      visible += 1;
+    }
+    return Math.max(1, visible);
   }
 
   private setPreviewLimits(next: HomePreviewLimits): void {

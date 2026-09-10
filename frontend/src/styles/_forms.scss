@@ -11,8 +11,20 @@
   font-size: .9rem;
 }
 
+/* Filter groups wrap as complete controls, using the space in their tab. */
+.ui-filter-toolbar {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--form-gap);
+}
+.ui-filter-toolbar > * { flex: 0 1 auto; max-width: 100%; }
+
+.ui-field-control,
 .field > input,
 .field > select,
+.field > :is(app-date-input, app-time-input) > input,
 .field > .input-with-action > input {
   box-sizing: border-box;
   width: 100%;
@@ -29,10 +41,14 @@
   transition: box-shadow var(--motion-focus) ease, border-color var(--motion-focus) ease, background var(--motion-focus) ease;
 }
 
+.ui-field-control::placeholder,
 .field > input::placeholder,
+.field > :is(app-date-input, app-time-input) > input::placeholder,
 .field > .input-with-action > input::placeholder { color: color-mix(in srgb, var(--text-muted) 70%, transparent); }
+.ui-field-control:focus,
 .field > input:focus,
 .field > select:focus,
+.field > :is(app-date-input, app-time-input) > input:focus,
 .field > .input-with-action > input:focus {
   border-color: var(--field-focus-strong);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--field-focus) 32%, transparent);

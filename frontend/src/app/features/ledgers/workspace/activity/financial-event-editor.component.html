@@ -27,12 +27,12 @@
           <div class="date-time-fields">
             <label class="field">
               <span>{{ i18n.t('activity.date') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <input type="date" formControlName="date" required />
+              <app-date-input formControlName="date" [required]="true" />
               <app-field-error [text]="fieldError('date')" />
             </label>
             <label class="field">
               <span>{{ i18n.t('activity.time') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <input type="time" formControlName="time" step="1" required />
+              <app-time-input formControlName="time" [required]="true" />
               <app-field-error [text]="fieldError('time')" />
             </label>
           </div>

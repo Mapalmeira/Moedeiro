@@ -47,11 +47,11 @@
           <div class="budget-period-grid">
             <label class="field">
               <span>{{ i18n.t('budgets.from') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <input type="date" formControlName="from_date" required />
+              <app-date-input formControlName="from_date" [required]="true" />
             </label>
             <label class="field">
               <span>{{ i18n.t('budgets.to') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <input type="date" formControlName="to_date" required />
+              <app-date-input formControlName="to_date" [required]="true" />
             </label>
           </div>
 

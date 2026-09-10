@@ -147,15 +147,31 @@ describe('LedgerHomeComponent', () => {
     const from = Date.parse('2026-07-01T00:00:00Z') / 1000;
     const to = Date.parse('2026-08-01T00:00:00Z') / 1000;
     const periodEnd = to - 1;
-    expect(entities.listBalances).toHaveBeenLastCalledWith('ledger', periodEnd, currency.uuid, 5);
+    expect(entities.listBalances).toHaveBeenLastCalledWith('ledger', periodEnd, currency.uuid, 10);
     expect(cashFlow.points).toHaveBeenLastCalledWith('ledger', currency.uuid, from, to, 86_400, { account_uuid: null });
     expect(events.list).toHaveBeenLastCalledWith('ledger', expect.objectContaining({
       from_timestamp: from,
       to_timestamp: to,
       currency_uuid: currency.uuid,
+      page_size: 10,
       ascending: false,
     }));
-    expect(budgets.currencyOverview).toHaveBeenLastCalledWith('ledger', currency.uuid, periodEnd, 3);
+    expect(budgets.currencyOverview).toHaveBeenLastCalledWith('ledger', currency.uuid, periodEnd, 10);
+  });
+
+  it('changes only the rendered preview capacity when the home geometry changes', () => {
+    const component = createComponent();
+    TestBed.tick();
+    const balanceRequests = entities.listBalances.mock.calls.length;
+    const eventRequests = events.list.mock.calls.length;
+    const budgetRequests = budgets.currencyOverview.mock.calls.length;
+
+    component.previewLimits.set({ accounts: 2, budgets: 2, events: 2 });
+    TestBed.tick();
+
+    expect(entities.listBalances).toHaveBeenCalledTimes(balanceRequests);
+    expect(events.list).toHaveBeenCalledTimes(eventRequests);
+    expect(budgets.currencyOverview).toHaveBeenCalledTimes(budgetRequests);
   });
 
   it('pins the chart only for touch input and restores hover after a mouse movement', () => {

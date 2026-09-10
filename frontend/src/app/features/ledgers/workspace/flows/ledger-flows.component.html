@@ -1,20 +1,17 @@
 <section class="flows">
-  <header class="flows-controls">
-    <div class="flows-filter-controls">
-      <label class="flows-control flows-account-control">
-        <span>{{ i18n.t('flows.account') }}</span>
-        <app-entity-search-select [options]="accountOptions()" [value]="selectedAccountUuid()"
-          [ariaLabel]="i18n.t('flows.account')" [searchPlaceholder]="i18n.t('flows.searchAccount')"
-          [emptyText]="i18n.t('flows.noAccounts')" [disabled]="resourcesLoading() || !accounts().length"
-          (valueChange)="selectAccount($event)" />
-      </label>
+  <header class="flows-controls ui-filter-toolbar">
+    <label class="flows-control flows-account-control">
+      <span>{{ i18n.t('flows.account') }}</span>
+      <app-entity-search-select [options]="accountOptions()" [value]="selectedAccountUuid()"
+        [ariaLabel]="i18n.t('flows.account')" [searchPlaceholder]="i18n.t('flows.searchAccount')"
+        [emptyText]="i18n.t('flows.noAccounts')" [disabled]="resourcesLoading() || !accounts().length"
+        (valueChange)="selectAccount($event)" />
+    </label>
 
-      <app-period-selector class="flows-period-control" [mode]="periodMode()" [month]="selectedMonth()"
-        [rangeFromDate]="rangeFromDate()" [rangeToDate]="rangeToDate()" [locale]="locale()"
-        (modeChange)="setPeriodMode($event)" (monthChange)="selectMonth($event)"
-        (rangeFromDateChange)="setRangeFromDate($event)" (rangeToDateChange)="setRangeToDate($event)" />
-    </div>
-
+    <app-period-selector class="flows-period-control" [mode]="periodMode()" [month]="selectedMonth()"
+      [rangeFromDate]="rangeFromDate()" [rangeToDate]="rangeToDate()" [locale]="locale()"
+      (modeChange)="setPeriodMode($event)" (monthChange)="selectMonth($event)"
+      (rangeFromDateChange)="setRangeFromDate($event)" (rangeToDateChange)="setRangeToDate($event)" />
     <label class="flows-control flows-detail-control">
       <span class="flows-detail-control__heading">{{ i18n.t('flows.categoryDetail') }}</span>
       <span class="flows-slider">

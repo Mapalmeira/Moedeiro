@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, Injector, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
 import { normalizeSearchText } from '../search-normalization';
 import { ENTITY_BADGE_DEFAULT_SYMBOL_SIZE, EntityBadgeComponent } from './entity-badge.component';
 import { DropdownSearchAutofocusDirective } from '../ui/dropdown-search-autofocus.directive';
@@ -111,7 +111,7 @@ export interface EntitySearchOption {
       top: calc(100% + var(--space-2));
       left: 0;
       right: 0;
-      max-height: min(var(--search-dropdown-max-height), max(0px, calc(var(--entity-search-available-height, 100dvh) - var(--space-2))));
+      max-height: min(var(--search-dropdown-max-height), var(--entity-search-available-height, 100dvh));
       grid-template-rows: minmax(0, 1fr);
       overflow: hidden;
     }
@@ -141,6 +141,8 @@ export class EntitySearchSelectComponent {
   private static nextId = 0;
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
+  private geometryObserver?: ResizeObserver;
 
   readonly options = input.required<readonly EntitySearchOption[]>();
   readonly value = input('');
@@ -172,15 +174,19 @@ export class EntitySearchSelectComponent {
 
   constructor() {
     const visualViewport = typeof window === 'undefined' ? null : window.visualViewport;
-    if (!visualViewport) return;
-    const reposition = () => {
+    const reposition = (event: Event) => {
+      // Scrolling the options does not change the trigger's position.
+      if (event.target instanceof Node && this.host.nativeElement.contains(event.target)) return;
       if (this.open()) this.resolvePanelGeometry();
     };
-    visualViewport.addEventListener('resize', reposition);
-    visualViewport.addEventListener('scroll', reposition);
+    visualViewport?.addEventListener('resize', reposition);
+    visualViewport?.addEventListener('scroll', reposition);
+    this.host.nativeElement.ownerDocument.addEventListener('scroll', reposition, true);
     this.destroyRef.onDestroy(() => {
-      visualViewport.removeEventListener('resize', reposition);
-      visualViewport.removeEventListener('scroll', reposition);
+      visualViewport?.removeEventListener('resize', reposition);
+      visualViewport?.removeEventListener('scroll', reposition);
+      this.host.nativeElement.ownerDocument.removeEventListener('scroll', reposition, true);
+      this.geometryObserver?.disconnect();
     });
   }
 
@@ -207,14 +213,23 @@ export class EntitySearchSelectComponent {
 
   openList(): void {
     this.query.set('');
-    this.opensUp.set(false);
+    this.resolvePanelGeometry();
     this.open.set(true);
-    queueMicrotask(() => {
-      if (this.open()) this.resolvePanelGeometry();
-    });
+    afterNextRender(() => {
+      if (!this.open()) return;
+      this.resolvePanelGeometry();
+      if (typeof ResizeObserver === 'undefined') return;
+      this.geometryObserver?.disconnect();
+      this.geometryObserver = new ResizeObserver(() => this.resolvePanelGeometry());
+      // Sidebar changes resize ancestors without a window resize event.
+      for (let element: HTMLElement | null = this.host.nativeElement; element; element = element.parentElement) {
+        this.geometryObserver.observe(element);
+      }
+    }, { injector: this.injector });
   }
 
   closeList(): void {
+    this.geometryObserver?.disconnect();
     this.open.set(false);
     this.query.set('');
   }
@@ -231,8 +246,7 @@ export class EntitySearchSelectComponent {
   }
 
   choose(value: string): void {
-    this.open.set(false);
-    this.query.set('');
+    this.closeList();
     this.valueChange.emit(value);
   }
 
@@ -242,27 +256,35 @@ export class EntitySearchSelectComponent {
     if (!trigger) return;
 
     const triggerBounds = trigger.getBoundingClientRect();
-    const dialog = this.host.nativeElement.closest<HTMLElement>('.ui-dialog-surface');
-    const dialogBounds = dialog?.getBoundingClientRect();
     const visualViewport = window.visualViewport;
     const viewportTop = visualViewport?.offsetTop ?? 0;
     const viewportBottom = viewportTop + (visualViewport?.height ?? window.innerHeight);
-    const topBoundary = Math.max(viewportTop, dialogBounds?.top ?? viewportTop);
-    const bottomBoundary = Math.min(viewportBottom, dialogBounds?.bottom ?? viewportBottom);
+    let topBoundary = viewportTop;
+    let bottomBoundary = viewportBottom;
+    for (let ancestor = this.host.nativeElement.parentElement; ancestor; ancestor = ancestor.parentElement) {
+      if (!/^(auto|scroll|hidden|clip)$/.test(getComputedStyle(ancestor).overflowY)) continue;
+      const bounds = ancestor.getBoundingClientRect();
+      const contentTop = bounds.top + ancestor.clientTop;
+      topBoundary = Math.max(topBoundary, contentTop);
+      bottomBoundary = Math.min(bottomBoundary, contentTop + ancestor.clientHeight);
+    }
     const spaceAbove = Math.max(0, triggerBounds.top - topBoundary);
     const spaceBelow = Math.max(0, bottomBoundary - triggerBounds.bottom);
     const styles = getComputedStyle(this.host.nativeElement);
     const panelGap = Number.parseFloat(styles.getPropertyValue('--space-2')) || 0;
+    const panelShadow = Number.parseFloat(styles.getPropertyValue('--button-shadow-offset')) || 0;
     const maxPanelHeight = Number.parseFloat(styles.getPropertyValue('--search-dropdown-max-height')) || Number.POSITIVE_INFINITY;
     const panel = this.host.nativeElement.querySelector<HTMLElement>('.entity-search-select__panel');
-    const desiredHeight = Math.min(panel?.scrollHeight ?? maxPanelHeight, maxPanelHeight);
+    const list = panel?.querySelector<HTMLElement>('.entity-search-select__list');
+    const contentHeight = panel && list ? panel.offsetHeight - list.clientHeight + list.scrollHeight : maxPanelHeight;
+    const desiredHeight = Math.min(contentHeight, maxPanelHeight);
     const usableAbove = Math.max(0, spaceAbove - panelGap);
-    const usableBelow = Math.max(0, spaceBelow - panelGap);
+    const usableBelow = Math.max(0, spaceBelow - panelGap - panelShadow);
     const direction = this.openDirection();
     const autoOpensUp = desiredHeight > usableBelow && (desiredHeight <= usableAbove || usableAbove > usableBelow);
     const opensUp = direction === 'up' || (direction === 'auto' && autoOpensUp);
 
     this.opensUp.set(opensUp);
-    this.availableHeight.set(opensUp ? spaceAbove : spaceBelow);
+    this.availableHeight.set(opensUp ? usableAbove : usableBelow);
   }
 }

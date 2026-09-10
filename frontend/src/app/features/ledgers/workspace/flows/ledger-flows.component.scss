@@ -1,42 +1,27 @@
+:host { container-name: flows-workspace; }
+
 .flows {
   min-width: 0;
   min-height: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   gap: var(--section-gap);
 }
 .flows-controls {
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: var(--form-gap);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--period-selector-width) minmax(0, 1fr);
+  grid-template-areas: "account period detail";
 }
-.flows-filter-controls {
-  min-width: min(100%, calc(var(--flow-account-filter-width) + var(--period-month-select-width)));
-  flex: 1 1 calc(var(--flow-account-filter-width) + var(--period-month-select-width) + var(--form-gap));
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--form-gap);
-}
-.flows-account-control {
-  flex: 0 1 var(--flow-account-filter-width);
-  width: min(100%, var(--flow-account-filter-width));
-}
-.flows-period-control {
-  flex: 0 0 auto;
-  max-width: 100%;
-}
-.flows-detail-control {
-  flex: 0 1 var(--flow-detail-control-width);
-  width: min(100%, var(--flow-detail-control-width));
-}
-.flows-control { min-width: 0; display: grid; gap: var(--field-gap); font-size: var(--control-font-size); font-weight: var(--control-font-weight); }
+.flows-account-control { grid-area: account; }
+.flows-period-control { grid-area: period; width: 100%; }
+.flows-detail-control { grid-area: detail; }
+.flows-control { width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--field-gap); font-size: var(--control-font-size); font-weight: var(--control-font-weight); }
 .flows-detail-control__heading { min-width: 0; line-height: var(--control-line-height); }
-.flows-slider { min-height: calc(var(--control-height) + var(--space-4)); display: grid; grid-template-rows: var(--control-height) var(--space-4); align-items: center; }
+.flows-slider { min-width: 0; min-height: calc(var(--control-height) + var(--space-4)); display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--control-height) var(--space-4); align-items: center; }
 .flows-slider input {
   width: 100%;
+  min-width: 0;
   height: var(--control-height);
   margin: 0;
   appearance: none;
@@ -66,7 +51,7 @@
 .flows-slider input:focus-visible { outline: 3px solid color-mix(in srgb, var(--green) 38%, transparent); outline-offset: var(--space-1); border-radius: var(--radius-sm); }
 .flows-slider__ticks { display: flex; justify-content: space-between; color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1; }
 
-.flows-card { position: relative; min-width: 0; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
+.flows-card { position: relative; min-width: 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
 .flows-card__header { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4); border-bottom: var(--border-width) solid var(--line); background: var(--surface-muted); }
 .flows-card__heading { min-width: 0; }
 .flows-card__heading h2 { margin: 0; font-size: 1.08rem; line-height: var(--heading-line-height); }
@@ -80,16 +65,38 @@
 .flows-card__body > .ui-loading-state { height: 100%; }
 .flows-card__body app-cash-flow-sankey { height: 100%; }
 .flows-state { min-height: 320px; height: 100%; display: flex; flex-direction: column; place-content: center; place-items: center; gap: var(--space-3); padding: var(--space-5); color: var(--text-muted); text-align: center; }
+
+@media (max-height: 900px) {
+  :host { height: auto; min-height: 100%; grid-template-rows: auto; }
+  .flows { grid-template-rows: auto auto; }
+  .flows-card { min-height: var(--flows-card-min-height); }
+  .flows-card__body { min-height: 0; }
+}
+
 @container ledger-section (max-width: 760px) {
   :host { height: auto; min-height: 100%; grid-template-rows: auto; }
 }
 
-@container (max-width: 760px) {
+@container flows-workspace (max-width: 1280px) {
+  .flows-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "account period" "detail period";
+  }
+  .flows-period-control { --period-selector-columns: minmax(0, 1fr); }
+}
+
+@container flows-workspace (max-width: 760px) {
   .flows { grid-template-rows: auto auto; }
-  .flows-filter-controls { flex-basis: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
-  .flows-account-control, .flows-period-control, .flows-detail-control { width: 100%; max-width: none; }
-  .flows-card { min-height: 520px; }
+  .flows-controls {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "account" "period" "detail";
+  }
+  .flows-card { min-height: var(--flows-card-min-height); }
   .flows-card__header { align-items: flex-start; flex-direction: column; }
   .flows-totals { width: 100%; justify-content: space-between; }
   .flows-totals > span { justify-items: start; }
+}
+
+@container flows-workspace (max-width: 320px) {
+  .flows-period-control { --toggle-group-columns: 1; }
 }

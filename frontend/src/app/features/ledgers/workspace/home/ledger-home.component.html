@@ -1,5 +1,5 @@
 <section class="home">
-  <header class="home-commandbar">
+  <header class="home-commandbar ui-filter-toolbar">
     <label class="home-control">
       <span>{{ i18n.t('home.currency') }}</span>
       <app-entity-search-select class="home-currency-select" [options]="currencyOptions()" [value]="selectedCurrencyUuid()"
@@ -38,7 +38,7 @@
       }
     </div>
 
-    <div #homeGrid class="home-grid ui-workspace-card-space">
+    <div class="home-grid ui-workspace-card-space">
       <section class="home-card home-card--flow ui-card ui-projected-surface ui-projection--surface">
         <header class="home-card__header">
           <h2>{{ i18n.t('home.flowInPeriod') }}</h2>
@@ -47,7 +47,7 @@
               [ariaLabel]="i18n.t('flows.account')" [searchPlaceholder]="i18n.t('flows.searchAccount')"
               [emptyText]="i18n.t('flows.noAccounts')" [disabled]="resourcesLoading() || !selectedCurrencyUuid()"
               (valueChange)="selectFlowAccount($event)" />
-            <div class="flow-switch" role="group" [attr.aria-label]="i18n.t('home.flowView')">
+            <div class="flow-switch ui-toggle-group" role="group" [attr.aria-label]="i18n.t('home.flowView')">
               <button type="button" class="ui-press-toggle" [attr.aria-pressed]="flowMode() === 'instant'" (click)="setFlowMode('instant')">{{ i18n.t('home.instantaneous') }}</button>
               <button type="button" class="ui-press-toggle" [attr.aria-pressed]="flowMode() === 'cumulative'" (click)="setFlowMode('cumulative')">{{ i18n.t('home.cumulative') }}</button>
             </div>
@@ -124,7 +124,7 @@
         </div>
       </section>
 
-      <section class="home-card ui-card ui-projected-surface ui-projection--surface">
+      <section class="home-card home-card--list ui-card ui-projected-surface ui-projection--surface">
         <header class="home-card__header"><h2>{{ i18n.t('ledgerShell.budgets') }}</h2><a [routerLink]="['/ledgers', context.ledgerUuid(), 'budgets']">{{ i18n.t('home.viewAll') }} →</a></header>
         <div #budgetList class="budget-list">
           @for (row of budgetRows(); track row.budget.uuid) {

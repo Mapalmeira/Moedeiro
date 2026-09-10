@@ -32,12 +32,12 @@
 
   <section class="activity-panel ui-workspace-card-space ui-card ui-projected-surface ui-projection--surface">
     <form class="activity-filters" [formGroup]="filters" (ngSubmit)="applyFilters()">
-      <div class="activity-filter-grid">
-        <app-period-selector class="activity-period-filter" [mode]="periodMode()" [month]="selectedMonth()"
-          [rangeFromDate]="filters.controls.from_date.value" [rangeToDate]="filters.controls.to_date.value" [locale]="locale()"
-          (modeChange)="setPeriodMode($event)" (monthChange)="selectMonth($event)"
-          (rangeFromDateChange)="setRangeDate('from_date', $event)" (rangeToDateChange)="setRangeDate('to_date', $event)" />
+      <app-period-selector class="activity-period-filter" [mode]="periodMode()" [month]="selectedMonth()"
+        [rangeFromDate]="filters.controls.from_date.value" [rangeToDate]="filters.controls.to_date.value" [locale]="locale()"
+        (modeChange)="setPeriodMode($event)" (monthChange)="selectMonth($event)"
+        (rangeFromDateChange)="setRangeDate('from_date', $event)" (rangeToDateChange)="setRangeDate('to_date', $event)" />
 
+      <div class="activity-filter-fields">
         <label class="field">
           <span>{{ i18n.t('activity.account') }}</span>
           <app-entity-search-select [options]="accountFilterOptions()" [value]="filters.controls.account_uuid.value"

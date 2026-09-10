@@ -76,9 +76,10 @@
   --spinner-size: var(--space-6);
   --spinner-mark-size: calc(var(--spinner-size) / 2);
   --entity-search-width: 420px;
-  --period-month-select-width: 340px;
-  --period-date-field-width: 170px;
-  --period-date-field-min-width: 140px;
+  --period-date-field-width: 160px;
+  --period-value-width: calc((2 * var(--period-date-field-width)) + var(--space-10));
+  --period-selector-width: 600px;
+  --toggle-button-min-width: 108px;
   --range-track-height: 8px;
   --range-thumb-size: 22px;
   --search-dropdown-max-height: 340px;
@@ -94,7 +95,8 @@
   --budget-category-filter-width: 240px;
   --budget-state-filter-width: 280px;
   --flow-account-filter-width: 300px;
-  --flow-detail-control-width: 280px;
+  --home-card-min-height: 360px;
+  --flows-card-min-height: 520px;
   --ledger-sidebar-width: 268px;
   --sidebar-brand-font-size: 2rem;
   --category-tree-indent: var(--space-8);

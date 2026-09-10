@@ -8,6 +8,6 @@ export class DropdownSearchAutofocusDirective implements AfterViewInit {
   private readonly element = inject<ElementRef<HTMLInputElement>>(ElementRef);
 
   ngAfterViewInit(): void {
-    this.element.nativeElement.focus();
+    this.element.nativeElement.focus({ preventScroll: true });
   }
 }

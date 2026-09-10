@@ -12,6 +12,8 @@ describe('PeriodSelectorComponent', () => {
     const fixture = TestBed.createComponent(PeriodSelectorComponent);
     fixture.componentRef.setInput('mode', mode);
     fixture.componentRef.setInput('month', '2026-09');
+    fixture.componentRef.setInput('rangeFromDate', '2026-09-01');
+    fixture.componentRef.setInput('rangeToDate', '2026-09-30');
     fixture.detectChanges();
     return fixture;
   }
@@ -35,12 +37,12 @@ describe('PeriodSelectorComponent', () => {
     const toChange = vi.fn();
     fixture.componentInstance.rangeFromDateChange.subscribe(fromChange);
     fixture.componentInstance.rangeToDateChange.subscribe(toChange);
-    const inputs = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>('input[type="date"]');
+    const inputs = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>('app-date-input input');
 
     inputs[0]!.value = '2026-09-01';
-    inputs[0]!.dispatchEvent(new Event('change'));
+    inputs[0]!.dispatchEvent(new Event('input'));
     inputs[1]!.value = '2026-09-30';
-    inputs[1]!.dispatchEvent(new Event('change'));
+    inputs[1]!.dispatchEvent(new Event('input'));
 
     expect(fromChange).toHaveBeenCalledWith('2026-09-01');
     expect(toChange).toHaveBeenCalledWith('2026-09-30');

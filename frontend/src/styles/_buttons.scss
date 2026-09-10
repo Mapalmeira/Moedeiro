@@ -106,6 +106,18 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 }
 
 /* Persistent press toggle: selected state keeps the physical pressed depth. */
+.ui-toggle-group {
+  min-width: 0;
+  width: fit-content;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: repeat(var(--toggle-group-columns, 2), minmax(var(--toggle-button-min-width), 1fr));
+  gap: var(--space-2);
+  padding-inline-end: var(--compact-shadow-offset);
+  padding-block-end: var(--compact-shadow-offset);
+}
+.ui-toggle-group > .ui-press-toggle { width: 100%; min-width: 0; overflow-wrap: anywhere; }
+
 .ui-press-toggle {
   min-height: var(--menu-item-height);
   padding: 0 var(--space-3);
