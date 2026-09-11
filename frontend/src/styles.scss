@@ -23,7 +23,7 @@ a { color: var(--link); }
   height: var(--title-icon-size);
   border: var(--border-width) solid var(--line-strong);
   border-radius: var(--radius-icon);
-  color: var(--on-green);
+  color: var(--text);
 }
 .ui-icon-badge {
   --icon-badge-size: var(--control-icon-size);
@@ -273,8 +273,8 @@ a { color: var(--link); }
   padding: var(--space-5);
 }
 .ui-delete-dialog-body > .ui-surface-actions { padding-top: 0; }
-.title-icon--green { background: var(--green); }
-.title-icon--yellow { background: var(--yellow); }
+.title-icon--green { background: var(--green); color: var(--on-green); }
+.title-icon--yellow { background: var(--yellow); color: var(--on-yellow); }
 .title-icon--blue { background: var(--blue); color: var(--on-blue); }
 
 :where(button, a, [tabindex]):focus-visible {

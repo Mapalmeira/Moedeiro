@@ -14,7 +14,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   border: var(--border-width) solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
-  color: var(--on-green);
+  color: var(--text);
   font-weight: 800;
   box-shadow: var(--button-shadow);
   transition: transform var(--motion-press) ease, box-shadow var(--motion-press) ease;
@@ -25,7 +25,7 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .ui-button--full app-icon { grid-column: 3; justify-self: end; }
 .ui-button--green { --focus-accent: var(--green); background: var(--green); color: var(--on-green); }
 .ui-button--yellow { --focus-accent: var(--yellow); background: linear-gradient(90deg, var(--yellow-action-start), var(--yellow-action-end)); color: var(--on-yellow); }
-.ui-button--blue { --focus-accent: var(--blue); background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 82%, white), var(--blue)); color: var(--on-blue); }
+.ui-button--blue { --focus-accent: var(--blue); background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 82%, var(--on-blue)), var(--blue)); color: var(--on-blue); }
 
 /* Selection controls retain their state and never use physical press motion. */
 .ui-choice {
@@ -88,9 +88,8 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   transform-origin: 50% 50%;
   transition: transform var(--motion-disclosure) ease;
 }
-.ui-select-trigger[aria-expanded='true'] .ui-select-chevron {
-  transform: rotate(180deg);
-}
+.ui-select-trigger[aria-expanded='true'] .ui-select-chevron { transform: rotate(180deg); }
+
 /* Flag for controls that perform an action and should physically press. */
 .ui-action-press {
   position: relative;
