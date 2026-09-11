@@ -69,7 +69,14 @@ import { LanguageSelectorComponent } from '../../shared/ui/language-selector.com
   `,
   styles: `
     form { display: grid; gap: 0; padding: 0 var(--space-5) var(--space-5); }
-    .preference-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: var(--section-gap); padding: var(--section-gap) 0; }
+    .preference-grid {
+      min-height: calc(var(--control-height) + (2 * var(--menu-item-height)) + (4 * var(--section-gap)));
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+      gap: var(--section-gap);
+      padding: var(--section-gap) 0;
+    }
     .preference-field { min-width: 0; display: grid; gap: var(--field-gap); padding: var(--section-gap) 0; }
     .preference-grid .preference-field { padding: 0; border: 0; }
     .preference-label { font-size: .9rem; font-weight: 780; letter-spacing: -.005em; }

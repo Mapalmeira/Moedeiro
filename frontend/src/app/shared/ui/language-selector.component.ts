@@ -25,8 +25,7 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
       </button>
 
       @if (open()) {
-        <div class="language-selector__menu ui-dropdown-menu ui-projected-surface ui-projection--surface"
-          [class.language-selector__menu--inline]="appearance() === 'field'" role="menu">
+        <div class="language-selector__menu ui-dropdown-menu ui-projected-surface ui-projection--surface" role="menu">
           <button type="button" role="menuitem" [class.language-selector__option--selected]="selectedLanguage() === 'pt-BR'"
             (click)="select('pt-BR')">
             <span class="language-selector__option-main">
@@ -51,7 +50,7 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
     :host { display: inline-block; width: 190px; }
     :host.language-selector--field { display: block; width: 100%; }
     .language-selector { position: relative; width: 100%; }
-    :host.language-selector--field .language-selector { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+    :host.language-selector--field .language-selector { display: grid; grid-template-columns: minmax(0, 1fr); }
     .language-selector__trigger {
       width: 100%;
       min-width: 0;
@@ -92,7 +91,6 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
       left: 0;
       width: 100%;
     }
-    .language-selector__menu--inline { position: static; }
     .language-selector__menu button {
       width: 100%;
       min-height: var(--menu-item-height);
