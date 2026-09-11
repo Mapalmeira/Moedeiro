@@ -728,7 +728,7 @@ export class LedgerHomeComponent {
       lists.forEach(list => this.previewObserver?.observe(list));
     }
     if (typeof MutationObserver !== 'undefined') {
-      this.previewContentObserver = new MutationObserver(() => this.clampPreviewCapacity(...lists));
+      this.previewContentObserver = new MutationObserver(resize);
       lists.forEach(list => this.previewContentObserver?.observe(list, { childList: true }));
     }
     resize();
@@ -742,37 +742,13 @@ export class LedgerHomeComponent {
     });
   }
 
-  private clampPreviewCapacity(accountsList: HTMLElement, budgetList: HTMLElement, eventsList: HTMLElement): void {
-    const current = this.previewLimits();
-    this.setPreviewLimits({
-      accounts: Math.min(current.accounts, this.fullyVisiblePreviewRows(accountsList, current.accounts)),
-      budgets: Math.min(current.budgets, this.fullyVisiblePreviewRows(budgetList, current.budgets)),
-      events: Math.min(current.events, this.fullyVisiblePreviewRows(eventsList, current.events)),
-    });
-  }
-
   private previewCapacity(list: HTMLElement): number {
-    const rows = [...list.querySelectorAll<HTMLElement>(':scope > a')];
-    const measuredRowHeight = rows.reduce((height, row) => Math.max(height, row.getBoundingClientRect().height), 0);
-    const fallbackRowHeight = Number.parseFloat(getComputedStyle(list).getPropertyValue('--list-row-height'));
-    const rowHeight = measuredRowHeight || fallbackRowHeight;
+    const row = list.querySelector<HTMLElement>(':scope > a');
+    const rowHeight = row ? Number.parseFloat(getComputedStyle(row).minHeight) : Number.NaN;
     const listHeight = list.getBoundingClientRect().height;
     return Number.isFinite(rowHeight) && rowHeight > 0 && listHeight > 0
       ? Math.min(HOME_PREVIEW_FETCH_LIMIT, Math.max(1, Math.floor(listHeight / rowHeight)))
       : 1;
-  }
-
-  private fullyVisiblePreviewRows(list: HTMLElement, fallback: number): number {
-    const listBounds = list.getBoundingClientRect();
-    const rows = [...list.querySelectorAll<HTMLElement>(':scope > a')];
-    if (!rows.length || listBounds.height <= 0) return fallback;
-    let visible = 0;
-    for (const row of rows) {
-      const bounds = row.getBoundingClientRect();
-      if (bounds.top < listBounds.top || bounds.bottom > listBounds.bottom) break;
-      visible += 1;
-    }
-    return Math.max(1, visible);
   }
 
   private setPreviewLimits(next: HomePreviewLimits): void {

@@ -79,8 +79,17 @@
 .flow-legend__dot--expense { background: var(--yellow); }
 .flow-legend__dot--cumulative { background: var(--blue); }
 
-:is(.home-list, .budget-list) { min-width: 0; min-height: 0; display: grid; align-content: start; overflow: hidden; }
-.home-list-row { min-width: 0; min-height: var(--list-row-height); display: grid; grid-template-columns: var(--control-icon-footprint) minmax(0, 1fr) auto; grid-template-areas: "icon copy meta"; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--line); color: var(--text); text-decoration: none; }
+:is(.home-list, .budget-list) {
+  --home-preview-row-min-height: calc(var(--control-height) + var(--space-4));
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: repeat(var(--home-preview-capacity, 1), minmax(0, 1fr));
+  overflow: hidden;
+}
+.budget-list { --home-preview-row-min-height: calc(var(--control-height) + var(--space-8) + var(--space-1)); }
+/* Capacity reads the list contract, while the grid distributes only the fractional remainder between complete slots. */
+.home-list-row { min-width: 0; min-height: var(--home-preview-row-min-height); display: grid; grid-template-columns: var(--control-icon-footprint) minmax(0, 1fr) auto; grid-template-areas: "icon copy meta"; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--line); color: var(--text); text-decoration: none; }
 .home-list-row:hover, .budget-row:hover { background: var(--surface-muted); }
 .home-list-row__icon { grid-area: icon; }
 .home-list-row__copy { grid-area: copy; }
@@ -95,7 +104,7 @@
 .value-positive { color: var(--green-strong); }
 .value-negative { color: var(--danger); }
 
-.budget-row { min-width: 0; min-height: var(--list-row-height); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2) var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--line); color: var(--text); text-decoration: none; }
+.budget-row { min-width: 0; min-height: var(--home-preview-row-min-height); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2) var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--line); color: var(--text); text-decoration: none; }
 .home-list-row:last-child, .budget-row:last-child { border-bottom: 0; }
 .budget-row__numbers { display: flex; align-items: baseline; gap: var(--space-3); font-size: var(--control-detail-font-size); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .budget-row__numbers strong { font-weight: 760; }
@@ -106,7 +115,7 @@
 .budget-row__progress i { display: block; height: 100%; background: var(--green); }
 .budget-row__bar--yellow { background: var(--yellow) !important; }
 .budget-row__bar--danger { background: var(--danger-token) !important; }
-.home-card__empty { min-height: 100%; display: grid; place-items: center; padding: var(--space-4); color: var(--text-muted); text-align: center; font-size: var(--control-font-size); }
+.home-card__empty { grid-row: 1 / -1; min-height: 100%; display: grid; place-items: center; padding: var(--space-4); color: var(--text-muted); text-align: center; font-size: var(--control-font-size); }
 
 @container ledger-section (max-width: 980px) {
   :host { height: auto; min-height: 100%; grid-template-rows: auto; }
@@ -146,12 +155,6 @@
   .home-card__header { align-items: flex-start; }
   .home-card--flow .home-card__header h2 { justify-self: start; }
   .flow-chart svg { min-height: 0; }
-  .home-list { grid-auto-rows: max-content; }
-  .home-list-row { min-height: max-content; grid-template-columns: var(--control-icon-footprint) minmax(0, 1fr); grid-template-areas: "icon copy" ". meta"; align-items: start; gap: var(--space-2) var(--space-3); }
-  .home-list-row__amount, .home-event-row__meta { justify-self: start; }
-  .home-event-row__meta { justify-items: start; }
-  .budget-row { grid-template-columns: minmax(0, 1fr); }
-  .budget-row__numbers { justify-content: space-between; }
 }
 
 @container (max-width: 320px) {

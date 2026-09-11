@@ -113,7 +113,7 @@
 
       <section class="home-card home-card--list ui-card ui-projected-surface ui-projection--surface">
         <header class="home-card__header"><h2>{{ i18n.t('ledgerShell.accounts') }}</h2><a [routerLink]="['/ledgers', context.ledgerUuid(), 'accounts']">{{ i18n.t('home.viewAll') }} →</a></header>
-        <div #accountsList class="home-list">
+        <div #accountsList class="home-list" [style.--home-preview-capacity]="previewLimits().accounts">
           @for (row of accountRows(); track row.account.uuid) {
             <a class="home-list-row" [routerLink]="['/ledgers', context.ledgerUuid(), 'accounts']">
               <app-entity-badge class="home-list-row__icon" [icon]="row.account.icon" [color]="row.account.color_code" />
@@ -126,7 +126,7 @@
 
       <section class="home-card home-card--list ui-card ui-projected-surface ui-projection--surface">
         <header class="home-card__header"><h2>{{ i18n.t('ledgerShell.budgets') }}</h2><a [routerLink]="['/ledgers', context.ledgerUuid(), 'budgets']">{{ i18n.t('home.viewAll') }} →</a></header>
-        <div #budgetList class="budget-list">
+        <div #budgetList class="budget-list" [style.--home-preview-capacity]="previewLimits().budgets">
           @for (row of budgetRows(); track row.budget.uuid) {
             <a class="budget-row" [routerLink]="['/ledgers', context.ledgerUuid(), 'budgets']">
               <span class="budget-row__title"><strong>{{ row.budget.name }}</strong><small>{{ row.account?.name ?? i18n.t('home.unavailable') }} · {{ row.category?.name ?? i18n.t('home.unavailable') }}</small></span>
@@ -139,7 +139,7 @@
 
       <section class="home-card home-card--list ui-card ui-projected-surface ui-projection--surface">
         <header class="home-card__header"><h2>{{ i18n.t('home.recentActivity') }}</h2><a [routerLink]="['/ledgers', context.ledgerUuid(), 'activity']">{{ i18n.t('home.viewAll') }} →</a></header>
-        <div #eventsList class="home-list">
+        <div #eventsList class="home-list" [style.--home-preview-capacity]="previewLimits().events">
           @for (row of eventRows(); track row.event.uuid) {
             <a class="home-list-row home-event-row" [routerLink]="['/ledgers', context.ledgerUuid(), 'activity']">
               <span class="home-list-row__icon home-event-row__icon ui-icon-badge ui-projected-icon" [class.ui-icon-badge--green]="row.tone === 'green'" [class.ui-icon-badge--yellow]="row.tone === 'yellow'" [class.ui-icon-badge--blue]="row.tone === 'blue'"><app-icon [name]="row.icon" [size]="18" /></span>

@@ -260,6 +260,37 @@ describe('LedgerHomeComponent', () => {
     expect(budgets.currencyOverview).toHaveBeenCalledTimes(budgetRequests);
   });
 
+  it('derives preview capacity from the rendered row minimum height', () => {
+    const component = createComponent();
+    const layout = component as unknown as { previewCapacity(list: HTMLElement): number };
+    const list = document.createElement('div');
+    const row = document.createElement('a');
+    list.append(row);
+    vi.spyOn(list, 'getBoundingClientRect').mockReturnValue({ height: 350 } as DOMRect);
+    const computedStyle = vi.spyOn(window, 'getComputedStyle').mockReturnValue({ minHeight: '62px' } as CSSStyleDeclaration);
+
+    expect(layout.previewCapacity(list)).toBe(5);
+
+    computedStyle.mockReturnValue({ minHeight: '106px' } as CSSStyleDeclaration);
+    expect(layout.previewCapacity(list)).toBe(3);
+    computedStyle.mockRestore();
+  });
+
+  it('waits for a rendered row before expanding the preview capacity', () => {
+    const component = createComponent();
+    const layout = component as unknown as { previewCapacity(list: HTMLElement): number };
+    const list = document.createElement('div');
+    vi.spyOn(list, 'getBoundingClientRect').mockReturnValue({ height: 350 } as DOMRect);
+
+    expect(layout.previewCapacity(list)).toBe(1);
+
+    const row = document.createElement('a');
+    list.append(row);
+    const computedStyle = vi.spyOn(window, 'getComputedStyle').mockReturnValue({ minHeight: '62px' } as CSSStyleDeclaration);
+    expect(layout.previewCapacity(list)).toBe(5);
+    computedStyle.mockRestore();
+  });
+
   it('centers the instantaneous cursor through the shared income and expense column', () => {
     const component = createComponent();
     TestBed.tick();
