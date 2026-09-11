@@ -41,7 +41,6 @@ describe('CashFlowSankeyComponent', () => {
     const fixture = TestBed.createComponent(CashFlowSankeyComponent);
     fixture.componentRef.setInput('graph', graph());
     fixture.componentRef.setInput('currency', currency);
-    fixture.componentRef.setInput('numberFormat', 'COMMA');
     fixture.detectChanges();
 
     expect(fixture.componentInstance.layout()).toMatchObject({ width: 900, height: 480, nodes: [], links: [] });
@@ -63,7 +62,6 @@ describe('CashFlowSankeyComponent', () => {
     );
     fixture.componentRef.setInput('graph', value);
     fixture.componentRef.setInput('currency', currency);
-    fixture.componentRef.setInput('numberFormat', 'COMMA');
     fixture.componentRef.setInput('ariaLabel', 'Fluxos da conta Principal');
     fixture.detectChanges();
 
@@ -76,16 +74,16 @@ describe('CashFlowSankeyComponent', () => {
     expect(fixture.nativeElement.querySelector('svg')?.getAttribute('aria-label')).toBe('Fluxos da conta Principal');
   });
 
-  it('formats tooltip values with the selected currency convention', () => {
+  it('formats tooltip values with the browser locale', () => {
     const fixture = TestBed.createComponent(CashFlowSankeyComponent);
     fixture.componentRef.setInput('graph', graph());
     fixture.componentRef.setInput('currency', currency);
-    fixture.componentRef.setInput('numberFormat', 'COMMA');
     fixture.detectChanges();
 
     fixture.componentInstance.showValue({ clientX: 10, clientY: 20 } as PointerEvent, 12_34);
 
-    expect(fixture.componentInstance.tooltip()).toEqual({ value: 'R$ 12,34', x: 10, y: 20 });
+    const amount = new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(12.34);
+    expect(fixture.componentInstance.tooltip()).toEqual({ value: `R$ ${amount}`, x: 10, y: 20 });
     fixture.componentInstance.hideValue();
     expect(fixture.componentInstance.tooltip()).toBeNull();
   });

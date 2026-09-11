@@ -76,7 +76,6 @@ export class LedgerActivityComponent {
   readonly categoryIconPreviewLimit = 2;
   readonly periodMode = signal<PeriodMode>('month');
   readonly selectedMonth = signal(this.currentMonth());
-  readonly locale = computed(() => this.i18n.language() === 'en' ? 'en-US' : 'pt-BR');
 
   readonly accounts = signal<LedgerAccount[]>([]);
   readonly currencies = signal<LedgerCurrency[]>([]);
@@ -159,7 +158,7 @@ export class LedgerActivityComponent {
     const balance = this.accountBalance();
     if (!account || balance === null) return null;
     const currency = this.currencyByUuid().get(account.currency_uuid);
-    return currency ? formatCurrencyAmount(balance, currency, this.preferences.current().number_format) : null;
+    return currency ? formatCurrencyAmount(balance, currency) : null;
   });
   readonly accountBalanceTone = computed<ActivityValueTone>(() => {
     const balance = this.accountBalance();
@@ -171,12 +170,11 @@ export class LedgerActivityComponent {
     if (!account || !summary) return null;
     const currency = this.currencyByUuid().get(account.currency_uuid);
     if (!currency) return null;
-    const numberFormat = this.preferences.current().number_format;
     const variation = summary.income - summary.expense;
     return {
-      income: formatCurrencyAmount(summary.income, currency, numberFormat),
-      expense: formatCurrencyAmount(summary.expense, currency, numberFormat),
-      variation: formatCurrencyAmount(variation, currency, numberFormat),
+      income: formatCurrencyAmount(summary.income, currency),
+      expense: formatCurrencyAmount(summary.expense, currency),
+      variation: formatCurrencyAmount(variation, currency),
       variationTone: variation < 0 ? 'negative' as ActivityValueTone : variation > 0 ? 'positive' as ActivityValueTone : 'neutral' as ActivityValueTone,
     };
   });
@@ -207,7 +205,7 @@ export class LedgerActivityComponent {
           const feeCurrencyUuid = accountByUuid.get(fee.account_uuid)?.currency_uuid;
           const feeCurrency = feeCurrencyUuid ? currencyByUuid.get(feeCurrencyUuid) ?? null : null;
           detail = feeCurrency
-            ? this.i18n.t('activity.transferFeeDetail', { value: formatCurrencyAmount(Math.abs(fee.value * fee.quantity), feeCurrency, preferences.number_format) })
+            ? this.i18n.t('activity.transferFeeDetail', { value: formatCurrencyAmount(Math.abs(fee.value * fee.quantity), feeCurrency) })
             : this.i18n.t('activity.transferWithFee');
         }
       }
@@ -223,14 +221,14 @@ export class LedgerActivityComponent {
       let valueTone: ActivityValueTone = 'neutral';
       if (aggregateCurrencies.length === 1) {
         const total = aggregateMovements.reduce((sum, movement) => sum + (movement.value * movement.quantity), 0);
-        value = formatCurrencyAmount(total, aggregateCurrencies[0], preferences.number_format);
+        value = formatCurrencyAmount(total, aggregateCurrencies[0]);
         valueTone = total < 0 ? 'negative' : total > 0 ? 'positive' : 'neutral';
       }
 
       return {
         event,
-        date: formatEventDate(event.occurred_at, preferences.timezone, preferences.date_format),
-        time: formatEventTime(event.occurred_at, preferences.timezone, preferences.time_format),
+        date: formatEventDate(event.occurred_at, preferences.timezone),
+        time: formatEventTime(event.occurred_at, preferences.timezone),
         detail,
         typeLabel: this.eventTypeLabel(event.type),
         typeIcon: this.eventIcon(event.type),

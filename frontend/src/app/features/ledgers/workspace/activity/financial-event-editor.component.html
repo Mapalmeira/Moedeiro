@@ -27,12 +27,12 @@
           <div class="date-time-fields">
             <label class="field">
               <span>{{ i18n.t('activity.date') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <app-date-input formControlName="date" [required]="true" />
+              <input type="date" formControlName="date" required />
               <app-field-error [text]="fieldError('date')" />
             </label>
             <label class="field">
               <span>{{ i18n.t('activity.time') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <app-time-input formControlName="time" [required]="true" />
+              <input type="time" formControlName="time" step="1" required />
               <app-field-error [text]="fieldError('time')" />
             </label>
           </div>
@@ -57,7 +57,7 @@
             <div class="two-column-fields">
               <label class="field">
                 <span>{{ i18n.t('activity.amount') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                <app-currency-amount-input [currency]="accountCurrency(form.controls.account_uuid.value)" [numberFormat]="numberFormat()"
+                <app-currency-amount-input [currency]="accountCurrency(form.controls.account_uuid.value)"
                   [value]="form.controls.amount.value" [ariaLabel]="i18n.t('activity.amount')" [required]="true"
                   (valueChange)="setAmountControl('amount', $event)" />
               </label>
@@ -114,7 +114,7 @@
                     </label>
                     <label class="field shopping-movement__amount">
                       <span class="shopping-movement__mobile-label">{{ i18n.t('activity.amount') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                      <app-currency-amount-input [currency]="accountCurrency(form.controls.account_uuid.value)" [numberFormat]="numberFormat()"
+                      <app-currency-amount-input [currency]="accountCurrency(form.controls.account_uuid.value)"
                         [value]="movement.controls.amount.value" [ariaLabel]="i18n.t('activity.amount')" [required]="true"
                         (valueChange)="setMovementAmount(index, $event)" />
                     </label>
@@ -157,14 +157,14 @@
             <div class="two-column-fields transfer-amount-fields">
               <label class="field">
                 <span>{{ i18n.t('activity.sourceAmount') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                <app-currency-amount-input [currency]="accountCurrency(form.controls.source_account_uuid.value)" [numberFormat]="numberFormat()"
+                <app-currency-amount-input [currency]="accountCurrency(form.controls.source_account_uuid.value)"
                   [value]="form.controls.source_amount.value" [ariaLabel]="i18n.t('activity.sourceAmount')" [required]="true"
                   (valueChange)="setAmountControl('source_amount', $event)" />
               </label>
               @if (!sameTransferCurrency()) {
                 <label class="field">
                   <span>{{ i18n.t('activity.destinationAmount') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                  <app-currency-amount-input [currency]="accountCurrency(form.controls.destination_account_uuid.value)" [numberFormat]="numberFormat()"
+                  <app-currency-amount-input [currency]="accountCurrency(form.controls.destination_account_uuid.value)"
                     [value]="form.controls.destination_amount.value" [ariaLabel]="i18n.t('activity.destinationAmount')" [required]="true"
                     (valueChange)="setAmountControl('destination_amount', $event)" />
                 </label>
@@ -185,7 +185,7 @@
               <div class="two-column-fields">
                 <label class="field">
                   <span>{{ i18n.t('activity.feeAmount') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                  <app-currency-amount-input [currency]="accountCurrency(form.controls.destination_account_uuid.value)" [numberFormat]="numberFormat()"
+                  <app-currency-amount-input [currency]="accountCurrency(form.controls.destination_account_uuid.value)"
                     [value]="form.controls.fee_amount.value" [ariaLabel]="i18n.t('activity.feeAmount')" [required]="true"
                     (valueChange)="setAmountControl('fee_amount', $event)" />
                 </label>

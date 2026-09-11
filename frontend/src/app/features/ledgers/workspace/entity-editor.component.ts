@@ -7,7 +7,6 @@ import { I18nService } from '../../../core/i18n/i18n.service';
 import { LedgerAccount, LedgerCurrency } from '../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../core/ledgers/ledger-entities.service';
 import { formatCurrencyPreview } from '../../../core/ledgers/currency-format';
-import { PreferencesService } from '../../../core/preferences/preferences.service';
 import { EntityBadgeComponent } from '../../../shared/ledger/entity-badge.component';
 import { LedgerAppearanceFieldsComponent } from '../../../shared/ledger/ledger-appearance-fields.component';
 import { FieldErrorComponent } from '../../../shared/ui/field-error.component';
@@ -31,7 +30,6 @@ export class EntityEditorComponent {
   private readonly fb = inject(FormBuilder);
   private readonly entities = inject(LedgerEntitiesService);
   private readonly errors = inject(ApiErrorService);
-  private readonly preferences = inject(PreferencesService);
   private readonly destroyRef = inject(DestroyRef);
   readonly i18n = inject(I18nService);
   readonly kind = input.required<'account' | 'currency'>();
@@ -63,7 +61,7 @@ export class EntityEditorComponent {
     return entity && 'currency_uuid' in entity ? this.currencies().find(c => c.uuid === entity.currency_uuid)?.name ?? entity.currency_uuid : '';
   });
   readonly previewColor = computed(() => /^#[0-9A-Fa-f]{6}$/.test(this.values().color_code) ? this.values().color_code : 'var(--token-accent)');
-  readonly currencyPreview = computed(() => formatCurrencyPreview(this.values(), this.preferences.current().number_format));
+  readonly currencyPreview = computed(() => formatCurrencyPreview(this.values()));
 
   constructor() {
     this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.values.set(this.form.getRawValue()));

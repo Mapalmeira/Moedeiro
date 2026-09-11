@@ -18,9 +18,6 @@ LEDGER_SCHEMA_PATH = ROOT / "app/infrastructure/persistence/sqlite/ledger/schema
 
 VALID_PREFERENCES = {
     "language": "pt-BR",
-    "date_format": "DMY",
-    "time_format": "H24",
-    "number_format": "COMMA",
     "theme": "LIGHT",
     "timezone": "UTC",
 }
@@ -62,9 +59,6 @@ class UserPreferencesRoutesTest(unittest.TestCase):
         saved = save_preferences(
             UserPreferencesPayload(
                 language="pt-BR",
-                date_format="DMY",
-                time_format="H24",
-                number_format="COMMA",
                 theme="DARK",
                 timezone="America/Fortaleza",
             ),
@@ -74,9 +68,6 @@ class UserPreferencesRoutesTest(unittest.TestCase):
         replaced = save_preferences(
             UserPreferencesPayload(
                 language="en",
-                date_format="MDY",
-                time_format="H12",
-                number_format="DOT",
                 theme="LIGHT",
                 timezone="America/New_York",
             ),
@@ -87,19 +78,15 @@ class UserPreferencesRoutesTest(unittest.TestCase):
         self.assertEqual(saved.language, "pt-BR")
         self.assertEqual(replaced.language, "en")
         self.assertEqual(saved.theme, "DARK")
-        self.assertEqual(replaced.date_format, "MDY")
+        self.assertEqual(replaced.timezone, "America/New_York")
         self.assertEqual(get_preferences(self.request, self.user), replaced)
 
     def test_request_rejects_invalid_preferences(self) -> None:
         invalid_overrides = (
             {"language": "pt"},
             {"theme": "SYSTEM"},
-            {"date_format": "DD/MM/YYYY"},
             {"timezone": "Unknown/Timezone"},
             {"language": None},
-            {"date_format": None},
-            {"time_format": None},
-            {"number_format": None},
             {"theme": None},
             {"timezone": None},
         )

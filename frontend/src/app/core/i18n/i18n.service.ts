@@ -297,9 +297,6 @@ const pt = {
   'budgets.validation.period': 'Informe um período válido.',
   'budgets.validation.amount': 'Informe um valor não negativo válido para a moeda da conta.',
   'preferences.title': 'Preferências',
-  'preferences.dateFormat': 'Data',
-  'preferences.timeFormat': 'Hora',
-  'preferences.numberFormat': 'Números',
   'preferences.timezone': 'Fuso horário',
   'preferences.timezoneSearch': 'Buscar fuso horário',
   'preferences.timezoneNoResults': 'Nenhum fuso encontrado.',
@@ -702,9 +699,6 @@ const en: Record<TranslationKey, string> = {
   'budgets.validation.period': 'Enter a valid period.',
   'budgets.validation.amount': 'Enter a valid non-negative amount for the account currency.',
   'preferences.title': 'Preferences',
-  'preferences.dateFormat': 'Date',
-  'preferences.timeFormat': 'Time',
-  'preferences.numberFormat': 'Numbers',
   'preferences.timezone': 'Time zone',
   'preferences.timezoneSearch': 'Search time zone',
   'preferences.timezoneNoResults': 'No time zone found.',
@@ -850,7 +844,7 @@ export class I18nService {
     } catch {
       // Fall back to the browser language.
     }
-    const browserLanguage = typeof navigator !== 'undefined' ? navigator.language : 'pt-BR';
+    const browserLanguage = typeof navigator !== 'undefined' ? (navigator.languages[0] ?? navigator.language) : 'pt-BR';
     return browserLanguage.toLowerCase().startsWith('pt') ? 'pt-BR' : 'en';
   }
 

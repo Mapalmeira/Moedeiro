@@ -37,7 +37,7 @@ describe('PeriodSelectorComponent', () => {
     const toChange = vi.fn();
     fixture.componentInstance.rangeFromDateChange.subscribe(fromChange);
     fixture.componentInstance.rangeToDateChange.subscribe(toChange);
-    const inputs = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>('app-date-input input');
+    const inputs = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>('input[type="date"]');
 
     inputs[0]!.value = '2026-09-01';
     inputs[0]!.dispatchEvent(new Event('input'));

@@ -179,7 +179,6 @@ export class LedgerHomeComponent {
   private readonly currencyByUuid = computed(() => new Map(this.currencies().map(currency => [currency.uuid, currency] as const)));
   private readonly categoryByUuid = computed(() => new Map(this.categories().map(category => [category.uuid, category] as const)));
 
-  readonly locale = computed(() => this.i18n.language() === 'en' ? 'en-US' : 'pt-BR');
   readonly currencyOptions = computed<EntitySearchOption[]>(() => this.currencies().map(currency => ({
     value: currency.uuid,
     label: currency.name,
@@ -209,12 +208,11 @@ export class LedgerHomeComponent {
   readonly metricCards = computed(() => {
     const currency = this.selectedCurrency();
     if (!currency) return [];
-    const numberFormat = this.preferences.current().number_format;
     return [
-      { label: this.i18n.t('home.balance'), value: formatCurrencyAmount(this.currencyBalance(), currency, numberFormat), icon: 'wallet' as IconName, tone: 'green' as Tone },
-      { label: this.i18n.t('home.income'), value: formatCurrencyAmount(this.totalIncome(), currency, numberFormat), icon: 'coins' as IconName, tone: 'blue' as Tone },
-      { label: this.i18n.t('home.expense'), value: formatCurrencyAmount(this.totalExpense(), currency, numberFormat), icon: 'arrow-right' as IconName, tone: 'yellow' as Tone },
-      { label: this.i18n.t('home.variation'), value: formatCurrencyAmount(this.netFlow(), currency, numberFormat), icon: 'chart' as IconName, tone: this.netFlow() < 0 ? 'yellow' as Tone : 'green' as Tone },
+      { label: this.i18n.t('home.balance'), value: formatCurrencyAmount(this.currencyBalance(), currency), icon: 'wallet' as IconName, tone: 'green' as Tone },
+      { label: this.i18n.t('home.income'), value: formatCurrencyAmount(this.totalIncome(), currency), icon: 'coins' as IconName, tone: 'blue' as Tone },
+      { label: this.i18n.t('home.expense'), value: formatCurrencyAmount(this.totalExpense(), currency), icon: 'arrow-right' as IconName, tone: 'yellow' as Tone },
+      { label: this.i18n.t('home.variation'), value: formatCurrencyAmount(this.netFlow(), currency), icon: 'chart' as IconName, tone: this.netFlow() < 0 ? 'yellow' as Tone : 'green' as Tone },
     ];
   });
 
@@ -222,12 +220,11 @@ export class LedgerHomeComponent {
     const currency = this.selectedCurrency();
     if (!currency) return [];
     const accounts = this.accountByUuid();
-    const numberFormat = this.preferences.current().number_format;
     return this.balances().flatMap<HomeAccountRow>(balance => {
       const account = accounts.get(balance.account_uuid);
       return account ? [{
         account,
-        balance: formatCurrencyAmount(balance.balance, currency, numberFormat),
+        balance: formatCurrencyAmount(balance.balance, currency),
         balanceTone: balance.balance > 0 ? 'positive' : balance.balance < 0 ? 'negative' : 'neutral',
       }] : [];
     }).slice(0, this.previewLimits().accounts);
@@ -238,7 +235,6 @@ export class LedgerHomeComponent {
     if (!currency) return [];
     const accounts = this.accountByUuid();
     const categories = this.categoryByUuid();
-    const format = this.preferences.current().number_format;
     return this.activeBudgets().map<HomeBudgetRow>(budget => {
       const spent = budget.spent_amount ?? 0;
       const usage = budget.amount === 0 ? (spent > 0 ? Number.POSITIVE_INFINITY : 0) : spent / budget.amount * 100;
@@ -246,9 +242,9 @@ export class LedgerHomeComponent {
         budget,
         account: accounts.get(budget.account_uuid) ?? null,
         category: categories.get(budget.category_uuid) ?? null,
-        spent: formatCurrencyAmount(spent, currency, format),
-        amount: formatCurrencyAmount(budget.amount, currency, format),
-        percent: Number.isFinite(usage) ? `${new Intl.NumberFormat(this.locale(), { maximumFractionDigits: 0 }).format(usage)}%` : '∞',
+        spent: formatCurrencyAmount(spent, currency),
+        amount: formatCurrencyAmount(budget.amount, currency),
+        percent: Number.isFinite(usage) ? `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(usage)}%` : '∞',
         progress: Number.isFinite(usage) ? Math.min(100, Math.max(0, usage)) : 100,
         tone: spent > budget.amount ? 'danger' : usage >= WARNING_BUDGET_USAGE_PERCENT ? 'yellow' : 'green',
       };
@@ -272,9 +268,9 @@ export class LedgerHomeComponent {
         ...presentation,
         account: accountNames.join(', ') || this.i18n.t('home.unavailable'),
         category: categoryNames.length === 1 ? categoryNames[0] : categoryNames.length > 1 ? this.i18n.t('home.categoryCount', { count: categoryNames.length }) : this.i18n.t('home.unavailable'),
-        date: formatEventDate(event.occurred_at, preferences.timezone, preferences.date_format),
-        time: formatEventTime(event.occurred_at, preferences.timezone, preferences.time_format),
-        value: formatCurrencyAmount(value, currency, preferences.number_format),
+        date: formatEventDate(event.occurred_at, preferences.timezone),
+        time: formatEventTime(event.occurred_at, preferences.timezone),
+        value: formatCurrencyAmount(value, currency),
         valueTone: value > 0 ? 'positive' : value < 0 ? 'negative' : 'neutral',
       };
     }).slice(0, this.previewLimits().events);
@@ -344,11 +340,11 @@ export class LedgerHomeComponent {
         cumulativeY: CHART_ZERO_Y - cumulativeValue * scale,
         label: shortDate,
         showLabel: index % labelStride === labelOffset,
-        date: formatEventDate(pointTimestamp, preferences.timezone, preferences.date_format),
-        income: formatCurrencyAmount(point.income, currency, preferences.number_format),
-        expense: formatCurrencyAmount(point.expense, currency, preferences.number_format),
-        net: formatCurrencyAmount(point.income - point.expense, currency, preferences.number_format),
-        cumulative: formatCurrencyAmount(cumulativeValue, currency, preferences.number_format),
+        date: formatEventDate(pointTimestamp, preferences.timezone),
+        income: formatCurrencyAmount(point.income, currency),
+        expense: formatCurrencyAmount(point.expense, currency),
+        net: formatCurrencyAmount(point.income - point.expense, currency),
+        cumulative: formatCurrencyAmount(cumulativeValue, currency),
       };
     });
   });
@@ -626,12 +622,16 @@ export class LedgerHomeComponent {
   }
 
   private chartDateLabel(dateInput: string, detail: ChartDateLabelDetail): string {
-    const year = dateInput.slice(0, 4);
-    const month = dateInput.slice(5, 7);
-    const day = dateInput.slice(8, 10);
-    if (detail === 'day') return String(Number(day));
-    if (this.i18n.language() === 'en') return detail === 'year' ? `${month}/${day}/${year}` : `${month}/${day}`;
-    return detail === 'year' ? `${day}/${month}/${year}` : `${day}/${month}`;
+    const year = Number(dateInput.slice(0, 4));
+    const month = Number(dateInput.slice(5, 7));
+    const day = Number(dateInput.slice(8, 10));
+    const date = new Date(Date.UTC(year, month - 1, day));
+    const options: Intl.DateTimeFormatOptions = detail === 'day'
+      ? { day: 'numeric', timeZone: 'UTC' }
+      : detail === 'month'
+        ? { day: '2-digit', month: '2-digit', timeZone: 'UTC' }
+        : { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' };
+    return new Intl.DateTimeFormat(undefined, options).format(date);
   }
 
   private chartIndexAt(event: MouseEvent | PointerEvent): number | null {
@@ -652,8 +652,8 @@ export class LedgerHomeComponent {
     if (!currency) return String(value);
     const major = value / 10 ** currency.decimal_places;
     return Math.abs(major) >= 1000
-      ? new Intl.NumberFormat(this.locale(), { notation: 'compact', maximumFractionDigits: 1 }).format(major)
-      : new Intl.NumberFormat(this.locale(), { maximumSignificantDigits: 4 }).format(major);
+      ? new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(major)
+      : new Intl.NumberFormat(undefined, { maximumSignificantDigits: 4 }).format(major);
   }
 
   private monthRange(month: string): { from: number; to: number } | null {

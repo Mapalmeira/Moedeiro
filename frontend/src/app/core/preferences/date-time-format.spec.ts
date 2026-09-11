@@ -16,11 +16,18 @@ describe('ledger date and time formatting', () => {
     expect(zonedTimeInput(timestamp, 'America/Sao_Paulo')).toBe('15:50:07');
   });
 
-  it('honors the selected date and time presentation formats including seconds', () => {
+  it('uses the browser locale for date and time presentation', () => {
     const timestamp = Date.parse('2026-09-07T18:50:07Z') / 1000;
-    expect(formatEventDate(timestamp, 'America/Sao_Paulo', 'DMY')).toBe('07/09/2026');
-    expect(formatEventTime(timestamp, 'America/Sao_Paulo', 'H24')).toBe('15:50:07');
-    expect(formatEventTime(timestamp, 'America/Sao_Paulo', 'H12')).toBe('03:50:07 PM');
+    const date = new Date(timestamp * 1000);
+    const expectedDate = new Intl.DateTimeFormat(undefined, {
+      timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(date);
+    const expectedTime = new Intl.DateTimeFormat(undefined, {
+      timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit',
+    }).format(date);
+
+    expect(formatEventDate(timestamp, 'America/Sao_Paulo')).toBe(expectedDate);
+    expect(formatEventTime(timestamp, 'America/Sao_Paulo')).toBe(expectedTime);
   });
 
   it('advances real calendar dates and rejects impossible ones', () => {

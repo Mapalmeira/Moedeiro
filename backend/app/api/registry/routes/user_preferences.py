@@ -34,9 +34,6 @@ def save_preferences(payload: UserPreferencesPayload, request: Request, user: Au
             request.app.state.databases.open_registry,
             user.uuid,
             payload.language,
-            payload.date_format,
-            payload.time_format,
-            payload.number_format,
             payload.theme,
             payload.timezone,
         )

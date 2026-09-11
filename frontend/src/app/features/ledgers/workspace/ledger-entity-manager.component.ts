@@ -8,7 +8,6 @@ import { LedgerAccount, LedgerAccountBalance, LedgerCurrency } from '../../../co
 import { LedgerEntitiesService } from '../../../core/ledgers/ledger-entities.service';
 import { LedgerContextService } from '../../../core/ledgers/ledger-context.service';
 import { LedgerWorkspaceStateService } from '../../../core/ledgers/ledger-workspace-state.service';
-import { PreferencesService } from '../../../core/preferences/preferences.service';
 import { EntityBadgeComponent } from '../../../shared/ledger/entity-badge.component';
 import { normalizeSearchText } from '../../../shared/search-normalization';
 import { FormMessageComponent } from '../../../shared/ui/form-message.component';
@@ -31,7 +30,6 @@ export class LedgerEntityManagerComponent {
   readonly context = inject(LedgerContextService);
   private readonly workspaceState = inject(LedgerWorkspaceStateService);
   private readonly errors = inject(ApiErrorService);
-  private readonly preferences = inject(PreferencesService);
   private readonly destroyRef = inject(DestroyRef);
   private request?: Subscription;
 
@@ -68,7 +66,7 @@ export class LedgerEntityManagerComponent {
       item,
       detailText: 'currency_uuid' in item ? item.note : null,
       balance,
-      balanceText: currency ? formatCurrencyAmount(balance, currency, this.preferences.current().number_format) : null,
+      balanceText: currency ? formatCurrencyAmount(balance, currency) : null,
     };
   }));
   readonly title = computed(() => this.i18n.t(this.kind() === 'account' ? 'ledgerShell.accounts' : 'ledgerShell.currencies'));

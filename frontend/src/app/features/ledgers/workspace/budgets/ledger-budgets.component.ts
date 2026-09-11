@@ -112,7 +112,7 @@ export class LedgerBudgetsComponent {
     ];
   });
   readonly canCreate = computed(() => this.accounts().length > 0 && this.categories().length > 0 && !this.resourcesLoading() && !this.error());
-  readonly percentFormatter = computed(() => new Intl.NumberFormat(this.i18n.language() === 'en' ? 'en-US' : 'pt-BR', { maximumFractionDigits: 1 }));
+  readonly percentFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
   readonly cards = computed<BudgetCardView[]>(() => {
     const accountByUuid = this.accountByUuid();
     const currencyByUuid = this.currencyByUuid();
@@ -123,11 +123,11 @@ export class LedgerBudgetsComponent {
       const account = accountByUuid.get(budget.account_uuid) ?? null;
       const currency = account ? currencyByUuid.get(account.currency_uuid) ?? null : null;
       const category = categoryByUuid.get(budget.category_uuid) ?? null;
-      const from = formatEventDate(budget.from_timestamp, preferences.timezone, preferences.date_format);
-      const to = formatEventDate(Math.max(budget.from_timestamp, budget.to_timestamp - 1), preferences.timezone, preferences.date_format);
+      const from = formatEventDate(budget.from_timestamp, preferences.timezone);
+      const to = formatEventDate(Math.max(budget.from_timestamp, budget.to_timestamp - 1), preferences.timezone);
       const spent = budget.spent_amount;
-      const amountLabel = currency ? formatCurrencyAmount(budget.amount, currency, preferences.number_format) : String(budget.amount);
-      const spentLabel = spent === null ? null : currency ? formatCurrencyAmount(spent, currency, preferences.number_format) : String(spent);
+      const amountLabel = currency ? formatCurrencyAmount(budget.amount, currency) : String(budget.amount);
+      const spentLabel = spent === null ? null : currency ? formatCurrencyAmount(spent, currency) : String(spent);
       const usage = spent === null ? null : this.usagePercent(spent, budget.amount);
       let stateLabel: string;
       let stateIcon: IconName;
@@ -386,10 +386,10 @@ export class LedgerBudgetsComponent {
 
   private formatPercent(value: number): string {
     if (!Number.isFinite(value)) return '∞';
-    return this.percentFormatter().format(value);
+    return this.percentFormatter.format(value);
   }
 
   private formatAmount(value: number, currency: LedgerCurrency | null): string {
-    return currency ? formatCurrencyAmount(value, currency, this.preferences.current().number_format) : String(value);
+    return currency ? formatCurrencyAmount(value, currency) : String(value);
   }
 }

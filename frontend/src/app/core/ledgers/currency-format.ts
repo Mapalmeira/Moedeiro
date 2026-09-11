@@ -1,6 +1,4 @@
-import type { NumberFormat } from '../preferences/preferences.models';
-
-const numberFormatters = new Map<string, Intl.NumberFormat>();
+const numberFormatters = new Map<number, Intl.NumberFormat>();
 
 export interface CurrencyFormatDefinition {
   prefix: string | null;
@@ -13,28 +11,27 @@ function clampedPrecision(decimalPlaces: number): number {
 }
 
 /** Prefix/suffix whitespace is part of the currency's persisted format. */
-export function formatCurrencyPreview(currency: CurrencyFormatDefinition, format: NumberFormat): string {
-  return formatCurrencyAmount(10 * (10 ** clampedPrecision(currency.decimal_places)), currency, format);
+export function formatCurrencyPreview(currency: CurrencyFormatDefinition): string {
+  return formatCurrencyAmount(10 * (10 ** clampedPrecision(currency.decimal_places)), currency);
 }
 
-export function formatCurrencyNumber(value: number, decimalPlaces: number, format: NumberFormat): string {
+export function formatCurrencyNumber(value: number, decimalPlaces: number): string {
   const precision = clampedPrecision(decimalPlaces);
   const divisor = 10 ** precision;
-  const key = `${format}:${precision}`;
-  let formatter = numberFormatters.get(key);
+  let formatter = numberFormatters.get(precision);
   if (!formatter) {
-    formatter = new Intl.NumberFormat(format === 'COMMA' ? 'de-DE' : 'en-US', {
+    formatter = new Intl.NumberFormat(undefined, {
       minimumFractionDigits: precision,
       maximumFractionDigits: precision,
     });
-    numberFormatters.set(key, formatter);
+    numberFormatters.set(precision, formatter);
   }
   return formatter.format(Math.abs(value) / divisor);
 }
 
-export function formatCurrencyAmount(value: number, currency: CurrencyFormatDefinition, format: NumberFormat): string {
+export function formatCurrencyAmount(value: number, currency: CurrencyFormatDefinition): string {
   const negative = value < 0;
-  const number = formatCurrencyNumber(value, currency.decimal_places, format);
+  const number = formatCurrencyNumber(value, currency.decimal_places);
   return `${negative ? '−' : ''}${currency.prefix ?? ''}${number}${currency.suffix ?? ''}`;
 }
 

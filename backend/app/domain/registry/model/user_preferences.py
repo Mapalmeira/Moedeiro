@@ -5,9 +5,6 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pydantic import AfterValidator, BaseModel, Field
 
 
-DateFormat = Literal["DMY", "MDY", "YMD"]
-TimeFormat = Literal["H12", "H24"]
-NumberFormat = Literal["COMMA", "DOT"]
 Theme = Literal["LIGHT", "DARK"]
 Language = Literal["pt-BR", "en"]
 
@@ -26,8 +23,5 @@ Timezone = Annotated[str, Field(min_length=1, max_length=50), AfterValidator(_va
 class UserPreferences(BaseModel):
     user_uuid: UUID
     language: Language
-    date_format: DateFormat
-    time_format: TimeFormat
-    number_format: NumberFormat
     theme: Theme
     timezone: Timezone

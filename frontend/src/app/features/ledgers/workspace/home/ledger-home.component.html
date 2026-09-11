@@ -8,7 +8,7 @@
         (valueChange)="selectCurrency($event)" />
     </label>
     <app-period-selector class="home-period-control" [mode]="periodMode()" [month]="selectedMonth()"
-      [rangeFromDate]="rangeFromDate()" [rangeToDate]="rangeToDate()" [locale]="locale()"
+      [rangeFromDate]="rangeFromDate()" [rangeToDate]="rangeToDate()"
       (modeChange)="setPeriodMode($event)" (monthChange)="selectMonth($event)"
       (rangeFromDateChange)="updateRangeFrom($event)" (rangeToDateChange)="updateRangeTo($event)" />
   </header>

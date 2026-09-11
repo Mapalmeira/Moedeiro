@@ -44,7 +44,7 @@ class UserDeletionCliTest(unittest.TestCase):
             unit_of_work.ledger_grant_repository.revoke(revoked_grant.uuid, 20)
             unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"encrypted", 10, 610, 10)
             unit_of_work.recovery_code_repository.create(self.user.uuid, b"c" * 32, 10, 110)
-            unit_of_work.user_preferences_repository.save(self.user.uuid, "pt-BR", "YMD", "H24", "DOT", "DARK", "UTC")
+            unit_of_work.user_preferences_repository.save(self.user.uuid, "pt-BR", "DARK", "UTC")
             unit_of_work.auth_session_repository.create(self.user.uuid, b"s" * 32, 10, 100, 10)
             unit_of_work.remember_session_repository.create(self.user.uuid, b"r" * 32, 10, 100)
             unit_of_work.commit()

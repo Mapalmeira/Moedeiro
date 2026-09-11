@@ -24,7 +24,6 @@
 .ui-field-control,
 .field > input,
 .field > select,
-.field > :is(app-date-input, app-time-input) > input,
 .field > .input-with-action > input {
   box-sizing: border-box;
   width: 100%;
@@ -43,12 +42,10 @@
 
 .ui-field-control::placeholder,
 .field > input::placeholder,
-.field > :is(app-date-input, app-time-input) > input::placeholder,
 .field > .input-with-action > input::placeholder { color: color-mix(in srgb, var(--text-muted) 70%, transparent); }
 .ui-field-control:focus,
 .field > input:focus,
 .field > select:focus,
-.field > :is(app-date-input, app-time-input) > input:focus,
 .field > .input-with-action > input:focus {
   border-color: var(--field-focus-strong);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--field-focus) 32%, transparent);

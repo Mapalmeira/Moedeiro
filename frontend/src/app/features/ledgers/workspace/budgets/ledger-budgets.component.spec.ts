@@ -61,9 +61,6 @@ describe('LedgerBudgetsComponent', () => {
   const language = signal<'pt-BR' | 'en'>('pt-BR');
   const preferences = signal({
     language: 'pt-BR' as const,
-    date_format: 'DMY' as const,
-    time_format: 'H24' as const,
-    number_format: 'COMMA' as const,
     theme: 'LIGHT' as const,
     timezone: 'UTC',
   });

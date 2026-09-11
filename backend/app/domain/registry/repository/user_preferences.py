@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.registry.model.user_preferences import DateFormat, Language, NumberFormat, Theme, TimeFormat, Timezone, UserPreferences
+from app.domain.registry.model.user_preferences import Language, Theme, Timezone, UserPreferences
 
 
 class UserPreferencesRepository(ABC):
@@ -10,5 +10,5 @@ class UserPreferencesRepository(ABC):
         pass
 
     @abstractmethod
-    def save(self, user_uuid: UUID, language: Language, date_format: DateFormat, time_format: TimeFormat, number_format: NumberFormat, theme: Theme, timezone: Timezone) -> UserPreferences:
+    def save(self, user_uuid: UUID, language: Language, theme: Theme, timezone: Timezone) -> UserPreferences:
         pass

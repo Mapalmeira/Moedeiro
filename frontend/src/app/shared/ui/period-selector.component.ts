@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
-import { DateInputComponent } from './date-input.component';
 import { MonthSelectComponent } from './month-select.component';
 
 export type PeriodMode = 'month' | 'range';
@@ -8,7 +7,7 @@ export type PeriodMode = 'month' | 'range';
 @Component({
   selector: 'app-period-selector',
   standalone: true,
-  imports: [DateInputComponent, MonthSelectComponent],
+  imports: [MonthSelectComponent],
   template: `
     <div class="period-selector">
       <span class="period-selector__label">{{ i18n.t('common.period') }}</span>
@@ -24,21 +23,21 @@ export type PeriodMode = 'month' | 'range';
 
         <div class="period-selector__value">
           @if (mode() === 'month') {
-            <app-month-select class="period-selector__month" [value]="month()" [locale]="locale()" [ariaLabel]="i18n.t('common.period')"
+            <app-month-select class="period-selector__month" [value]="month()" [ariaLabel]="i18n.t('common.period')"
               [previousYearLabel]="i18n.t('common.previousYear')" [nextYearLabel]="i18n.t('common.nextYear')" [yearLabel]="i18n.t('common.year')"
               (valueChange)="monthChange.emit($event)" />
           } @else {
             <div class="period-selector__range">
               <label class="field period-selector__range-field">
                 <span class="period-selector__visually-hidden">{{ i18n.t('common.from') }}</span>
-                <app-date-input [value]="rangeFromDate()" [ariaLabel]="i18n.t('common.from')"
-                  (valueChange)="rangeFromDateChange.emit($event)" />
+                <input type="date" [value]="rangeFromDate()" [attr.aria-label]="i18n.t('common.from')"
+                  (input)="rangeFromDateChange.emit(dateValue($event))" />
               </label>
               <span class="period-selector__separator" aria-hidden="true">{{ i18n.t('common.to') }}</span>
               <label class="field period-selector__range-field">
                 <span class="period-selector__visually-hidden">{{ i18n.t('common.to') }}</span>
-                <app-date-input [value]="rangeToDate()" [ariaLabel]="i18n.t('common.to')"
-                  (valueChange)="rangeToDateChange.emit($event)" />
+                <input type="date" [value]="rangeToDate()" [attr.aria-label]="i18n.t('common.to')"
+                  (input)="rangeToDateChange.emit(dateValue($event))" />
               </label>
             </div>
           }
@@ -72,10 +71,7 @@ export type PeriodMode = 'month' | 'range';
     }
     .period-selector__switch { width: 100%; }
     .period-selector__switch .ui-press-toggle { min-width: 0; min-height: var(--control-height); }
-    .period-selector__value {
-      width: 100%;
-      min-width: 0;
-    }
+    .period-selector__value { width: 100%; min-width: 0; }
     .period-selector__month { display: block; width: 100%; min-width: 0; }
     .period-selector__range {
       width: 100%;
@@ -85,8 +81,7 @@ export type PeriodMode = 'month' | 'range';
       align-items: center;
       gap: var(--space-2);
     }
-    .period-selector__range-field,
-    .period-selector__range-field app-date-input { min-width: 0; width: 100%; }
+    .period-selector__range-field { min-width: 0; width: 100%; }
     .period-selector__separator {
       min-height: var(--control-height);
       display: grid;
@@ -123,10 +118,13 @@ export class PeriodSelectorComponent {
   readonly month = input.required<string>();
   readonly rangeFromDate = input('');
   readonly rangeToDate = input('');
-  readonly locale = input('pt-BR');
 
   readonly modeChange = output<PeriodMode>();
   readonly monthChange = output<string>();
   readonly rangeFromDateChange = output<string>();
   readonly rangeToDateChange = output<string>();
+
+  dateValue(event: Event): string {
+    return (event.target as HTMLInputElement).value;
+  }
 }

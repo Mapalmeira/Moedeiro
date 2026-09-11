@@ -31,17 +31,17 @@ class UserPreferencesUseCasesTest(unittest.TestCase):
             get_user_preferences(self.open_registry, self.user.uuid)
 
     def test_save_replaces_the_complete_preference_set(self) -> None:
-        saved = save_user_preferences(self.open_registry, self.user.uuid, "pt-BR", "DMY", "H24", "COMMA", "DARK", "America/Fortaleza")
-        replaced = save_user_preferences(self.open_registry, self.user.uuid, "en", "MDY", "H12", "DOT", "LIGHT", "America/New_York")
+        saved = save_user_preferences(self.open_registry, self.user.uuid, "pt-BR", "DARK", "America/Fortaleza")
+        replaced = save_user_preferences(self.open_registry, self.user.uuid, "en", "LIGHT", "America/New_York")
 
         self.assertEqual(saved.language, "pt-BR")
         self.assertEqual(saved.theme, "DARK")
-        self.assertEqual(replaced.date_format, "MDY")
+        self.assertEqual(replaced.timezone, "America/New_York")
         self.assertEqual(get_user_preferences(self.open_registry, self.user.uuid), replaced)
 
     def test_save_rejects_an_unknown_user(self) -> None:
         with self.assertRaises(UserNotFoundError):
-            save_user_preferences(self.open_registry, uuid4(), "pt-BR", "DMY", "H24", "COMMA", "LIGHT", "UTC")
+            save_user_preferences(self.open_registry, uuid4(), "pt-BR", "LIGHT", "UTC")
 
 
 if __name__ == "__main__":

@@ -3,7 +3,6 @@ import { I18nService } from '../../../../core/i18n/i18n.service';
 import { CashFlowSankey, CashFlowSankeyLink, CashFlowSankeyNode } from '../../../../core/ledgers/cash-flow.models';
 import { formatCurrencyAmount } from '../../../../core/ledgers/currency-format';
 import { LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
-import { NumberFormat } from '../../../../core/preferences/preferences.models';
 
 type SankeySide = CashFlowSankeyNode['side'] | 'surplus';
 type SankeyKind = CashFlowSankeyNode['kind'] | 'surplus';
@@ -188,7 +187,6 @@ export class CashFlowSankeyComponent {
 
   readonly graph = input.required<CashFlowSankey>();
   readonly currency = input.required<LedgerCurrency>();
-  readonly numberFormat = input.required<NumberFormat>();
   readonly ariaLabel = input('');
 
   readonly layout = computed<SankeyLayout>(() => this.buildLayout(this.graph()));
@@ -217,7 +215,7 @@ export class CashFlowSankeyComponent {
   }
 
   formatValue(value: number): string {
-    return formatCurrencyAmount(value, this.currency(), this.numberFormat());
+    return formatCurrencyAmount(value, this.currency());
   }
 
   private buildLayout(graph: CashFlowSankey): SankeyLayout {

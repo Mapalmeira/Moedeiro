@@ -66,7 +66,6 @@ export class LedgerFlowsComponent {
   private readonly accountByUuid = computed(() => new Map(this.accounts().map(account => [account.uuid, account] as const)));
   private readonly currencyByUuid = computed(() => new Map(this.currencies().map(currency => [currency.uuid, currency] as const)));
 
-  readonly locale = computed(() => this.i18n.language() === 'en' ? 'en-US' : 'pt-BR');
   readonly accountOptions = computed<EntitySearchOption[]>(() => this.accounts().map(account => ({
     value: account.uuid,
     label: account.name,
@@ -207,7 +206,7 @@ export class LedgerFlowsComponent {
 
   private formatAmount(value: number): string {
     const currency = this.selectedCurrency();
-    return currency ? formatCurrencyAmount(value, currency, this.preferences.current().number_format) : '—';
+    return currency ? formatCurrencyAmount(value, currency) : '—';
   }
 
   private monthRange(month: string): TimestampRange | null {

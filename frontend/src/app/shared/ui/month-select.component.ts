@@ -66,7 +66,6 @@ export class MonthSelectComponent {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly value = input.required<string>();
-  readonly locale = input('pt-BR');
   readonly ariaLabel = input('');
   readonly previousYearLabel = input('Previous year');
   readonly nextYearLabel = input('Next year');
@@ -76,7 +75,7 @@ export class MonthSelectComponent {
   readonly open = signal(false);
   readonly displayYear = signal(new Date().getFullYear());
   readonly months = computed<MonthOption[]>(() => {
-    const formatter = new Intl.DateTimeFormat(this.locale(), { month: 'short', timeZone: 'UTC' });
+    const formatter = new Intl.DateTimeFormat(undefined, { month: 'short', timeZone: 'UTC' });
     return Array.from({ length: 12 }, (_, index) => ({
       value: index + 1,
       label: this.capitalize(formatter.format(new Date(Date.UTC(2026, index, 1))).replace('.', '')),
@@ -85,7 +84,7 @@ export class MonthSelectComponent {
   readonly displayValue = computed(() => {
     const parsed = this.parse(this.value());
     if (!parsed) return this.value();
-    const month = new Intl.DateTimeFormat(this.locale(), { month: 'long', timeZone: 'UTC' })
+    const month = new Intl.DateTimeFormat(undefined, { month: 'long', timeZone: 'UTC' })
       .format(new Date(Date.UTC(parsed.year, parsed.month - 1, 1)));
     return `${this.capitalize(month)} ${parsed.year}`;
   });
@@ -133,7 +132,7 @@ export class MonthSelectComponent {
   }
 
   private capitalize(value: string): string {
-    return value ? value[0].toLocaleUpperCase(this.locale()) + value.slice(1) : value;
+    return value ? value[0].toLocaleUpperCase() + value.slice(1) : value;
   }
 
   private parse(value: string): { year: number; month: number } | null {

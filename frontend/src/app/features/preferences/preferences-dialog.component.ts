@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, HostListener, effect, inject, input
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiErrorService } from '../../core/api/api-error';
 import { AppLanguage, I18nService } from '../../core/i18n/i18n.service';
-import { BackendTheme, UserPreferences } from '../../core/preferences/preferences.models';
 import { PreferenceDefaultsService } from '../../core/preferences/preference-defaults.service';
+import { BackendTheme, UserPreferences } from '../../core/preferences/preferences.models';
 import { PreferencesService } from '../../core/preferences/preferences.service';
 import { ThemeService, UiTheme } from '../../core/theme/theme.service';
 import { IANA_TIMEZONES } from '../../shared/data/iana-timezones';
@@ -34,75 +34,48 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
         </header>
 
         <form [formGroup]="form" (ngSubmit)="save()" novalidate>
-            <div class="preference-grid preference-grid--top">
-              <section class="preference-field">
-                <span class="preference-label">{{ i18n.t('common.language') }}</span>
-                <app-language-selector appearance="field" [value]="form.controls.language.value" (valueChange)="setLanguage($event)" />
-              </section>
-
-              <section class="preference-field">
-                <span class="preference-label">{{ i18n.t('common.theme') }}</span>
-                <div class="choice-grid choice-grid--2">
-                  <button type="button" class="ui-choice choice-card choice-card--with-icon"
-                    [class.ui-choice--selected]="form.controls.theme.value === 'LIGHT'"
-                    (click)="setTheme('LIGHT')">
-                    <app-icon name="sun" [size]="18" /><span>{{ i18n.t('theme.light') }}</span>
-                  </button>
-                  <button type="button" class="ui-choice choice-card choice-card--with-icon"
-                    [class.ui-choice--selected]="form.controls.theme.value === 'DARK'"
-                    (click)="setTheme('DARK')">
-                    <app-icon name="moon" [size]="18" /><span>{{ i18n.t('theme.dark') }}</span>
-                  </button>
-                </div>
-              </section>
-            </div>
+          <div class="preference-grid">
+            <section class="preference-field">
+              <span class="preference-label">{{ i18n.t('common.language') }}</span>
+              <app-language-selector appearance="field" [value]="form.controls.language.value" (valueChange)="setLanguage($event)" />
+            </section>
 
             <section class="preference-field">
-              <span class="preference-label">{{ i18n.t('preferences.dateFormat') }}</span>
-              <div class="choice-grid choice-grid--3">
-                <button type="button" class="ui-choice choice-card choice-card--example" [class.ui-choice--selected]="form.controls.date_format.value === 'DMY'" (click)="form.controls.date_format.setValue('DMY')">31/12/2026</button>
-                <button type="button" class="ui-choice choice-card choice-card--example" [class.ui-choice--selected]="form.controls.date_format.value === 'MDY'" (click)="form.controls.date_format.setValue('MDY')">12/31/2026</button>
-                <button type="button" class="ui-choice choice-card choice-card--example" [class.ui-choice--selected]="form.controls.date_format.value === 'YMD'" (click)="form.controls.date_format.setValue('YMD')">2026/12/31</button>
+              <span class="preference-label">{{ i18n.t('common.theme') }}</span>
+              <div class="choice-grid choice-grid--2">
+                <button type="button" class="ui-choice choice-card choice-card--with-icon"
+                  [class.ui-choice--selected]="form.controls.theme.value === 'LIGHT'"
+                  (click)="setTheme('LIGHT')">
+                  <app-icon name="sun" [size]="18" /><span>{{ i18n.t('theme.light') }}</span>
+                </button>
+                <button type="button" class="ui-choice choice-card choice-card--with-icon"
+                  [class.ui-choice--selected]="form.controls.theme.value === 'DARK'"
+                  (click)="setTheme('DARK')">
+                  <app-icon name="moon" [size]="18" /><span>{{ i18n.t('theme.dark') }}</span>
+                </button>
               </div>
             </section>
+          </div>
 
-            <div class="preference-grid">
-              <section class="preference-field">
-                <span class="preference-label">{{ i18n.t('preferences.timeFormat') }}</span>
-                <div class="choice-grid choice-grid--2">
-                  <button type="button" class="ui-choice choice-card choice-card--example" [class.ui-choice--selected]="form.controls.time_format.value === 'H12'" (click)="form.controls.time_format.setValue('H12')">07:45 PM</button>
-                  <button type="button" class="ui-choice choice-card choice-card--example" [class.ui-choice--selected]="form.controls.time_format.value === 'H24'" (click)="form.controls.time_format.setValue('H24')">19:45</button>
-                </div>
-              </section>
+          <section class="preference-field">
+            <span class="preference-label">{{ i18n.t('preferences.timezone') }}</span>
+            <app-search-select
+              [options]="timezoneOptions"
+              [value]="form.controls.timezone.value"
+              [ariaLabel]="i18n.t('preferences.timezone')"
+              [searchPlaceholder]="i18n.t('preferences.timezoneSearch')"
+              [emptyText]="i18n.t('preferences.timezoneNoResults')"
+              openDirection="up"
+              (valueChange)="setTimezone($event)" />
+          </section>
 
-              <section class="preference-field">
-                <span class="preference-label">{{ i18n.t('preferences.numberFormat') }}</span>
-                <div class="choice-grid choice-grid--2">
-                  <button type="button" class="ui-choice choice-card choice-card--example" [class.ui-choice--selected]="form.controls.number_format.value === 'COMMA'" (click)="form.controls.number_format.setValue('COMMA')">1.234,56</button>
-                  <button type="button" class="ui-choice choice-card choice-card--example" [class.ui-choice--selected]="form.controls.number_format.value === 'DOT'" (click)="form.controls.number_format.setValue('DOT')">1,234.56</button>
-                </div>
-              </section>
-            </div>
+          @if (errorMessage()) { <app-form-message [text]="errorMessage()!" /> }
 
-            <section class="preference-field">
-              <span class="preference-label">{{ i18n.t('preferences.timezone') }}</span>
-              <app-search-select
-                [options]="timezoneOptions"
-                [value]="form.controls.timezone.value"
-                [ariaLabel]="i18n.t('preferences.timezone')"
-                [searchPlaceholder]="i18n.t('preferences.timezoneSearch')"
-                [emptyText]="i18n.t('preferences.timezoneNoResults')"
-                openDirection="up"
-                (valueChange)="setTimezone($event)" />
-            </section>
-
-            @if (errorMessage()) { <app-form-message [text]="errorMessage()!" /> }
-
-            <footer class="dialog__footer ui-surface-actions">
-              <button class="ui-button ui-button--green" type="submit" [disabled]="form.invalid || saving() || closing()">
-                {{ i18n.t('preferences.save') }}
-              </button>
-            </footer>
+          <footer class="dialog__footer ui-surface-actions">
+            <button class="ui-button ui-button--green" type="submit" [disabled]="form.invalid || saving() || closing()">
+              {{ i18n.t('preferences.save') }}
+            </button>
+          </footer>
         </form>
       </section>
       </div>
@@ -111,21 +84,15 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
   `,
   styles: `
     form { display: grid; gap: 0; padding: 0 var(--space-5) var(--space-5); }
-    .preference-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--section-gap); padding: var(--section-gap) 0; }
-    .preference-grid--top { align-items: start; }
+    .preference-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: var(--section-gap); padding: var(--section-gap) 0; }
     .preference-field { min-width: 0; display: grid; gap: var(--field-gap); padding: var(--section-gap) 0; }
     .preference-grid .preference-field { padding: 0; border: 0; }
     .preference-label { font-size: .9rem; font-weight: 780; letter-spacing: -.005em; }
     .choice-grid { display: grid; gap: var(--space-2); }
     .choice-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .choice-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .choice-card--with-icon { justify-content: flex-start; padding-left: var(--form-gap); }
-    .choice-card--example { font-variant-numeric: tabular-nums; letter-spacing: .01em; }
     .dialog__footer .ui-button { min-width: var(--action-button-min-width); }
-    @media (max-width: 650px) {
-      .preference-grid { grid-template-columns: 1fr; }
-      .choice-grid--3 { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 650px) { .preference-grid { grid-template-columns: 1fr; } }
     @media (max-width: 420px) {
       .choice-grid--2 { grid-template-columns: 1fr; }
       .dialog__footer .ui-button { width: 100%; }
@@ -156,9 +123,6 @@ export class PreferencesDialogComponent {
 
   readonly form = this.fb.group({
     language: this.fb.nonNullable.control(this.initialPreferences.language, Validators.required),
-    date_format: this.fb.nonNullable.control(this.initialPreferences.date_format, Validators.required),
-    time_format: this.fb.nonNullable.control(this.initialPreferences.time_format, Validators.required),
-    number_format: this.fb.nonNullable.control(this.initialPreferences.number_format, Validators.required),
     theme: this.fb.nonNullable.control(this.initialPreferences.theme, Validators.required),
     timezone: this.fb.nonNullable.control(this.initialPreferences.timezone, [Validators.required, Validators.maxLength(50)]),
   });
@@ -174,7 +138,6 @@ export class PreferencesDialogComponent {
   onEscape(): void {
     if (this.open()) this.requestClose();
   }
-
 
   setLanguage(language: AppLanguage): void {
     this.form.controls.language.setValue(language);
@@ -203,9 +166,6 @@ export class PreferencesDialogComponent {
     const value = this.form.getRawValue();
     const payload: UserPreferences = {
       language: value.language,
-      date_format: value.date_format,
-      time_format: value.time_format,
-      number_format: value.number_format,
       theme: value.theme,
       timezone: value.timezone,
     };
@@ -265,9 +225,6 @@ export class PreferencesDialogComponent {
   }
 
   private restoreAfterSaveFailure(message: string): void {
-    // Keep the preferences dialog network-silent while it is open. The last
-    // known persisted snapshot is enough to undo live language/theme previews;
-    // the next GET happens only when the dialog is closed.
     this.applyPreferences(this.lastServerPreferences);
     this.errorMessage.set(message);
   }

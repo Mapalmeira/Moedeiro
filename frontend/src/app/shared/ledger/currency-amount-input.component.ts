@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import type { LedgerCurrency } from '../../core/ledgers/ledger-entities.models';
-import type { NumberFormat } from '../../core/preferences/preferences.models';
 import { currencyAmountInput, formatCurrencyNumber, parseCurrencyAmount } from '../../core/ledgers/currency-format';
 
 @Component({
@@ -60,7 +59,6 @@ import { currencyAmountInput, formatCurrencyNumber, parseCurrencyAmount } from '
 })
 export class CurrencyAmountInputComponent {
   readonly currency = input<LedgerCurrency | null>(null);
-  readonly numberFormat = input.required<NumberFormat>();
   readonly value = input('');
   readonly ariaLabel = input('');
   readonly required = input(false);
@@ -73,7 +71,7 @@ export class CurrencyAmountInputComponent {
     const currency = this.currency();
     if (!currency) return raw.replace(/[^\d.,]/g, '');
     const minor = parseCurrencyAmount(raw, currency.decimal_places);
-    return minor === null ? '' : formatCurrencyNumber(minor, currency.decimal_places, this.numberFormat());
+    return minor === null ? '' : formatCurrencyNumber(minor, currency.decimal_places);
   });
 
   onInput(event: Event): void {
@@ -97,7 +95,7 @@ export class CurrencyAmountInputComponent {
       return;
     }
 
-    input.value = formatCurrencyNumber(minor, precision, this.numberFormat());
+    input.value = formatCurrencyNumber(minor, precision);
     this.valueChange.emit(currencyAmountInput(minor, precision));
   }
 }

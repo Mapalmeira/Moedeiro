@@ -34,6 +34,18 @@ const point = {
   expense_movement_count: 1,
 };
 
+
+function browserDate(dateInput: string, detail: 'day' | 'month' | 'year' = 'year'): string {
+  const [year, month, day] = dateInput.split('-').map(Number);
+  const date = new Date(Date.UTC(year!, month! - 1, day!));
+  const options: Intl.DateTimeFormatOptions = detail === 'day'
+    ? { day: 'numeric', timeZone: 'UTC' }
+    : detail === 'month'
+      ? { day: '2-digit', month: '2-digit', timeZone: 'UTC' }
+      : { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' };
+  return new Intl.DateTimeFormat(undefined, options).format(date);
+}
+
 const account: LedgerAccount = {
   uuid: 'account',
   name: 'Principal',
@@ -48,9 +60,6 @@ describe('LedgerHomeComponent', () => {
   const language = signal<'pt-BR' | 'en'>('pt-BR');
   const preferences = signal({
     language: 'pt-BR' as const,
-    date_format: 'DMY' as const,
-    time_format: 'H24' as const,
-    number_format: 'COMMA' as const,
     theme: 'LIGHT' as const,
     timezone: 'UTC',
   });
@@ -181,7 +190,7 @@ describe('LedgerHomeComponent', () => {
     expect(Math.ceil((to - from) / (2 * 86_400))).toBeLessThanOrEqual(100);
 
     component.cashFlow.set([point, point]);
-    expect(component.chartPoints()[1]?.date).toBe('03/01/2026');
+    expect(component.chartPoints()[1]?.date).toBe(browserDate('2026-01-03'));
   });
 
   it('shows only the date parts needed to distinguish the selected range', () => {
@@ -194,21 +203,21 @@ describe('LedgerHomeComponent', () => {
     TestBed.tick();
 
     component.cashFlow.set(Array.from({ length: 60 }, () => point));
-    expect(component.chartPoints()[35]?.label).toBe('05/01/2026');
+    expect(component.chartPoints()[35]?.label).toBe(browserDate('2026-01-05', 'year'));
 
     component.updateRangeFrom('2026-01-20');
     component.updateRangeTo('2026-02-10');
     TestBed.tick();
 
     component.cashFlow.set(Array.from({ length: 22 }, () => point));
-    expect(component.chartPoints()[13]?.label).toBe('02/02');
+    expect(component.chartPoints()[13]?.label).toBe(browserDate('2026-02-02', 'month'));
 
     component.updateRangeFrom('2026-01-01');
     component.updateRangeTo('2026-01-21');
     TestBed.tick();
 
     component.cashFlow.set(Array.from({ length: 21 }, () => point));
-    expect(component.chartPoints()[1]?.label).toBe('2');
+    expect(component.chartPoints()[1]?.label).toBe(browserDate('2026-01-02', 'day'));
   });
 
   it('uses the label cadence without forcing the first or last chart date', () => {

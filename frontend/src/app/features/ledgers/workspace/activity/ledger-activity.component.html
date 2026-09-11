@@ -33,7 +33,7 @@
   <section class="activity-panel ui-workspace-card-space ui-card ui-projected-surface ui-projection--surface">
     <form class="activity-filters" [formGroup]="filters" (ngSubmit)="applyFilters()">
       <app-period-selector class="activity-period-filter" [mode]="periodMode()" [month]="selectedMonth()"
-        [rangeFromDate]="filters.controls.from_date.value" [rangeToDate]="filters.controls.to_date.value" [locale]="locale()"
+        [rangeFromDate]="filters.controls.from_date.value" [rangeToDate]="filters.controls.to_date.value"
         (modeChange)="setPeriodMode($event)" (monthChange)="selectMonth($event)"
         (rangeFromDateChange)="setRangeDate('from_date', $event)" (rangeToDateChange)="setRangeDate('to_date', $event)" />
 

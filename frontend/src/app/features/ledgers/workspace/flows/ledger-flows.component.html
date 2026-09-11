@@ -9,7 +9,7 @@
     </label>
 
     <app-period-selector class="flows-period-control" [mode]="periodMode()" [month]="selectedMonth()"
-      [rangeFromDate]="rangeFromDate()" [rangeToDate]="rangeToDate()" [locale]="locale()"
+      [rangeFromDate]="rangeFromDate()" [rangeToDate]="rangeToDate()"
       (modeChange)="setPeriodMode($event)" (monthChange)="selectMonth($event)"
       (rangeFromDateChange)="setRangeFromDate($event)" (rangeToDateChange)="setRangeToDate($event)" />
     <label class="flows-control flows-detail-control">
@@ -53,7 +53,7 @@
         } @else if (graph(); as sankey) {
           @if (sankey.nodes.length) {
             @if (selectedCurrency(); as currency) {
-              <app-cash-flow-sankey [graph]="sankey" [currency]="currency" [numberFormat]="preferences.current().number_format"
+              <app-cash-flow-sankey [graph]="sankey" [currency]="currency"
                 [ariaLabel]="i18n.t('flows.diagramAria', { account: selectedAccount()?.name ?? '' })" />
             }
           } @else {

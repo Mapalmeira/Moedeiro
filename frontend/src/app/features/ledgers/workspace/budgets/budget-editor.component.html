@@ -47,17 +47,17 @@
           <div class="budget-period-grid">
             <label class="field">
               <span>{{ i18n.t('budgets.from') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <app-date-input formControlName="from_date" [required]="true" />
+              <input type="date" formControlName="from_date" required />
             </label>
             <label class="field">
               <span>{{ i18n.t('budgets.to') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <app-date-input formControlName="to_date" [required]="true" />
+              <input type="date" formControlName="to_date" required />
             </label>
           </div>
 
           <section class="field">
             <span>{{ i18n.t('budgets.amount') }} <span class="required-mark" aria-hidden="true">*</span></span>
-            <app-currency-amount-input [currency]="selectedCurrency()" [numberFormat]="preferences.current().number_format"
+            <app-currency-amount-input [currency]="selectedCurrency()"
               [value]="values().amount" [disabled]="!selectedCurrency()" [required]="true" [ariaLabel]="i18n.t('budgets.amount')"
               (valueChange)="setAmount($event)" />
           </section>
