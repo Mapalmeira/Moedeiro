@@ -14,13 +14,14 @@ import { PreferencesService } from '../../../../core/preferences/preferences.ser
 import { CurrencyAmountInputComponent } from '../../../../shared/ledger/currency-amount-input.component';
 import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FieldErrorComponent } from '../../../../shared/ui/field-error.component';
+import { DateInputComponent } from '../../../../shared/ui/date-input.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
 import { IconComponent } from '../../../../shared/ui/icon.component';
 
 @Component({
   selector: 'app-budget-editor',
   standalone: true,
-  imports: [ReactiveFormsModule, CurrencyAmountInputComponent, EntitySearchSelectComponent, FieldErrorComponent, FormMessageComponent, IconComponent],
+  imports: [ReactiveFormsModule, CurrencyAmountInputComponent, DateInputComponent, EntitySearchSelectComponent, FieldErrorComponent, FormMessageComponent, IconComponent],
   templateUrl: './budget-editor.component.html',
   styleUrl: './budget-editor.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

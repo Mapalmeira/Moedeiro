@@ -25,12 +25,14 @@ import { CurrencyAmountInputComponent } from '../../../../shared/ledger/currency
 import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FieldErrorComponent } from '../../../../shared/ui/field-error.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
+import { DateInputComponent } from '../../../../shared/ui/date-input.component';
 import { IconComponent, IconName } from '../../../../shared/ui/icon.component';
+import { TimeInputComponent } from '../../../../shared/ui/time-input.component';
 
 @Component({
   selector: 'app-financial-event-editor',
   standalone: true,
-  imports: [ReactiveFormsModule, CurrencyAmountInputComponent, EntitySearchSelectComponent, FieldErrorComponent, FormMessageComponent, IconComponent],
+  imports: [ReactiveFormsModule, CurrencyAmountInputComponent, DateInputComponent, EntitySearchSelectComponent, FieldErrorComponent, FormMessageComponent, IconComponent, TimeInputComponent],
   templateUrl: './financial-event-editor.component.html',
   styleUrl: './financial-event-editor.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
