@@ -34,6 +34,47 @@ describe('DialogShellComponent', () => {
     expect(dismissed).toHaveBeenCalledOnce();
   });
 
+  it('only lets the topmost dialog handle Escape', async () => {
+    const lower = TestBed.createComponent(DialogShellComponent);
+    const upper = TestBed.createComponent(DialogShellComponent);
+    const lowerDismissed = vi.fn();
+    const upperDismissed = vi.fn();
+    lower.componentInstance.dismiss.subscribe(lowerDismissed);
+    upper.componentInstance.dismiss.subscribe(upperDismissed);
+    lower.detectChanges();
+    upper.detectChanges();
+    await Promise.resolve();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+
+    expect(upperDismissed).toHaveBeenCalledOnce();
+    expect(lowerDismissed).not.toHaveBeenCalled();
+
+    upper.destroy();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+
+    expect(lowerDismissed).toHaveBeenCalledOnce();
+    lower.destroy();
+  });
+
+  it('only lets the topmost dialog trap Tab', () => {
+    const lower = TestBed.createComponent(DialogShellComponent);
+    const upper = TestBed.createComponent(DialogShellComponent);
+    lower.detectChanges();
+    upper.detectChanges();
+    const lowerEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+    const upperEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+
+    lower.componentInstance.trapFocus(lowerEvent);
+    upper.componentInstance.trapFocus(upperEvent);
+
+    expect(lowerEvent.defaultPrevented).toBe(false);
+    expect(upperEvent.defaultPrevented).toBe(true);
+
+    upper.destroy();
+    lower.destroy();
+  });
+
   it('restores focus to the element active before the dialog was created', async () => {
     const previous = document.createElement('button');
     document.body.appendChild(previous);

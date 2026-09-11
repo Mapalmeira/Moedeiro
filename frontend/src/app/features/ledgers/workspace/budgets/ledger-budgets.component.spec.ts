@@ -87,6 +87,18 @@ describe('LedgerBudgetsComponent', () => {
     });
   });
 
+  it('closes the editor before opening delete confirmation', () => {
+    const component = TestBed.runInInjectionContext(() => new LedgerBudgetsComponent());
+    component.editorOpen.set(true);
+    component.editing.set(budget);
+
+    component.requestDelete(budget);
+
+    expect(component.editorOpen()).toBe(false);
+    expect(component.editing()).toBeNull();
+    expect(component.deleting()).toBe(budget);
+  });
+
   it('loads the overview immediately after workspace resources finish loading', () => {
     const component = TestBed.runInInjectionContext(() => new LedgerBudgetsComponent());
     ledgerUuid.set('ledger');

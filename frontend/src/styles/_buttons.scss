@@ -23,8 +23,8 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .ui-button--full { width: 100%; display: grid; grid-template-columns: 20px minmax(0, auto) 20px; }
 .ui-button--full > span { grid-column: 2; }
 .ui-button--full app-icon { grid-column: 3; justify-self: end; }
-.ui-button--green { --ui-accent: var(--green); background: var(--green); color: var(--on-green); }
-.ui-button--yellow { --ui-accent: var(--yellow); background: linear-gradient(90deg, var(--yellow-action-start), var(--yellow-action-end)); color: var(--on-yellow); }
+.ui-button--green { --ui-accent: var(--green); background: linear-gradient(90deg, color-mix(in srgb, var(--green) 82%, var(--on-blue)), var(--green)); color: var(--on-green); }
+.ui-button--yellow { --ui-accent: var(--yellow); background: linear-gradient(90deg, color-mix(in srgb, var(--yellow) 82%, var(--on-blue)), var(--yellow)); color: var(--on-yellow); }
 .ui-button--blue { --ui-accent: var(--blue); background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 82%, var(--on-blue)), var(--blue)); color: var(--on-blue); }
 
 /* Selection controls retain their state and never use physical press motion. */
@@ -174,6 +174,6 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 
 .ui-button--danger {
   --ui-accent: var(--danger-token);
-  background: var(--danger-token);
+  background: linear-gradient(90deg, var(--danger-token), color-mix(in srgb, var(--danger-token) 86%, var(--on-danger-token)));
   color: var(--on-danger-token);
 }

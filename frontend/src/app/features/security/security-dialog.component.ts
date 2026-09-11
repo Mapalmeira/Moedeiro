@@ -42,7 +42,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
           <section class="security-section">
             <h3>{{ i18n.t('security.password.title') }}</h3>
 
-            <app-form-message kind="warning" [text]="i18n.t('security.password.logoutWarning')" />
+            <app-form-message kind="info" [text]="i18n.t('security.password.logoutWarning')" />
 
             <form class="security-form" [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate>
                 <div class="password-grid" [class.password-grid--totp]="totpStatus() === 'ENABLED'">

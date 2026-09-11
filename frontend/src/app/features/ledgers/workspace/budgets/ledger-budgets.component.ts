@@ -305,6 +305,7 @@ export class LedgerBudgetsComponent {
   }
 
   requestDelete(budget: LedgerBudget): void {
+    this.closeEditor();
     this.deleteError.set(null);
     this.deleting.set(budget);
   }

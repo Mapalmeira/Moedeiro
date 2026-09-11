@@ -18,6 +18,8 @@ import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, HostList
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DialogShellComponent implements AfterViewInit, OnDestroy {
+  private static readonly stack: DialogShellComponent[] = [];
+
   readonly role = input<'dialog' | 'alertdialog'>('dialog');
   readonly ariaLabel = input('');
   readonly ariaLabelledby = input('');
@@ -27,24 +29,29 @@ export class DialogShellComponent implements AfterViewInit, OnDestroy {
   private readonly previousFocus = typeof document === 'undefined' ? null : document.activeElement as HTMLElement | null;
 
   ngAfterViewInit(): void {
-    queueMicrotask(() => this.focusInitialElement());
+    DialogShellComponent.stack.push(this);
+    queueMicrotask(() => {
+      if (this.isTopmost()) this.focusInitialElement();
+    });
   }
 
   ngOnDestroy(): void {
-    if (this.previousFocus?.isConnected) this.previousFocus.focus({ preventScroll: true });
+    const wasTopmost = this.isTopmost();
+    const index = DialogShellComponent.stack.lastIndexOf(this);
+    if (index >= 0) DialogShellComponent.stack.splice(index, 1);
+    if (wasTopmost && this.previousFocus?.isConnected) this.previousFocus.focus({ preventScroll: true });
   }
 
   @HostListener('document:keydown.escape', ['$event'])
   closeOnEscape(event: Event): void {
-    queueMicrotask(() => {
-      if (event.defaultPrevented) return;
-      event.preventDefault();
-      this.dismiss.emit();
-    });
+    if (!this.isTopmost() || event.defaultPrevented) return;
+    event.preventDefault();
+    this.dismiss.emit();
   }
 
   @HostListener('document:keydown.tab', ['$event'])
   trapFocus(event: Event): void {
+    if (!this.isTopmost()) return;
     const keyboardEvent = event as KeyboardEvent;
     const focusable = this.focusableElements();
     if (!focusable.length) {
@@ -62,6 +69,10 @@ export class DialogShellComponent implements AfterViewInit, OnDestroy {
       event.preventDefault();
       first.focus();
     }
+  }
+
+  private isTopmost(): boolean {
+    return DialogShellComponent.stack[DialogShellComponent.stack.length - 1] === this;
   }
 
   private focusInitialElement(): void {
