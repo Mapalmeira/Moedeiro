@@ -126,7 +126,7 @@ systemctl --user status moedeiro
 
 ## Native installation
 
-A native installation runs Moedeiro directly on the host. Building the web interface requires Node.js 24 with npm 11, while the service itself requires Python 3.14.
+A native installation runs Moedeiro directly on the host. Building the web interface requires a Node.js version supported by Angular 22, while the backend requires Python 3.10 or later.
 
 1. Create a virtual environment and install the backend package from the repository root:
 

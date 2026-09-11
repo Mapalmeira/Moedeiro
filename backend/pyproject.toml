@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "moedeiro"
 version = "1.0.0"
-requires-python = ">=3.14"
+requires-python = ">=3.10"
 dependencies = [
     "argon2-cffi==25.1.0",
     "cryptography==50.0.1",
