@@ -94,7 +94,7 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
   styles: `
     :host { display: grid; justify-items: center; width: 100%; }
     .ledger-card {
-      --token-accent: var(--green); --token-accent-strong: var(--green-strong); --focus-accent: var(--green);
+      --ui-accent: var(--green); --ui-accent-strong: var(--green-strong);
       --ledger-list-min-height: 160px;
       width: min(760px, calc(100% - var(--hard-shadow-offset))); margin-inline-end: var(--hard-shadow-offset); margin-block-end: var(--hard-shadow-offset); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-card);
       background: var(--surface); color: var(--text); overflow: visible;

@@ -29,7 +29,7 @@
   padding-inline-end: var(--button-shadow-offset);
 }
 .home-card { min-width: 0; min-height: var(--home-card-min-height); height: 100%; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); align-content: stretch; overflow: hidden; }
-.home-card--flow { grid-template-rows: auto minmax(0, 1fr) auto; overflow: visible; }
+.home-card--flow { grid-template-rows: auto minmax(0, 1fr); overflow: visible; }
 .home-card__header { min-width: 0; min-height: var(--control-height); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: var(--border-width) solid var(--line); }
 .home-card__header h2 { margin: 0; font-size: 1.08rem; line-height: var(--heading-line-height); }
 .home-card__header a { color: var(--text); font-size: var(--control-detail-font-size); font-weight: 720; text-decoration: none; white-space: nowrap; }
@@ -40,45 +40,6 @@
 .flow-account-select { flex: 0 1 var(--flow-account-filter-width); width: min(100%, var(--flow-account-filter-width)); max-width: 100%; }
 .flow-switch .ui-press-toggle { min-height: var(--control-height); }
 .flow-chart-loading { min-width: 0; min-height: 0; height: 100%; }
-.flow-chart { position: relative; min-width: 0; min-height: 0; height: 100%; padding: var(--space-2) var(--space-3) 0; overflow: hidden; }
-.flow-chart svg { display: block; width: 100%; height: 100%; min-height: 200px; cursor: crosshair; }
-.flow-chart__grid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 5 5; }
-.flow-chart__axis, .flow-chart__y-axis { stroke: var(--line-strong); stroke-width: 1.5; }
-.flow-chart__income { fill: var(--green); stroke: var(--line-strong); stroke-width: 1.5; }
-.flow-chart__expense { fill: var(--yellow); stroke: var(--line-strong); stroke-width: 1.5; }
-.flow-chart__cumulative { fill: none; stroke: var(--blue); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
-.flow-chart__point { fill: var(--blue); stroke: var(--line-strong); stroke-width: 1.5; }
-.flow-chart__cursor { stroke: var(--blue-strong); stroke-width: 2; stroke-dasharray: 6 5; pointer-events: none; }
-.flow-chart__label, .flow-chart__y-label { fill: var(--text-muted); font-weight: 650; pointer-events: none; }
-.flow-chart__label { font-size: var(--chart-x-label-font-size); }
-.flow-chart__y-label { font-size: 22px; font-variant-numeric: tabular-nums; }
-.flow-chart__tooltip {
-  position: absolute;
-  top: var(--space-3);
-  z-index: 2;
-  min-width: 180px;
-  display: grid;
-  gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
-  transform: translateX(-50%);
-  border: var(--border-width) solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  box-shadow: var(--compact-shadow);
-  font-size: var(--control-detail-font-size);
-  pointer-events: none;
-}
-.flow-chart__tooltip strong { font-weight: 800; }
-.flow-chart__tooltip span { display: flex; justify-content: space-between; gap: var(--space-3); color: var(--text-muted); }
-.flow-chart__tooltip b { color: var(--text); font-weight: 780; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.flow-chart__empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--text-muted); font-size: var(--control-font-size); pointer-events: none; }
-.flow-legend { min-width: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-4); padding: 0 var(--space-4) var(--space-4); color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 650; }
-.flow-legend span { display: inline-flex; align-items: center; gap: var(--space-2); }
-.flow-legend__dot { width: var(--space-3); height: var(--space-3); border: 1px solid var(--line-strong); border-radius: var(--radius-icon); }
-.flow-legend__dot--income { background: var(--green); }
-.flow-legend__dot--expense { background: var(--yellow); }
-.flow-legend__dot--cumulative { background: var(--blue); }
-
 :is(.home-list, .budget-list) {
   --home-preview-row-min-height: calc(var(--control-height) + var(--space-4));
   min-width: 0;
@@ -154,7 +115,6 @@
   .metric-card { padding: var(--space-3); }
   .home-card__header { align-items: flex-start; }
   .home-card--flow .home-card__header h2 { justify-self: start; }
-  .flow-chart svg { min-height: 0; }
 }
 
 @container (max-width: 320px) {

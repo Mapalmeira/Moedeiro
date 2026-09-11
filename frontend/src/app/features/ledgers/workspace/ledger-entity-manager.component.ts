@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { DialogShellComponent } from '../../../shared/ui/dialog-shell.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, Subscription, finalize, forkJoin, map } from 'rxjs';
 import { ApiErrorService } from '../../../core/api/api-error';
@@ -19,7 +20,7 @@ type Entity = LedgerAccount | LedgerCurrency;
 
 @Component({
   selector: 'app-ledger-entity-manager',
-  imports: [IconComponent, EntityBadgeComponent, FormMessageComponent, EntityEditorComponent],
+  imports: [DialogShellComponent, IconComponent, EntityBadgeComponent, FormMessageComponent, EntityEditorComponent],
   templateUrl: './ledger-entity-manager.component.html',
   styleUrl: './ledger-entity-manager.component.scss',
   host: { '[class.currency-section]': "kind() === 'currency'" },

@@ -1,5 +1,4 @@
-:host { --token-accent: var(--yellow); --token-accent-strong: var(--yellow-strong); --focus-accent: var(--yellow); --entity-select-accent: var(--yellow); --entity-select-accent-strong: var(--yellow-strong); --entity-select-selected-background: var(--yellow-soft); display: block; }
-.budget-editor-layer { --dialog-width: var(--dialog-width-standard); }
+:host { --ui-accent: var(--yellow); --ui-accent-strong: var(--yellow-strong); --ui-accent-soft: var(--yellow-soft); display: block; }
 form { display: grid; gap: var(--section-gap); padding: var(--space-5); }
 .budget-editor-fields { min-width: 0; display: grid; align-content: start; gap: var(--form-gap); }
 .budget-scope-grid, .budget-period-grid { min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--form-gap); }

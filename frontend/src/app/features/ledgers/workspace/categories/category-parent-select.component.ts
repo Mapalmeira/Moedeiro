@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { DismissiblePopoverDirective } from '../../../../shared/ui/dismissible-popover.directive';
 import { LedgerCategory } from '../../../../core/ledgers/ledger-categories.models';
 import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.component';
 import { normalizeSearchText } from '../../../../shared/search-normalization';
@@ -10,9 +11,9 @@ export const ROOT_CATEGORY_VALUE = '__root__';
 @Component({
   selector: 'app-category-parent-select',
   standalone: true,
-  imports: [DropdownSearchAutofocusDirective, EntityBadgeComponent, IconComponent],
+  imports: [DismissiblePopoverDirective, DropdownSearchAutofocusDirective, EntityBadgeComponent, IconComponent],
   template: `
-    <div class="parent-select">
+    <div class="parent-select" [appDismissiblePopover]="open()" (dismiss)="closeList()">
       <button type="button" class="parent-select__trigger ui-select-trigger ui-trigger-with-icon" (click)="toggleList()"
         [attr.aria-label]="ariaLabel()" aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listId">
         @if (selectedCategory(); as category) {
@@ -93,7 +94,6 @@ export const ROOT_CATEGORY_VALUE = '__root__';
 })
 export class CategoryParentSelectComponent {
   private static nextId = 0;
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly categories = input.required<readonly LedgerCategory[]>();
   readonly excludedUuids = input<ReadonlySet<string>>(new Set<string>());
@@ -123,16 +123,6 @@ export class CategoryParentSelectComponent {
     return !needle || normalizeSearchText(this.rootLabel()).includes(needle);
   });
   readonly selectedCategory = computed(() => this.categories().find(category => category.uuid === this.value()) ?? null);
-
-  @HostListener('document:mousedown', ['$event'])
-  closeWhenClickingOutside(event: MouseEvent): void {
-    if (!this.host.nativeElement.contains(event.target as Node)) this.closeList();
-  }
-
-  @HostListener('document:keydown.escape')
-  closeOnEscape(): void {
-    this.closeList();
-  }
 
   toggleList(): void {
     this.open() ? this.closeList() : this.openList();

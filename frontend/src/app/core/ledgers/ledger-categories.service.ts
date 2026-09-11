@@ -9,18 +9,18 @@ export class LedgerCategoriesService {
   private readonly http = inject(HttpClient);
 
   getTree(ledgerUuid: string): Observable<LedgerCategoryTreeNode[]> {
-    return this.http.get<LedgerCategoryTreeNode[]>(`${API_ROUTES.ledgerCategories(ledgerUuid)}/tree`, { withCredentials: true });
+    return this.http.get<LedgerCategoryTreeNode[]>(`${API_ROUTES.ledgerCategories(ledgerUuid)}/tree`);
   }
 
   create(ledgerUuid: string, payload: LedgerCategoryPayload): Observable<LedgerCategory> {
-    return this.http.post<LedgerCategory>(API_ROUTES.ledgerCategories(ledgerUuid), payload, { withCredentials: true });
+    return this.http.post<LedgerCategory>(API_ROUTES.ledgerCategories(ledgerUuid), payload);
   }
 
   update(ledgerUuid: string, categoryUuid: string, payload: LedgerCategoryPayload): Observable<LedgerCategory> {
-    return this.http.put<LedgerCategory>(`${API_ROUTES.ledgerCategories(ledgerUuid)}/${encodeURIComponent(categoryUuid)}`, payload, { withCredentials: true });
+    return this.http.put<LedgerCategory>(`${API_ROUTES.ledgerCategories(ledgerUuid)}/${encodeURIComponent(categoryUuid)}`, payload);
   }
 
   delete(ledgerUuid: string, categoryUuid: string): Observable<void> {
-    return this.http.delete<void>(`${API_ROUTES.ledgerCategories(ledgerUuid)}/${encodeURIComponent(categoryUuid)}`, { withCredentials: true });
+    return this.http.delete<void>(`${API_ROUTES.ledgerCategories(ledgerUuid)}/${encodeURIComponent(categoryUuid)}`);
   }
 }

@@ -1,13 +1,13 @@
 :host {
-  --token-accent: var(--green);
-  --token-accent-strong: var(--green-strong);
-  --section-foreground: var(--on-green);
-  --focus-accent: var(--token-accent);
+  --ui-accent: var(--green);
+  --ui-accent-strong: var(--green-strong);
+  --ui-on-accent: var(--on-green);
+ 
   display: block;
   min-width: 0;
 }
-:host.currency-section { --token-accent: var(--yellow); --token-accent-strong: var(--yellow-strong); --section-foreground: var(--on-yellow); }
-.title-icon { background: var(--token-accent); color: var(--section-foreground); }
+:host.currency-section { --ui-accent: var(--yellow); --ui-accent-strong: var(--yellow-strong); --ui-on-accent: var(--on-yellow); }
+.title-icon { background: var(--ui-accent); color: var(--ui-on-accent); }
 form { display: grid; gap: var(--section-gap); padding: var(--space-5); }
 .editor-content { display: grid; align-content: start; gap: var(--section-gap); min-width: 0; }
 .fields, .appearance-fields { display: grid; align-content: start; gap: var(--form-gap); min-width: 0; }

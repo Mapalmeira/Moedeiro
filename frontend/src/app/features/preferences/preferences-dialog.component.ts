@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, HostListener, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { DialogShellComponent } from '../../shared/ui/dialog-shell.component';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiErrorService } from '../../core/api/api-error';
 import { AppLanguage, I18nService } from '../../core/i18n/i18n.service';
@@ -12,13 +13,10 @@ import { LanguageSelectorComponent } from '../../shared/ui/language-selector.com
 @Component({
   selector: 'app-preferences-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, FormMessageComponent, IconComponent, LanguageSelectorComponent],
+  imports: [DialogShellComponent, ReactiveFormsModule, FormMessageComponent, IconComponent, LanguageSelectorComponent],
   template: `
     @if (open()) {
-      <div class="dialog-backdrop ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
-      <div class="dialog-layer ui-dialog-layer">
-      <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
-      <section class="dialog ui-dialog-surface" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('preferences.title')">
+      <app-dialog-shell [ariaLabel]="i18n.t('preferences.title')" (dismiss)="requestClose()">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
             <span class="title-icon title-icon--green"><app-icon name="sliders" [size]="21" /></span>
@@ -62,9 +60,7 @@ import { LanguageSelectorComponent } from '../../shared/ui/language-selector.com
             </button>
           </footer>
         </form>
-      </section>
-      </div>
-      </div>
+      </app-dialog-shell>
     }
   `,
   styles: `
@@ -120,11 +116,6 @@ export class PreferencesDialogComponent {
       const isOpen = this.open();
       if (isOpen) untracked(() => this.loadLocal());
     });
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    if (this.open()) this.requestClose();
   }
 
   setLanguage(language: AppLanguage): void {

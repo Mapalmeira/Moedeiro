@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, HostListener, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { DismissiblePopoverDirective } from '../ui/dismissible-popover.directive';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { normalizeSearchText } from '../search-normalization';
@@ -18,7 +19,7 @@ type IconMode = 'lucide' | 'unicode';
 @Component({
   selector: 'app-ledger-appearance-fields',
   standalone: true,
-  imports: [ReactiveFormsModule, IconComponent, LedgerIconComponent, DropdownSearchAutofocusDirective, InfiniteScrollTriggerDirective, LedgerColorFieldComponent],
+  imports: [DismissiblePopoverDirective, ReactiveFormsModule, IconComponent, LedgerIconComponent, DropdownSearchAutofocusDirective, InfiniteScrollTriggerDirective, LedgerColorFieldComponent],
   template: `
     <app-ledger-color-field [colorControl]="colorControl()" />
     <section class="appearance-field icon-field">
@@ -29,7 +30,7 @@ type IconMode = 'lucide' | 'unicode';
       </div>
       <div class="icon-control-slot">
         @if (iconMode() === 'lucide') {
-          <div class="lucide-picker">
+          <div class="lucide-picker" [appDismissiblePopover]="pickerOpen()" (dismiss)="pickerOpen.set(false)">
             <button type="button" class="lucide-picker__trigger ui-select-trigger" (click)="togglePicker()" [attr.aria-label]="i18n.t('ledgers.editor.icon')" [attr.aria-expanded]="pickerOpen()">
               <span class="selected-icon"><app-ledger-icon [icon]="iconControl().value" [size]="22" /></span><span>{{ selectedLabel() }}</span><app-icon class="ui-select-chevron" name="chevron-down" [size]="17" />
             </button>
@@ -52,8 +53,8 @@ type IconMode = 'lucide' | 'unicode';
     </section>
   `,
   styles: `
-    .ui-choice--selected { background: color-mix(in srgb, var(--token-accent, var(--green)) 15%, var(--surface)); }
-    .ui-dropdown-search:focus-within, .ui-select-trigger[aria-expanded=true] { border-color: var(--token-accent-strong, var(--green-strong)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--token-accent, var(--green)) 32%, transparent); }
+    .ui-choice--selected { background: color-mix(in srgb, var(--ui-accent, var(--green)) 15%, var(--surface)); }
+    .ui-dropdown-search:focus-within, .ui-select-trigger[aria-expanded=true] { border-color: var(--ui-accent-strong, var(--green-strong)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent, var(--green)) 32%, transparent); }
     .selected-icon { overflow: hidden; }
     :host { display: grid; gap: var(--space-4); }
     .appearance-field { display: grid; gap: var(--field-gap); min-width: 0; }
@@ -102,8 +103,6 @@ export class LedgerAppearanceFieldsComponent {
     });
   }
 
-  @HostListener('document:mousedown', ['$event'])
-  outside(event: MouseEvent): void { if (this.pickerOpen() && !(event.target as Element | null)?.closest('.lucide-picker')) this.pickerOpen.set(false); }
   closePicker(event: Event): void { event.preventDefault(); event.stopPropagation(); this.pickerOpen.set(false); }
   togglePicker(): void { this.pickerOpen.update(value => !value); if (this.pickerOpen()) { this.search.set(''); this.visibleIconCount.set(ICON_BATCH_SIZE); } }
   updateSearch(event: Event): void { this.search.set((event.target as HTMLInputElement).value); this.visibleIconCount.set(ICON_BATCH_SIZE); }

@@ -1,10 +1,7 @@
 :host {
-  --focus-accent: var(--yellow);
-  --spinner-accent: var(--yellow);
-  --spinner-accent-strong: var(--yellow-strong);
-  --entity-select-accent: var(--yellow);
-  --entity-select-accent-strong: var(--yellow-strong);
-  --entity-select-selected-background: var(--yellow-soft);
+  --ui-accent: var(--yellow);
+  --ui-accent-strong: var(--yellow-strong);
+  --ui-accent-soft: var(--yellow-soft);
   display: block;
   min-width: 0;
   min-height: 100%;
@@ -54,7 +51,6 @@
 .budget-grid__empty { grid-column: 1 / -1; min-height: 420px; }
 .budget-grid__sentinel { grid-column: 1 / -1; min-height: var(--space-1); display: grid; place-items: center; }
 .budget-grid__sentinel .ui-spinner { --spinner-size: var(--space-5); }
-.budget-delete-layer { --dialog-width: 520px; }
 .budget-delete-icon { background: var(--danger-token); color: var(--on-danger-token); }
 
 @container (max-width: 980px) {

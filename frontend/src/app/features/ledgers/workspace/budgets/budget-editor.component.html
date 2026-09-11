@@ -1,82 +1,77 @@
-<div class="ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
-<div class="ui-dialog-layer budget-editor-layer">
-  <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
-    <section class="ui-dialog-surface" role="dialog" aria-modal="true" [attr.aria-label]="title()">
-      <header class="ui-dialog-header">
-        <div class="ui-dialog-title">
-          <span class="title-icon title-icon--yellow"><app-icon [name]="budget() ? 'pencil' : 'plus'" [size]="20" /></span>
-          <h2>{{ title() }}</h2>
-        </div>
-        <button class="icon-button icon-button--control ui-action-press" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
-          <app-icon name="x" [size]="19" />
-        </button>
-      </header>
-
-      <form [formGroup]="form" (ngSubmit)="save()">
-        <div class="budget-editor-fields">
-          <label class="field">
-            <span>{{ i18n.t('budgets.name') }} <span class="required-mark" aria-hidden="true">*</span></span>
-            <input formControlName="name" maxlength="50" autocomplete="off" />
-            <app-field-error [text]="fieldError('name')" />
-          </label>
-          <label class="field">
-            <span>{{ i18n.t('budgets.description') }}</span>
-            <input formControlName="description" maxlength="300" autocomplete="off" />
-            <app-field-error [text]="fieldError('description')" />
-          </label>
-
-          <div class="budget-scope-grid">
-            <section class="field">
-              <span>{{ i18n.t('budgets.account') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <app-entity-search-select [options]="accountOptions()" [value]="values().account_uuid"
-                [disabled]="!!budget()" [ariaLabel]="i18n.t('budgets.account')"
-                [searchPlaceholder]="i18n.t('budgets.searchAccounts')" [emptyText]="i18n.t('activity.noAccountResults')"
-                (valueChange)="setAccount($event)" />
-              @if (budget()) { <span class="field-hint">{{ i18n.t('budgets.accountLocked') }}</span> }
-              <app-field-error [text]="fieldError('account_uuid')" />
-            </section>
-            <section class="field">
-              <span>{{ i18n.t('budgets.category') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <app-entity-search-select [options]="categoryOptions()" [value]="values().category_uuid"
-                [ariaLabel]="i18n.t('budgets.category')" [searchPlaceholder]="i18n.t('budgets.searchCategories')"
-                [emptyText]="i18n.t('activity.noCategoryResults')" (valueChange)="setCategory($event)" />
-              <app-field-error [text]="fieldError('category_uuid')" />
-            </section>
+<app-dialog-shell [ariaLabel]="title()" (dismiss)="requestClose()">
+        <header class="ui-dialog-header">
+          <div class="ui-dialog-title">
+            <span class="title-icon title-icon--yellow"><app-icon [name]="budget() ? 'pencil' : 'plus'" [size]="20" /></span>
+            <h2>{{ title() }}</h2>
           </div>
-
-          <div class="budget-period-grid">
-            <label class="field">
-              <span>{{ i18n.t('budgets.from') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <input type="date" formControlName="from_date" required />
-            </label>
-            <label class="field">
-              <span>{{ i18n.t('budgets.to') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <input type="date" formControlName="to_date" required />
-            </label>
-          </div>
-
-          <section class="field">
-            <span>{{ i18n.t('budgets.amount') }} <span class="required-mark" aria-hidden="true">*</span></span>
-            <app-currency-amount-input [currency]="selectedCurrency()"
-              [value]="values().amount" [disabled]="!selectedCurrency()" [required]="true" [ariaLabel]="i18n.t('budgets.amount')"
-              (valueChange)="setAmount($event)" />
-          </section>
-
-        </div>
-
-        @if (error()) { <app-form-message [text]="error()!" /> }
-
-        <footer class="budget-editor-actions ui-surface-actions">
-          @if (budget(); as current) {
-            <button type="button" class="ui-button ui-button--danger" [disabled]="saving()" (click)="deleteRequested.emit(current)">
-              <app-icon name="trash" [size]="18" />{{ i18n.t('workspace.delete') }}
-            </button>
-          }
-          <button type="submit" class="ui-button ui-button--yellow" [disabled]="saving() || form.invalid">
-            {{ budget() ? i18n.t('budgets.save') : i18n.t('budgets.create') }}
+          <button class="icon-button icon-button--control ui-action-press" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
+            <app-icon name="x" [size]="19" />
           </button>
-        </footer>
-      </form>
-    </section>
-  </div>
-</div>
+        </header>
+  
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <div class="budget-editor-fields">
+            <label class="field">
+              <span>{{ i18n.t('budgets.name') }} <span class="required-mark" aria-hidden="true">*</span></span>
+              <input formControlName="name" maxlength="50" autocomplete="off" />
+              <app-field-error [text]="fieldError('name')" />
+            </label>
+            <label class="field">
+              <span>{{ i18n.t('budgets.description') }}</span>
+              <input formControlName="description" maxlength="300" autocomplete="off" />
+              <app-field-error [text]="fieldError('description')" />
+            </label>
+  
+            <div class="budget-scope-grid">
+              <section class="field">
+                <span>{{ i18n.t('budgets.account') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <app-entity-search-select [options]="accountOptions()" [value]="values().account_uuid"
+                  [disabled]="!!budget()" [ariaLabel]="i18n.t('budgets.account')"
+                  [searchPlaceholder]="i18n.t('budgets.searchAccounts')" [emptyText]="i18n.t('activity.noAccountResults')"
+                  (valueChange)="setAccount($event)" />
+                @if (budget()) { <span class="field-hint">{{ i18n.t('budgets.accountLocked') }}</span> }
+                <app-field-error [text]="fieldError('account_uuid')" />
+              </section>
+              <section class="field">
+                <span>{{ i18n.t('budgets.category') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <app-entity-search-select [options]="categoryOptions()" [value]="values().category_uuid"
+                  [ariaLabel]="i18n.t('budgets.category')" [searchPlaceholder]="i18n.t('budgets.searchCategories')"
+                  [emptyText]="i18n.t('activity.noCategoryResults')" (valueChange)="setCategory($event)" />
+                <app-field-error [text]="fieldError('category_uuid')" />
+              </section>
+            </div>
+  
+            <div class="budget-period-grid">
+              <label class="field">
+                <span>{{ i18n.t('budgets.from') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <input type="date" formControlName="from_date" required />
+              </label>
+              <label class="field">
+                <span>{{ i18n.t('budgets.to') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <input type="date" formControlName="to_date" required />
+              </label>
+            </div>
+  
+            <section class="field">
+              <span>{{ i18n.t('budgets.amount') }} <span class="required-mark" aria-hidden="true">*</span></span>
+              <app-currency-amount-input [currency]="selectedCurrency()"
+                [value]="values().amount" [disabled]="!selectedCurrency()" [required]="true" [ariaLabel]="i18n.t('budgets.amount')"
+                (valueChange)="setAmount($event)" />
+            </section>
+  
+          </div>
+  
+          @if (error()) { <app-form-message [text]="error()!" /> }
+  
+          <footer class="budget-editor-actions ui-surface-actions">
+            @if (budget(); as current) {
+              <button type="button" class="ui-button ui-button--danger" [disabled]="saving()" (click)="deleteRequested.emit(current)">
+                <app-icon name="trash" [size]="18" />{{ i18n.t('workspace.delete') }}
+              </button>
+            }
+            <button type="submit" class="ui-button ui-button--yellow" [disabled]="saving() || form.invalid">
+              {{ budget() ? i18n.t('budgets.save') : i18n.t('budgets.create') }}
+            </button>
+          </footer>
+        </form>
+</app-dialog-shell>

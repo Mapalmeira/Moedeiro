@@ -21,7 +21,7 @@ export class PreferencesService {
   readonly current = this.localState.asReadonly();
 
   get(): Observable<UserPreferences> {
-    return this.http.get<UserPreferences>(API_ROUTES.userPreferences, { withCredentials: true }).pipe(
+    return this.http.get<UserPreferences>(API_ROUTES.userPreferences).pipe(
       tap((preferences) => this.localState.set(preferences)),
     );
   }
@@ -42,7 +42,7 @@ export class PreferencesService {
   }
 
   save(payload: UserPreferences): Observable<UserPreferences> {
-    return this.http.put<UserPreferences>(API_ROUTES.userPreferences, payload, { withCredentials: true }).pipe(
+    return this.http.put<UserPreferences>(API_ROUTES.userPreferences, payload).pipe(
       tap((preferences) => this.localState.set(preferences)),
     );
   }

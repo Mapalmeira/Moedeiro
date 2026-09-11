@@ -54,10 +54,7 @@
 }
 
 @if (deleting()) {
-  <div class="ui-dialog-backdrop" (click)="closeDelete()" aria-hidden="true"></div>
-  <div class="ui-dialog-layer delete-layer">
-    <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
-      <section class="ui-dialog-surface" role="alertdialog" aria-modal="true" aria-labelledby="entity-delete-title" (keydown.escape)="closeDelete()">
+  <app-dialog-shell role="alertdialog" ariaLabelledby="entity-delete-title" dialogWidth="520px" (dismiss)="closeDelete()">
         <header class="ui-dialog-header">
           <div class="ui-dialog-title"><span class="title-icon delete-icon"><app-icon name="trash" [size]="20" /></span>
             <h2 id="entity-delete-title">{{ i18n.t(kind() === 'account' ? 'accounts.delete' : 'currencies.delete') }}</h2>
@@ -69,7 +66,5 @@
           @if (deleteError()) { <app-form-message [text]="deleteError()!" /> }
           <footer class="ui-surface-actions"><button type="button" class="ui-button ui-button--danger" [disabled]="deletingBusy()" (click)="remove()">{{ i18n.t('workspace.delete') }}</button></footer>
         </div>
-      </section>
-    </div>
-  </div>
+  </app-dialog-shell>
 }

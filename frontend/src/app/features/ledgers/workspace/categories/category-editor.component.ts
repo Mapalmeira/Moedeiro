@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { DialogShellComponent } from '../../../../shared/ui/dialog-shell.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -20,7 +21,7 @@ const DEFAULT_CATEGORY_COLOR = '#488DFC';
 @Component({
   selector: 'app-category-editor',
   standalone: true,
-  imports: [
+  imports: [DialogShellComponent, 
     ReactiveFormsModule,
     CategoryParentSelectComponent,
     EntityBadgeComponent,
@@ -97,11 +98,6 @@ export class CategoryEditorComponent {
         this.error.set(null);
       });
     });
-  }
-
-  @HostListener('document:keydown.escape', ['$event'])
-  escape(event: Event): void {
-    if (!event.defaultPrevented) this.requestClose();
   }
 
   requestClose(): void {

@@ -17,8 +17,6 @@ import { currencyAmountInput, formatCurrencyNumber, parseCurrencyAmount } from '
   styles: `
     :host { display: block; min-width: 0; }
     .currency-amount {
-      --currency-focus: var(--token-accent, var(--green));
-      --currency-focus-strong: var(--token-accent-strong, var(--green-strong));
       box-sizing: border-box;
       width: 100%;
       height: var(--control-height);
@@ -34,8 +32,8 @@ import { currencyAmountInput, formatCurrencyNumber, parseCurrencyAmount } from '
       transition: box-shadow var(--motion-focus) ease, border-color var(--motion-focus) ease, background var(--motion-focus) ease;
     }
     .currency-amount:focus-within {
-      border-color: var(--currency-focus-strong);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--currency-focus) 32%, transparent);
+      border-color: var(--ui-accent-strong);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 32%, transparent);
     }
     .currency-amount--disabled { background: var(--surface-muted); color: var(--text-muted); }
     .currency-amount__affix { flex: 0 0 auto; font-size: var(--control-font-size); font-weight: 650; white-space: pre; }

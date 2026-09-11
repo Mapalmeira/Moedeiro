@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { DismissiblePopoverDirective } from './dismissible-popover.directive';
 import { AppLanguage, I18nService } from '../../core/i18n/i18n.service';
 import { IconComponent } from './icon.component';
 import { TwemojiFlagComponent } from './twemoji-flag.component';
@@ -6,10 +7,10 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
 @Component({
   selector: 'app-language-selector',
   standalone: true,
-  imports: [IconComponent, TwemojiFlagComponent],
+  imports: [DismissiblePopoverDirective, IconComponent, TwemojiFlagComponent],
   host: { '[class.language-selector--field]': 'appearance() === "field"' },
   template: `
-    <div class="language-selector">
+    <div class="language-selector" [appDismissiblePopover]="open()" (dismiss)="open.set(false)">
       <button class="language-selector__trigger ui-select-trigger ui-trigger-with-icon" type="button" (click)="open.set(!open())"
         [class.ui-action-press]="appearance() === 'compact'"
         [attr.aria-label]="i18n.t('common.language')" [attr.aria-expanded]="open()">
@@ -132,22 +133,11 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LanguageSelectorComponent {
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly i18n = inject(I18nService);
   readonly appearance = input<'compact' | 'field'>('compact');
   readonly value = input<AppLanguage | undefined>(undefined);
   readonly valueChange = output<AppLanguage>();
   readonly open = signal(false);
-
-  @HostListener('document:mousedown', ['$event'])
-  closeWhenClickingOutside(event: MouseEvent): void {
-    if (!this.host.nativeElement.contains(event.target as Node)) this.open.set(false);
-  }
-
-  @HostListener('document:keydown.escape')
-  closeOnEscape(): void {
-    this.open.set(false);
-  }
 
   selectedLanguage(): AppLanguage {
     return this.value() ?? this.i18n.language();

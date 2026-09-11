@@ -26,18 +26,18 @@ export class FinancialEventsService {
     if (filters.event_type) params = params.set('event_type', filters.event_type);
     if (filters.description_search?.trim()) params = params.set('description_search', filters.description_search.trim());
     if (filters.cursor) params = params.set('cursor', filters.cursor);
-    return this.http.get<FinancialEventPage>(API_ROUTES.ledgerEvents(ledgerUuid), { params, withCredentials: true });
+    return this.http.get<FinancialEventPage>(API_ROUTES.ledgerEvents(ledgerUuid), { params });
   }
 
   create(ledgerUuid: string, payload: CreateFinancialEventPayload): Observable<FinancialEvent> {
-    return this.http.post<FinancialEvent>(API_ROUTES.ledgerEvents(ledgerUuid), payload, { withCredentials: true });
+    return this.http.post<FinancialEvent>(API_ROUTES.ledgerEvents(ledgerUuid), payload);
   }
 
   update(ledgerUuid: string, eventUuid: string, payload: UpdateFinancialEventPayload): Observable<FinancialEvent> {
-    return this.http.put<FinancialEvent>(`${API_ROUTES.ledgerEvents(ledgerUuid)}/${encodeURIComponent(eventUuid)}`, payload, { withCredentials: true });
+    return this.http.put<FinancialEvent>(`${API_ROUTES.ledgerEvents(ledgerUuid)}/${encodeURIComponent(eventUuid)}`, payload);
   }
 
   delete(ledgerUuid: string, eventUuid: string): Observable<void> {
-    return this.http.delete<void>(`${API_ROUTES.ledgerEvents(ledgerUuid)}/${encodeURIComponent(eventUuid)}`, { withCredentials: true });
+    return this.http.delete<void>(`${API_ROUTES.ledgerEvents(ledgerUuid)}/${encodeURIComponent(eventUuid)}`);
   }
 }

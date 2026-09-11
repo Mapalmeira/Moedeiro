@@ -1,67 +1,62 @@
-<div class="ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
-<div class="ui-dialog-layer category-editor-layer">
-  <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
-    <section class="ui-dialog-surface" role="dialog" aria-modal="true" [attr.aria-label]="title()">
-      <header class="ui-dialog-header">
-        <div class="ui-dialog-title">
-          <span class="title-icon title-icon--blue"><app-icon [name]="category() ? 'pencil' : 'plus'" [size]="20" /></span>
-          <h2>{{ title() }}</h2>
-        </div>
-        <button class="icon-button icon-button--control ui-action-press" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
-          <app-icon name="x" [size]="19" />
-        </button>
-      </header>
-
-      <form [formGroup]="form" (ngSubmit)="save()">
-        <div class="category-editor__content">
-          <div class="category-editor__fields">
-            <label class="field">
-              <span>{{ i18n.t('categories.name') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <input formControlName="name" maxlength="30" autocomplete="off" />
-              <app-field-error [text]="fieldError('name')" />
-            </label>
-
-            <section class="field">
-              <span>{{ i18n.t('categories.parent') }} <span class="required-mark" aria-hidden="true">*</span></span>
-              <app-category-parent-select
-                [categories]="categories()"
-                [excludedUuids]="excludedParentUuids()"
-                [value]="form.controls.parent.value"
-                [ariaLabel]="i18n.t('categories.parent')"
-                [rootLabel]="i18n.t('categories.root')"
-                [searchPlaceholder]="i18n.t('categories.parentSearch')"
-                [emptyText]="i18n.t('categories.parentNoResults')"
-                (valueChange)="setParent($event)" />
-              <app-field-error [text]="fieldError('parent')" />
-            </section>
+<app-dialog-shell [ariaLabel]="title()" (dismiss)="requestClose()">
+        <header class="ui-dialog-header">
+          <div class="ui-dialog-title">
+            <span class="title-icon title-icon--blue"><app-icon [name]="category() ? 'pencil' : 'plus'" [size]="20" /></span>
+            <h2>{{ title() }}</h2>
           </div>
-
-          <div class="category-editor__appearance">
-            <aside class="category-editor__preview" [attr.aria-label]="i18n.t('ledgers.editor.preview')">
-              <app-entity-badge [icon]="values().icon" [color]="previewColor()" [size]="108" />
-              <span>{{ values().name || i18n.t('categories.name') }}</span>
-            </aside>
-            <div class="category-editor__appearance-fields">
-              <app-ledger-appearance-fields [iconControl]="form.controls.icon" [colorControl]="form.controls.color_code" />
-              <app-field-error [text]="fieldError('icon')" />
-              <app-field-error [text]="fieldError('color_code')" />
+          <button class="icon-button icon-button--control ui-action-press" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
+            <app-icon name="x" [size]="19" />
+          </button>
+        </header>
+  
+        <form [formGroup]="form" (ngSubmit)="save()">
+          <div class="category-editor__content">
+            <div class="category-editor__fields">
+              <label class="field">
+                <span>{{ i18n.t('categories.name') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <input formControlName="name" maxlength="30" autocomplete="off" />
+                <app-field-error [text]="fieldError('name')" />
+              </label>
+  
+              <section class="field">
+                <span>{{ i18n.t('categories.parent') }} <span class="required-mark" aria-hidden="true">*</span></span>
+                <app-category-parent-select
+                  [categories]="categories()"
+                  [excludedUuids]="excludedParentUuids()"
+                  [value]="form.controls.parent.value"
+                  [ariaLabel]="i18n.t('categories.parent')"
+                  [rootLabel]="i18n.t('categories.root')"
+                  [searchPlaceholder]="i18n.t('categories.parentSearch')"
+                  [emptyText]="i18n.t('categories.parentNoResults')"
+                  (valueChange)="setParent($event)" />
+                <app-field-error [text]="fieldError('parent')" />
+              </section>
+            </div>
+  
+            <div class="category-editor__appearance">
+              <aside class="category-editor__preview" [attr.aria-label]="i18n.t('ledgers.editor.preview')">
+                <app-entity-badge [icon]="values().icon" [color]="previewColor()" [size]="108" />
+                <span>{{ values().name || i18n.t('categories.name') }}</span>
+              </aside>
+              <div class="category-editor__appearance-fields">
+                <app-ledger-appearance-fields [iconControl]="form.controls.icon" [colorControl]="form.controls.color_code" />
+                <app-field-error [text]="fieldError('icon')" />
+                <app-field-error [text]="fieldError('color_code')" />
+              </div>
             </div>
           </div>
-        </div>
-
-        @if (error()) { <app-form-message [text]="error()!" /> }
-
-        <footer class="category-editor__actions ui-surface-actions">
-          @if (category(); as currentCategory) {
-            <button type="button" class="ui-button ui-button--danger" [disabled]="saving()" (click)="deleteRequested.emit(currentCategory)">
-              <app-icon name="trash" [size]="18" />{{ i18n.t('workspace.delete') }}
+  
+          @if (error()) { <app-form-message [text]="error()!" /> }
+  
+          <footer class="category-editor__actions ui-surface-actions">
+            @if (category(); as currentCategory) {
+              <button type="button" class="ui-button ui-button--danger" [disabled]="saving()" (click)="deleteRequested.emit(currentCategory)">
+                <app-icon name="trash" [size]="18" />{{ i18n.t('workspace.delete') }}
+              </button>
+            }
+            <button type="submit" class="ui-button ui-button--blue" [disabled]="saving() || form.invalid">
+              {{ category() ? i18n.t('ledgers.editor.save') : i18n.t('workspace.create') }}
             </button>
-          }
-          <button type="submit" class="ui-button ui-button--blue" [disabled]="saving() || form.invalid">
-            {{ category() ? i18n.t('ledgers.editor.save') : i18n.t('workspace.create') }}
-          </button>
-        </footer>
-      </form>
-    </section>
-  </div>
-</div>
+          </footer>
+        </form>
+</app-dialog-shell>

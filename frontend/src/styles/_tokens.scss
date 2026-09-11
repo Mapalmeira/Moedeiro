@@ -19,6 +19,10 @@
   --danger-soft: #fff0f0;
   --danger-token: #c5222d;
   --on-danger-token: #ffffff;
+  --ui-accent: var(--green);
+  --ui-accent-strong: var(--green-strong);
+  --ui-accent-soft: color-mix(in srgb, var(--ui-accent) 15%, var(--surface));
+  --ui-on-accent: var(--on-green);
   --text: #0a0a0a;
   --text-muted: #4b5563;
   --link: #087a3c;
@@ -28,7 +32,6 @@
   --line: #cdd2d8;
   --line-strong: #111111;
   --shadow-color: var(--line-strong);
-  --focus-accent: var(--green);
   --radius-card: 8px;
   --radius-sm: 6px;
   --radius-icon: 5px;

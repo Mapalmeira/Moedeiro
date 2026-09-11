@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { DialogShellComponent } from '../../../../shared/ui/dialog-shell.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, Subscription, finalize, forkJoin, debounceTime, distinctUntilChanged } from 'rxjs';
 import { ApiErrorService } from '../../../../core/api/api-error';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 import { LedgerCategory, LedgerCategoryTreeNode } from '../../../../core/ledgers/ledger-categories.models';
+import { categoryPath, flattenCategoryTree } from '../../../../core/ledgers/ledger-category-tree';
 import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categories.service';
 import { LedgerBudget, LedgerBudgetOverview, LedgerBudgetState } from '../../../../core/ledgers/ledger-budgets.models';
 import { LedgerBudgetsService } from '../../../../core/ledgers/ledger-budgets.service';
@@ -45,7 +47,7 @@ const ALL_STATES: readonly LedgerBudgetState[] = ['ACTIVE', 'FUTURE', 'FINISHED'
 @Component({
   selector: 'app-ledger-budgets',
   standalone: true,
-  imports: [
+  imports: [DialogShellComponent, 
     BudgetEditorComponent,
     BudgetStateFilterComponent,
     EntityBadgeComponent,
@@ -97,7 +99,7 @@ export class LedgerBudgetsComponent {
     return [
       { value: '', label: this.i18n.t('categories.root'), uiIcon: 'folder', tone: 'neutral' },
       ...this.categories().map(category => {
-        const path = this.categoryPath(category, byUuid);
+        const path = categoryPath(category, byUuid);
         return {
           value: category.uuid,
           label: category.name,
@@ -173,7 +175,7 @@ export class LedgerBudgetsComponent {
         account,
         category,
         currency,
-        categoryPath: category ? this.categoryPath(category, categoryByUuid) : this.i18n.t('budgets.unknownCategory'),
+        categoryPath: category ? categoryPath(category, categoryByUuid) : this.i18n.t('budgets.unknownCategory'),
         period: `${from} – ${to}`,
         stateLabel,
         stateIcon,
@@ -239,7 +241,7 @@ export class LedgerBudgetsComponent {
       next: ({ accounts, currencies, tree }) => {
         this.accounts.set(accounts);
         this.currencies.set(currencies);
-        const categories = this.flattenCategories(tree);
+        const categories = flattenCategoryTree(tree);
         this.categories.set(categories);
         if (this.categoryFilterUuid() && !categories.some(category => category.uuid === this.categoryFilterUuid())) this.categoryFilterUuid.set('');
         this.saveViewState();
@@ -330,17 +332,6 @@ export class LedgerBudgetsComponent {
     });
   }
 
-  private flattenCategories(nodes: readonly LedgerCategoryTreeNode[]): LedgerCategory[] {
-    const result: LedgerCategory[] = [];
-    const visit = (items: readonly LedgerCategoryTreeNode[]): void => {
-      for (const node of items) {
-        result.push(node.category);
-        visit(node.children);
-      }
-    };
-    visit(nodes);
-    return result;
-  }
 
   private restoreViewState(ledgerUuid: string | null): void {
     const saved = ledgerUuid ? this.workspaceState.getBudgets(ledgerUuid) : null;
@@ -359,17 +350,6 @@ export class LedgerBudgetsComponent {
     });
   }
 
-  private categoryPath(category: LedgerCategory, byUuid: ReadonlyMap<string, LedgerCategory>): string {
-    const names = [category.name];
-    let parentUuid = category.parent_uuid;
-    while (parentUuid) {
-      const parent = byUuid.get(parentUuid);
-      if (!parent) break;
-      names.unshift(parent.name);
-      parentUuid = parent.parent_uuid;
-    }
-    return names.join(' › ');
-  }
 
   private usagePercent(spent: number, amount: number): number {
     if (amount === 0) return spent > 0 ? Number.POSITIVE_INFINITY : 0;

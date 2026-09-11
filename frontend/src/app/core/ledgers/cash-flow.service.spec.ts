@@ -29,7 +29,6 @@ describe('CashFlowService', () => {
 
     const request = http.expectOne(candidate => candidate.url === API_ROUTES.ledgerCashFlow('ledger/id'));
     expect(request.request.method).toBe('GET');
-    expect(request.request.withCredentials).toBe(true);
     expect(request.request.params.get('currency_uuid')).toBe('currency');
     expect(request.request.params.get('from_timestamp')).toBe('10');
     expect(request.request.params.get('to_timestamp')).toBe('20');
@@ -45,7 +44,6 @@ describe('CashFlowService', () => {
 
     const request = http.expectOne(candidate => candidate.url === `${API_ROUTES.ledgerCashFlow('ledger/id')}/points`);
     expect(request.request.method).toBe('GET');
-    expect(request.request.withCredentials).toBe(true);
     expect(request.request.params.get('currency_uuid')).toBe('currency');
     expect(request.request.params.get('from_timestamp')).toBe('10');
     expect(request.request.params.get('to_timestamp')).toBe('20');
@@ -59,7 +57,6 @@ describe('CashFlowService', () => {
 
     const request = http.expectOne(candidate => candidate.url === `${API_ROUTES.ledgerCashFlow('ledger/id')}/sankey`);
     expect(request.request.method).toBe('GET');
-    expect(request.request.withCredentials).toBe(true);
     expect(request.request.params.get('account_uuid')).toBe('account');
     expect(request.request.params.get('from_timestamp')).toBe('100');
     expect(request.request.params.get('to_timestamp')).toBe('200');

@@ -1,5 +1,6 @@
 import { formatDate } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { DialogShellComponent } from '../../../../shared/ui/dialog-shell.component';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormBuilder } from '@angular/forms';
@@ -29,7 +30,7 @@ import { IconComponent, IconName } from '../../../../shared/ui/icon.component';
 @Component({
   selector: 'app-financial-event-editor',
   standalone: true,
-  imports: [ReactiveFormsModule, CurrencyAmountInputComponent, EntitySearchSelectComponent, FieldErrorComponent, FormMessageComponent, IconComponent],
+  imports: [DialogShellComponent, ReactiveFormsModule, CurrencyAmountInputComponent, EntitySearchSelectComponent, FieldErrorComponent, FormMessageComponent, IconComponent],
   templateUrl: './financial-event-editor.component.html',
   styleUrl: './financial-event-editor.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -138,11 +139,6 @@ export class FinancialEventEditorComponent {
       const type = this.type();
       untracked(() => this.reset(event, type));
     });
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    this.requestClose();
   }
 
   requestClose(): void {

@@ -1,4 +1,4 @@
-:host { --token-accent: var(--green); --token-accent-strong: var(--green-strong); display: contents; }
+:host { --ui-accent: var(--green); --ui-accent-strong: var(--green-strong); display: contents; }
 .event-editor form { display: grid; min-height: 0; }
 .event-editor__body { display: grid; gap: var(--form-gap); padding: var(--space-5); }
 .event-editor__actions { padding: 0 var(--space-5) var(--space-5); }

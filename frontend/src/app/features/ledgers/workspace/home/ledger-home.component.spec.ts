@@ -34,16 +34,6 @@ const point = {
 };
 
 
-function browserDate(dateInput: string, detail: 'day' | 'month' | 'year' = 'year'): string {
-  const [year, month, day] = dateInput.split('-').map(Number);
-  const date = new Date(year!, month! - 1, day!);
-  const options: Intl.DateTimeFormatOptions = detail === 'day'
-    ? { day: 'numeric' }
-    : detail === 'month'
-      ? { day: '2-digit', month: '2-digit' }
-      : { day: '2-digit', month: '2-digit', year: 'numeric' };
-  return new Intl.DateTimeFormat(undefined, options).format(date);
-}
 
 const account: LedgerAccount = {
   uuid: 'account',
@@ -197,53 +187,9 @@ describe('LedgerHomeComponent', () => {
     );
     expect(Math.ceil((to - from) / (2 * 86_400))).toBeLessThanOrEqual(100);
 
-    component.cashFlow.set([point, point]);
-    expect(component.chartPoints()[1]?.date).toBe(browserDate('2026-01-03'));
   });
 
-  it('shows only the date parts needed to distinguish the selected range', () => {
-    const component = createComponent();
-    TestBed.tick();
 
-    component.setPeriodMode('range');
-    component.updateRangeFrom('2025-12-01');
-    component.updateRangeTo('2026-02-28');
-    TestBed.tick();
-
-    component.cashFlow.set(Array.from({ length: 60 }, () => point));
-    expect(component.chartPoints()[35]?.label).toBe(browserDate('2026-01-05', 'year'));
-
-    component.updateRangeFrom('2026-01-20');
-    component.updateRangeTo('2026-02-10');
-    TestBed.tick();
-
-    component.cashFlow.set(Array.from({ length: 22 }, () => point));
-    expect(component.chartPoints()[13]?.label).toBe(browserDate('2026-02-02', 'month'));
-
-    component.updateRangeFrom('2026-01-01');
-    component.updateRangeTo('2026-01-21');
-    TestBed.tick();
-
-    component.cashFlow.set(Array.from({ length: 21 }, () => point));
-    expect(component.chartPoints()[1]?.label).toBe(browserDate('2026-01-02', 'day'));
-  });
-
-  it('uses the label cadence without forcing the first or last chart date', () => {
-    const component = createComponent();
-    TestBed.tick();
-
-    component.setPeriodMode('range');
-    component.updateRangeFrom('2025-12-01');
-    component.updateRangeTo('2026-02-28');
-    TestBed.tick();
-
-    component.cashFlow.set(Array.from({ length: 60 }, () => point));
-    const points = component.chartPoints();
-
-    expect(points[0]?.showLabel).toBe(false);
-    expect(points[5]?.showLabel).toBe(true);
-    expect(points[59]?.showLabel).toBe(false);
-  });
 
   it('changes only the rendered preview capacity when the home geometry changes', () => {
     const component = createComponent();
@@ -260,73 +206,8 @@ describe('LedgerHomeComponent', () => {
     expect(budgets.currencyOverview).toHaveBeenCalledTimes(budgetRequests);
   });
 
-  it('derives preview capacity from the rendered row minimum height', () => {
-    const component = createComponent();
-    const layout = component as unknown as { previewCapacity(list: HTMLElement): number };
-    const list = document.createElement('div');
-    const row = document.createElement('a');
-    list.append(row);
-    vi.spyOn(list, 'getBoundingClientRect').mockReturnValue({ height: 350 } as DOMRect);
-    const computedStyle = vi.spyOn(window, 'getComputedStyle').mockReturnValue({ minHeight: '62px' } as CSSStyleDeclaration);
 
-    expect(layout.previewCapacity(list)).toBe(5);
 
-    computedStyle.mockReturnValue({ minHeight: '106px' } as CSSStyleDeclaration);
-    expect(layout.previewCapacity(list)).toBe(3);
-    computedStyle.mockRestore();
-  });
 
-  it('waits for a rendered row before expanding the preview capacity', () => {
-    const component = createComponent();
-    const layout = component as unknown as { previewCapacity(list: HTMLElement): number };
-    const list = document.createElement('div');
-    vi.spyOn(list, 'getBoundingClientRect').mockReturnValue({ height: 350 } as DOMRect);
 
-    expect(layout.previewCapacity(list)).toBe(1);
-
-    const row = document.createElement('a');
-    list.append(row);
-    const computedStyle = vi.spyOn(window, 'getComputedStyle').mockReturnValue({ minHeight: '62px' } as CSSStyleDeclaration);
-    expect(layout.previewCapacity(list)).toBe(5);
-    computedStyle.mockRestore();
-  });
-
-  it('centers the instantaneous cursor through the shared income and expense column', () => {
-    const component = createComponent();
-    TestBed.tick();
-
-    const chartPoint = component.chartPoints()[0]!;
-    const expectedColumnX = chartPoint.x - chartPoint.barWidth / 2;
-
-    expect(chartPoint.incomeX).toBeCloseTo(expectedColumnX);
-    expect(chartPoint.expenseX).toBeCloseTo(expectedColumnX);
-    expect(chartPoint.incomeY + chartPoint.incomeHeight).toBeCloseTo(component.chartZeroY);
-  });
-
-  it('pins the chart only for touch input and restores hover after a mouse movement', () => {
-    const component = createComponent();
-    TestBed.tick();
-    const chart = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    vi.spyOn(chart, 'getBoundingClientRect').mockReturnValue({ left: 0, width: 1_000 } as DOMRect);
-    const pointerEvent = (pointerType: string) => ({ pointerType, currentTarget: chart, clientX: 500 } as unknown as PointerEvent);
-
-    component.pinChart(pointerEvent('touch'));
-    expect(component.pinnedChartIndex()).toBe(0);
-
-    component.hoverChart(pointerEvent('mouse'));
-    expect(component.pinnedChartIndex()).toBeNull();
-    expect(component.hoveredChartIndex()).toBe(0);
-
-    component.pinChart(pointerEvent('mouse'));
-    expect(component.pinnedChartIndex()).toBeNull();
-  });
-
-  it('clears a pinned chart point after an outside interaction', () => {
-    const component = createComponent();
-    component.pinnedChartIndex.set(0);
-
-    component.clearChartSelectionOnOutsidePointerDown();
-
-    expect(component.pinnedChartIndex()).toBeNull();
-  });
 });

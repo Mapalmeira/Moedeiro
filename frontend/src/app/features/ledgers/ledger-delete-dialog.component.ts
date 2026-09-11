@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, HostListener, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { DialogShellComponent } from '../../shared/ui/dialog-shell.component';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ApiErrorService } from '../../core/api/api-error';
@@ -11,14 +12,13 @@ import { IconComponent } from '../../shared/ui/icon.component';
 @Component({
   selector: 'app-ledger-delete-dialog',
   standalone: true,
-  imports: [FormsModule, FormMessageComponent, IconComponent],
+  imports: [DialogShellComponent, FormsModule, FormMessageComponent, IconComponent],
   template: `
     @if (open()) {
       @if (ledger(); as current) {
-        <div class="dialog-backdrop ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
-        <div class="dialog-layer ui-dialog-layer">
-        <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
-        <section class="dialog ui-dialog-surface" role="alertdialog" aria-modal="true" [attr.aria-label]="i18n.t('ledgers.delete.title')">
+        <app-dialog-shell role="alertdialog" [ariaLabel]="i18n.t('ledgers.delete.title')" dialogWidth="520px" (dismiss)="requestClose()">
+
+          <div class="dialog">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
             <span class="title-icon"><app-icon name="trash" [size]="21" /></span>
@@ -43,16 +43,14 @@ import { IconComponent } from '../../shared/ui/icon.component';
             </button>
           </footer>
         </div>
-        </section>
         </div>
-        </div>
+        </app-dialog-shell>
       }
     }
   `,
   styles: `
-    .dialog-layer { --dialog-width: 520px; }
     .dialog {
-      --token-accent: var(--danger-token); --token-accent-strong: var(--danger); --focus-accent: var(--danger-token);
+      --ui-accent: var(--danger-token); --ui-accent-strong: var(--danger);
     }
     .title-icon { width: var(--compact-title-icon-size); height: var(--compact-title-icon-size); border-color: var(--danger); background: var(--danger-token); color: var(--on-danger-token); }
     .dialog__footer .ui-button { min-width: var(--action-button-min-width); }
@@ -81,11 +79,6 @@ export class LedgerDeleteDialogComponent {
         this.errorMessage.set(null);
       });
     });
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    if (this.open()) this.requestClose();
   }
 
   deleteLedger(): void {

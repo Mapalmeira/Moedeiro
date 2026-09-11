@@ -1,4 +1,5 @@
 import { formatDate } from '@angular/common';
+import { DialogShellComponent } from '../../../../shared/ui/dialog-shell.component';
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -9,6 +10,7 @@ import { I18nService } from '../../../../core/i18n/i18n.service';
 import { CashFlowPoint } from '../../../../core/ledgers/cash-flow.models';
 import { CashFlowService } from '../../../../core/ledgers/cash-flow.service';
 import { LedgerCategory, LedgerCategoryTreeNode } from '../../../../core/ledgers/ledger-categories.models';
+import { categoryPathMap, flattenCategoryTree } from '../../../../core/ledgers/ledger-category-tree';
 import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categories.service';
 import { formatCurrencyAmount } from '../../../../core/ledgers/currency-format';
 import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
@@ -50,7 +52,7 @@ interface ActivityEventRow {
   selector: 'app-ledger-activity',
   host: { class: 'ui-workspace-page' },
   standalone: true,
-  imports: [ReactiveFormsModule, FinancialEventEditorComponent, EntityBadgeComponent, EntitySearchSelectComponent, FormMessageComponent, IconComponent, InfiniteScrollTriggerDirective, PeriodSelectorComponent],
+  imports: [DialogShellComponent, ReactiveFormsModule, FinancialEventEditorComponent, EntityBadgeComponent, EntitySearchSelectComponent, FormMessageComponent, IconComponent, InfiniteScrollTriggerDirective, PeriodSelectorComponent],
   templateUrl: './ledger-activity.component.html',
   styleUrl: './ledger-activity.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -109,19 +111,8 @@ export class LedgerActivityComponent {
     description_search: [''],
   });
 
-  readonly categories = computed(() => this.flattenCategories(this.categoryTree()));
-  readonly categoryPaths = computed(() => {
-    const paths = new Map<string, string>();
-    const visit = (nodes: readonly LedgerCategoryTreeNode[], parentPath: string): void => {
-      for (const node of nodes) {
-        const path = parentPath ? `${parentPath} › ${node.category.name}` : node.category.name;
-        paths.set(node.category.uuid, path);
-        visit(node.children, path);
-      }
-    };
-    visit(this.categoryTree(), '');
-    return paths;
-  });
+  readonly categories = computed(() => flattenCategoryTree(this.categoryTree()));
+  readonly categoryPaths = computed(() => categoryPathMap(this.categoryTree()));
   readonly accountByUuid = computed(() => new Map(this.accounts().map(account => [account.uuid, account] as const)));
   readonly categoryByUuid = computed(() => new Map(this.categories().map(category => [category.uuid, category] as const)));
   readonly currencyByUuid = computed(() => new Map(this.currencies().map(currency => [currency.uuid, currency] as const)));
@@ -583,9 +574,6 @@ export class LedgerActivityComponent {
     this.deleting.set(null);
   }
 
-  private flattenCategories(nodes: readonly LedgerCategoryTreeNode[]): LedgerCategory[] {
-    return nodes.flatMap(node => [node.category, ...this.flattenCategories(node.children)]);
-  }
 
   private aggregateMovements(event: FinancialEvent) {
     if (event.type !== 'ACCOUNT_TRANSFER') return event.movements;

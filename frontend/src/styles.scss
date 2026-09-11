@@ -190,7 +190,7 @@ a { color: var(--link); }
   margin-block-end: var(--icon-shadow-offset);
   border: var(--border-width) solid var(--line-strong);
   border-radius: var(--radius-icon);
-  background: color-mix(in srgb, var(--spinner-accent, var(--green)) 18%, var(--surface));
+  background: color-mix(in srgb, var(--ui-accent, var(--green)) 18%, var(--surface));
   box-shadow: var(--icon-shadow);
 }
 .ui-spinner::after {
@@ -198,9 +198,9 @@ a { color: var(--link); }
   box-sizing: border-box;
   width: var(--spinner-mark-size);
   height: var(--spinner-mark-size);
-  border: var(--border-width) solid color-mix(in srgb, var(--spinner-accent, var(--green)) 32%, var(--line));
-  border-top-color: var(--spinner-accent-strong, var(--green-strong));
-  border-right-color: var(--spinner-accent-strong, var(--green-strong));
+  border: var(--border-width) solid color-mix(in srgb, var(--ui-accent, var(--green)) 32%, var(--line));
+  border-top-color: var(--ui-accent-strong, var(--green-strong));
+  border-right-color: var(--ui-accent-strong, var(--green-strong));
   border-radius: 50%;
   animation: ui-spin var(--motion-spinner) linear infinite;
 }
@@ -278,6 +278,6 @@ a { color: var(--link); }
 .title-icon--blue { background: var(--blue); color: var(--on-blue); }
 
 :where(button, a, [tabindex]):focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--focus-accent, var(--green)) 58%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--ui-accent, var(--green)) 58%, transparent);
   outline-offset: 2px;
 }

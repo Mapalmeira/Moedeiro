@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { DialogShellComponent } from '../../../../shared/ui/dialog-shell.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription, finalize } from 'rxjs';
 import { ApiErrorService } from '../../../../core/api/api-error';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 import { LedgerCategory, LedgerCategoryTreeNode } from '../../../../core/ledgers/ledger-categories.models';
+import { flattenCategoryTree } from '../../../../core/ledgers/ledger-category-tree';
 import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categories.service';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
 import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
@@ -34,7 +36,7 @@ const ROOT_DROP_TARGET = '__root__';
 @Component({
   selector: 'app-ledger-categories',
   standalone: true,
-  imports: [CategoryEditorComponent, EntityBadgeComponent, FormMessageComponent, IconComponent],
+  imports: [DialogShellComponent, CategoryEditorComponent, EntityBadgeComponent, FormMessageComponent, IconComponent],
   templateUrl: './ledger-categories.component.html',
   styleUrl: './ledger-categories.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -73,7 +75,7 @@ export class LedgerCategoriesComponent {
   readonly deleteError = signal<string | null>(null);
 
   readonly rootDropTarget = ROOT_DROP_TARGET;
-  readonly allCategories = computed(() => this.flattenCategories(this.tree()));
+  readonly allCategories = computed(() => flattenCategoryTree(this.tree()));
   readonly categoryByUuid = computed(() => new Map(this.allCategories().map(category => [category.uuid, category] as const)));
   readonly searchVisibleUuids = computed<ReadonlySet<string> | null>(() => {
     const query = normalizeSearchText(this.search().trim());
@@ -457,15 +459,4 @@ export class LedgerCategoriesComponent {
     });
   }
 
-  private flattenCategories(nodes: readonly LedgerCategoryTreeNode[]): LedgerCategory[] {
-    const result: LedgerCategory[] = [];
-    const visit = (items: readonly LedgerCategoryTreeNode[]): void => {
-      for (const node of items) {
-        result.push(node.category);
-        visit(node.children);
-      }
-    };
-    visit(nodes);
-    return result;
-  }
 }

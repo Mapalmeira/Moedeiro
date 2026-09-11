@@ -1,6 +1,4 @@
 .field {
-  --field-focus: var(--token-accent, var(--green));
-  --field-focus-strong: var(--token-accent-strong, var(--green-strong));
   display: grid;
   width: 100%;
   min-width: 0;
@@ -44,8 +42,8 @@
 .field > input:focus,
 .field > select:focus,
 .field > .input-with-action > input:focus {
-  border-color: var(--field-focus-strong);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--field-focus) 32%, transparent);
+  border-color: var(--ui-accent-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 32%, transparent);
 }
 
 /* Server-side credential rejections are transient feedback, rather than form

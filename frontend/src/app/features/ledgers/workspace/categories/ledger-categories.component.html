@@ -104,10 +104,7 @@
 }
 
 @if (deleting()) {
-  <div class="ui-dialog-backdrop" (click)="closeDelete()" aria-hidden="true"></div>
-  <div class="ui-dialog-layer category-delete-layer">
-    <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
-      <section class="ui-dialog-surface" role="alertdialog" aria-modal="true" aria-labelledby="category-delete-title" (keydown.escape)="closeDelete()">
+  <app-dialog-shell role="alertdialog" ariaLabelledby="category-delete-title" dialogWidth="520px" (dismiss)="closeDelete()">
         <header class="ui-dialog-header">
           <div class="ui-dialog-title">
             <span class="title-icon delete-icon"><app-icon name="trash" [size]="20" /></span>
@@ -124,7 +121,5 @@
             <button type="button" class="ui-button ui-button--danger" [disabled]="deletingBusy()" (click)="remove()">{{ i18n.t('workspace.delete') }}</button>
           </footer>
         </div>
-      </section>
-    </div>
-  </div>
+  </app-dialog-shell>
 }

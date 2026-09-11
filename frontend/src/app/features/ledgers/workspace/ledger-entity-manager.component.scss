@@ -1,23 +1,23 @@
 :host {
-  --token-accent: var(--green);
-  --token-accent-strong: var(--green-strong);
-  --focus-accent: var(--token-accent);
-  --spinner-accent: var(--token-accent);
-  --spinner-accent-strong: var(--token-accent-strong);
+  --ui-accent: var(--green);
+  --ui-accent-strong: var(--green-strong);
+ 
+ 
+ 
   display: block;
   height: 100%;
   min-width: 0;
   min-height: 0;
 }
 :host.currency-section {
-  --token-accent: var(--yellow);
-  --token-accent-strong: var(--yellow-strong);
+  --ui-accent: var(--yellow);
+  --ui-accent-strong: var(--yellow-strong);
 }
 .manager { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: var(--section-gap); min-width: 0; }
 .manager-header { flex: 0 0 auto; display: flex; align-items: center; justify-content: flex-start; gap: var(--form-gap); padding-inline-end: var(--button-shadow-offset); }
 .search { flex: 1 1 var(--entity-search-width); max-width: var(--entity-search-width); min-width: 0; }
 .manager-create { flex: 0 0 var(--menu-item-height); }
-.search:focus-within { border-color: var(--token-accent-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--token-accent) 32%, transparent); }
+.search:focus-within { border-color: var(--ui-accent-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 32%, transparent); }
 .manager-body { flex: 1 1 auto; min-height: 0; min-width: 0; overflow: hidden; padding-inline-end: var(--button-shadow-offset); }
 .entity-list { height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .entity-list__header { min-height: var(--menu-item-height); display: grid; grid-template-columns: var(--control-icon-footprint) minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); padding: 0 var(--space-4); border-bottom: var(--border-width) solid var(--line); background: var(--surface-muted); color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 760; }
@@ -49,7 +49,6 @@
 .entity-balance--negative { color: var(--danger); }
 .state { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: var(--inline-gap); padding: var(--space-12) var(--space-4); color: var(--text-muted); text-align: center; }
 .entity-list__empty { min-height: 100%; }
-.delete-layer { --dialog-width: 520px; }
 .delete-icon { background: var(--danger-token); color: var(--on-danger-token); }
 @media (max-width: 720px) {
   .search { max-width: none; }

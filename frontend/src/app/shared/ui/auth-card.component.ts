@@ -19,8 +19,8 @@ import { IconComponent, IconName } from './icon.component';
     .auth-card__header h2 { margin: 0; font-size: clamp(1.08rem, 1.7vw, 1.28rem); line-height: 1.2; }
     .auth-card__icon { background: var(--card-accent); color: var(--card-on-accent); }
     .auth-card__body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: var(--space-6) var(--auth-card-padding) var(--auth-card-padding); }
-    :host(.auth-card--green) { --card-accent: var(--green); --card-on-accent: var(--on-green); --token-accent: var(--green); --token-accent-strong: var(--green-strong); --focus-accent: var(--green); }
-    :host(.auth-card--yellow) { --card-accent: var(--yellow); --card-on-accent: var(--on-yellow); --token-accent: var(--yellow); --token-accent-strong: var(--yellow-strong); --focus-accent: var(--yellow); }
+    :host(.auth-card--green) { --card-accent: var(--green); --card-on-accent: var(--on-green); --ui-accent: var(--green); --ui-accent-strong: var(--green-strong); }
+    :host(.auth-card--yellow) { --card-accent: var(--yellow); --card-on-accent: var(--on-yellow); --ui-accent: var(--yellow); --ui-accent-strong: var(--yellow-strong); }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { DismissiblePopoverDirective } from './dismissible-popover.directive';
 import { ENTITY_BADGE_DEFAULT_SYMBOL_SIZE } from '../ledger/entity-badge.component';
 import { IconComponent } from './icon.component';
 
@@ -10,9 +11,9 @@ interface MonthOption {
 @Component({
   selector: 'app-month-select',
   standalone: true,
-  imports: [IconComponent],
+  imports: [DismissiblePopoverDirective, IconComponent],
   template: `
-    <div class="month-select">
+    <div class="month-select" [appDismissiblePopover]="open()" (dismiss)="open.set(false)">
       <button type="button" class="month-select__trigger ui-select-trigger ui-trigger-with-icon" (click)="toggle()"
         [attr.aria-label]="ariaLabel()" [attr.aria-expanded]="open()">
         <span class="month-select__icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon" aria-hidden="true"><app-icon name="calendar" [size]="triggerIconSize" /></span>
@@ -63,7 +64,6 @@ interface MonthOption {
 })
 export class MonthSelectComponent {
   readonly triggerIconSize = ENTITY_BADGE_DEFAULT_SYMBOL_SIZE;
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly value = input.required<string>();
   readonly ariaLabel = input('');
@@ -88,16 +88,6 @@ export class MonthSelectComponent {
       .format(new Date(parsed.year, parsed.month - 1, 1));
     return this.capitalizeLabel(label);
   });
-
-  @HostListener('document:mousedown', ['$event'])
-  closeOutside(event: MouseEvent): void {
-    if (this.open() && !this.host.nativeElement.contains(event.target as Node)) this.close();
-  }
-
-  @HostListener('document:keydown.escape')
-  closeOnEscape(): void {
-    this.close();
-  }
 
   toggle(): void {
     if (this.open()) {

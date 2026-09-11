@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, Injector, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
+import { DismissiblePopoverDirective } from '../ui/dismissible-popover.directive';
 import { normalizeSearchText } from '../search-normalization';
 import { ENTITY_BADGE_DEFAULT_SYMBOL_SIZE, EntityBadgeComponent } from './entity-badge.component';
 import { DropdownSearchAutofocusDirective } from '../ui/dropdown-search-autofocus.directive';
@@ -19,9 +20,9 @@ export interface EntitySearchOption {
 @Component({
   selector: 'app-entity-search-select',
   standalone: true,
-  imports: [DropdownSearchAutofocusDirective, EntityBadgeComponent, IconComponent],
+  imports: [DismissiblePopoverDirective, DropdownSearchAutofocusDirective, EntityBadgeComponent, IconComponent],
   template: `
-    <div class="entity-search-select" [class.entity-search-select--up]="opensUp()">
+    <div class="entity-search-select" [class.entity-search-select--up]="opensUp()" [appDismissiblePopover]="open()" (dismiss)="closeList()">
       <button type="button" class="entity-search-select__trigger ui-select-trigger ui-trigger-with-icon" (click)="toggleList()"
         [disabled]="disabled()" [attr.aria-label]="ariaLabel()" aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listId">
         @if (selectedOption(); as option) {
@@ -95,8 +96,8 @@ export interface EntitySearchOption {
       text-align: left;
     }
     .entity-search-select__trigger[aria-expanded='true'] {
-      border-color: var(--entity-select-accent-strong, var(--green-strong));
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--entity-select-accent, var(--green)) 32%, transparent);
+      border-color: var(--ui-accent-strong, var(--green-strong));
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent, var(--green)) 32%, transparent);
     }
     .entity-search-select__copy { min-width: 0; display: grid; gap: var(--space-1); }
     .entity-search-select__copy strong,
@@ -131,7 +132,7 @@ export interface EntitySearchOption {
     }
     .entity-search-select__list button:not([aria-selected='true']):hover { background: var(--surface-muted); }
     .entity-search-select__list button[aria-selected='true'],
-    .entity-search-select__list button[aria-selected='true']:hover { background: var(--entity-select-selected-background, var(--green-soft)); }
+    .entity-search-select__list button[aria-selected='true']:hover { background: var(--ui-accent-soft, var(--green-soft)); }
     .entity-search-select__empty { padding: var(--space-3); color: var(--text-muted); font-size: var(--control-font-size); text-align: center; }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -188,17 +189,6 @@ export class EntitySearchSelectComponent {
       this.host.nativeElement.ownerDocument.removeEventListener('scroll', reposition, true);
       this.geometryObserver?.disconnect();
     });
-  }
-
-  @HostListener('document:mousedown', ['$event'])
-  closeWhenClickingOutside(event: MouseEvent): void {
-    if (!this.open() || this.host.nativeElement.contains(event.target as Node)) return;
-    this.closeList();
-  }
-
-  @HostListener('document:keydown.escape')
-  closeOnEscape(): void {
-    if (this.open()) this.closeList();
   }
 
   @HostListener('window:resize')

@@ -41,7 +41,6 @@ describe('AuthService', () => {
     expect(localStorage.getItem('moedeiro.last-auth-name')).toBeNull();
 
     const request = http.expectOne(API_ROUTES.authentication.login);
-    expect(request.request.withCredentials).toBe(true);
     request.flush(null);
 
     expect(service.authenticated()).toBe(true);

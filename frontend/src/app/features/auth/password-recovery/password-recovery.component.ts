@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, HostListener, inject, input, output, signal } from '@angular/core';
+import { DialogShellComponent } from '../../../shared/ui/dialog-shell.component';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ApiErrorService } from '../../../core/api/api-error';
@@ -21,13 +22,10 @@ import { IconComponent } from '../../../shared/ui/icon.component';
 @Component({
   selector: 'app-password-recovery-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, CrockfordCodeInputDirective, NoWhitespaceInputDirective, FieldErrorComponent, FormMessageComponent, IconComponent],
+  imports: [DialogShellComponent, ReactiveFormsModule, CrockfordCodeInputDirective, NoWhitespaceInputDirective, FieldErrorComponent, FormMessageComponent, IconComponent],
   template: `
     @if (open()) {
-      <div class="dialog-backdrop ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
-      <div class="dialog-layer ui-dialog-layer">
-      <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
-      <section class="dialog ui-dialog-surface" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('auth.recovery.title')">
+      <app-dialog-shell [ariaLabel]="i18n.t('auth.recovery.title')" dialogWidth="550px" (dismiss)="requestClose()">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
             <span class="title-icon title-icon--green"><app-icon name="key" [size]="21" /></span>
@@ -90,13 +88,10 @@ import { IconComponent } from '../../../shared/ui/icon.component';
             </button>
           </footer>
         </form>
-      </section>
-      </div>
-      </div>
+      </app-dialog-shell>
     }
   `,
   styles: `
-    .dialog-layer { --dialog-width: 550px; }
     form { display: grid; gap: var(--form-gap); padding: var(--space-5); }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -128,11 +123,6 @@ export class PasswordRecoveryDialogComponent {
 
   ngOnChanges(): void {
     if (this.open()) this.reset();
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    if (this.open()) this.requestClose();
   }
 
   requestClose(): void {

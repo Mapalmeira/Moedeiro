@@ -23,9 +23,9 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .ui-button--full { width: 100%; display: grid; grid-template-columns: 20px minmax(0, auto) 20px; }
 .ui-button--full > span { grid-column: 2; }
 .ui-button--full app-icon { grid-column: 3; justify-self: end; }
-.ui-button--green { --focus-accent: var(--green); background: var(--green); color: var(--on-green); }
-.ui-button--yellow { --focus-accent: var(--yellow); background: linear-gradient(90deg, var(--yellow-action-start), var(--yellow-action-end)); color: var(--on-yellow); }
-.ui-button--blue { --focus-accent: var(--blue); background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 82%, var(--on-blue)), var(--blue)); color: var(--on-blue); }
+.ui-button--green { --ui-accent: var(--green); background: var(--green); color: var(--on-green); }
+.ui-button--yellow { --ui-accent: var(--yellow); background: linear-gradient(90deg, var(--yellow-action-start), var(--yellow-action-end)); color: var(--on-yellow); }
+.ui-button--blue { --ui-accent: var(--blue); background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 82%, var(--on-blue)), var(--blue)); color: var(--on-blue); }
 
 /* Selection controls retain their state and never use physical press motion. */
 .ui-choice {
@@ -167,13 +167,13 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   border-color: var(--line-strong);
 }
 .icon-button--add app-icon { color: var(--text); }
-.icon-button--green { --focus-accent: var(--green); background: var(--green); color: var(--on-green); }
-.icon-button--yellow { --focus-accent: var(--yellow); background: var(--yellow); color: var(--on-yellow); }
-.icon-button--blue { --focus-accent: var(--blue); background: var(--blue); color: var(--on-blue); }
-.icon-button--danger { --focus-accent: var(--danger-token); background: var(--danger-token); color: var(--on-danger-token); border-color: var(--line-strong); }
+.icon-button--green { --ui-accent: var(--green); background: var(--green); color: var(--on-green); }
+.icon-button--yellow { --ui-accent: var(--yellow); background: var(--yellow); color: var(--on-yellow); }
+.icon-button--blue { --ui-accent: var(--blue); background: var(--blue); color: var(--on-blue); }
+.icon-button--danger { --ui-accent: var(--danger-token); background: var(--danger-token); color: var(--on-danger-token); border-color: var(--line-strong); }
 
 .ui-button--danger {
-  --focus-accent: var(--danger-token);
+  --ui-accent: var(--danger-token);
   background: var(--danger-token);
   color: var(--on-danger-token);
 }

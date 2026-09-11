@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { DialogShellComponent } from '../../shared/ui/dialog-shell.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LedgerAppearanceFieldsComponent } from '../../shared/ledger/ledger-appearance-fields.component';
 import { entityIconValidator } from '../../shared/ledger/entity-icon-validator';
@@ -23,13 +24,12 @@ const DEFAULT_COLOR = '#21E683';
 @Component({
   selector: 'app-ledger-editor-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, FieldErrorComponent, FormMessageComponent, IconComponent, LedgerIconComponent, LedgerAppearanceFieldsComponent],
+  imports: [DialogShellComponent, ReactiveFormsModule, FieldErrorComponent, FormMessageComponent, IconComponent, LedgerIconComponent, LedgerAppearanceFieldsComponent],
   template: `
     @if (open()) {
-      <div class="dialog-backdrop ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
-      <div class="dialog-layer ui-dialog-layer">
-      <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
-      <section class="dialog ui-dialog-surface" role="dialog" aria-modal="true" [attr.aria-label]="title()">
+      <app-dialog-shell [ariaLabel]="title()" (dismiss)="requestClose()">
+
+        <div class="dialog">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
             <span class="title-icon title-icon--green"><app-icon [name]="ledger() ? 'pencil' : 'plus'" [size]="21" /></span>
@@ -76,14 +76,13 @@ const DEFAULT_COLOR = '#21E683';
             </button>
           </footer>
         </form>
-      </section>
       </div>
-      </div>
+      </app-dialog-shell>
     }
   `,
   styles: `
     .dialog {
-      --token-accent: var(--green); --token-accent-strong: var(--green-strong); --focus-accent: var(--green);
+      --ui-accent: var(--green); --ui-accent-strong: var(--green-strong);
     }
     form { display: grid; gap: var(--section-gap); padding: var(--space-5); }
     .editor-grid { display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(220px, .78fr); gap: var(--space-6); align-items: stretch; }
@@ -148,9 +147,6 @@ export class LedgerEditorDialogComponent {
       });
     });
   }
-
-  @HostListener('document:keydown.escape', ['$event'])
-  onEscape(event: Event): void { if (this.open() && !event.defaultPrevented) this.requestClose(); }
 
   setNamePreviewFromEvent(event: Event): void { this.previewNameValue.set((event.target as HTMLInputElement).value); }
   nameError(): string | null {

@@ -1,16 +1,17 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { DismissiblePopoverDirective } from './dismissible-popover.directive';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { IconComponent } from './icon.component';
 
 @Component({
   selector: 'app-account-menu',
   standalone: true,
-  imports: [IconComponent],
+  imports: [DismissiblePopoverDirective, IconComponent],
   host: {
     '[class.account-menu-host--full]': 'fullWidth()',
   },
   template: `
-    <div class="account-control" [class.account-control--up]="placement() === 'up'">
+    <div class="account-control" [class.account-control--up]="placement() === 'up'" [appDismissiblePopover]="open()" (dismiss)="open.set(false)">
       <button class="account-trigger ui-select-trigger ui-action-press ui-trigger-with-icon" type="button" (click)="toggle($event)"
         [attr.aria-expanded]="open()" [attr.aria-label]="label() ? label() + ': ' + (userName() || '—') : i18n.t('shell.settings')">
         <span class="account-trigger__icon ui-icon-badge ui-projected-icon"><app-icon name="user" [size]="17" /></span>
@@ -95,7 +96,6 @@ import { IconComponent } from './icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AccountMenuComponent {
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly i18n = inject(I18nService);
 
   readonly userName = input<string | null>(null);
@@ -108,16 +108,6 @@ export class AccountMenuComponent {
   readonly security = output<void>();
   readonly logout = output<void>();
   readonly open = signal(false);
-
-  @HostListener('document:mousedown', ['$event'])
-  closeWhenClickingOutside(event: MouseEvent): void {
-    if (!this.host.nativeElement.contains(event.target as Node)) this.open.set(false);
-  }
-
-  @HostListener('document:keydown.escape')
-  closeOnEscape(): void {
-    this.open.set(false);
-  }
 
   toggle(event: Event): void {
     event.stopPropagation();

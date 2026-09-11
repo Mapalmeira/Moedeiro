@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { DismissiblePopoverDirective } from '../../../../shared/ui/dismissible-popover.directive';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 import { LedgerBudgetState } from '../../../../core/ledgers/ledger-budgets.models';
 import { ENTITY_BADGE_DEFAULT_SYMBOL_SIZE } from '../../../../shared/ledger/entity-badge.component';
@@ -9,9 +10,9 @@ const ALL_STATES: readonly LedgerBudgetState[] = ['ACTIVE', 'FUTURE', 'FINISHED'
 @Component({
   selector: 'app-budget-state-filter',
   standalone: true,
-  imports: [IconComponent],
+  imports: [DismissiblePopoverDirective, IconComponent],
   template: `
-    <div class="state-filter">
+    <div class="state-filter" [appDismissiblePopover]="open()" (dismiss)="open.set(false)">
       <button type="button" class="state-filter__trigger ui-select-trigger ui-trigger-with-icon" (click)="toggle()"
         [attr.aria-expanded]="open()" [attr.aria-label]="i18n.t('budgets.filterState')">
         <span class="state-filter__icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon" aria-hidden="true"><app-icon name="wallet" [size]="triggerIconSize" /></span>
@@ -53,7 +54,6 @@ const ALL_STATES: readonly LedgerBudgetState[] = ['ACTIVE', 'FUTURE', 'FINISHED'
 })
 export class BudgetStateFilterComponent {
   readonly triggerIconSize = ENTITY_BADGE_DEFAULT_SYMBOL_SIZE;
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly i18n = inject(I18nService);
   readonly selected = input.required<readonly LedgerBudgetState[]>();
   readonly selectedChange = output<readonly LedgerBudgetState[]>();
@@ -65,14 +65,6 @@ export class BudgetStateFilterComponent {
     if (values.length === 1) return this.label(values[0]);
     return this.i18n.t('budgets.states.count', { count: values.length });
   });
-
-  @HostListener('document:mousedown', ['$event'])
-  closeOutside(event: MouseEvent): void {
-    if (this.open() && !this.host.nativeElement.contains(event.target as Node)) this.open.set(false);
-  }
-
-  @HostListener('document:keydown.escape')
-  closeEscape(): void { this.open.set(false); }
 
   toggle(): void { this.open.update(value => !value); }
 

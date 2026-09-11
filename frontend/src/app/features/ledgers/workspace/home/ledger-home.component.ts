@@ -1,5 +1,5 @@
 import { formatDate } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { Subscription, finalize, forkJoin } from 'rxjs';
@@ -12,7 +12,8 @@ import { FinancialEvent } from '../../../../core/ledgers/financial-events.models
 import { FinancialEventsService } from '../../../../core/ledgers/financial-events.service';
 import { LedgerBudgetOverview } from '../../../../core/ledgers/ledger-budgets.models';
 import { LedgerBudgetsService } from '../../../../core/ledgers/ledger-budgets.service';
-import { LedgerCategory, LedgerCategoryTreeNode } from '../../../../core/ledgers/ledger-categories.models';
+import { LedgerCategory } from '../../../../core/ledgers/ledger-categories.models';
+import { flattenCategoryTree } from '../../../../core/ledgers/ledger-category-tree';
 import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categories.service';
 import { LedgerAccount, LedgerAccountBalance, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
@@ -23,10 +24,10 @@ import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../sha
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
 import { IconComponent, IconName } from '../../../../shared/ui/icon.component';
 import { PeriodMode, PeriodSelectorComponent } from '../../../../shared/ui/period-selector.component';
+import { DiscreteListCapacityDirective } from '../../../../shared/ui/discrete-list-capacity.directive';
+import { HomeFlowChartComponent, HomeFlowMode, homeChartPointWidth } from './home-flow-chart.component';
 
-type FlowMode = 'instant' | 'cumulative';
 type Tone = 'green' | 'yellow' | 'blue' | 'neutral';
-type ChartDateLabelDetail = 'day' | 'month' | 'year';
 
 interface HomeAccountRow {
   account: LedgerAccount;
@@ -57,30 +58,6 @@ interface HomeEventRow {
   valueTone: 'positive' | 'negative' | 'neutral';
 }
 
-interface ChartPointView {
-  index: number;
-  x: number;
-  xPercent: number;
-  barWidth: number;
-  incomeX: number;
-  expenseX: number;
-  incomeY: number;
-  incomeHeight: number;
-  expenseHeight: number;
-  cumulativeY: number;
-  label: string;
-  showLabel: boolean;
-  date: string;
-  income: string;
-  expense: string;
-  net: string;
-  cumulative: string;
-}
-
-interface ChartTickView {
-  y: number;
-  label: string;
-}
 
 interface HomePreviewLimits {
   accounts: number;
@@ -92,27 +69,12 @@ const DAY_SECONDS = 86_400;
 const HOME_PREVIEW_FETCH_LIMIT = 10;
 const INITIAL_HOME_PREVIEW_LIMITS: HomePreviewLimits = { accounts: 5, budgets: 3, events: 4 };
 const WARNING_BUDGET_USAGE_PERCENT = 80;
-const CHART_WIDTH = 1000;
-const CHART_HEIGHT = 300;
-const CHART_LEFT = 118;
-const CHART_RIGHT = 28;
-const CHART_TOP = 20;
-const CHART_BOTTOM = 48;
-const CHART_PLOT_WIDTH = CHART_WIDTH - CHART_LEFT - CHART_RIGHT;
-const CHART_PLOT_HEIGHT = CHART_HEIGHT - CHART_TOP - CHART_BOTTOM;
-const CHART_ZERO_Y = CHART_TOP + CHART_PLOT_HEIGHT / 2;
-const CHART_X_LABEL_TARGET_COUNT = 10;
-const CHART_X_LABEL_WITH_YEAR_TARGET_COUNT = 6;
-const CHART_MAX_POINTS = 100;
-const CHART_BAR_WIDTH_RATIO = .38;
-const CHART_MIN_BAR_WIDTH = .25;
-const CHART_MAX_BAR_WIDTH = 16;
 
 @Component({
   selector: 'app-ledger-home',
   host: { class: 'ui-workspace-page' },
   standalone: true,
-  imports: [RouterLink, EntityBadgeComponent, EntitySearchSelectComponent, FormMessageComponent, IconComponent, PeriodSelectorComponent],
+  imports: [RouterLink, DiscreteListCapacityDirective, HomeFlowChartComponent, EntityBadgeComponent, EntitySearchSelectComponent, FormMessageComponent, IconComponent, PeriodSelectorComponent],
   templateUrl: './ledger-home.component.html',
   styleUrl: './ledger-home.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -129,8 +91,6 @@ export class LedgerHomeComponent {
   private resourcesRequest?: Subscription;
   private dashboardRequest?: Subscription;
   private chartRequest?: Subscription;
-  private previewObserver?: ResizeObserver;
-  private previewContentObserver?: MutationObserver;
   private dashboardScopeKey: string | null = null;
 
   readonly context = inject(LedgerContextService);
@@ -138,11 +98,6 @@ export class LedgerHomeComponent {
   private readonly dateFormatter = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' });
   private readonly timeFormatter = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   private readonly percentFormatter = new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 0 });
-  private readonly chartDateFormatters: Record<ChartDateLabelDetail, Intl.DateTimeFormat> = {
-    day: new Intl.DateTimeFormat(undefined, { day: 'numeric' }),
-    month: new Intl.DateTimeFormat(undefined, { day: '2-digit', month: '2-digit' }),
-    year: new Intl.DateTimeFormat(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' }),
-  };
 
   readonly accounts = signal<LedgerAccount[]>([]);
   readonly currencies = signal<LedgerCurrency[]>([]);
@@ -159,9 +114,7 @@ export class LedgerHomeComponent {
   readonly periodMode = signal<PeriodMode>('month');
   readonly rangeFromDate = signal('');
   readonly rangeToDate = signal('');
-  readonly flowMode = signal<FlowMode>('instant');
-  readonly hoveredChartIndex = signal<number | null>(null);
-  readonly pinnedChartIndex = signal<number | null>(null);
+  readonly flowMode = signal<HomeFlowMode>('instant');
   readonly resourcesReady = signal(false);
   readonly resourcesLoading = signal(false);
   readonly loading = signal(false);
@@ -169,17 +122,6 @@ export class LedgerHomeComponent {
   readonly error = signal<string | null>(null);
   readonly previewLimits = signal<HomePreviewLimits>(INITIAL_HOME_PREVIEW_LIMITS);
 
-  readonly accountsList = viewChild<ElementRef<HTMLElement>>('accountsList');
-  readonly budgetList = viewChild<ElementRef<HTMLElement>>('budgetList');
-  readonly eventsList = viewChild<ElementRef<HTMLElement>>('eventsList');
-
-  readonly chartWidth = CHART_WIDTH;
-  readonly chartHeight = CHART_HEIGHT;
-  readonly chartLeft = CHART_LEFT;
-  readonly chartRight = CHART_WIDTH - CHART_RIGHT;
-  readonly chartTop = CHART_TOP;
-  readonly chartBottom = CHART_HEIGHT - CHART_BOTTOM;
-  readonly chartZeroY = CHART_ZERO_Y;
 
   private readonly accountByUuid = computed(() => new Map(this.accounts().map(account => [account.uuid, account] as const)));
   private readonly currencyByUuid = computed(() => new Map(this.currencies().map(currency => [currency.uuid, currency] as const)));
@@ -281,82 +223,6 @@ export class LedgerHomeComponent {
     }).slice(0, this.previewLimits().events);
   });
 
-  readonly cumulativeValues = computed(() => {
-    const values: number[] = [];
-    let running = 0;
-    for (const point of this.cashFlow()) {
-      running += point.income - point.expense;
-      values.push(running);
-    }
-    return values;
-  });
-
-  readonly chartScale = computed(() => {
-    const values = this.flowMode() === 'instant'
-      ? this.cashFlow().flatMap(point => [point.income, point.expense])
-      : this.cumulativeValues().map(value => Math.abs(value));
-    return Math.max(1, ...values);
-  });
-
-  readonly chartTicks = computed<ChartTickView[]>(() => {
-    const max = this.chartScale();
-    return [1, .5, 0, -.5, -1].map(factor => ({
-      y: CHART_ZERO_Y - factor * (CHART_PLOT_HEIGHT / 2),
-      label: this.formatChartTick(max * factor),
-    }));
-  });
-
-  readonly chartPoints = computed<ChartPointView[]>(() => {
-    const points = this.cashFlow();
-    const cumulative = this.cumulativeValues();
-    const max = this.chartScale();
-    const scale = (CHART_PLOT_HEIGHT / 2) / max;
-    const slot = CHART_PLOT_WIDTH / Math.max(1, points.length);
-    const barWidth = Math.max(CHART_MIN_BAR_WIDTH, Math.min(CHART_MAX_BAR_WIDTH, slot * CHART_BAR_WIDTH_RATIO));
-    const currency = this.selectedCurrency();
-    const range = this.dashboardRange();
-    if (!currency || !range) return [];
-    const labelDetail: ChartDateLabelDetail = this.periodMode() === 'range'
-      ? this.chartDateLabelDetail(range)
-      : 'day';
-    const labelTargetCount = labelDetail === 'year' ? CHART_X_LABEL_WITH_YEAR_TARGET_COUNT : CHART_X_LABEL_TARGET_COUNT;
-    const labelStride = Math.max(1, Math.ceil(points.length / labelTargetCount));
-    const labelOffset = Math.floor(labelStride / 2);
-    const pointWidth = this.chartPointWidth(range);
-    return points.map((point, index) => {
-      const x = CHART_LEFT + slot * index + slot / 2;
-      const incomeHeight = point.income * scale;
-      const expenseHeight = point.expense * scale;
-      const cumulativeValue = cumulative[index] ?? 0;
-      const pointTimestamp = range.from + index * pointWidth;
-      const shortDate = this.chartDateLabel(pointTimestamp, labelDetail);
-      return {
-        index,
-        x,
-        xPercent: Math.min(86, Math.max(14, x / CHART_WIDTH * 100)),
-        barWidth,
-        incomeX: x - barWidth / 2,
-        expenseX: x - barWidth / 2,
-        incomeY: CHART_ZERO_Y - incomeHeight,
-        incomeHeight,
-        expenseHeight,
-        cumulativeY: CHART_ZERO_Y - cumulativeValue * scale,
-        label: shortDate,
-        showLabel: index % labelStride === labelOffset,
-        date: this.dateFormatter.format(new Date(pointTimestamp * 1000)),
-        income: formatCurrencyAmount(point.income, currency),
-        expense: formatCurrencyAmount(point.expense, currency),
-        net: formatCurrencyAmount(point.income - point.expense, currency),
-        cumulative: formatCurrencyAmount(cumulativeValue, currency),
-      };
-    });
-  });
-
-  readonly cumulativePolyline = computed(() => this.chartPoints().map(point => `${point.x},${point.cumulativeY}`).join(' '));
-  readonly activeChartPoint = computed(() => {
-    const index = this.pinnedChartIndex() ?? this.hoveredChartIndex();
-    return index === null ? null : this.chartPoints()[index] ?? null;
-  });
 
   constructor() {
     effect(() => {
@@ -384,12 +250,6 @@ export class LedgerHomeComponent {
       }
     });
     effect(() => {
-      const accountsList = this.accountsList();
-      const budgetList = this.budgetList();
-      const eventsList = this.eventsList();
-      untracked(() => this.observePreviewCapacity(accountsList, budgetList, eventsList));
-    });
-    effect(() => {
       const ledgerUuid = this.context.ledgerUuid();
       const currencyUuid = this.selectedCurrencyUuid();
       const range = this.dashboardRange();
@@ -410,8 +270,6 @@ export class LedgerHomeComponent {
       this.resourcesRequest?.unsubscribe();
       this.dashboardRequest?.unsubscribe();
       this.chartRequest?.unsubscribe();
-      this.previewObserver?.disconnect();
-      this.previewContentObserver?.disconnect();
     });
   }
 
@@ -455,52 +313,16 @@ export class LedgerHomeComponent {
     this.saveViewState();
   }
 
-  setFlowMode(mode: FlowMode): void {
+  setFlowMode(mode: HomeFlowMode): void {
     if (mode === this.flowMode()) return;
     this.flowMode.set(mode);
-    this.hoveredChartIndex.set(null);
-    this.pinnedChartIndex.set(null);
     this.saveViewState();
   }
 
-  hoverChart(event: PointerEvent): void {
-    if (event.pointerType && event.pointerType !== 'mouse') return;
-    this.pinnedChartIndex.set(null);
-    this.hoveredChartIndex.set(this.chartIndexAt(event));
-  }
-
-  leaveChart(): void {
-    this.hoveredChartIndex.set(null);
-  }
-
-  pinChart(event: PointerEvent): void {
-    if (event.pointerType === 'mouse') return;
-    const index = this.chartIndexAt(event);
-    if (index === null) return;
-    this.pinnedChartIndex.update(current => current === index ? null : index);
-  }
-
-  keepChartSelection(event: PointerEvent): void {
-    event.stopPropagation();
-  }
-
-  @HostListener('document:pointerdown')
-  clearChartSelectionOnOutsidePointerDown(): void {
-    this.clearChartSelection();
-  }
-
-  moveChartSelection(delta: number, event: Event): void {
-    const points = this.chartPoints();
-    if (!points.length) return;
-    event.preventDefault();
-    const current = this.pinnedChartIndex() ?? this.hoveredChartIndex() ?? (delta > 0 ? -1 : points.length);
-    this.pinnedChartIndex.set(Math.max(0, Math.min(points.length - 1, current + delta)));
-    this.hoveredChartIndex.set(null);
-  }
-
-  clearChartSelection(): void {
-    this.hoveredChartIndex.set(null);
-    this.pinnedChartIndex.set(null);
+  setPreviewLimit(kind: keyof HomePreviewLimits, capacity: number): void {
+    const current = this.previewLimits();
+    if (current[kind] === capacity) return;
+    this.previewLimits.set({ ...current, [kind]: capacity });
   }
 
   retry(): void {
@@ -525,7 +347,7 @@ export class LedgerHomeComponent {
       next: ({ accounts, currencies, categoryTree }) => {
         this.accounts.set(accounts);
         this.currencies.set(currencies);
-        this.categories.set(this.flattenCategories(categoryTree));
+        this.categories.set(flattenCategoryTree(categoryTree));
         const current = this.selectedCurrencyUuid();
         if (!currencies.some(currency => currency.uuid === current)) this.selectedCurrencyUuid.set(currencies[0]?.uuid ?? '');
         this.resetFlowAccountForCurrency();
@@ -600,7 +422,7 @@ export class LedgerHomeComponent {
       currencyUuid,
       range.from,
       range.to,
-      this.chartPointWidth(range),
+      homeChartPointWidth(range),
       { account_uuid: flowAccountUuid || null },
     ).pipe(
       takeUntilDestroyed(this.destroyRef),
@@ -611,44 +433,6 @@ export class LedgerHomeComponent {
     });
   }
 
-  private chartPointWidth(range: { from: number; to: number }): number {
-    const days = (range.to - range.from) / DAY_SECONDS;
-    return Math.max(1, Math.ceil(days / CHART_MAX_POINTS)) * DAY_SECONDS;
-  }
-
-  private chartDateLabelDetail(range: { from: number; to: number }): ChartDateLabelDetail {
-    const fromDate = formatDate(range.from * 1000, 'yyyy-MM-dd', 'en-US');
-    const toDate = formatDate((range.to - 1) * 1000, 'yyyy-MM-dd', 'en-US');
-    if (fromDate.slice(0, 4) !== toDate.slice(0, 4)) return 'year';
-    if (fromDate.slice(0, 7) !== toDate.slice(0, 7)) return 'month';
-    return 'day';
-  }
-
-  private chartDateLabel(timestampSeconds: number, detail: ChartDateLabelDetail): string {
-    return this.chartDateFormatters[detail].format(new Date(timestampSeconds * 1000));
-  }
-
-  private chartIndexAt(event: MouseEvent | PointerEvent): number | null {
-    const target = event.currentTarget;
-    if (!(target instanceof SVGSVGElement)) return null;
-    const points = this.chartPoints();
-    if (!points.length) return null;
-    const bounds = target.getBoundingClientRect();
-    if (bounds.width <= 0) return null;
-    const x = (event.clientX - bounds.left) / bounds.width * CHART_WIDTH;
-    const slot = CHART_PLOT_WIDTH / points.length;
-    const raw = Math.round((x - CHART_LEFT - slot / 2) / slot);
-    return Math.max(0, Math.min(points.length - 1, raw));
-  }
-
-  private formatChartTick(value: number): string {
-    const currency = this.selectedCurrency();
-    if (!currency) return String(value);
-    const major = value / 10 ** currency.decimal_places;
-    return Math.abs(major) >= 1000
-      ? new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(major)
-      : new Intl.NumberFormat(undefined, { maximumSignificantDigits: 4 }).format(major);
-  }
 
   private monthRange(month: string): { from: number; to: number } | null {
     const match = /^(\d{4})-(\d{2})$/.exec(month);
@@ -687,9 +471,6 @@ export class LedgerHomeComponent {
     return formatDate(Date.now(), 'yyyy-MM', 'en-US');
   }
 
-  private flattenCategories(nodes: readonly LedgerCategoryTreeNode[]): LedgerCategory[] {
-    return nodes.flatMap(node => [node.category, ...this.flattenCategories(node.children)]);
-  }
 
   private clearDashboard(): void {
     this.balances.set([]);
@@ -701,8 +482,6 @@ export class LedgerHomeComponent {
 
   private clearChart(): void {
     this.cashFlow.set([]);
-    this.hoveredChartIndex.set(null);
-    this.pinnedChartIndex.set(null);
   }
 
   private resetFlowAccountForCurrency(): void {
@@ -710,50 +489,6 @@ export class LedgerHomeComponent {
     if (accountUuid && !this.accounts().some(account => account.uuid === accountUuid && account.currency_uuid === this.selectedCurrencyUuid())) {
       this.selectedFlowAccountUuid.set('');
     }
-  }
-
-  private observePreviewCapacity(
-    accountsList: ElementRef<HTMLElement> | undefined,
-    budgetList: ElementRef<HTMLElement> | undefined,
-    eventsList: ElementRef<HTMLElement> | undefined,
-  ): void {
-    this.previewObserver?.disconnect();
-    this.previewContentObserver?.disconnect();
-    if (!accountsList || !budgetList || !eventsList) return;
-
-    const lists = [accountsList.nativeElement, budgetList.nativeElement, eventsList.nativeElement] as const;
-    const resize = () => this.updatePreviewCapacity(...lists);
-    if (typeof ResizeObserver !== 'undefined') {
-      this.previewObserver = new ResizeObserver(resize);
-      lists.forEach(list => this.previewObserver?.observe(list));
-    }
-    if (typeof MutationObserver !== 'undefined') {
-      this.previewContentObserver = new MutationObserver(resize);
-      lists.forEach(list => this.previewContentObserver?.observe(list, { childList: true }));
-    }
-    resize();
-  }
-
-  private updatePreviewCapacity(accountsList: HTMLElement, budgetList: HTMLElement, eventsList: HTMLElement): void {
-    this.setPreviewLimits({
-      accounts: this.previewCapacity(accountsList),
-      budgets: this.previewCapacity(budgetList),
-      events: this.previewCapacity(eventsList),
-    });
-  }
-
-  private previewCapacity(list: HTMLElement): number {
-    const row = list.querySelector<HTMLElement>(':scope > a');
-    const rowHeight = row ? Number.parseFloat(getComputedStyle(row).minHeight) : Number.NaN;
-    const listHeight = list.getBoundingClientRect().height;
-    return Number.isFinite(rowHeight) && rowHeight > 0 && listHeight > 0
-      ? Math.min(HOME_PREVIEW_FETCH_LIMIT, Math.max(1, Math.floor(listHeight / rowHeight)))
-      : 1;
-  }
-
-  private setPreviewLimits(next: HomePreviewLimits): void {
-    const current = this.previewLimits();
-    if (current.accounts !== next.accounts || current.budgets !== next.budgets || current.events !== next.events) this.previewLimits.set(next);
   }
 
   private eventPresentation(type: FinancialEvent['type']): { icon: IconName; tone: Tone } {

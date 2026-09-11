@@ -1,9 +1,6 @@
 :host {
-  --token-accent: var(--blue);
-  --token-accent-strong: var(--blue-strong);
-  --focus-accent: var(--blue);
-  --spinner-accent: var(--blue);
-  --spinner-accent-strong: var(--blue-strong);
+  --ui-accent: var(--blue);
+  --ui-accent-strong: var(--blue-strong);
   --category-tree-start: var(--space-4);
   --category-root-child-indent: var(--category-tree-indent);
   --category-disclosure-size: var(--space-8);
@@ -167,7 +164,6 @@
 }
 .categories-state { min-height: calc(var(--list-row-height) * 3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: var(--inline-gap); padding: var(--space-8) var(--space-4); color: var(--text-muted); text-align: center; }
 .category-tree > .categories-state, .category-rows > .categories-state { flex: 1 0 auto; }
-.category-delete-layer { --dialog-width: 520px; }
 .delete-icon { background: var(--danger-token); color: var(--on-danger-token); }
 
 @media (max-width: 720px) {

@@ -1,8 +1,7 @@
 :host {
-  --token-accent: var(--blue);
-  --token-accent-strong: var(--blue-strong);
-  --section-foreground: var(--on-blue);
-  --focus-accent: var(--blue);
+  --ui-accent: var(--blue);
+  --ui-accent-strong: var(--blue-strong);
+  --ui-on-accent: var(--on-blue);
 }
 form { display: grid; gap: var(--section-gap); padding: var(--space-5); }
 .category-editor__content { display: grid; align-content: start; gap: var(--section-gap); min-width: 0; }

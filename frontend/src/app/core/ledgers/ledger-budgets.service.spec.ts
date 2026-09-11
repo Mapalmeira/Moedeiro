@@ -22,7 +22,6 @@ describe('LedgerBudgetsService', () => {
 
     const request = http.expectOne(candidate => candidate.url === `${API_ROUTES.ledgerBudgets('ledger')}/currency-overview`);
     expect(request.request.method).toBe('GET');
-    expect(request.request.withCredentials).toBe(true);
     expect(request.request.params.get('currency_uuid')).toBe('currency');
     expect(request.request.params.get('timestamp')).toBe('1775001599');
     expect(request.request.params.get('limit')).toBe('3');

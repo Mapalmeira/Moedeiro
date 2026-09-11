@@ -18,28 +18,28 @@ export class SecurityService {
   readonly totpStatus = signal<TotpStatus>('unknown');
 
   changePassword(payload: ChangePasswordRequest): Observable<void> {
-    return this.http.post<void>(API_ROUTES.password.change, payload, { withCredentials: true });
+    return this.http.post<void>(API_ROUTES.password.change, payload);
   }
 
   getTotpStatus(): Observable<TotpResponse> {
     this.totpStatus.set('unknown');
-    return this.http.get<TotpResponse>(API_ROUTES.totp.root, { withCredentials: true }).pipe(
+    return this.http.get<TotpResponse>(API_ROUTES.totp.root).pipe(
       tap(({ state }) => this.totpStatus.set(state)),
     );
   }
 
   startTotpSetup(payload: StartTotpSetupRequest): Observable<TotpResponse> {
-    return this.http.post<TotpResponse>(API_ROUTES.totp.setup, payload, { withCredentials: true });
+    return this.http.post<TotpResponse>(API_ROUTES.totp.setup, payload);
   }
 
   confirmTotp(payload: ConfirmTotpRequest): Observable<void> {
-    return this.http.post<void>(API_ROUTES.totp.confirm, payload, { withCredentials: true }).pipe(
+    return this.http.post<void>(API_ROUTES.totp.confirm, payload).pipe(
       tap(() => this.markTotpEnabled()),
     );
   }
 
   disableTotp(payload: DisableTotpRequest): Observable<void> {
-    return this.http.delete<void>(API_ROUTES.totp.root, { body: payload, withCredentials: true }).pipe(
+    return this.http.delete<void>(API_ROUTES.totp.root, { body: payload }).pipe(
       tap(() => this.markTotpDisabled()),
     );
   }

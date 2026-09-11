@@ -1,5 +1,6 @@
 import { formatDate } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { DialogShellComponent } from '../../../../shared/ui/dialog-shell.component';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -8,6 +9,7 @@ import { I18nService } from '../../../../core/i18n/i18n.service';
 import { LedgerBudget } from '../../../../core/ledgers/ledger-budgets.models';
 import { LedgerBudgetsService } from '../../../../core/ledgers/ledger-budgets.service';
 import { LedgerCategory } from '../../../../core/ledgers/ledger-categories.models';
+import { categoryPath } from '../../../../core/ledgers/ledger-category-tree';
 import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import { currencyAmountInput, parseCurrencyAmount } from '../../../../core/ledgers/currency-format';
 import { CurrencyAmountInputComponent } from '../../../../shared/ledger/currency-amount-input.component';
@@ -19,7 +21,7 @@ import { IconComponent } from '../../../../shared/ui/icon.component';
 @Component({
   selector: 'app-budget-editor',
   standalone: true,
-  imports: [ReactiveFormsModule, CurrencyAmountInputComponent, EntitySearchSelectComponent, FieldErrorComponent, FormMessageComponent, IconComponent],
+  imports: [DialogShellComponent, ReactiveFormsModule, CurrencyAmountInputComponent, EntitySearchSelectComponent, FieldErrorComponent, FormMessageComponent, IconComponent],
   templateUrl: './budget-editor.component.html',
   styleUrl: './budget-editor.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -72,7 +74,7 @@ export class BudgetEditorComponent {
     return this.categories().map(category => ({
       value: category.uuid,
       label: category.name,
-      detail: this.categoryPath(category, byUuid),
+      detail: categoryPath(category, byUuid) || null,
       icon: category.icon,
       color: category.color_code,
     }));
@@ -104,9 +106,6 @@ export class BudgetEditorComponent {
       });
     });
   }
-
-  @HostListener('document:keydown.escape')
-  escape(): void { this.requestClose(); }
 
   requestClose(): void { if (!this.saving()) this.close.emit(); }
 
@@ -181,15 +180,4 @@ export class BudgetEditorComponent {
     return account ? this.currencyByUuid().get(account.currency_uuid) ?? null : null;
   }
 
-  private categoryPath(category: LedgerCategory, byUuid: ReadonlyMap<string, LedgerCategory>): string | null {
-    const names: string[] = [];
-    let parentUuid = category.parent_uuid;
-    while (parentUuid) {
-      const parent = byUuid.get(parentUuid);
-      if (!parent) break;
-      names.unshift(parent.name);
-      parentUuid = parent.parent_uuid;
-    }
-    return names.length ? names.join(' › ') : null;
-  }
 }

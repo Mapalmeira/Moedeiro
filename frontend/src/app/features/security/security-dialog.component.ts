@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { DialogShellComponent } from '../../shared/ui/dialog-shell.component';
 import { ChangeDetectionStrategy, Component, HostListener, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -20,13 +21,12 @@ import { IconComponent } from '../../shared/ui/icon.component';
 @Component({
   selector: 'app-security-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, NoWhitespaceInputDirective, FieldErrorComponent, FormMessageComponent, IconComponent],
+  imports: [DialogShellComponent, ReactiveFormsModule, NoWhitespaceInputDirective, FieldErrorComponent, FormMessageComponent, IconComponent],
   template: `
     @if (open()) {
-      <div class="dialog-backdrop ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
-      <div class="dialog-layer ui-dialog-layer">
-      <div class="ui-dialog-frame ui-projected-surface ui-projection--dialog">
-      <section class="dialog security-dialog ui-dialog-surface" role="dialog" aria-modal="true" [attr.aria-label]="i18n.t('security.title')">
+      <app-dialog-shell [ariaLabel]="i18n.t('security.title')" (dismiss)="requestClose()">
+
+        <div class="dialog security-dialog">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
             <span class="title-icon title-icon--blue"><app-icon name="shield" [size]="21" /></span>
@@ -202,16 +202,14 @@ import { IconComponent } from '../../shared/ui/icon.component';
             }
           </section>
         </div>
-      </section>
       </div>
-      </div>
+      </app-dialog-shell>
     }
   `,
   styles: `
     .security-dialog {
-      --token-accent: var(--blue);
-      --token-accent-strong: var(--blue-strong);
-      --focus-accent: var(--blue);
+      --ui-accent: var(--blue);
+      --ui-accent-strong: var(--blue-strong);
     }
     .dialog__header { position: sticky; top: 0; z-index: 2; background: var(--surface); }
     .dialog__body { padding: 0 var(--space-5) var(--space-5); }
@@ -229,7 +227,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
     .totp-form { margin-top: var(--form-gap); }
     .totp-status-state { min-height: 78px; display: flex; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--form-gap); border: var(--border-width) solid color-mix(in srgb, var(--blue-strong) 56%, var(--line)); border-radius: var(--radius-card); background: var(--surface); color: var(--text-muted); font-size: .86rem; font-weight: 700; box-shadow: var(--selection-shadow); }
     .totp-status-state--error { display: grid; justify-items: end; }
-    .totp-status-spinner { --spinner-size: 20px; --spinner-accent: var(--blue); --spinner-accent-strong: var(--blue); }
+    .totp-status-spinner { --spinner-size: 20px; --ui-accent: var(--blue); --ui-accent-strong: var(--blue); }
     .setup-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto auto; column-gap: var(--form-gap); row-gap: var(--field-gap); align-items: stretch; }
     .setup-row .field { display: contents; }
     .setup-row .field > span { grid-column: 1; grid-row: 1; }
@@ -401,11 +399,6 @@ export class SecurityDialogComponent {
 
   busy(): boolean {
     return this.changingPassword() || this.startingTotp() || this.confirmingTotp() || this.disablingTotp();
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    if (this.open()) this.requestClose();
   }
 
   @HostListener('document:visibilitychange')

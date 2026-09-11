@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import { DialogShellComponent } from '../../../shared/ui/dialog-shell.component';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable, finalize } from 'rxjs';
@@ -18,7 +19,7 @@ type Entity = LedgerAccount | LedgerCurrency;
 
 @Component({
   selector: 'app-entity-editor',
-  imports: [ReactiveFormsModule, IconComponent, EntityBadgeComponent, LedgerAppearanceFieldsComponent, FieldErrorComponent, FormMessageComponent],
+  imports: [DialogShellComponent, ReactiveFormsModule, IconComponent, EntityBadgeComponent, LedgerAppearanceFieldsComponent, FieldErrorComponent, FormMessageComponent],
   templateUrl: './entity-editor.component.html',
   styleUrl: './entity-editor.component.scss',
   host: {
@@ -60,7 +61,7 @@ export class EntityEditorComponent {
     const entity = this.entity();
     return entity && 'currency_uuid' in entity ? this.currencies().find(c => c.uuid === entity.currency_uuid)?.name ?? entity.currency_uuid : '';
   });
-  readonly previewColor = computed(() => /^#[0-9A-Fa-f]{6}$/.test(this.values().color_code) ? this.values().color_code : 'var(--token-accent)');
+  readonly previewColor = computed(() => /^#[0-9A-Fa-f]{6}$/.test(this.values().color_code) ? this.values().color_code : 'var(--ui-accent)');
   readonly currencyPreview = computed(() => formatCurrencyPreview(this.values()));
 
   constructor() {
@@ -81,12 +82,6 @@ export class EntityEditorComponent {
         this.error.set(null);
       });
     });
-  }
-
-  @HostListener('document:keydown.escape', ['$event'])
-  escape(event: Event): void {
-    // The icon picker consumes Escape first.
-    if (!event.defaultPrevented) this.requestClose();
   }
 
   requestClose(): void { if (!this.saving()) this.close.emit(); }

@@ -17,7 +17,7 @@ export class AuthService {
   private refreshRequest: Observable<boolean> | null = null;
 
   login(payload: LoginRequest): Observable<void> {
-    return this.http.post<void>(API_ROUTES.authentication.login, payload, { withCredentials: true }).pipe(
+    return this.http.post<void>(API_ROUTES.authentication.login, payload).pipe(
       tap(() => {
         this.authenticated.set(true);
         this.storeUserName(payload.name);
@@ -26,15 +26,15 @@ export class AuthService {
   }
 
   register(payload: RegistrationRequest): Observable<void> {
-    return this.http.post<void>(API_ROUTES.registration, payload, { withCredentials: true });
+    return this.http.post<void>(API_ROUTES.registration, payload);
   }
 
   recoverPassword(payload: PasswordRecoveryRequest): Observable<void> {
-    return this.http.post<void>(API_ROUTES.password.recovery, payload, { withCredentials: true });
+    return this.http.post<void>(API_ROUTES.password.recovery, payload);
   }
 
   validateSession(): Observable<boolean> {
-    return this.http.get<AuthenticationSession>(API_ROUTES.authentication.session, { withCredentials: true }).pipe(
+    return this.http.get<AuthenticationSession>(API_ROUTES.authentication.session).pipe(
       tap((session) => this.storeUserName(session.name)),
       map(() => true),
       catchError(() => of(false)),
@@ -48,7 +48,7 @@ export class AuthService {
   ensureSession(): Observable<boolean> {
     if (this.authenticated() === true) return of(true);
 
-    return this.http.get<AuthenticationSession>(API_ROUTES.authentication.session, { withCredentials: true }).pipe(
+    return this.http.get<AuthenticationSession>(API_ROUTES.authentication.session).pipe(
       tap((session) => this.storeUserName(session.name)),
       map(() => true),
       catchError((error: HttpErrorResponse) => error.status === 401 ? this.refreshSession() : of(false)),
@@ -59,8 +59,8 @@ export class AuthService {
   refreshSession(): Observable<boolean> {
     if (this.refreshRequest) return this.refreshRequest;
 
-    const request = this.http.post<void>(API_ROUTES.authentication.refresh, {}, { withCredentials: true }).pipe(
-      switchMap(() => this.http.get<AuthenticationSession>(API_ROUTES.authentication.session, { withCredentials: true })),
+    const request = this.http.post<void>(API_ROUTES.authentication.refresh, {}).pipe(
+      switchMap(() => this.http.get<AuthenticationSession>(API_ROUTES.authentication.session)),
       tap((session) => this.storeUserName(session.name)),
       map(() => true),
       catchError(() => of(false)),
@@ -75,7 +75,7 @@ export class AuthService {
   }
 
   logout(): Observable<void> {
-    return this.http.post<void>(API_ROUTES.authentication.logout, {}, { withCredentials: true }).pipe(
+    return this.http.post<void>(API_ROUTES.authentication.logout, {}).pipe(
       catchError((error) => {
         if (error instanceof HttpErrorResponse && error.status === 401) {
           return of(void 0);
