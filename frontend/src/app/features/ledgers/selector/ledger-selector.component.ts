@@ -261,6 +261,6 @@ export class LedgerSelectorComponent {
   }
 
   foreground(color: string): string {
-    return bestContrastingForeground(color).foreground;
+    return bestContrastingForeground(color);
   }
 }

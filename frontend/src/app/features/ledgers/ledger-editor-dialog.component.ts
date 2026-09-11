@@ -59,7 +59,7 @@ const DEFAULT_COLOR = '#21E683';
               <span class="field-label preview-label">{{ i18n.t('ledgers.editor.preview') }}</span>
               <div class="preview-stage">
                 <div class="preview-token-frame ui-projected-surface ui-projection--surface">
-                <div class="preview-token" [style.background]="color()" [style.color]="contrast().foreground">
+                <div class="preview-token" [style.background]="color()" [style.color]="contrast()">
                   <app-ledger-icon [icon]="previewIcon()" [size]="54" />
                 </div>
                 </div>

@@ -37,11 +37,17 @@ describe('LanguageSelectorComponent', () => {
     expect(fixture.nativeElement.querySelector('.language-selector__menu')).not.toBeNull();
   });
 
-  it('keeps field appearance as a selection control instead of a press action', () => {
+  it('keeps field appearance in the form flow when its menu opens', () => {
     fixture.componentRef.setInput('appearance', 'field');
     fixture.detectChanges();
 
     const trigger = fixture.nativeElement.querySelector('.language-selector__trigger') as HTMLButtonElement;
     expect(trigger.classList.contains('ui-action-press')).toBe(false);
+
+    trigger.click();
+    fixture.detectChanges();
+
+    const menu = fixture.nativeElement.querySelector('.language-selector__menu') as HTMLElement;
+    expect(menu.classList.contains('language-selector__menu--inline')).toBe(true);
   });
 });

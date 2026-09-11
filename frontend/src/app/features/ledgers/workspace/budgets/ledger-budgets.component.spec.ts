@@ -12,7 +12,6 @@ import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-e
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
 import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
-import { PreferencesService } from '../../../../core/preferences/preferences.service';
 import { LedgerBudgetsComponent } from './ledger-budgets.component';
 
 const account: LedgerAccount = {
@@ -59,11 +58,6 @@ const budget: LedgerBudgetOverview = {
 describe('LedgerBudgetsComponent', () => {
   const ledgerUuid = signal('');
   const language = signal<'pt-BR' | 'en'>('pt-BR');
-  const preferences = signal({
-    language: 'pt-BR' as const,
-    theme: 'LIGHT' as const,
-    timezone: 'UTC',
-  });
   const budgetsService = {
     overview: vi.fn(() => of({ items: [budget], next_cursor: null })),
     delete: vi.fn(() => of(void 0)),
@@ -87,7 +81,6 @@ describe('LedgerBudgetsComponent', () => {
         { provide: LedgerEntitiesService, useValue: entitiesService },
         { provide: LedgerCategoriesService, useValue: categoriesService },
         { provide: LedgerContextService, useValue: { ledgerUuid: ledgerUuid.asReadonly() } },
-        { provide: PreferencesService, useValue: { current: preferences.asReadonly() } },
         { provide: ApiErrorService, useValue: { message: vi.fn(() => 'error') } },
         { provide: I18nService, useValue: { language: language.asReadonly(), t: vi.fn((key: string) => key) } },
       ],

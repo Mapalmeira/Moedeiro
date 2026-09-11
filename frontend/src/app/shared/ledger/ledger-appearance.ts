@@ -1,8 +1,3 @@
-export interface ContrastResult {
-  foreground: '#000000' | '#FFFFFF';
-  ratio: number;
-}
-
 function linearize(value: number): number {
   const channel = value / 255;
   return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
@@ -22,12 +17,9 @@ function contrastRatio(first: number, second: number): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-export function bestContrastingForeground(background: string): ContrastResult {
+export function bestContrastingForeground(background: string): '#000000' | '#FFFFFF' {
   const backgroundLuminance = luminance(background);
   const blackRatio = contrastRatio(backgroundLuminance, 0);
   const whiteRatio = contrastRatio(backgroundLuminance, 1);
-
-  return whiteRatio > blackRatio
-    ? { foreground: '#FFFFFF', ratio: whiteRatio }
-    : { foreground: '#000000', ratio: blackRatio };
+  return whiteRatio > blackRatio ? '#FFFFFF' : '#000000';
 }

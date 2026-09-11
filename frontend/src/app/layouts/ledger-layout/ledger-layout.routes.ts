@@ -33,8 +33,8 @@ export const LEDGER_LAYOUT_ROUTES: Routes = [
   },
   {
     path: 'accounts',
-    data: ledgerSectionRouteData('accounts'),
-    loadComponent: () => import('../../features/ledgers/workspace/accounts/ledger-accounts.component').then((m) => m.LedgerAccountsComponent),
+    data: { ...ledgerSectionRouteData('accounts'), kind: 'account' },
+    loadComponent: () => import('../../features/ledgers/workspace/ledger-entity-manager.component').then((m) => m.LedgerEntityManagerComponent),
   },
   {
     path: 'categories',
@@ -43,8 +43,8 @@ export const LEDGER_LAYOUT_ROUTES: Routes = [
   },
   {
     path: 'currencies',
-    data: ledgerSectionRouteData('currencies'),
-    loadComponent: () => import('../../features/ledgers/workspace/currencies/ledger-currencies.component').then((m) => m.LedgerCurrenciesComponent),
+    data: { ...ledgerSectionRouteData('currencies'), kind: 'currency' },
+    loadComponent: () => import('../../features/ledgers/workspace/ledger-entity-manager.component').then((m) => m.LedgerEntityManagerComponent),
   },
   {
     path: '**',

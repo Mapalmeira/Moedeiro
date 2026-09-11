@@ -12,8 +12,6 @@ import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
 import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { formatCurrencyAmount } from '../../../../core/ledgers/currency-format';
-import { formatEventDate } from '../../../../core/preferences/date-time-format';
-import { PreferencesService } from '../../../../core/preferences/preferences.service';
 import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.component';
 import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
@@ -71,7 +69,6 @@ export class LedgerBudgetsComponent {
   private overviewRequest?: Subscription;
   private resourcesRequest?: Subscription;
   readonly context = inject(LedgerContextService);
-  readonly preferences = inject(PreferencesService);
   readonly i18n = inject(I18nService);
 
   readonly accounts = signal<LedgerAccount[]>([]);
@@ -112,19 +109,19 @@ export class LedgerBudgetsComponent {
     ];
   });
   readonly canCreate = computed(() => this.accounts().length > 0 && this.categories().length > 0 && !this.resourcesLoading() && !this.error());
-  readonly percentFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+  readonly percentFormatter = new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 1 });
+  readonly dateFormatter = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' });
   readonly cards = computed<BudgetCardView[]>(() => {
     const accountByUuid = this.accountByUuid();
     const currencyByUuid = this.currencyByUuid();
     const categoryByUuid = this.categoryByUuid();
-    const preferences = this.preferences.current();
     this.i18n.language();
     return this.items().map(budget => {
       const account = accountByUuid.get(budget.account_uuid) ?? null;
       const currency = account ? currencyByUuid.get(account.currency_uuid) ?? null : null;
       const category = categoryByUuid.get(budget.category_uuid) ?? null;
-      const from = formatEventDate(budget.from_timestamp, preferences.timezone);
-      const to = formatEventDate(Math.max(budget.from_timestamp, budget.to_timestamp - 1), preferences.timezone);
+      const from = this.dateFormatter.format(new Date(budget.from_timestamp * 1000));
+      const to = this.dateFormatter.format(new Date(Math.max(budget.from_timestamp, budget.to_timestamp - 1) * 1000));
       const spent = budget.spent_amount;
       const amountLabel = currency ? formatCurrencyAmount(budget.amount, currency) : String(budget.amount);
       const spentLabel = spent === null ? null : currency ? formatCurrencyAmount(spent, currency) : String(spent);
@@ -386,7 +383,7 @@ export class LedgerBudgetsComponent {
 
   private formatPercent(value: number): string {
     if (!Number.isFinite(value)) return '∞';
-    return this.percentFormatter.format(value);
+    return this.percentFormatter.format(value / 100);
   }
 
   private formatAmount(value: number, currency: LedgerCurrency | null): string {

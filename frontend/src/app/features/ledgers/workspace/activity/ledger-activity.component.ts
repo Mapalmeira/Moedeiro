@@ -1,3 +1,4 @@
+import { formatDate } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -16,8 +17,6 @@ import { FinancialEvent, FinancialEventFilters, FinancialEventType } from '../..
 import { FinancialEventsService } from '../../../../core/ledgers/financial-events.service';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
 import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
-import { formatEventDate, formatEventTime, zonedDateInput, zonedDateTimeToEpochSeconds } from '../../../../core/preferences/date-time-format';
-import { PreferencesService } from '../../../../core/preferences/preferences.service';
 import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.component';
 import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
@@ -63,7 +62,6 @@ export class LedgerActivityComponent {
   private readonly categoriesService = inject(LedgerCategoriesService);
   private readonly cashFlowService = inject(CashFlowService);
   private readonly errors = inject(ApiErrorService);
-  private readonly preferences = inject(PreferencesService);
   private readonly workspaceState = inject(LedgerWorkspaceStateService);
   private readonly destroyRef = inject(DestroyRef);
   private workspaceRequest?: Subscription;
@@ -73,6 +71,8 @@ export class LedgerActivityComponent {
   private summaryRequest?: Subscription;
   readonly context = inject(LedgerContextService);
   readonly i18n = inject(I18nService);
+  private readonly dateFormatter = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' });
+  private readonly timeFormatter = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   readonly categoryIconPreviewLimit = 2;
   readonly periodMode = signal<PeriodMode>('month');
   readonly selectedMonth = signal(this.currentMonth());
@@ -179,7 +179,6 @@ export class LedgerActivityComponent {
     };
   });
   readonly eventRows = computed<readonly ActivityEventRow[]>(() => {
-    const preferences = this.preferences.current();
     const accountByUuid = this.accountByUuid();
     const currencyByUuid = this.currencyByUuid();
     const categoryByUuid = this.categoryByUuid();
@@ -227,8 +226,8 @@ export class LedgerActivityComponent {
 
       return {
         event,
-        date: formatEventDate(event.occurred_at, preferences.timezone),
-        time: formatEventTime(event.occurred_at, preferences.timezone),
+        date: this.dateFormatter.format(new Date(event.occurred_at * 1000)),
+        time: this.timeFormatter.format(new Date(event.occurred_at * 1000)),
         detail,
         typeLabel: this.eventTypeLabel(event.type),
         typeIcon: this.eventIcon(event.type),
@@ -508,11 +507,15 @@ export class LedgerActivityComponent {
 
   private filterQuery(): Omit<FinancialEventFilters, 'cursor'> | null {
     const value = this.filters.getRawValue();
-    const timezone = this.preferences.current().timezone;
-    const from = zonedDateTimeToEpochSeconds(value.from_date, '00:00', timezone);
-    const toExclusiveDate = this.nextDate(value.to_date);
-    const to = toExclusiveDate ? zonedDateTimeToEpochSeconds(toExclusiveDate, '00:00', timezone) : null;
-    if (from === null || to === null || from >= to) {
+    const fromDate = new Date(`${value.from_date}T00:00:00`);
+    const toDate = new Date(`${value.to_date}T00:00:00`);
+    const validDates = !Number.isNaN(fromDate.getTime()) && !Number.isNaN(toDate.getTime())
+      && formatDate(fromDate, 'yyyy-MM-dd', 'en-US') === value.from_date
+      && formatDate(toDate, 'yyyy-MM-dd', 'en-US') === value.to_date;
+    toDate.setDate(toDate.getDate() + 1);
+    const from = Math.floor(fromDate.getTime() / 1000);
+    const to = Math.floor(toDate.getTime() / 1000);
+    if (!validDates || from >= to) {
       this.filterError.set(this.i18n.t('activity.validation.period'));
       return null;
     }
@@ -615,14 +618,7 @@ export class LedgerActivityComponent {
   }
 
   private currentMonth(): string {
-    return zonedDateInput(Math.floor(Date.now() / 1000), this.preferences.current().timezone).slice(0, 7);
+    return formatDate(Date.now(), 'yyyy-MM', 'en-US');
   }
 
-  private nextDate(value: string): string | null {
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    if (!match) return null;
-    const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + 1));
-    if (Number.isNaN(date.getTime())) return null;
-    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
-  }
 }

@@ -35,6 +35,8 @@ describe('application routes', () => {
       expect(route.loadComponent).toBeTypeOf('function');
       expect(route.data?.['ledgerSection']).toBe(route.path);
     }
+    expect(sectionRoutes.find((route) => route.path === 'accounts')?.data?.['kind']).toBe('account');
+    expect(sectionRoutes.find((route) => route.path === 'currencies')?.data?.['kind']).toBe('currency');
     expect(legacyAnalytics?.redirectTo).toBe('flows');
   });
 });

@@ -1,3 +1,4 @@
+import { formatDate } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription, finalize, forkJoin } from 'rxjs';
@@ -10,8 +11,6 @@ import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-e
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
 import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { I18nService } from '../../../../core/i18n/i18n.service';
-import { nextDateInput, zonedDateInput, zonedDateTimeToEpochSeconds } from '../../../../core/preferences/date-time-format';
-import { PreferencesService } from '../../../../core/preferences/preferences.service';
 import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
 import { IconComponent } from '../../../../shared/ui/icon.component';
@@ -45,7 +44,6 @@ export class LedgerFlowsComponent {
   private graphRequest?: Subscription;
 
   readonly context = inject(LedgerContextService);
-  readonly preferences = inject(PreferencesService);
   readonly i18n = inject(I18nService);
 
   readonly accounts = signal<LedgerAccount[]>([]);
@@ -215,34 +213,34 @@ export class LedgerFlowsComponent {
     const year = Number(match[1]);
     const monthNumber = Number(match[2]);
     if (monthNumber < 1 || monthNumber > 12) return null;
-    const nextYear = monthNumber === 12 ? year + 1 : year;
-    const nextMonth = monthNumber === 12 ? 1 : monthNumber + 1;
-    const timezone = this.preferences.current().timezone;
-    const from = zonedDateTimeToEpochSeconds(`${String(year).padStart(4, '0')}-${String(monthNumber).padStart(2, '0')}-01`, '00:00:00', timezone);
-    const to = zonedDateTimeToEpochSeconds(`${String(nextYear).padStart(4, '0')}-${String(nextMonth).padStart(2, '0')}-01`, '00:00:00', timezone);
-    return from === null || to === null ? null : { from, to };
+    const from = Math.floor(new Date(year, monthNumber - 1, 1).getTime() / 1000);
+    const to = Math.floor(new Date(year, monthNumber, 1).getTime() / 1000);
+    return { from, to };
   }
 
   private customRange(): TimestampRange | null {
-    const fromDate = this.rangeFromDate();
-    const nextToDate = nextDateInput(this.rangeToDate());
-    if (!fromDate || !nextToDate) return null;
-    const timezone = this.preferences.current().timezone;
-    const from = zonedDateTimeToEpochSeconds(fromDate, '00:00:00', timezone);
-    const to = zonedDateTimeToEpochSeconds(nextToDate, '00:00:00', timezone);
-    return from === null || to === null || from >= to ? null : { from, to };
+    const fromInput = this.rangeFromDate();
+    const toInput = this.rangeToDate();
+    const fromDate = new Date(`${fromInput}T00:00:00`);
+    const toDate = new Date(`${toInput}T00:00:00`);
+    if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())
+        || formatDate(fromDate, 'yyyy-MM-dd', 'en-US') !== fromInput
+        || formatDate(toDate, 'yyyy-MM-dd', 'en-US') !== toInput) return null;
+    toDate.setDate(toDate.getDate() + 1);
+    const from = Math.floor(fromDate.getTime() / 1000);
+    const to = Math.floor(toDate.getTime() / 1000);
+    return from >= to ? null : { from, to };
   }
 
   private seedRangeFromMonth(): void {
     const range = this.monthRange(this.selectedMonth());
     if (!range) return;
-    const timezone = this.preferences.current().timezone;
-    this.rangeFromDate.set(zonedDateInput(range.from, timezone));
-    this.rangeToDate.set(zonedDateInput(range.to - 1, timezone));
+    this.rangeFromDate.set(formatDate(range.from * 1000, 'yyyy-MM-dd', 'en-US'));
+    this.rangeToDate.set(formatDate((range.to - 1) * 1000, 'yyyy-MM-dd', 'en-US'));
   }
 
   private currentMonth(): string {
-    return zonedDateInput(Math.floor(Date.now() / 1000), this.preferences.current().timezone).slice(0, 7);
+    return formatDate(Date.now(), 'yyyy-MM', 'en-US');
   }
 
   private reset(ledgerUuid: string | null): void {

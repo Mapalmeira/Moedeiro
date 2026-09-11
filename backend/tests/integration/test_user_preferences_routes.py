@@ -19,7 +19,6 @@ LEDGER_SCHEMA_PATH = ROOT / "app/infrastructure/persistence/sqlite/ledger/schema
 VALID_PREFERENCES = {
     "language": "pt-BR",
     "theme": "LIGHT",
-    "timezone": "UTC",
 }
 
 
@@ -57,20 +56,12 @@ class UserPreferencesRoutesTest(unittest.TestCase):
 
     def test_put_replaces_preferences_and_get_returns_the_saved_values(self) -> None:
         saved = save_preferences(
-            UserPreferencesPayload(
-                language="pt-BR",
-                theme="DARK",
-                timezone="America/Fortaleza",
-            ),
+            UserPreferencesPayload(language="pt-BR", theme="DARK"),
             self.request,
             self.user,
         )
         replaced = save_preferences(
-            UserPreferencesPayload(
-                language="en",
-                theme="LIGHT",
-                timezone="America/New_York",
-            ),
+            UserPreferencesPayload(language="en", theme="LIGHT"),
             self.request,
             self.user,
         )
@@ -78,17 +69,15 @@ class UserPreferencesRoutesTest(unittest.TestCase):
         self.assertEqual(saved.language, "pt-BR")
         self.assertEqual(replaced.language, "en")
         self.assertEqual(saved.theme, "DARK")
-        self.assertEqual(replaced.timezone, "America/New_York")
+        self.assertEqual(replaced.theme, "LIGHT")
         self.assertEqual(get_preferences(self.request, self.user), replaced)
 
     def test_request_rejects_invalid_preferences(self) -> None:
         invalid_overrides = (
             {"language": "pt"},
             {"theme": "SYSTEM"},
-            {"timezone": "Unknown/Timezone"},
             {"language": None},
             {"theme": None},
-            {"timezone": None},
         )
         for override in invalid_overrides:
             with self.subTest(override=override):

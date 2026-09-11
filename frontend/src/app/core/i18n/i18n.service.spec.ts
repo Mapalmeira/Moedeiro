@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nService } from './i18n.service';
 
 describe('I18nService', () => {
@@ -15,6 +15,17 @@ describe('I18nService', () => {
     expect(service.t('ledgers.editor.preview')).toBe('Pré-visualização');
     expect(service.t('shell.logout')).toBe('Sair da conta');
     expect(document.documentElement.lang).toBe('pt-BR');
+  });
+
+  it('uses the first supported language from the browser preference list', () => {
+    const languages = vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['es-ES', 'pt-BR', 'en-US']);
+    const language = vi.spyOn(navigator, 'language', 'get').mockReturnValue('es-ES');
+
+    const service = TestBed.inject(I18nService);
+
+    expect(service.language()).toBe('pt-BR');
+    languages.mockRestore();
+    language.mockRestore();
   });
 
   it('persists language changes and updates the document language', () => {

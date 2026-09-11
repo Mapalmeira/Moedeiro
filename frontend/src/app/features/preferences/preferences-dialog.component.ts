@@ -2,20 +2,17 @@ import { ChangeDetectionStrategy, Component, HostListener, effect, inject, input
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiErrorService } from '../../core/api/api-error';
 import { AppLanguage, I18nService } from '../../core/i18n/i18n.service';
-import { PreferenceDefaultsService } from '../../core/preferences/preference-defaults.service';
 import { BackendTheme, UserPreferences } from '../../core/preferences/preferences.models';
 import { PreferencesService } from '../../core/preferences/preferences.service';
 import { ThemeService, UiTheme } from '../../core/theme/theme.service';
-import { IANA_TIMEZONES } from '../../shared/data/iana-timezones';
 import { FormMessageComponent } from '../../shared/ui/form-message.component';
 import { IconComponent } from '../../shared/ui/icon.component';
 import { LanguageSelectorComponent } from '../../shared/ui/language-selector.component';
-import { SearchSelectComponent } from '../../shared/ui/search-select.component';
 
 @Component({
   selector: 'app-preferences-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, FormMessageComponent, IconComponent, LanguageSelectorComponent, SearchSelectComponent],
+  imports: [ReactiveFormsModule, FormMessageComponent, IconComponent, LanguageSelectorComponent],
   template: `
     @if (open()) {
       <div class="dialog-backdrop ui-dialog-backdrop" (click)="requestClose()" aria-hidden="true"></div>
@@ -57,18 +54,6 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
             </section>
           </div>
 
-          <section class="preference-field">
-            <span class="preference-label">{{ i18n.t('preferences.timezone') }}</span>
-            <app-search-select
-              [options]="timezoneOptions"
-              [value]="form.controls.timezone.value"
-              [ariaLabel]="i18n.t('preferences.timezone')"
-              [searchPlaceholder]="i18n.t('preferences.timezoneSearch')"
-              [emptyText]="i18n.t('preferences.timezoneNoResults')"
-              openDirection="up"
-              (valueChange)="setTimezone($event)" />
-          </section>
-
           @if (errorMessage()) { <app-form-message [text]="errorMessage()!" /> }
 
           <footer class="dialog__footer ui-surface-actions">
@@ -103,7 +88,6 @@ import { SearchSelectComponent } from '../../shared/ui/search-select.component';
 export class PreferencesDialogComponent {
   private readonly fb = inject(FormBuilder);
   private readonly preferences = inject(PreferencesService);
-  private readonly preferenceDefaults = inject(PreferenceDefaultsService);
   private readonly theme = inject(ThemeService);
   private readonly apiErrors = inject(ApiErrorService);
   readonly i18n = inject(I18nService);
@@ -114,9 +98,7 @@ export class PreferencesDialogComponent {
   readonly closing = signal(false);
   readonly errorMessage = signal<string | null>(null);
 
-  private readonly initialPreferences = this.preferenceDefaults.infer();
-  readonly browserTimezone = this.initialPreferences.timezone;
-  readonly timezoneOptions = this.buildTimezoneOptions();
+  private readonly initialPreferences = this.preferences.current();
   private lastServerPreferences: UserPreferences = this.initialPreferences;
   private committedTheme: UiTheme = this.theme.theme();
   private committedLanguage: AppLanguage = this.i18n.language();
@@ -124,7 +106,6 @@ export class PreferencesDialogComponent {
   readonly form = this.fb.group({
     language: this.fb.nonNullable.control(this.initialPreferences.language, Validators.required),
     theme: this.fb.nonNullable.control(this.initialPreferences.theme, Validators.required),
-    timezone: this.fb.nonNullable.control(this.initialPreferences.timezone, [Validators.required, Validators.maxLength(50)]),
   });
 
   constructor() {
@@ -145,11 +126,6 @@ export class PreferencesDialogComponent {
     this.i18n.setLanguage(language);
   }
 
-  setTimezone(timezone: string): void {
-    this.form.controls.timezone.setValue(timezone);
-    this.form.controls.timezone.markAsDirty();
-  }
-
   setTheme(value: BackendTheme): void {
     const nextTheme: UiTheme = value === 'DARK' ? 'dark' : 'light';
     this.form.controls.theme.setValue(value);
@@ -167,7 +143,6 @@ export class PreferencesDialogComponent {
     const payload: UserPreferences = {
       language: value.language,
       theme: value.theme,
-      timezone: value.timezone,
     };
 
     this.preferences.save(payload).subscribe({
@@ -229,7 +204,4 @@ export class PreferencesDialogComponent {
     this.errorMessage.set(message);
   }
 
-  private buildTimezoneOptions(): readonly string[] {
-    return Array.from(new Set<string>([this.browserTimezone, 'UTC', ...IANA_TIMEZONES])).sort((a, b) => a.localeCompare(b));
-  }
 }

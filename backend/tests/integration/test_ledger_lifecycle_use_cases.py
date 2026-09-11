@@ -65,7 +65,7 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
 
     def test_create_uses_the_owner_language_for_preloaded_entities(self) -> None:
         with self.databases.open_registry() as unit_of_work:
-            unit_of_work.user_preferences_repository.save(self.user.uuid, "en", "LIGHT", "UTC")
+            unit_of_work.user_preferences_repository.save(self.user.uuid, "en", "LIGHT")
             unit_of_work.commit()
 
         ledger = self.create()

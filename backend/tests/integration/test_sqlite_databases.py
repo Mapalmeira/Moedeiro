@@ -83,7 +83,7 @@ class SqliteDatabasesTest(unittest.TestCase):
         finally:
             connection.close()
 
-    def test_initialize_migrates_v1_user_preferences_without_format_columns(self) -> None:
+    def test_initialize_migrates_v1_user_preferences_to_locale_independent_schema(self) -> None:
         self.registry_db_path.parent.mkdir(parents=True)
         user_uuid = uuid4()
         connection = sqlite3.connect(self.registry_db_path)
@@ -133,7 +133,7 @@ class SqliteDatabasesTest(unittest.TestCase):
         try:
             columns = [row[1] for row in connection.execute("PRAGMA table_info(user_preferences)")]
             stored = connection.execute(
-                "SELECT language, theme, timezone FROM user_preferences WHERE user_uuid = ?",
+                "SELECT language, theme FROM user_preferences WHERE user_uuid = ?",
                 (user_uuid.bytes,),
             ).fetchone()
             version = connection.execute(
@@ -142,8 +142,8 @@ class SqliteDatabasesTest(unittest.TestCase):
         finally:
             connection.close()
 
-        self.assertEqual(columns, ["user_uuid", "language", "theme", "timezone"])
-        self.assertEqual(stored, ("en", "DARK", "America/New_York"))
+        self.assertEqual(columns, ["user_uuid", "language", "theme"])
+        self.assertEqual(stored, ("en", "DARK"))
         self.assertEqual(version, CURRENT_REGISTRY_SCHEMA_VERSION)
 
     def test_database_initialization_removes_the_file_when_the_schema_fails(self) -> None:

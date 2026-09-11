@@ -5,5 +5,4 @@ export type BackendTheme = 'LIGHT' | 'DARK';
 export interface UserPreferences {
   language: AppLanguage;
   theme: BackendTheme;
-  timezone: string;
 }

@@ -32,4 +32,4 @@ export interface CreateLedgerBudgetPayload {
   amount: number;
 }
 
-export interface UpdateLedgerBudgetPayload extends Omit<CreateLedgerBudgetPayload, 'account_uuid'> {}
+export type UpdateLedgerBudgetPayload = Omit<CreateLedgerBudgetPayload, 'account_uuid'>;

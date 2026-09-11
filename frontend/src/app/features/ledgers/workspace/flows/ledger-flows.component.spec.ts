@@ -10,7 +10,6 @@ import { LedgerContextService } from '../../../../core/ledgers/ledger-context.se
 import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
-import { PreferencesService } from '../../../../core/preferences/preferences.service';
 import { LedgerFlowsComponent } from './ledger-flows.component';
 
 const account: LedgerAccount = {
@@ -47,11 +46,6 @@ const graph: CashFlowSankey = {
 describe('LedgerFlowsComponent', () => {
   const ledgerUuid = signal('ledger');
   const language = signal<'pt-BR' | 'en'>('pt-BR');
-  const preferences = signal({
-    language: 'pt-BR' as const,
-    theme: 'LIGHT' as const,
-    timezone: 'UTC',
-  });
   const entities = {
     listAccounts: vi.fn(() => of([account])),
     listCurrencies: vi.fn(() => of([currency])),
@@ -71,7 +65,6 @@ describe('LedgerFlowsComponent', () => {
         { provide: LedgerContextService, useValue: { ledgerUuid: ledgerUuid.asReadonly() } },
         { provide: LedgerEntitiesService, useValue: entities },
         { provide: CashFlowService, useValue: cashFlow },
-        { provide: PreferencesService, useValue: { current: preferences.asReadonly() } },
         { provide: ApiErrorService, useValue: errors },
         { provide: I18nService, useValue: { language: language.asReadonly(), t: vi.fn((key: string) => key) } },
       ],
@@ -105,7 +98,7 @@ describe('LedgerFlowsComponent', () => {
     expect(component.graph()).toEqual(graph);
   });
 
-  it('uses a half-open month range in the preferred time zone', () => {
+  it('uses a half-open month range in the system time zone', () => {
     const component = createComponent();
     prepareGraphRequest(component);
 
@@ -114,8 +107,8 @@ describe('LedgerFlowsComponent', () => {
     expect(cashFlow.sankey).toHaveBeenCalledWith(
       'ledger',
       account.uuid,
-      Date.parse('2026-09-01T00:00:00Z') / 1000,
-      Date.parse('2026-10-01T00:00:00Z') / 1000,
+      new Date(2026, 8, 1).getTime() / 1000,
+      new Date(2026, 9, 1).getTime() / 1000,
       3,
     );
     expect(component.graph()).toEqual(graph);

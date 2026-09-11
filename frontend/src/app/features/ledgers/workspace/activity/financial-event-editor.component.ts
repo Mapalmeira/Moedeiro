@@ -1,3 +1,4 @@
+import { formatDate } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, Validators } from '@angular/forms';
@@ -19,8 +20,6 @@ import {
   UpdateFinancialEventPayload,
 } from '../../../../core/ledgers/financial-events.models';
 import { FinancialEventsService } from '../../../../core/ledgers/financial-events.service';
-import { PreferencesService } from '../../../../core/preferences/preferences.service';
-import { zonedDateInput, zonedDateTimeToEpochSeconds, zonedTimeInput } from '../../../../core/preferences/date-time-format';
 import { CurrencyAmountInputComponent } from '../../../../shared/ledger/currency-amount-input.component';
 import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FieldErrorComponent } from '../../../../shared/ui/field-error.component';
@@ -39,7 +38,6 @@ export class FinancialEventEditorComponent {
   private readonly fb = inject(FormBuilder);
   private readonly eventsService = inject(FinancialEventsService);
   private readonly errors = inject(ApiErrorService);
-  private readonly preferences = inject(PreferencesService);
   private readonly destroyRef = inject(DestroyRef);
   readonly i18n = inject(I18nService);
   readonly maxShoppingMovements = MAX_SHOPPING_LIST_MOVEMENTS;
@@ -212,13 +210,13 @@ export class FinancialEventEditorComponent {
     if (this.saving() || this.form.controls.description.invalid || this.form.controls.date.invalid || this.form.controls.time.invalid) return;
 
     const value = this.form.getRawValue();
-    const occurredAt = zonedDateTimeToEpochSeconds(value.date, value.time, this.preferences.current().timezone);
-    if (occurredAt === null) {
+    const occurredAtMs = Date.parse(`${value.date}T${value.time}`);
+    if (Number.isNaN(occurredAtMs) || formatDate(occurredAtMs, 'yyyy-MM-dd', 'en-US') !== value.date) {
       this.error.set(this.i18n.t('activity.validation.dateTime'));
       return;
     }
 
-    const payload = this.buildPayload(occurredAt);
+    const payload = this.buildPayload(Math.floor(occurredAtMs / 1000));
     if (!payload) return;
     this.saving.set(true);
     this.error.set(null);
@@ -330,7 +328,6 @@ export class FinancialEventEditorComponent {
   }
 
   private reset(event: FinancialEvent | null, type: FinancialEventType): void {
-    const preferences = this.preferences.current();
     const timestamp = event?.occurred_at ?? Math.floor(Date.now() / 1000);
     const firstAccount = this.accounts()[0]?.uuid ?? '';
     const secondAccount = this.accounts().find(account => account.uuid !== firstAccount)?.uuid ?? '';
@@ -339,8 +336,8 @@ export class FinancialEventEditorComponent {
 
     this.form.reset({
       description: event?.description ?? '',
-      date: zonedDateInput(timestamp, preferences.timezone),
-      time: zonedTimeInput(timestamp, preferences.timezone),
+      date: formatDate(timestamp * 1000, 'yyyy-MM-dd', 'en-US'),
+      time: formatDate(timestamp * 1000, 'HH:mm:ss', 'en-US'),
       account_uuid: firstAccount,
       category_uuid: firstCategory,
       amount: '', direction: 'EXPENSE',

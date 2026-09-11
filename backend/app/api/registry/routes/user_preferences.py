@@ -35,7 +35,6 @@ def save_preferences(payload: UserPreferencesPayload, request: Request, user: Au
             user.uuid,
             payload.language,
             payload.theme,
-            payload.timezone,
         )
     except UserNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session") from error

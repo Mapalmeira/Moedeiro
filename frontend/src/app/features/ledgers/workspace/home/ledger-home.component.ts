@@ -1,3 +1,4 @@
+import { formatDate } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, computed, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -17,8 +18,6 @@ import { LedgerAccount, LedgerAccountBalance, LedgerCurrency } from '../../../..
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
 import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
-import { formatEventDate, formatEventTime, nextDateInput, zonedDateInput, zonedDateTimeToEpochSeconds } from '../../../../core/preferences/date-time-format';
-import { PreferencesService } from '../../../../core/preferences/preferences.service';
 import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.component';
 import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
@@ -135,8 +134,15 @@ export class LedgerHomeComponent {
   private dashboardScopeKey: string | null = null;
 
   readonly context = inject(LedgerContextService);
-  readonly preferences = inject(PreferencesService);
   readonly i18n = inject(I18nService);
+  private readonly dateFormatter = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' });
+  private readonly timeFormatter = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  private readonly percentFormatter = new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 0 });
+  private readonly chartDateFormatters: Record<ChartDateLabelDetail, Intl.DateTimeFormat> = {
+    day: new Intl.DateTimeFormat(undefined, { day: 'numeric' }),
+    month: new Intl.DateTimeFormat(undefined, { day: '2-digit', month: '2-digit' }),
+    year: new Intl.DateTimeFormat(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' }),
+  };
 
   readonly accounts = signal<LedgerAccount[]>([]);
   readonly currencies = signal<LedgerCurrency[]>([]);
@@ -244,7 +250,7 @@ export class LedgerHomeComponent {
         category: categories.get(budget.category_uuid) ?? null,
         spent: formatCurrencyAmount(spent, currency),
         amount: formatCurrencyAmount(budget.amount, currency),
-        percent: Number.isFinite(usage) ? `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(usage)}%` : '∞',
+        percent: Number.isFinite(usage) ? this.percentFormatter.format(usage / 100) : '∞',
         progress: Number.isFinite(usage) ? Math.min(100, Math.max(0, usage)) : 100,
         tone: spent > budget.amount ? 'danger' : usage >= WARNING_BUDGET_USAGE_PERCENT ? 'yellow' : 'green',
       };
@@ -256,7 +262,6 @@ export class LedgerHomeComponent {
     if (!currency) return [];
     const accountByUuid = this.accountByUuid();
     const categoryByUuid = this.categoryByUuid();
-    const preferences = this.preferences.current();
     return this.recentEvents().map<HomeEventRow>(event => {
       const movements = event.movements.filter(movement => accountByUuid.get(movement.account_uuid)?.currency_uuid === currency.uuid);
       const value = movements.reduce((sum, movement) => sum + movement.value * movement.quantity, 0);
@@ -268,8 +273,8 @@ export class LedgerHomeComponent {
         ...presentation,
         account: accountNames.join(', ') || this.i18n.t('home.unavailable'),
         category: categoryNames.length === 1 ? categoryNames[0] : categoryNames.length > 1 ? this.i18n.t('home.categoryCount', { count: categoryNames.length }) : this.i18n.t('home.unavailable'),
-        date: formatEventDate(event.occurred_at, preferences.timezone),
-        time: formatEventTime(event.occurred_at, preferences.timezone),
+        date: this.dateFormatter.format(new Date(event.occurred_at * 1000)),
+        time: this.timeFormatter.format(new Date(event.occurred_at * 1000)),
         value: formatCurrencyAmount(value, currency),
         valueTone: value > 0 ? 'positive' : value < 0 ? 'negative' : 'neutral',
       };
@@ -309,11 +314,10 @@ export class LedgerHomeComponent {
     const slot = CHART_PLOT_WIDTH / Math.max(1, points.length);
     const barWidth = Math.max(CHART_MIN_BAR_WIDTH, Math.min(CHART_MAX_BAR_WIDTH, slot * CHART_BAR_WIDTH_RATIO));
     const currency = this.selectedCurrency();
-    const preferences = this.preferences.current();
     const range = this.dashboardRange();
     if (!currency || !range) return [];
     const labelDetail: ChartDateLabelDetail = this.periodMode() === 'range'
-      ? this.chartDateLabelDetail(range, preferences.timezone)
+      ? this.chartDateLabelDetail(range)
       : 'day';
     const labelTargetCount = labelDetail === 'year' ? CHART_X_LABEL_WITH_YEAR_TARGET_COUNT : CHART_X_LABEL_TARGET_COUNT;
     const labelStride = Math.max(1, Math.ceil(points.length / labelTargetCount));
@@ -325,8 +329,7 @@ export class LedgerHomeComponent {
       const expenseHeight = point.expense * scale;
       const cumulativeValue = cumulative[index] ?? 0;
       const pointTimestamp = range.from + index * pointWidth;
-      const pointDateInput = zonedDateInput(pointTimestamp, preferences.timezone);
-      const shortDate = this.chartDateLabel(pointDateInput, labelDetail);
+      const shortDate = this.chartDateLabel(pointTimestamp, labelDetail);
       return {
         index,
         x,
@@ -340,7 +343,7 @@ export class LedgerHomeComponent {
         cumulativeY: CHART_ZERO_Y - cumulativeValue * scale,
         label: shortDate,
         showLabel: index % labelStride === labelOffset,
-        date: formatEventDate(pointTimestamp, preferences.timezone),
+        date: this.dateFormatter.format(new Date(pointTimestamp * 1000)),
         income: formatCurrencyAmount(point.income, currency),
         expense: formatCurrencyAmount(point.expense, currency),
         net: formatCurrencyAmount(point.income - point.expense, currency),
@@ -613,25 +616,16 @@ export class LedgerHomeComponent {
     return Math.max(1, Math.ceil(days / CHART_MAX_POINTS)) * DAY_SECONDS;
   }
 
-  private chartDateLabelDetail(range: { from: number; to: number }, timezone: string): ChartDateLabelDetail {
-    const fromDate = zonedDateInput(range.from, timezone);
-    const toDate = zonedDateInput(range.to - 1, timezone);
+  private chartDateLabelDetail(range: { from: number; to: number }): ChartDateLabelDetail {
+    const fromDate = formatDate(range.from * 1000, 'yyyy-MM-dd', 'en-US');
+    const toDate = formatDate((range.to - 1) * 1000, 'yyyy-MM-dd', 'en-US');
     if (fromDate.slice(0, 4) !== toDate.slice(0, 4)) return 'year';
     if (fromDate.slice(0, 7) !== toDate.slice(0, 7)) return 'month';
     return 'day';
   }
 
-  private chartDateLabel(dateInput: string, detail: ChartDateLabelDetail): string {
-    const year = Number(dateInput.slice(0, 4));
-    const month = Number(dateInput.slice(5, 7));
-    const day = Number(dateInput.slice(8, 10));
-    const date = new Date(Date.UTC(year, month - 1, day));
-    const options: Intl.DateTimeFormatOptions = detail === 'day'
-      ? { day: 'numeric', timeZone: 'UTC' }
-      : detail === 'month'
-        ? { day: '2-digit', month: '2-digit', timeZone: 'UTC' }
-        : { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' };
-    return new Intl.DateTimeFormat(undefined, options).format(date);
+  private chartDateLabel(timestampSeconds: number, detail: ChartDateLabelDetail): string {
+    return this.chartDateFormatters[detail].format(new Date(timestampSeconds * 1000));
   }
 
   private chartIndexAt(event: MouseEvent | PointerEvent): number | null {
@@ -662,37 +656,35 @@ export class LedgerHomeComponent {
     const year = Number(match[1]);
     const monthNumber = Number(match[2]);
     if (monthNumber < 1 || monthNumber > 12) return null;
-    const nextYear = monthNumber === 12 ? year + 1 : year;
-    const nextMonth = monthNumber === 12 ? 1 : monthNumber + 1;
-    const timezone = this.preferences.current().timezone;
-    const from = zonedDateTimeToEpochSeconds(`${String(year).padStart(4, '0')}-${String(monthNumber).padStart(2, '0')}-01`, '00:00:00', timezone);
-    const to = zonedDateTimeToEpochSeconds(`${String(nextYear).padStart(4, '0')}-${String(nextMonth).padStart(2, '0')}-01`, '00:00:00', timezone);
-    return from === null || to === null ? null : { from, to };
+    const from = Math.floor(new Date(year, monthNumber - 1, 1).getTime() / 1000);
+    const to = Math.floor(new Date(year, monthNumber, 1).getTime() / 1000);
+    return { from, to };
   }
 
 
   private customRange(): { from: number; to: number } | null {
-    const fromDate = this.rangeFromDate();
-    const toDate = this.rangeToDate();
-    const nextToDate = nextDateInput(toDate);
-    if (!fromDate || !nextToDate) return null;
-    const timezone = this.preferences.current().timezone;
-    const from = zonedDateTimeToEpochSeconds(fromDate, '00:00:00', timezone);
-    const to = zonedDateTimeToEpochSeconds(nextToDate, '00:00:00', timezone);
-    return from === null || to === null || from >= to ? null : { from, to };
+    const fromInput = this.rangeFromDate();
+    const toInput = this.rangeToDate();
+    const fromDate = new Date(`${fromInput}T00:00:00`);
+    const toDate = new Date(`${toInput}T00:00:00`);
+    if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())
+        || formatDate(fromDate, 'yyyy-MM-dd', 'en-US') !== fromInput
+        || formatDate(toDate, 'yyyy-MM-dd', 'en-US') !== toInput) return null;
+    toDate.setDate(toDate.getDate() + 1);
+    const from = Math.floor(fromDate.getTime() / 1000);
+    const to = Math.floor(toDate.getTime() / 1000);
+    return from >= to ? null : { from, to };
   }
 
   private seedRangeFromMonth(): void {
     const range = this.monthRange(this.selectedMonth());
     if (!range) return;
-    const timezone = this.preferences.current().timezone;
-    this.rangeFromDate.set(zonedDateInput(range.from, timezone));
-    this.rangeToDate.set(zonedDateInput(range.to - 1, timezone));
+    this.rangeFromDate.set(formatDate(range.from * 1000, 'yyyy-MM-dd', 'en-US'));
+    this.rangeToDate.set(formatDate((range.to - 1) * 1000, 'yyyy-MM-dd', 'en-US'));
   }
 
   private currentMonth(): string {
-    const timezone = this.preferences.current().timezone;
-    return zonedDateInput(Math.floor(Date.now() / 1000), timezone).slice(0, 7);
+    return formatDate(Date.now(), 'yyyy-MM', 'en-US');
   }
 
   private flattenCategories(nodes: readonly LedgerCategoryTreeNode[]): LedgerCategory[] {

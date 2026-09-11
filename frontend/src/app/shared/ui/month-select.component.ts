@@ -34,7 +34,7 @@ interface MonthOption {
           </div>
           <div class="month-select__months" role="listbox" [attr.aria-label]="ariaLabel()">
             @for (month of months(); track month.value) {
-              <button type="button" class="ui-choice month-select__month"
+              <button type="button" class="ui-choice month-select__month" role="option"
                 [class.ui-choice--selected]="isSelected(month.value)"
                 [attr.aria-selected]="isSelected(month.value)"
                 (click)="chooseMonth(month.value)">{{ month.label }}</button>
@@ -75,18 +75,18 @@ export class MonthSelectComponent {
   readonly open = signal(false);
   readonly displayYear = signal(new Date().getFullYear());
   readonly months = computed<MonthOption[]>(() => {
-    const formatter = new Intl.DateTimeFormat(undefined, { month: 'short', timeZone: 'UTC' });
+    const formatter = new Intl.DateTimeFormat(undefined, { month: 'short' });
     return Array.from({ length: 12 }, (_, index) => ({
       value: index + 1,
-      label: this.capitalize(formatter.format(new Date(Date.UTC(2026, index, 1))).replace('.', '')),
+      label: this.capitalizeLabel(formatter.format(new Date(2026, index, 1))),
     }));
   });
   readonly displayValue = computed(() => {
     const parsed = this.parse(this.value());
     if (!parsed) return this.value();
-    const month = new Intl.DateTimeFormat(undefined, { month: 'long', timeZone: 'UTC' })
-      .format(new Date(Date.UTC(parsed.year, parsed.month - 1, 1)));
-    return `${this.capitalize(month)} ${parsed.year}`;
+    const label = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' })
+      .format(new Date(parsed.year, parsed.month - 1, 1));
+    return this.capitalizeLabel(label);
   });
 
   @HostListener('document:mousedown', ['$event'])
@@ -131,8 +131,9 @@ export class MonthSelectComponent {
     this.close();
   }
 
-  private capitalize(value: string): string {
-    return value ? value[0].toLocaleUpperCase() + value.slice(1) : value;
+  private capitalizeLabel(value: string): string {
+    if (!value) return value;
+    return value[0]!.toLocaleUpperCase() + value.slice(1);
   }
 
   private parse(value: string): { year: number; month: number } | null {

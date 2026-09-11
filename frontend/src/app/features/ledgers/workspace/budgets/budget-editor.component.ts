@@ -1,3 +1,4 @@
+import { formatDate } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -9,8 +10,6 @@ import { LedgerBudgetsService } from '../../../../core/ledgers/ledger-budgets.se
 import { LedgerCategory } from '../../../../core/ledgers/ledger-categories.models';
 import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import { currencyAmountInput, parseCurrencyAmount } from '../../../../core/ledgers/currency-format';
-import { zonedDateInput, zonedDateTimeToEpochSeconds } from '../../../../core/preferences/date-time-format';
-import { PreferencesService } from '../../../../core/preferences/preferences.service';
 import { CurrencyAmountInputComponent } from '../../../../shared/ledger/currency-amount-input.component';
 import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FieldErrorComponent } from '../../../../shared/ui/field-error.component';
@@ -29,7 +28,6 @@ export class BudgetEditorComponent {
   private readonly fb = inject(FormBuilder);
   private readonly budgets = inject(LedgerBudgetsService);
   private readonly errors = inject(ApiErrorService);
-  readonly preferences = inject(PreferencesService);
   private readonly destroyRef = inject(DestroyRef);
   readonly i18n = inject(I18nService);
 
@@ -90,7 +88,6 @@ export class BudgetEditorComponent {
     });
     effect(() => {
       const budget = this.budget();
-      const timezone = this.preferences.current().timezone;
       untracked(() => {
         const currency = budget ? this.currencyForBudget(budget) : null;
         this.form.reset({
@@ -98,8 +95,8 @@ export class BudgetEditorComponent {
           description: budget?.description ?? '',
           account_uuid: budget?.account_uuid ?? '',
           category_uuid: budget?.category_uuid ?? '',
-          from_date: budget ? zonedDateInput(budget.from_timestamp, timezone) : '',
-          to_date: budget ? zonedDateInput(Math.max(budget.from_timestamp, budget.to_timestamp - 1), timezone) : '',
+          from_date: budget ? formatDate(budget.from_timestamp * 1000, 'yyyy-MM-dd', 'en-US') : '',
+          to_date: budget ? formatDate(Math.max(budget.from_timestamp, budget.to_timestamp - 1) * 1000, 'yyyy-MM-dd', 'en-US') : '',
           amount: budget && currency ? currencyAmountInput(budget.amount, currency.decimal_places) : '',
         });
         previousCurrencyUuid = budget ? this.accountByUuid().get(budget.account_uuid)?.currency_uuid ?? null : null;
@@ -141,11 +138,16 @@ export class BudgetEditorComponent {
     if (this.form.invalid || this.saving()) return;
     const value = this.form.getRawValue();
     const currency = this.selectedCurrency();
-    const fromTimestamp = zonedDateTimeToEpochSeconds(value.from_date, '00:00', this.preferences.current().timezone);
-    const nextDay = nextDateInput(value.to_date);
-    const toTimestamp = nextDay ? zonedDateTimeToEpochSeconds(nextDay, '00:00', this.preferences.current().timezone) : null;
+    const fromDate = new Date(`${value.from_date}T00:00:00`);
+    const toDate = new Date(`${value.to_date}T00:00:00`);
+    const validDates = !Number.isNaN(fromDate.getTime()) && !Number.isNaN(toDate.getTime())
+      && formatDate(fromDate, 'yyyy-MM-dd', 'en-US') === value.from_date
+      && formatDate(toDate, 'yyyy-MM-dd', 'en-US') === value.to_date;
+    toDate.setDate(toDate.getDate() + 1);
+    const fromTimestamp = Math.floor(fromDate.getTime() / 1000);
+    const toTimestamp = Math.floor(toDate.getTime() / 1000);
     const amount = currency ? parseCurrencyAmount(value.amount, currency.decimal_places) : null;
-    if (fromTimestamp === null || toTimestamp === null || fromTimestamp >= toTimestamp) {
+    if (!validDates || fromTimestamp >= toTimestamp) {
       this.error.set(this.i18n.t('budgets.validation.period'));
       return;
     }
@@ -190,13 +192,4 @@ export class BudgetEditorComponent {
     }
     return names.length ? names.join(' › ') : null;
   }
-}
-
-function nextDateInput(value: string): string | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return null;
-  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
-  if (Number.isNaN(date.getTime())) return null;
-  date.setUTCDate(date.getUTCDate() + 1);
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 }

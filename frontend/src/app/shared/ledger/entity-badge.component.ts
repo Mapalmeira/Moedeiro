@@ -24,5 +24,5 @@ export class EntityBadgeComponent {
   readonly color = input.required<string>();
   readonly size = input(ENTITY_BADGE_DEFAULT_SIZE);
   readonly symbolRatio = ENTITY_BADGE_DEFAULT_SYMBOL_SIZE / ENTITY_BADGE_DEFAULT_SIZE;
-  readonly foreground = computed(() => bestContrastingForeground(this.color()).foreground);
+  readonly foreground = computed(() => bestContrastingForeground(this.color()));
 }

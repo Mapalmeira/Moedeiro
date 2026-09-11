@@ -20,7 +20,7 @@ export const routes: Routes = [
     children: [
       {
         path: 'home',
-        loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent),
+        loadComponent: () => import('./features/ledgers/selector/ledger-selector.component').then((m) => m.LedgerSelectorComponent),
       },
       {
         path: 'ledgers/:ledgerUuid',

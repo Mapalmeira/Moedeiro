@@ -12,7 +12,6 @@ import { LedgerContextService } from '../../../../core/ledgers/ledger-context.se
 import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
-import { PreferencesService } from '../../../../core/preferences/preferences.service';
 import { LedgerHomeComponent } from './ledger-home.component';
 
 const currency: LedgerCurrency = {
@@ -37,12 +36,12 @@ const point = {
 
 function browserDate(dateInput: string, detail: 'day' | 'month' | 'year' = 'year'): string {
   const [year, month, day] = dateInput.split('-').map(Number);
-  const date = new Date(Date.UTC(year!, month! - 1, day!));
+  const date = new Date(year!, month! - 1, day!);
   const options: Intl.DateTimeFormatOptions = detail === 'day'
-    ? { day: 'numeric', timeZone: 'UTC' }
+    ? { day: 'numeric' }
     : detail === 'month'
-      ? { day: '2-digit', month: '2-digit', timeZone: 'UTC' }
-      : { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' };
+      ? { day: '2-digit', month: '2-digit' }
+      : { day: '2-digit', month: '2-digit', year: 'numeric' };
   return new Intl.DateTimeFormat(undefined, options).format(date);
 }
 
@@ -58,11 +57,6 @@ const account: LedgerAccount = {
 describe('LedgerHomeComponent', () => {
   const ledgerUuid = signal('ledger');
   const language = signal<'pt-BR' | 'en'>('pt-BR');
-  const preferences = signal({
-    language: 'pt-BR' as const,
-    theme: 'LIGHT' as const,
-    timezone: 'UTC',
-  });
   const entities = {
     listAccounts: vi.fn(() => of([account])),
     listCurrencies: vi.fn(() => of([currency])),
@@ -85,7 +79,6 @@ describe('LedgerHomeComponent', () => {
         { provide: FinancialEventsService, useValue: events },
         { provide: LedgerBudgetsService, useValue: budgets },
         { provide: CashFlowService, useValue: cashFlow },
-        { provide: PreferencesService, useValue: { current: preferences.asReadonly() } },
         { provide: ApiErrorService, useValue: { message: vi.fn(() => 'error') } },
         { provide: I18nService, useValue: { language: language.asReadonly(), t: vi.fn((key: string) => key) } },
       ],
@@ -107,6 +100,21 @@ describe('LedgerHomeComponent', () => {
     expect(component.cashFlow()).toEqual([point]);
     expect(component.totalIncome()).toBe(100_00);
     expect(component.totalExpense()).toBe(40_00);
+  });
+
+  it('formats budget percentages with the browser locale percent rules', () => {
+    const component = createComponent();
+    component.activeBudgets.set([{
+      uuid: 'budget', account_uuid: account.uuid, category_uuid: 'category',
+      from_timestamp: 0, to_timestamp: 1, name: 'Budget', description: null,
+      amount: 100_00, state: 'ACTIVE', spent_amount: 25_00, fulfilled: null,
+    }]);
+    component.currencies.set([currency]);
+    component.selectedCurrencyUuid.set(currency.uuid);
+
+    expect(component.budgetRows()[0]?.percent).toBe(
+      new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 0 }).format(.25),
+    );
   });
 
   it('filters only the period chart by the selected account', () => {
@@ -153,8 +161,8 @@ describe('LedgerHomeComponent', () => {
     component.selectMonth('2026-07');
     TestBed.tick();
 
-    const from = Date.parse('2026-07-01T00:00:00Z') / 1000;
-    const to = Date.parse('2026-08-01T00:00:00Z') / 1000;
+    const from = new Date(2026, 6, 1).getTime() / 1000;
+    const to = new Date(2026, 7, 1).getTime() / 1000;
     const periodEnd = to - 1;
     expect(entities.listBalances).toHaveBeenLastCalledWith('ledger', periodEnd, currency.uuid, 10);
     expect(cashFlow.points).toHaveBeenLastCalledWith('ledger', currency.uuid, from, to, 86_400, { account_uuid: null });
@@ -177,8 +185,8 @@ describe('LedgerHomeComponent', () => {
     component.updateRangeTo('2026-04-11');
     TestBed.tick();
 
-    const from = Date.parse('2026-01-01T00:00:00Z') / 1000;
-    const to = Date.parse('2026-04-12T00:00:00Z') / 1000;
+    const from = new Date(2026, 0, 1).getTime() / 1000;
+    const to = new Date(2026, 3, 12).getTime() / 1000;
     expect(cashFlow.points).toHaveBeenLastCalledWith(
       'ledger',
       currency.uuid,

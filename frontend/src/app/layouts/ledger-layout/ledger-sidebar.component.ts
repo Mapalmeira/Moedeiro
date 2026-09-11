@@ -155,7 +155,7 @@ export class LedgerSidebarComponent {
   readonly ledgerMenuOpen = signal(false);
   readonly ledgerForeground = computed(() => {
     const currentLedger = this.ledger();
-    return currentLedger ? bestContrastingForeground(currentLedger.color_code).foreground : 'var(--text)';
+    return currentLedger ? bestContrastingForeground(currentLedger.color_code) : 'var(--text)';
   });
 
   @HostListener('document:click')
