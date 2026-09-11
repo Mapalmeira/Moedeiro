@@ -76,7 +76,7 @@
 
               <button type="button" class="category-row__main" (click)="openEdit(row.category)">
                 <app-entity-badge [icon]="row.category.icon" [color]="row.category.color_code" [size]="30" />
-                <strong>{{ row.category.name }}</strong>
+                <strong class="ui-truncate">{{ row.category.name }}</strong>
               </button>
 
               <button type="button" class="category-add icon-button icon-button--compact icon-button--add icon-button--blue ui-action-press" [disabled]="movingUuid() !== null"
@@ -87,9 +87,9 @@
           }
 
           @if (search().trim() && !hasSearchResults()) {
-            <div class="categories-state"><app-icon name="search" size="empty-state" />{{ i18n.t('categories.noResults') }}</div>
+            <div class="categories-state ui-empty-state"><app-icon name="search" size="empty-state" />{{ i18n.t('categories.noResults') }}</div>
           } @else if (!search().trim() && tree().length === 0) {
-            <div class="categories-state"><app-icon name="folder" size="empty-state" />{{ i18n.t('categories.empty') }}</div>
+            <div class="categories-state ui-empty-state"><app-icon name="folder" size="empty-state" />{{ i18n.t('categories.empty') }}</div>
           }
         </div>
       }

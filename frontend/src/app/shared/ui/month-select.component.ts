@@ -18,7 +18,7 @@ interface MonthOption {
         [attr.aria-label]="ariaLabel()" aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listId"
         [attr.aria-activedescendant]="open() ? activeOptionId() : null" (keydown)="handleTriggerKeydown($event)">
         <span class="month-select__icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon" aria-hidden="true"><app-icon name="calendar" size="badge-symbol" /></span>
-        <span class="ui-trigger-content"><strong class="ui-trigger-value">{{ displayValue() }}</strong></span>
+        <span class="ui-trigger-content"><strong class="ui-trigger-value ui-truncate">{{ displayValue() }}</strong></span>
         <app-icon class="ui-select-chevron" name="chevron-down" size="chevron" />
       </button>
 

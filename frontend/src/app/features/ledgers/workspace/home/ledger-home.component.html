@@ -21,9 +21,9 @@
   } @else if (resourcesLoading() || (loading() && !cashFlowSummary())) {
     <div class="home-loading ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
   } @else if (!currencies().length) {
-    <div class="home-state"><app-icon name="coins" size="empty-state" />{{ i18n.t('home.noCurrencies') }}</div>
+    <div class="home-state ui-empty-state"><app-icon name="coins" size="empty-state" />{{ i18n.t('home.noCurrencies') }}</div>
   } @else if (invalidRange()) {
-    <div class="home-state" role="status"><app-icon name="calendar" size="empty-state" />{{ i18n.t('common.invalidPeriod') }}</div>
+    <div class="home-state ui-empty-state" role="status"><app-icon name="calendar" size="empty-state" />{{ i18n.t('common.invalidPeriod') }}</div>
   } @else {
     <div class="home-metrics">
       @for (card of metricCards(); track card.label) {
@@ -33,7 +33,7 @@
             [class.ui-icon-badge--blue]="card.tone === 'blue'" [class.ui-icon-badge--neutral]="card.tone === 'neutral'">
             <app-icon [name]="card.icon" size="metric" />
           </span>
-          <span class="metric-card__copy"><small>{{ card.label }}</small><strong>{{ card.value }}</strong></span>
+          <span class="metric-card__copy"><small>{{ card.label }}</small><strong class="ui-truncate">{{ card.value }}</strong></span>
         </article>
       }
     </div>
@@ -67,10 +67,10 @@
           @for (row of accountRows(); track row.account.uuid) {
             <a class="home-list-row" [routerLink]="['/ledgers', context.ledgerUuid(), 'accounts']">
               <app-entity-badge class="home-list-row__icon" [icon]="row.account.icon" [color]="row.account.color_code" />
-              <span class="home-list-row__copy"><strong>{{ row.account.name }}</strong>@if (row.account.note) { <small>{{ row.account.note }}</small> }</span>
+              <span class="home-list-row__copy"><strong class="ui-truncate">{{ row.account.name }}</strong>@if (row.account.note) { <small class="ui-truncate">{{ row.account.note }}</small> }</span>
               <strong class="home-list-row__amount" [class.value-positive]="row.balanceTone === 'positive'" [class.value-negative]="row.balanceTone === 'negative'">{{ row.balance }}</strong>
             </a>
-          } @empty { <div class="home-card__empty">{{ i18n.t('accounts.empty') }}</div> }
+          } @empty { <div class="home-card__empty ui-empty-state">{{ i18n.t('accounts.empty') }}</div> }
         </div>
       </section>
 
@@ -79,11 +79,11 @@
         <div class="budget-list" appDiscreteListCapacity [maxCapacity]="10" (capacityChange)="setPreviewLimit('budgets', $event)">
           @for (row of budgetRows(); track row.budget.uuid) {
             <a class="budget-row" [routerLink]="['/ledgers', context.ledgerUuid(), 'budgets']">
-              <span class="budget-row__title"><strong>{{ row.budget.name }}</strong><small>{{ row.account?.name ?? i18n.t('home.unavailable') }} · {{ row.category?.name ?? i18n.t('home.unavailable') }}</small></span>
+              <span class="budget-row__title"><strong class="ui-truncate">{{ row.budget.name }}</strong><small class="ui-truncate">{{ row.account?.name ?? i18n.t('home.unavailable') }} · {{ row.category?.name ?? i18n.t('home.unavailable') }}</small></span>
               <span class="budget-row__numbers"><strong>{{ row.spent }} / {{ row.amount }}</strong><b [class.budget-row__percent--danger]="row.tone === 'danger'" [class.budget-row__percent--yellow]="row.tone === 'yellow'">{{ row.percent }}</b></span>
               <span class="budget-row__progress"><i [style.width.%]="row.progress" [class.budget-row__bar--danger]="row.tone === 'danger'" [class.budget-row__bar--yellow]="row.tone === 'yellow'"></i></span>
             </a>
-          } @empty { <div class="home-card__empty">{{ i18n.t('home.noActiveBudgets') }}</div> }
+          } @empty { <div class="home-card__empty ui-empty-state">{{ i18n.t('home.noActiveBudgets') }}</div> }
         </div>
       </section>
 
@@ -93,10 +93,10 @@
           @for (row of eventRows(); track row.event.uuid) {
             <a class="home-list-row home-event-row" [routerLink]="['/ledgers', context.ledgerUuid(), 'activity']">
               <span class="home-list-row__icon home-event-row__icon ui-icon-badge ui-projected-icon" [class.ui-icon-badge--green]="row.tone === 'green'" [class.ui-icon-badge--yellow]="row.tone === 'yellow'" [class.ui-icon-badge--blue]="row.tone === 'blue'"><app-icon [name]="row.icon" size="action" /></span>
-              <span class="home-list-row__copy"><strong>{{ row.event.description }}</strong><small>{{ row.category }} · {{ row.account }}</small></span>
+              <span class="home-list-row__copy"><strong class="ui-truncate">{{ row.event.description }}</strong><small class="ui-truncate">{{ row.category }} · {{ row.account }}</small></span>
               <span class="home-event-row__meta"><strong [class.value-positive]="row.valueTone === 'positive'" [class.value-negative]="row.valueTone === 'negative'">{{ row.value }}</strong><small>{{ row.date }}, {{ row.time }}</small></span>
             </a>
-          } @empty { <div class="home-card__empty">{{ i18n.t('home.noRecentActivity') }}</div> }
+          } @empty { <div class="home-card__empty ui-empty-state">{{ i18n.t('home.noRecentActivity') }}</div> }
         </div>
       </section>
     </div>

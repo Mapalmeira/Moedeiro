@@ -10,20 +10,11 @@
 .title-icon { background: var(--ui-accent); color: var(--ui-on-accent); }
 form { display: grid; gap: var(--section-gap); padding: var(--space-5); }
 .editor-content { display: grid; align-content: start; gap: var(--section-gap); min-width: 0; }
-.fields, .appearance-fields { display: grid; align-content: start; gap: var(--form-gap); min-width: 0; }
+.fields { display: grid; align-content: start; gap: var(--form-gap); min-width: 0; }
 .appearance-fields { align-self: center; width: 100%; }
-.appearance-section {
-  display: grid;
-  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
-  gap: var(--section-gap);
-  min-width: 0;
-  padding-top: var(--section-gap);
-  border-top: var(--border-width) solid var(--line);
-}
 .affixes { display: grid; grid-template-columns: 1fr 1fr; gap: var(--inline-gap); }
 .field input:disabled { background: var(--surface-muted); color: var(--text-muted); border-color: var(--line); cursor: not-allowed; }
 .field-hint { color: var(--text-muted); font-size: var(--control-font-size); }
-.preview { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-5); min-width: 0; border: var(--border-width) solid var(--line); border-radius: var(--radius-card); background: var(--surface-muted); }
 .preview-logo { display: grid; place-items: center; padding: var(--space-3); }
 .preview-text { font: inherit; font-size: var(--control-font-size); font-weight: var(--control-font-weight); line-height: var(--control-line-height); text-align: center; overflow-wrap: anywhere; max-width: 100%; }
 .preview-amount { width: 100%; padding-top: var(--space-4); border-top: var(--border-width) solid var(--line); white-space: pre-wrap; font-variant-numeric: tabular-nums; }
@@ -31,8 +22,7 @@ form { display: grid; gap: var(--section-gap); padding: var(--space-5); }
 .editor-actions .ui-button--danger { margin-inline-end: auto; }
 .editor-actions .ui-button { min-width: var(--action-button-min-width); }
 @media (max-width: 640px) {
-  .appearance-section, .affixes { grid-template-columns: minmax(0, 1fr); }
-  .preview { padding: var(--space-4); }
+  .affixes { grid-template-columns: minmax(0, 1fr); }
   .editor-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
   .editor-actions .ui-button { width: 100%; min-width: 0; }
   .editor-actions .ui-button--danger { margin-inline-end: 0; }

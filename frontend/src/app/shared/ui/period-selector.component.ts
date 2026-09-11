@@ -30,13 +30,13 @@ export type { PeriodMode } from '../period-selection';
           } @else {
             <div class="period-selector__range">
               <label class="field period-selector__range-field">
-                <span class="period-selector__visually-hidden">{{ i18n.t('common.from') }}</span>
+                <span class="ui-visually-hidden">{{ i18n.t('common.from') }}</span>
                 <input type="date" [value]="rangeFromDate()" [attr.aria-label]="i18n.t('common.from')"
                   (input)="rangeFromDateChange.emit(dateValue($event))" />
               </label>
               <span class="period-selector__separator" aria-hidden="true">{{ i18n.t('common.to') }}</span>
               <label class="field period-selector__range-field">
-                <span class="period-selector__visually-hidden">{{ i18n.t('common.to') }}</span>
+                <span class="ui-visually-hidden">{{ i18n.t('common.to') }}</span>
                 <input type="date" [value]="rangeToDate()" [attr.aria-label]="i18n.t('common.to')"
                   (input)="rangeToDateChange.emit(dateValue($event))" />
               </label>
@@ -91,17 +91,6 @@ export type { PeriodMode } from '../period-selection';
       font-size: var(--control-detail-font-size);
       font-weight: 650;
       white-space: nowrap;
-    }
-    .period-selector__visually-hidden {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
     }
     @container period-control (max-width: 360px) {
       .period-selector__range { grid-template-columns: minmax(0, 1fr); }

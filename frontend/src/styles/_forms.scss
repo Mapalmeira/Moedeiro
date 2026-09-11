@@ -41,9 +41,11 @@
 .field > .input-with-action > input::placeholder { color: color-mix(in srgb, var(--text-muted) 70%, transparent); }
 .field > input:focus,
 .field > select:focus,
-.field > .input-with-action > input:focus {
+.field > .input-with-action > input:focus,
+.checkbox__input:focus-visible + .checkbox__control,
+.ui-dropdown-search:focus-within {
   border-color: var(--ui-accent-strong);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 32%, transparent);
+  box-shadow: 0 0 0 var(--focus-ring-width) color-mix(in srgb, var(--ui-accent) var(--focus-ring-strength), transparent);
 }
 
 /* Server-side credential rejections are transient feedback, rather than form
@@ -83,16 +85,6 @@
 .icon-action:hover { background: var(--surface-muted); }
 
 .checkbox { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 500; cursor: pointer; }
-.checkbox__input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  clip-path: inset(50%);
-}
 .checkbox__control {
   --icon-badge-size: var(--inline-icon-size);
   border-color: var(--line);
@@ -100,7 +92,6 @@
   color: transparent;
 }
 .checkbox__input:checked + .checkbox__control { border-color: var(--line-strong); background: var(--green); color: var(--on-green); }
-.checkbox__input:focus-visible + .checkbox__control { border-color: var(--green-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 32%, transparent); }
 
 .field-error {
   margin: 0;
@@ -141,10 +132,6 @@
   background: var(--surface);
   color: var(--text);
   transition: box-shadow var(--motion-focus) ease, border-color var(--motion-focus) ease;
-}
-.ui-dropdown-search:focus-within {
-  border-color: var(--green-strong);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 32%, transparent);
 }
 .ui-dropdown-search > app-icon { color: var(--text-muted); }
 .ui-dropdown-search input {

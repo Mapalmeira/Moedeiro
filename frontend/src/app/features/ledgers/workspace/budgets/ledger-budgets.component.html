@@ -32,8 +32,8 @@
         <button type="button" class="budget-card ui-card ui-projected-surface" (click)="openEdit(card.budget)">
           <header class="budget-card__header">
             <span class="budget-card__title">
-              <strong>{{ card.budget.name }}</strong>
-              <small>{{ card.period }}</small>
+              <strong class="ui-truncate">{{ card.budget.name }}</strong>
+              <small class="ui-truncate">{{ card.period }}</small>
             </span>
             <span class="budget-card__state"><app-icon [name]="card.stateIcon" size="indicator" aria-hidden="true" />{{ card.stateLabel }}</span>
           </header>
@@ -41,11 +41,11 @@
           <div class="budget-card__scope">
             <span class="budget-card__entity">
               @if (card.account) { <app-entity-badge [icon]="card.account.icon" [color]="card.account.color_code" [size]="26" /> }
-              <span><strong>{{ card.account?.name ?? i18n.t('budgets.unknownAccount') }}</strong>@if (card.currency) { <small>{{ card.currency.name }}</small> }</span>
+              <span><strong class="ui-truncate">{{ card.account?.name ?? i18n.t('budgets.unknownAccount') }}</strong>@if (card.currency) { <small class="ui-truncate">{{ card.currency.name }}</small> }</span>
             </span>
             <span class="budget-card__entity">
               @if (card.category) { <app-entity-badge [icon]="card.category.icon" [color]="card.category.color_code" [size]="26" /> }
-              <span><strong>{{ card.categoryPath }}</strong></span>
+              <span><strong class="ui-truncate">{{ card.categoryPath }}</strong></span>
             </span>
           </div>
 
@@ -57,7 +57,7 @@
             </div>
           } @else {
             <div class="budget-card__amounts">
-              <strong class="budget-card__spent"><span>{{ card.spentLabel }}</span><small>{{ i18n.t('budgets.of') }} {{ card.amountLabel }}</small></strong>
+              <strong class="budget-card__spent"><span class="ui-truncate">{{ card.spentLabel }}</span><small>{{ i18n.t('budgets.of') }} {{ card.amountLabel }}</small></strong>
               @if (card.usageLabel) { <span>{{ card.usageLabel }}</span> }
             </div>
             <div class="budget-progress" [class.budget-progress--yellow]="card.tone === 'yellow'" [class.budget-progress--danger]="card.tone === 'danger'">
@@ -71,7 +71,7 @@
           }
         </button>
       } @empty {
-        <div class="budgets-state budget-grid__empty">
+        <div class="budgets-state budget-grid__empty ui-empty-state">
           <app-icon name="wallet" size="empty-state" />
           {{ i18n.t(search().trim() ? 'budgets.noResults' : 'budgets.empty') }}
         </div>

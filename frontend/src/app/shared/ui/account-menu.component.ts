@@ -16,7 +16,7 @@ import { IconComponent } from './icon.component';
         [attr.aria-expanded]="open()" [attr.aria-label]="label() ? label() + ': ' + (userName() || '—') : i18n.t('shell.settings')">
         <span class="account-trigger__icon ui-icon-badge ui-projected-icon"><app-icon name="user" size="compact-control" /></span>
         <span class="ui-trigger-content">
-          <strong class="account-trigger__name ui-trigger-value">{{ userName() || '—' }}</strong>
+          <strong class="account-trigger__name ui-trigger-value ui-truncate">{{ userName() || '—' }}</strong>
           @if (label(); as controlLabel) { <span class="ui-trigger-context">{{ controlLabel }}</span> }
         </span>
         <app-icon class="account-trigger__chevron ui-select-chevron" name="chevron-down" size="chevron" />

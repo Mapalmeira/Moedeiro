@@ -79,7 +79,6 @@
   gap: var(--space-3);
 }
 .activity-table__head { flex: 0 0 auto; padding: var(--space-2) var(--space-4); border-bottom: var(--border-width) solid var(--line); background: var(--surface-muted); color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 720; }
-.activity-table__head > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .activity-table__value-heading { text-align: right; }
 .activity-table__body { min-width: 0; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; }
 .activity-row { min-height: var(--list-row-height); padding: var(--space-2) var(--space-4); border-bottom: var(--border-width) solid var(--line); background: var(--surface); font-size: var(--control-font-size); cursor: pointer; content-visibility: auto; contain-intrinsic-block-size: var(--list-row-height); }
@@ -90,21 +89,18 @@
 .activity-row__date span { color: var(--text-muted); font-size: var(--control-detail-font-size); }
 .activity-row__event { min-width: 0; }
 .activity-row__copy { min-width: 0; display: grid; gap: var(--space-1); }
-.activity-row__copy strong, .activity-row__copy small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .activity-row__copy small { color: var(--text-muted); font-size: var(--control-detail-font-size); }
 .activity-row__type { display: flex; align-items: center; gap: var(--space-2); min-width: 0; overflow: hidden; }
-.activity-row__type > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .activity-row__entity-cell { min-width: 0; }
 .activity-row__entity-value { min-width: 0; display: flex; align-items: center; gap: var(--space-2); }
 .activity-row__entity-icons { flex: 0 0 auto; display: flex; align-items: center; gap: var(--space-1); }
-.activity-row__entity-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .activity-row__value { min-width: 0; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
 .activity-row__value--negative { color: var(--danger); }
 .activity-row__value--positive { color: var(--green-strong); }
 .activity-list__sentinel { grid-column: 1 / -1; min-height: var(--space-1); display: grid; place-items: center; }
 .activity-list__sentinel--loading { min-height: var(--control-height); }
 .activity-list__load-spinner { --spinner-size: var(--space-4); }
-.activity-state { flex: 1 1 auto; min-height: var(--activity-state-min-height); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: var(--space-3); padding: var(--space-6); color: var(--text-muted); text-align: center; }
+.activity-state { flex: 1 1 auto; min-height: var(--activity-state-min-height); }
 .activity-delete-icon { background: var(--danger-token); color: var(--on-danger-token); }
 
 @container ledger-section (max-width: 1040px) {

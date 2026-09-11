@@ -33,12 +33,12 @@
               </section>
             </div>
   
-            <div class="category-editor__appearance">
-              <aside class="category-editor__preview" [attr.aria-label]="i18n.t('ledgers.editor.preview')">
+            <div class="category-editor__appearance ui-appearance-section">
+              <aside class="category-editor__preview ui-appearance-preview" [attr.aria-label]="i18n.t('ledgers.editor.preview')">
                 <app-entity-badge [icon]="values().icon" [color]="previewColor()" [size]="108" />
                 <span>{{ values().name || i18n.t('categories.name') }}</span>
               </aside>
-              <div class="category-editor__appearance-fields">
+              <div class="category-editor__appearance-fields ui-appearance-fields">
                 <app-ledger-appearance-fields [iconControl]="form.controls.icon" [colorControl]="form.controls.color_code" />
                 <app-field-error [text]="fieldError('icon')" />
                 <app-field-error [text]="fieldError('color_code')" />

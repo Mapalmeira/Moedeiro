@@ -15,7 +15,7 @@
     <label class="flows-control flows-detail-control">
       <span class="flows-detail-control__heading">{{ i18n.t('flows.categoryDetail') }}</span>
       <span class="flows-slider">
-        <input type="range" min="1" [max]="detailLevels.length" step="1" [value]="detailLevel()" (input)="updateDetailLevel($event)"
+        <input class="ui-focus-visible-ring" type="range" min="1" [max]="detailLevels.length" step="1" [value]="detailLevel()" (input)="updateDetailLevel($event)"
           [attr.aria-label]="i18n.t('flows.categoryDetail')" [attr.aria-valuetext]="i18n.t('flows.level', { level: detailLevel() })" />
         <span class="flows-slider__ticks" aria-hidden="true">
           @for (level of detailLevels; track level) { <span>{{ level }}</span> }
@@ -32,7 +32,7 @@
   } @else if (resourcesLoading()) {
     <div class="ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
   } @else if (!accounts().length) {
-    <div class="flows-state"><app-icon name="wallet" size="empty-state" />{{ i18n.t('flows.noAccounts') }}</div>
+    <div class="flows-state ui-empty-state"><app-icon name="wallet" size="empty-state" />{{ i18n.t('flows.noAccounts') }}</div>
   } @else {
     <section class="flows-card ui-workspace-card-space ui-card ui-projected-surface">
       <header class="flows-card__header">
@@ -47,7 +47,7 @@
 
       <div class="flows-card__body" [attr.aria-busy]="loading()">
         @if (invalidRange()) {
-          <div class="flows-state" role="status"><app-icon name="calendar" size="empty-state" />{{ i18n.t('common.invalidPeriod') }}</div>
+          <div class="flows-state ui-empty-state" role="status"><app-icon name="calendar" size="empty-state" />{{ i18n.t('common.invalidPeriod') }}</div>
         } @else if (loading() && !graph()) {
           <div class="ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
         } @else if (graph(); as sankey) {
@@ -57,7 +57,7 @@
                 [ariaLabel]="i18n.t('flows.diagramAria', { account: selectedAccount()?.name ?? '' })" />
             }
           } @else {
-            <div class="flows-state"><app-icon name="chart" size="empty-state" />{{ i18n.t('flows.empty') }}</div>
+            <div class="flows-state ui-empty-state"><app-icon name="chart" size="empty-state" />{{ i18n.t('flows.empty') }}</div>
           }
         }
       </div>

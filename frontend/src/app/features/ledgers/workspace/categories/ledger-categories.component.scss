@@ -20,7 +20,6 @@
 }
 .categories-toolbar { flex: 0 0 auto; display: flex; align-items: center; justify-content: flex-start; gap: var(--form-gap); min-width: 0; padding-inline-end: var(--button-shadow-offset); }
 .categories-search { flex: 0 1 var(--entity-search-width); width: min(100%, var(--entity-search-width)); }
-.categories-search:focus-within { border-color: var(--blue-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 32%, transparent); }
 .categories-body {
   flex: 1 1 auto;
   min-width: 0;
@@ -157,12 +156,12 @@
   text-align: left;
 }
 .category-row__main:hover { background: var(--surface-muted); }
-.category-row__main strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--control-font-size); font-weight: var(--control-font-weight); }
+.category-row__main strong { font-size: var(--control-font-size); font-weight: var(--control-font-weight); }
 .category-add {
   position: relative;
   z-index: 1;
 }
-.categories-state { min-height: calc(var(--list-row-height) * 3); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: var(--inline-gap); padding: var(--space-8) var(--space-4); color: var(--text-muted); text-align: center; }
+.categories-state { min-height: calc(var(--list-row-height) * 3); --ui-empty-state-gap: var(--inline-gap); --ui-empty-state-padding: var(--space-8) var(--space-4); }
 .category-tree > .categories-state, .category-rows > .categories-state { flex: 1 0 auto; }
 .delete-icon { background: var(--danger-token); color: var(--on-danger-token); }
 

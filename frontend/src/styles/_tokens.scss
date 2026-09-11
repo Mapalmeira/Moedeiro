@@ -23,6 +23,10 @@
   --ui-accent-strong: var(--green-strong);
   --ui-accent-soft: color-mix(in srgb, var(--ui-accent) 15%, var(--surface));
   --ui-on-accent: var(--on-green);
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+  --focus-ring-strength: 32%;
+  --focus-ring-outline-strength: 58%;
   --text: #0a0a0a;
   --text-muted: #4b5563;
   --link: #087a3c;

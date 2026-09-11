@@ -80,8 +80,8 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 }
 .ui-select-trigger:hover { background: var(--surface-muted); }
 .ui-select-trigger:not(.ui-action-press)[aria-expanded='true'] {
-  border-color: var(--green-strong);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 32%, transparent);
+  border-color: var(--ui-accent-strong);
+  box-shadow: 0 0 0 var(--focus-ring-width) color-mix(in srgb, var(--ui-accent) var(--focus-ring-strength), transparent);
 }
 .ui-select-chevron {
   transform: rotate(0deg);

@@ -48,7 +48,8 @@
   background: var(--green);
   box-shadow: var(--compact-shadow);
 }
-.flows-slider input:focus-visible { outline: 3px solid color-mix(in srgb, var(--green) 38%, transparent); outline-offset: var(--space-1); border-radius: var(--radius-sm); }
+.flows-slider input { --focus-ring-offset: var(--space-1); }
+.flows-slider input:focus-visible { border-radius: var(--radius-sm); }
 .flows-slider__ticks { display: flex; justify-content: space-between; color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1; }
 
 .flows-card { position: relative; min-width: 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); overflow: hidden; }
@@ -64,7 +65,7 @@
 .flows-card__body { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
 .flows-card__body > .ui-loading-state { height: 100%; }
 .flows-card__body app-cash-flow-sankey { height: 100%; }
-.flows-state { min-height: 320px; height: 100%; display: flex; flex-direction: column; place-content: center; place-items: center; gap: var(--space-3); padding: var(--space-5); color: var(--text-muted); text-align: center; }
+.flows-state { min-height: 320px; height: 100%; --ui-empty-state-padding: var(--space-5); }
 
 @media (max-height: 900px) {
   :host { height: auto; min-height: 100%; grid-template-rows: auto; }

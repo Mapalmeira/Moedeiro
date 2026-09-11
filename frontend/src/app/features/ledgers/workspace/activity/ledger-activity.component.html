@@ -116,7 +116,7 @@
       } @else if (loading()) {
         <div class="ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
       } @else if (!events().length) {
-        <div class="activity-state">
+        <div class="activity-state ui-empty-state">
           <app-icon name="arrow-left-right" size="empty-state" />
           <strong>{{ i18n.t('activity.empty') }}</strong>
           <span>{{ i18n.t('activity.emptyHint') }}</span>
@@ -124,12 +124,12 @@
       } @else {
         <div class="activity-table" role="table" [attr.aria-label]="i18n.t('activity.eventsList')">
           <div class="activity-table__head" role="row">
-            <span role="columnheader">{{ i18n.t('activity.date') }}</span>
-            <span role="columnheader">{{ i18n.t('activity.event') }}</span>
-            <span role="columnheader">{{ i18n.t('activity.eventType') }}</span>
-            <span role="columnheader">{{ i18n.t('activity.accounts') }}</span>
-            <span role="columnheader">{{ i18n.t('activity.category') }}</span>
-            <span role="columnheader" class="activity-table__value-heading">{{ i18n.t('activity.aggregateValue') }}</span>
+            <span class="ui-truncate" role="columnheader">{{ i18n.t('activity.date') }}</span>
+            <span class="ui-truncate" role="columnheader">{{ i18n.t('activity.event') }}</span>
+            <span class="ui-truncate" role="columnheader">{{ i18n.t('activity.eventType') }}</span>
+            <span class="ui-truncate" role="columnheader">{{ i18n.t('activity.accounts') }}</span>
+            <span class="ui-truncate" role="columnheader">{{ i18n.t('activity.category') }}</span>
+            <span role="columnheader" class="activity-table__value-heading ui-truncate">{{ i18n.t('activity.aggregateValue') }}</span>
           </div>
 
           <div class="activity-table__body">
@@ -142,8 +142,8 @@
 
                 <div class="activity-row__event" role="cell">
                   <span class="activity-row__copy">
-                    <strong>{{ row.event.description }}</strong>
-                    @if (row.detail; as detail) { <small>{{ detail }}</small> }
+                    <strong class="ui-truncate">{{ row.event.description }}</strong>
+                    @if (row.detail; as detail) { <small class="ui-truncate">{{ detail }}</small> }
                   </span>
                 </div>
 
@@ -154,7 +154,7 @@
                     [class.ui-icon-badge--blue]="row.tone === 'blue'">
                     <app-icon [name]="row.typeIcon" size="compact-control" />
                   </span>
-                  <span>{{ row.typeLabel }}</span>
+                  <span class="ui-truncate">{{ row.typeLabel }}</span>
                 </div>
 
                 <div class="activity-row__accounts activity-row__entity-cell" role="cell" [attr.data-label]="i18n.t('activity.accounts')">
@@ -164,7 +164,7 @@
                         <app-entity-badge [icon]="account.icon" [color]="account.color_code" />
                       }
                     </span>
-                    <span class="activity-row__entity-label">{{ row.accountLabel }}</span>
+                    <span class="activity-row__entity-label ui-truncate">{{ row.accountLabel }}</span>
                   </span>
                 </div>
                 <div class="activity-row__category activity-row__entity-cell" role="cell" [attr.data-label]="i18n.t('activity.category')">
@@ -174,7 +174,7 @@
                         <app-entity-badge [icon]="category.icon" [color]="category.color_code" />
                       }
                     </span>
-                    <span class="activity-row__entity-label">{{ row.categoryLabel }}</span>
+                    <span class="activity-row__entity-label ui-truncate">{{ row.categoryLabel }}</span>
                   </span>
                 </div>
                 <div class="activity-row__value" role="cell" [attr.data-label]="i18n.t('activity.aggregateValue')"

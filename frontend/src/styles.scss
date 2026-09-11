@@ -122,6 +122,71 @@ a { color: var(--link); }
   color: var(--text);
 }
 
+/* Small visual primitives shared by feature components. */
+.ui-truncate {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ui-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+.ui-empty-state {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--ui-empty-state-gap, var(--space-3));
+  padding: var(--ui-empty-state-padding, var(--space-6));
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Shared editor anatomy for icon/color appearance configuration. */
+.ui-appearance-section {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  gap: var(--section-gap);
+  min-width: 0;
+  padding-top: var(--section-gap);
+  border-top: var(--border-width) solid var(--line);
+}
+.ui-appearance-fields {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--form-gap);
+}
+.ui-appearance-preview {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border-width) solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface-muted);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .ui-appearance-section { grid-template-columns: minmax(0, 1fr); }
+  .ui-appearance-preview { padding: var(--space-4); }
+}
+
 /* Shared icon/text groups align the complete projected footprint, not only the
    painted icon face. Explicit line-height also removes font-metric drift. */
 .ui-heading-with-icon {
@@ -158,13 +223,7 @@ a { color: var(--link); }
   font-weight: var(--control-font-weight);
   line-height: var(--control-line-height);
 }
-.ui-trigger-value {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font: inherit;
-}
+.ui-trigger-value { font: inherit; }
 
 .ui-dropdown-menu {
   padding: var(--space-2);
@@ -276,7 +335,7 @@ a { color: var(--link); }
 .title-icon--yellow { background: var(--yellow); color: var(--on-yellow); }
 .title-icon--blue { background: var(--blue); color: var(--on-blue); }
 
-:where(button, a, [tabindex]):focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--ui-accent, var(--green)) 58%, transparent);
-  outline-offset: 2px;
+:where(button, a, [tabindex], .ui-focus-visible-ring):focus-visible {
+  outline: var(--focus-ring-width) solid color-mix(in srgb, var(--ui-accent, var(--green)) var(--focus-ring-outline-strength), transparent);
+  outline-offset: var(--focus-ring-offset);
 }

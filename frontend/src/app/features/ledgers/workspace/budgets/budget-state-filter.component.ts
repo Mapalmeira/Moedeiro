@@ -17,7 +17,7 @@ const ALL_STATES: readonly LedgerBudgetState[] = ['ACTIVE', 'FUTURE', 'FINISHED'
         aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listId" [attr.aria-activedescendant]="open() ? activeOptionId() : null"
         [attr.aria-label]="i18n.t('budgets.filterState')" (keydown)="handleKeydown($event)">
         <span class="state-filter__icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon" aria-hidden="true"><app-icon name="wallet" size="badge-symbol" /></span>
-        <span class="ui-trigger-content"><strong class="ui-trigger-value">{{ triggerLabel() }}</strong></span>
+        <span class="ui-trigger-content"><strong class="ui-trigger-value ui-truncate">{{ triggerLabel() }}</strong></span>
         <app-icon class="ui-select-chevron" name="chevron-down" size="chevron" />
       </button>
       @if (open()) {

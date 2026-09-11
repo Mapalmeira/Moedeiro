@@ -56,7 +56,7 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
                   <app-ledger-icon [icon]="currentLedger.icon" [size]="20" />
                 </span>
                 <span class="ui-trigger-content">
-                  <strong class="ledger-switcher__name ui-trigger-value">{{ currentLedger.name }}</strong>
+                  <strong class="ledger-switcher__name ui-trigger-value ui-truncate">{{ currentLedger.name }}</strong>
                 </span>
                 <app-icon class="ledger-switcher__chevron ui-select-chevron" name="chevron-down" size="chevron" />
               </button>

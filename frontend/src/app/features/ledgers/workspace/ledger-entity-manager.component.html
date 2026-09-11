@@ -32,13 +32,13 @@
         @for (row of rows(); track row.item.uuid) {
           <button type="button" class="entity-row" (click)="edit(row.item)">
             <app-entity-badge [icon]="row.item.icon" [color]="row.item.color_code" />
-            <span class="entity-copy"><strong>{{ row.item.name }}</strong>@if (row.detailText) { <small>{{ row.detailText }}</small> }</span>
+            <span class="entity-copy"><strong class="ui-truncate">{{ row.item.name }}</strong>@if (row.detailText) { <small class="ui-truncate">{{ row.detailText }}</small> }</span>
             @if (row.balanceText) {
               <strong class="entity-balance" [class.entity-balance--positive]="row.balance > 0" [class.entity-balance--negative]="row.balance < 0">{{ row.balanceText }}</strong>
             }
           </button>
         } @empty {
-          <div class="state entity-list__empty">
+          <div class="state entity-list__empty ui-empty-state">
             <app-icon [name]="kind() === 'account' ? 'building' : 'coins'" size="empty-state" />
             {{ i18n.t(search().trim() ? 'workspace.noResults' : kind() === 'account' ? 'accounts.empty' : 'currencies.empty') }}
           </div>
