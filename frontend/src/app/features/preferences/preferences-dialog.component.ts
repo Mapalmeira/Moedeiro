@@ -19,7 +19,7 @@ import { LanguageSelectorComponent } from '../../shared/ui/language-selector.com
       <app-dialog-shell [ariaLabel]="i18n.t('preferences.title')" (dismiss)="requestClose()">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
-            <span class="title-icon title-icon--green"><app-icon name="LucideSlidersHorizontal" size="prominent" /></span>
+            <span class="ui-icon-badge ui-icon-badge--dialog ui-icon-badge--green ui-projected-icon"><app-icon name="LucideSlidersHorizontal" size="prominent" /></span>
             <h2>{{ i18n.t('preferences.title') }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="closing() || saving()"

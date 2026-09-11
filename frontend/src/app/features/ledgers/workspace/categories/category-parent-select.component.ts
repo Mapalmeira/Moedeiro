@@ -63,18 +63,13 @@ export const ROOT_CATEGORY_VALUE = '__root__';
     </div>
   `,
   styles: `
-    :host { display: block; min-width: 0; }
+    :host { --ui-accent: var(--blue); --ui-accent-strong: var(--blue-strong); display: block; min-width: 0; }
     .parent-select { position: relative; }
     .parent-select__trigger {
       width: 100%;
       height: var(--control-height);
       text-align: left;
     }
-    .parent-select__trigger[aria-expanded='true'] {
-      border-color: var(--blue-strong);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 32%, transparent);
-    }
-    .parent-select .ui-dropdown-search:focus-within { border-color: var(--blue-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 32%, transparent); }
     .parent-select__value, .parent-select__option-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .parent-select__panel { position: absolute; z-index: var(--layer-dropdown); top: calc(100% + var(--space-2)); left: 0; right: 0; }
     .parent-select__list { max-height: min(240px, 32dvh); overflow-y: auto; overscroll-behavior: contain; display: grid; gap: var(--space-1); }

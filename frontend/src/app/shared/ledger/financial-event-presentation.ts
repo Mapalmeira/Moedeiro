@@ -3,7 +3,7 @@ import type { IconName } from '../ui/icon.component';
 
 export type FinancialEventTone = 'green' | 'yellow' | 'blue';
 
-export interface FinancialEventPresentation {
+interface FinancialEventPresentation {
   icon: IconName;
   tone: FinancialEventTone;
 }

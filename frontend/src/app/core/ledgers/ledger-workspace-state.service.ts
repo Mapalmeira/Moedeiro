@@ -4,7 +4,7 @@ import type { PeriodMode } from '../../shared/period-selection';
 type FlowMode = 'instant' | 'cumulative';
 type EntitySection = 'account' | 'currency';
 
-export interface ActivityFilterState {
+interface ActivityFilterState {
   from_date: string;
   to_date: string;
   account_uuid: string;
@@ -12,7 +12,7 @@ export interface ActivityFilterState {
   description_search: string;
 }
 
-export interface HomeViewState {
+interface HomeViewState {
   currency_uuid: string;
   flow_account_uuid: string;
   month: string;
@@ -22,13 +22,13 @@ export interface HomeViewState {
   flow_mode: FlowMode;
 }
 
-export interface BudgetViewState {
+interface BudgetViewState {
   states: readonly LedgerBudgetState[];
   category_uuid: string;
   search: string;
 }
 
-export interface FlowViewState {
+interface FlowViewState {
   account_uuid: string;
   month: string;
   period_mode: PeriodMode;
@@ -37,7 +37,7 @@ export interface FlowViewState {
   detail_level: number;
 }
 
-export interface CategoryViewState {
+interface CategoryViewState {
   search: string;
   collapsed: readonly string[];
   root_collapsed: boolean;

@@ -102,10 +102,6 @@ export class LedgerFlowsComponent {
       }
       untracked(() => this.loadGraph());
     });
-    this.destroyRef.onDestroy(() => {
-      this.resourcesRequest?.unsubscribe();
-      this.graphRequest?.unsubscribe();
-    });
   }
 
   selectAccount(value: string): void {

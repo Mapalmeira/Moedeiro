@@ -1,9 +1,9 @@
 import type { IconName } from '../../shared/ui/icon.component';
 
-export type LedgerSectionKey = 'home' | 'activity' | 'budgets' | 'flows' | 'accounts' | 'categories' | 'currencies';
-export type LedgerSectionTone = 'green' | 'yellow' | 'blue' | 'neutral';
+type LedgerSectionKey = 'home' | 'activity' | 'budgets' | 'flows' | 'accounts' | 'categories' | 'currencies';
+type LedgerSectionTone = 'green' | 'yellow' | 'blue' | 'neutral';
 
-export interface LedgerSectionItem {
+interface LedgerSectionItem {
   key: LedgerSectionKey;
   labelKey: 'ledgerShell.home' | 'ledgerShell.activity' | 'ledgerShell.budgets' | 'ledgerShell.flows' | 'ledgerShell.accounts' | 'ledgerShell.categories' | 'ledgerShell.currencies';
   icon: IconName;
@@ -20,7 +20,7 @@ export const LEDGER_SECTION_ITEMS: readonly LedgerSectionItem[] = [
   { key: 'currencies', labelKey: 'ledgerShell.currencies', icon: 'LucideCoins', tone: 'yellow' },
 ];
 
-export const DEFAULT_LEDGER_SECTION = LEDGER_SECTION_ITEMS[0];
+const DEFAULT_LEDGER_SECTION = LEDGER_SECTION_ITEMS[0];
 
 export function ledgerSectionRouteData(ledgerSection: LedgerSectionKey): { ledgerSection: LedgerSectionKey } {
   return { ledgerSection };

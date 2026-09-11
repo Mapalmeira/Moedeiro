@@ -7,7 +7,7 @@
   min-width: 0;
 }
 :host.currency-section { --ui-accent: var(--yellow); --ui-accent-strong: var(--yellow-strong); --ui-on-accent: var(--on-yellow); }
-.title-icon { background: var(--ui-accent); color: var(--ui-on-accent); }
+.entity-editor__title-icon { background: var(--ui-accent); color: var(--ui-on-accent); }
 form { display: grid; gap: var(--section-gap); padding: var(--space-5); }
 .editor-content { display: grid; align-content: start; gap: var(--section-gap); min-width: 0; }
 .fields { display: grid; align-content: start; gap: var(--form-gap); min-width: 0; }

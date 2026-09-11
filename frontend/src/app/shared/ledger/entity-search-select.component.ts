@@ -6,7 +6,7 @@ import { DropdownSearchAutofocusDirective } from '../ui/dropdown-search-autofocu
 import { IconComponent, IconName } from '../ui/icon.component';
 import { isListboxNavigationKey, nextListboxIndex } from '../ui/listbox-navigation';
 
-export type EntitySearchOptionTone = 'green' | 'yellow' | 'blue' | 'neutral';
+type EntitySearchOptionTone = 'green' | 'yellow' | 'blue' | 'neutral';
 
 export interface EntitySearchOption {
   value: string;
@@ -98,10 +98,6 @@ export interface EntitySearchOption {
       width: 100%;
       height: var(--control-height);
       text-align: left;
-    }
-    .entity-search-select__trigger[aria-expanded='true'] {
-      border-color: var(--ui-accent-strong, var(--green-strong));
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent, var(--green)) 32%, transparent);
     }
     .entity-search-select__copy { min-width: 0; display: grid; gap: var(--space-1); }
     .entity-search-select__copy strong,

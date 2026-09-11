@@ -44,15 +44,11 @@ export class SecurityService {
     );
   }
 
-  markTotpEnabled(): void {
+  private markTotpEnabled(): void {
     this.totpStatus.set('ENABLED');
   }
 
-  markTotpDisabled(): void {
+  private markTotpDisabled(): void {
     this.totpStatus.set('DISABLED');
-  }
-
-  resetSessionState(): void {
-    this.totpStatus.set('unknown');
   }
 }

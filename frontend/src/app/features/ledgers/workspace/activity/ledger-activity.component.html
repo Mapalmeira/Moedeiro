@@ -25,7 +25,7 @@
       }
     </div>
     @if (!canCreate() && !loading()) {
-      <app-form-message class="activity-commandbar__notice" kind="success" icon="LucideInfo" [compact]="true"
+      <app-form-message class="activity-commandbar__notice" kind="warning" icon="LucideInfo" [compact]="true"
         [text]="i18n.t(!accounts().length ? 'activity.needsAccount' : 'activity.needsCategory')" />
     }
   </div>
@@ -204,10 +204,10 @@
 }
 
 @if (deleting()) {
-  <app-dialog-shell role="alertdialog" ariaLabelledby="event-delete-title" dialogWidth="var(--dialog-width-confirmation)" (dismiss)="closeDelete()">
+  <app-dialog-shell role="alertdialog" ariaLabelledby="event-delete-title" dialogWidth="var(--dialog-width-compact)" (dismiss)="closeDelete()">
         <header class="ui-dialog-header">
           <div class="ui-dialog-title">
-            <span class="title-icon activity-delete-icon"><app-icon name="LucideTrash2" size="prominent" /></span>
+            <span class="activity-delete-icon ui-icon-badge ui-icon-badge--dialog ui-projected-icon"><app-icon name="LucideTrash2" size="prominent" /></span>
             <h2 id="event-delete-title">{{ i18n.t('activity.deleteTitle') }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')">
@@ -215,7 +215,7 @@
           </button>
         </header>
         <div class="ui-delete-dialog-body">
-          <app-form-message [text]="i18n.t('activity.deleteWarning')" />
+          <app-form-message kind="warning" [text]="i18n.t('activity.deleteWarning')" />
           @if (deleteError()) { <app-form-message [text]="deleteError()!" /> }
           <footer class="ui-surface-actions">
             <button class="ui-button ui-button--danger" type="button" [disabled]="deletingBusy()" (click)="remove()">{{ i18n.t('workspace.delete') }}</button>

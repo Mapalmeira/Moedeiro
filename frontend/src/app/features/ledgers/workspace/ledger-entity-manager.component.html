@@ -54,15 +54,15 @@
 }
 
 @if (deleting()) {
-  <app-dialog-shell role="alertdialog" ariaLabelledby="entity-delete-title" dialogWidth="var(--dialog-width-confirmation)" (dismiss)="closeDelete()">
+  <app-dialog-shell role="alertdialog" ariaLabelledby="entity-delete-title" dialogWidth="var(--dialog-width-compact)" (dismiss)="closeDelete()">
         <header class="ui-dialog-header">
-          <div class="ui-dialog-title"><span class="title-icon delete-icon"><app-icon name="LucideTrash2" size="prominent" /></span>
+          <div class="ui-dialog-title"><span class="delete-icon ui-icon-badge ui-icon-badge--dialog ui-projected-icon"><app-icon name="LucideTrash2" size="prominent" /></span>
             <h2 id="entity-delete-title">{{ i18n.t(kind() === 'account' ? 'accounts.delete' : 'currencies.delete') }}</h2>
           </div>
           <button type="button" class="icon-button icon-button--control ui-action-press" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="LucideX" size="control" /></button>
         </header>
         <div class="delete-body ui-delete-dialog-body">
-          <app-form-message [text]="i18n.t(kind() === 'account' ? 'accounts.deleteWarning' : 'currencies.deleteWarning')" />
+          <app-form-message kind="warning" [text]="i18n.t(kind() === 'account' ? 'accounts.deleteWarning' : 'currencies.deleteWarning')" />
           @if (deleteError()) { <app-form-message [text]="deleteError()!" /> }
           <footer class="ui-surface-actions"><button type="button" class="ui-button ui-button--danger" [disabled]="deletingBusy()" (click)="remove()">{{ i18n.t('workspace.delete') }}</button></footer>
         </div>

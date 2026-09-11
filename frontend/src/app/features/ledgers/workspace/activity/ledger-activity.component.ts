@@ -248,13 +248,6 @@ export class LedgerActivityComponent {
         if (ledgerUuid) this.loadWorkspace();
       });
     });
-    this.destroyRef.onDestroy(() => {
-      this.workspaceRequest?.unsubscribe();
-      this.eventsRequest?.unsubscribe();
-      this.moreRequest?.unsubscribe();
-      this.balanceRequest?.unsubscribe();
-      this.summaryRequest?.unsubscribe();
-    });
   }
 
   @HostListener('document:click')
@@ -341,8 +334,8 @@ export class LedgerActivityComponent {
     const ledgerUuid = this.context.ledgerUuid();
     const applied = this.appliedFilters();
     if (!cursor || !ledgerUuid || !applied || this.loadingMore()) return;
-    this.loadingMore.set(true);
     this.moreRequest?.unsubscribe();
+    this.loadingMore.set(true);
     this.moreRequest = this.eventsService.list(ledgerUuid, { ...applied, cursor }).pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.loadingMore.set(false)),
@@ -422,14 +415,14 @@ export class LedgerActivityComponent {
       this.loading.set(false);
       return;
     }
+    this.eventsRequest?.unsubscribe();
+    this.moreRequest?.unsubscribe();
     this.loading.set(true);
     this.error.set(null);
     this.nextCursor.set(null);
     this.appliedFilters.set(query);
     this.loadAccountBalance(query);
     this.loadCashFlowSummary(query);
-    this.eventsRequest?.unsubscribe();
-    this.moreRequest?.unsubscribe();
     this.eventsRequest = this.eventsService.list(ledgerUuid, query).pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.loading.set(false)),

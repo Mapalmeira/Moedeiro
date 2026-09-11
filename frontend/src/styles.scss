@@ -15,16 +15,6 @@ body {
 input, select, button { font: inherit; }
 a { color: var(--link); }
 
-.title-icon {
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  width: var(--title-icon-size);
-  height: var(--title-icon-size);
-  border: var(--border-width) solid var(--line-strong);
-  border-radius: var(--radius-icon);
-  color: var(--text);
-}
 .ui-icon-badge {
   --icon-badge-size: var(--control-icon-size);
   box-sizing: border-box;
@@ -38,6 +28,7 @@ a { color: var(--link); }
   line-height: 0;
 }
 .ui-icon-badge--title { --icon-badge-size: var(--title-icon-size); }
+.ui-icon-badge--dialog { --icon-badge-size: var(--compact-title-icon-size); }
 .ui-icon-badge--green { background: var(--green); color: var(--on-green); }
 .ui-icon-badge--yellow { background: var(--yellow); color: var(--on-yellow); }
 .ui-icon-badge--blue { background: var(--blue); color: var(--on-blue); }
@@ -46,13 +37,11 @@ a { color: var(--link); }
 
 /* Projected surfaces use layered, overlapping hard shadows. */
 .ui-projected-surface,
-.ui-projected-icon,
-.title-icon {
+.ui-projected-icon {
   box-shadow: var(--surface-shadow);
   filter: none;
 }
-.ui-projected-icon,
-.title-icon {
+.ui-projected-icon {
   box-shadow: var(--icon-shadow);
   margin-inline-end: var(--icon-shadow-offset);
   margin-block-end: var(--icon-shadow-offset);
@@ -317,7 +306,6 @@ a { color: var(--link); }
 }
 .ui-dialog-title { display: flex; align-items: center; gap: var(--title-icon-gap); min-width: 0; }
 .ui-dialog-title h2 { margin: 0; font-size: 1.22rem; line-height: var(--heading-line-height); letter-spacing: -.01em; }
-.ui-dialog-title .title-icon { width: var(--compact-title-icon-size); height: var(--compact-title-icon-size); }
 .ui-surface-actions {
   display: flex;
   align-items: center;
@@ -331,9 +319,6 @@ a { color: var(--link); }
   padding: var(--space-5);
 }
 .ui-delete-dialog-body > .ui-surface-actions { padding-top: 0; }
-.title-icon--green { background: var(--green); color: var(--on-green); }
-.title-icon--yellow { background: var(--yellow); color: var(--on-yellow); }
-.title-icon--blue { background: var(--blue); color: var(--on-blue); }
 
 :where(button, a, [tabindex], .ui-focus-visible-ring):focus-visible {
   outline: var(--focus-ring-width) solid color-mix(in srgb, var(--ui-accent, var(--green)) var(--focus-ring-outline-strength), transparent);

@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -173,6 +173,7 @@ export class AuthLandingComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly apiErrors = inject(ApiErrorService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly i18n = inject(I18nService);
 
   readonly showLoginPassword = signal(false);
@@ -188,6 +189,7 @@ export class AuthLandingComponent {
   readonly passwordChanged = signal(history.state?.passwordChanged === true);
   readonly recoveryOpen = signal(false);
   private registrationCompletionTimer: ReturnType<typeof setTimeout> | null = null;
+  private passwordChangedTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly loginForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(USER_NAME_MAX_LENGTH), Validators.pattern(USER_NAME_PATTERN)]],
@@ -204,7 +206,11 @@ export class AuthLandingComponent {
   });
 
   constructor() {
-    if (this.passwordChanged()) setTimeout(() => this.passwordChanged.set(false), 5000);
+    if (this.passwordChanged()) this.passwordChangedTimer = setTimeout(() => this.passwordChanged.set(false), 5_000);
+    this.destroyRef.onDestroy(() => {
+      if (this.passwordChangedTimer !== null) clearTimeout(this.passwordChangedTimer);
+      if (this.registrationCompletionTimer !== null) clearTimeout(this.registrationCompletionTimer);
+    });
   }
 
   submitLogin(): void {

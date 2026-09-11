@@ -25,10 +25,10 @@ import { IconComponent } from '../../../shared/ui/icon.component';
   imports: [DialogShellComponent, ReactiveFormsModule, CrockfordCodeInputDirective, NoWhitespaceInputDirective, FieldErrorComponent, FormMessageComponent, IconComponent],
   template: `
     @if (open()) {
-      <app-dialog-shell [ariaLabel]="i18n.t('auth.recovery.title')" dialogWidth="550px" (dismiss)="requestClose()">
+      <app-dialog-shell [ariaLabel]="i18n.t('auth.recovery.title')" dialogWidth="var(--dialog-width-compact)" (dismiss)="requestClose()">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
-            <span class="title-icon title-icon--green"><app-icon name="LucideKeyRound" size="prominent" /></span>
+            <span class="ui-icon-badge ui-icon-badge--dialog ui-icon-badge--green ui-projected-icon"><app-icon name="LucideKeyRound" size="prominent" /></span>
             <h2>{{ i18n.t('auth.recovery.title') }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">

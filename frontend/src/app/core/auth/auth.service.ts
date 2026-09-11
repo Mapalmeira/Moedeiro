@@ -33,18 +33,6 @@ export class AuthService {
     return this.http.post<void>(API_ROUTES.password.recovery, payload);
   }
 
-  validateSession(): Observable<boolean> {
-    return this.http.get<AuthenticationSession>(API_ROUTES.authentication.session).pipe(
-      tap((session) => this.storeUserName(session.name)),
-      map(() => true),
-      catchError(() => of(false)),
-      tap((valid) => {
-        this.authenticated.set(valid);
-        if (!valid) this.storeUserName(null);
-      }),
-    );
-  }
-
   ensureSession(): Observable<boolean> {
     if (this.authenticated() === true) return of(true);
 

@@ -1,7 +1,7 @@
 import { icons, isLucideIconComponent, LucideIcon } from '@lucide/angular';
 import { normalizeSearchText } from '../search-normalization';
 
-export interface LucideCatalogIcon {
+interface LucideCatalogIcon {
   id: string;
   label: string;
   searchText: string;

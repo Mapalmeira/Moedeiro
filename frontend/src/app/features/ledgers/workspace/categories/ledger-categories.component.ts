@@ -135,11 +135,7 @@ export class LedgerCategoriesComponent {
         if (ledgerUuid) this.load();
       });
     });
-    this.destroyRef.onDestroy(() => {
-      this.loadRequest?.unsubscribe();
-      this.mutationRequest?.unsubscribe();
-      this.stopAutoScroll();
-    });
+    this.destroyRef.onDestroy(() => this.stopAutoScroll());
   }
 
   filter(event: Event): void {
@@ -154,7 +150,10 @@ export class LedgerCategoriesComponent {
     this.loadRequest?.unsubscribe();
     this.loading.set(true);
     this.error.set(null);
-    this.loadRequest = this.categoriesService.getTree(ledgerUuid).pipe(finalize(() => this.loading.set(false))).subscribe({
+    this.loadRequest = this.categoriesService.getTree(ledgerUuid).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.loading.set(false)),
+    ).subscribe({
       next: tree => this.tree.set(tree),
       error: error => this.error.set(this.errors.message(error, 'errors.categoriesLoadFailed')),
     });

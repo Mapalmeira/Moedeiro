@@ -5,7 +5,7 @@ export interface TimestampRange {
   to: number;
 }
 
-export interface DateInputRange {
+interface DateInputRange {
   from: string;
   to: string;
 }

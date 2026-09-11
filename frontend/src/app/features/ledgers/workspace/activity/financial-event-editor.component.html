@@ -2,7 +2,7 @@
   <div class="event-editor">
         <header class="ui-dialog-header">
           <div class="ui-dialog-title">
-            <span class="title-icon" [class.title-icon--green]="titlePresentation().tone === 'green'" [class.title-icon--yellow]="titlePresentation().tone === 'yellow'" [class.title-icon--blue]="titlePresentation().tone === 'blue'"><app-icon [name]="titleIcon()" size="prominent" /></span>
+            <span class="ui-icon-badge ui-icon-badge--dialog ui-projected-icon" [class.ui-icon-badge--green]="titlePresentation().tone === 'green'" [class.ui-icon-badge--yellow]="titlePresentation().tone === 'yellow'" [class.ui-icon-badge--blue]="titlePresentation().tone === 'blue'"><app-icon [name]="titleIcon()" size="prominent" /></span>
             <h2>{{ title() }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
@@ -13,7 +13,7 @@
         <form [formGroup]="form" (ngSubmit)="save()" novalidate>
           <div class="event-editor__body">
             @if (!accounts().length || !categories().length) {
-              <app-form-message kind="success" icon="LucideInfo" [text]="i18n.t(!accounts().length ? 'activity.needsAccount' : 'activity.needsCategory')" />
+              <app-form-message kind="warning" icon="LucideInfo" [text]="i18n.t(!accounts().length ? 'activity.needsAccount' : 'activity.needsCategory')" />
             }
   
             <label class="field">
@@ -169,7 +169,7 @@
                 } @else {
                   <div class="field same-currency-field">
                     <span>{{ i18n.t('activity.destinationAmount') }}</span>
-                    <app-form-message kind="success" icon="LucideInfo" [compact]="true" [text]="i18n.t('activity.sameCurrencyInfo')" />
+                    <app-form-message kind="info" icon="LucideInfo" [compact]="true" [text]="i18n.t('activity.sameCurrencyInfo')" />
                   </div>
                 }
               </div>

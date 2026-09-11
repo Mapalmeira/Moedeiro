@@ -2,7 +2,7 @@ export const MAX_SHOPPING_LIST_MOVEMENTS = 300;
 
 export type FinancialEventType = 'TRANSACTION' | 'ACCOUNT_TRANSFER' | 'SHOPPING_LIST';
 
-export interface FinancialMovement {
+interface FinancialMovement {
   uuid: string;
   account_uuid: string;
   category_uuid: string;
@@ -49,7 +49,7 @@ export interface SimpleFinancialEventPayload {
   item_name: string | null;
 }
 
-export interface ShoppingListMovementPayload {
+interface ShoppingListMovementPayload {
   uuid?: string | null;
   category_uuid: string;
   value: number;

@@ -36,12 +36,11 @@ const ALL_STATES: readonly LedgerBudgetState[] = ['ACTIVE', 'FUTURE', 'FINISHED'
     </div>
   `,
   styles: `
-    :host { display: block; min-width: 0; }
+    :host { --ui-accent: var(--yellow); --ui-accent-strong: var(--yellow-strong); display: block; min-width: 0; }
     .state-filter { position: relative; min-width: 0; }
     .state-filter__trigger {
       width: 100%; height: var(--control-height); padding-block: 0; text-align: left;
     }
-    .state-filter__trigger[aria-expanded='true'] { border-color: var(--yellow-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--yellow) 32%, transparent); }
     .state-filter__panel { position: absolute; z-index: var(--layer-dropdown); top: calc(100% + var(--space-2)); left: 0; right: 0; min-width: max-content; }
     .state-filter__option {
       width: 100%; min-height: var(--menu-item-height); display: grid; grid-template-columns: var(--inline-icon-size) minmax(0, 1fr); align-items: center; gap: var(--space-3);

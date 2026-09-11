@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { DismissiblePopoverDirective } from './dismissible-popover.directive';
 import { IconComponent } from './icon.component';
 import { isListboxNavigationKey, nextListboxIndex } from './listbox-navigation';
@@ -54,7 +54,7 @@ interface MonthOption {
     .month-select__year { display: grid; grid-template-columns: var(--icon-button-size) minmax(0, 1fr) var(--icon-button-size); align-items: center; gap: var(--space-2); }
     .month-select__year-nav { border-width: var(--border-width); border-color: var(--line-strong); }
     .month-select__year-input { width: 100%; height: var(--icon-button-size); min-width: 0; padding: 0 var(--space-2); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-sm); outline: none; background: var(--surface); color: var(--text); text-align: center; font-size: var(--control-font-size); font-weight: 800; font-variant-numeric: tabular-nums; }
-    .month-select__year-input:focus { border-color: var(--green-strong); box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 32%, transparent); }
+    .month-select__year-input:focus { border-color: var(--ui-accent-strong); box-shadow: 0 0 0 var(--focus-ring-width) color-mix(in srgb, var(--ui-accent) var(--focus-ring-strength), transparent); }
     .month-select__months { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
     .month-select__month { min-width: 0; min-height: var(--menu-item-height); padding-inline: var(--space-2); }
     @media (max-width: 420px) {

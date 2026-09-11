@@ -29,7 +29,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
         <div class="dialog security-dialog">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
-            <span class="title-icon title-icon--blue"><app-icon name="LucideShieldCheck" size="prominent" /></span>
+            <span class="ui-icon-badge ui-icon-badge--dialog ui-icon-badge--blue ui-projected-icon"><app-icon name="LucideShieldCheck" size="prominent" /></span>
             <h2>{{ i18n.t('security.title') }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="busy()"
@@ -42,7 +42,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
           <section class="security-section">
             <h3>{{ i18n.t('security.password.title') }}</h3>
 
-            <app-form-message kind="info" [text]="i18n.t('security.password.logoutWarning')" />
+            <app-form-message kind="warning" [text]="i18n.t('security.password.logoutWarning')" />
 
             <form class="security-form" [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate>
                 <div class="password-grid" [class.password-grid--totp]="totpStatus() === 'ENABLED'">
@@ -262,7 +262,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
     .secret-visibility-button { background: var(--surface); color: var(--text); }
     .copy-button { background: var(--blue); color: var(--on-blue); }
     .secret-visibility-button:hover { background: var(--surface-muted); }
-    .copy-button:hover { background: color-mix(in srgb, var(--blue) 88%, white); }
+    .copy-button:hover { background: color-mix(in srgb, var(--blue) 88%, var(--on-blue)); }
     .secret-visibility-button:active { background: color-mix(in srgb, var(--surface-muted) 78%, var(--blue-soft)); }
     .copy-button:active { background: color-mix(in srgb, var(--blue) 80%, var(--blue-strong)); }
     .confirm-form { padding: 0; border: 0; background: transparent; }

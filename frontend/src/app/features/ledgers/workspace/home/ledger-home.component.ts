@@ -25,7 +25,7 @@ import { IconComponent, IconName } from '../../../../shared/ui/icon.component';
 import { financialEventPresentation } from '../../../../shared/ledger/financial-event-presentation';
 import { PeriodSelectorComponent } from '../../../../shared/ui/period-selector.component';
 import { currentMonthValue, dateInputTimestampRange, monthDateRange, monthTimestampRange, type PeriodMode } from '../../../../shared/period-selection';
-import { DiscreteListCapacityDirective } from '../../../../shared/ui/discrete-list-capacity.directive';
+import { HomePreviewCapacityDirective } from './home-preview-capacity.directive';
 import { HomeFlowChartComponent, HomeFlowMode, homeChartPointWidth } from './home-flow-chart.component';
 
 type Tone = 'green' | 'yellow' | 'blue' | 'neutral';
@@ -75,7 +75,7 @@ const WARNING_BUDGET_USAGE_PERCENT = 80;
   selector: 'app-ledger-home',
   host: { class: 'ui-workspace-page' },
   standalone: true,
-  imports: [RouterLink, DiscreteListCapacityDirective, HomeFlowChartComponent, EntityBadgeComponent, EntitySearchSelectComponent, FormMessageComponent, IconComponent, PeriodSelectorComponent],
+  imports: [RouterLink, HomePreviewCapacityDirective, HomeFlowChartComponent, EntityBadgeComponent, EntitySearchSelectComponent, FormMessageComponent, IconComponent, PeriodSelectorComponent],
   templateUrl: './ledger-home.component.html',
   styleUrl: './ledger-home.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -152,8 +152,6 @@ export class LedgerHomeComponent {
   readonly totalIncome = computed(() => this.cashFlowSummary()?.income ?? 0);
   readonly totalExpense = computed(() => this.cashFlowSummary()?.expense ?? 0);
   readonly netFlow = computed(() => this.totalIncome() - this.totalExpense());
-  readonly chartIncome = computed(() => this.cashFlow().reduce((sum, point) => sum + point.income, 0));
-  readonly chartExpense = computed(() => this.cashFlow().reduce((sum, point) => sum + point.expense, 0));
   readonly metricCards = computed(() => {
     const currency = this.selectedCurrency();
     if (!currency) return [];
@@ -266,11 +264,6 @@ export class LedgerHomeComponent {
           this.flowLoading.set(false);
         });
       }
-    });
-    this.destroyRef.onDestroy(() => {
-      this.resourcesRequest?.unsubscribe();
-      this.dashboardRequest?.unsubscribe();
-      this.chartRequest?.unsubscribe();
     });
   }
 

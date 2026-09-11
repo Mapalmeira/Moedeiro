@@ -1,7 +1,7 @@
 <app-dialog-shell [ariaLabel]="title()" (dismiss)="requestClose()">
         <header class="ui-dialog-header">
           <div class="ui-dialog-title">
-            <span class="title-icon title-icon--yellow"><app-icon [name]="budget() ? 'LucidePencil' : 'LucidePlus'" size="prominent" /></span>
+            <span class="ui-icon-badge ui-icon-badge--dialog ui-icon-badge--yellow ui-projected-icon"><app-icon [name]="budget() ? 'LucidePencil' : 'LucidePlus'" size="prominent" /></span>
             <h2>{{ title() }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">

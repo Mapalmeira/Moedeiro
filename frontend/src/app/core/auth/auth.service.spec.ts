@@ -57,16 +57,6 @@ describe('AuthService', () => {
     http.expectNone(API_ROUTES.authentication.session);
   });
 
-  it('refreshes the stored username when validating the session', () => {
-    service.validateSession().subscribe((valid) => expect(valid).toBe(true));
-
-    http.expectOne(API_ROUTES.authentication.session).flush({ name: 'server-name' });
-
-    expect(service.authenticated()).toBe(true);
-    expect(service.currentUserName()).toBe('server-name');
-    expect(localStorage.getItem('moedeiro.last-auth-name')).toBe('server-name');
-  });
-
   it('uses refresh only when ensureSession receives a 401', () => {
     service.ensureSession().subscribe((valid) => expect(valid).toBe(true));
 

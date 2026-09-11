@@ -5,7 +5,8 @@
   --yellow: #ffd51a;
   --yellow-strong: #c99c00;
   --yellow-soft: #fff9df;
-  --warning-text: #765a00;
+  --warning-soft: #fff9db;
+  --warning-text: #958241;
   --yellow-action-start: #ffd514;
   --yellow-action-end: #ffd322;
   --blue: #488dfc;
@@ -128,7 +129,7 @@
   --dialog-shadow-offset: 7px;
   --dialog-viewport-gap: var(--space-4);
   --dialog-width-standard: 760px;
-  --dialog-width-confirmation: 520px;
+  --dialog-width-compact: 520px;
   --icon-shadow: 1px 1px 0 var(--shadow-color), 2px 2px 0 var(--shadow-color);
   --compact-shadow: 1px 1px 0 var(--shadow-color), 2px 2px 0 var(--shadow-color), 3px 3px 0 var(--shadow-color);
   --compact-shadow-pressed: 1px 1px 0 var(--shadow-color);
@@ -190,7 +191,8 @@
   --yellow: #e5bd24;
   --yellow-strong: #b8961b;
   --yellow-soft: #302b16;
-  --warning-text: #f0c94c;
+  --warning-soft: #413a1c;
+  --warning-text: #e1cd83;
   --blue: #488dfc;
   --blue-strong: #4e88e8;
   --blue-soft: #17263d;

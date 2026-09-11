@@ -1,6 +1,6 @@
 const numberFormatters = new Map<number, Intl.NumberFormat>();
 
-export interface CurrencyFormatDefinition {
+interface CurrencyFormatDefinition {
   prefix: string | null;
   suffix: string | null;
   decimal_places: number;

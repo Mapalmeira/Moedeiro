@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { bestContrastingForeground } from './ledger-appearance';
 import { LedgerIconComponent } from './ledger-icon.component';
 
-export const ENTITY_BADGE_DEFAULT_SIZE = 30;
-export const ENTITY_BADGE_DEFAULT_SYMBOL_SIZE = 23;
+const ENTITY_BADGE_DEFAULT_SIZE = 30;
+const ENTITY_BADGE_DEFAULT_SYMBOL_SIZE = 23;
 
 /** Clip the face, keeping the projected shadow and its layout footprint intact. */
 @Component({

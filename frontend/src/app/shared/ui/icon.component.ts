@@ -3,7 +3,7 @@ import { icons, LucideDynamicIcon } from '@lucide/angular';
 
 export type IconName = keyof typeof icons;
 
-export type IconSize =
+type IconSize =
   | 'indicator'
   | 'compact'
   | 'control'

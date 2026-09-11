@@ -4,7 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, Subscription, finalize, forkJoin, debounceTime, distinctUntilChanged } from 'rxjs';
 import { ApiErrorService } from '../../../../core/api/api-error';
 import { I18nService } from '../../../../core/i18n/i18n.service';
-import { LedgerCategory, LedgerCategoryTreeNode } from '../../../../core/ledgers/ledger-categories.models';
+import { LedgerCategory } from '../../../../core/ledgers/ledger-categories.models';
 import { categoryPath, flattenCategoryTree } from '../../../../core/ledgers/ledger-category-tree';
 import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categories.service';
 import { LedgerBudget, LedgerBudgetOverview, LedgerBudgetState } from '../../../../core/ledgers/ledger-budgets.models';

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
-export type TwemojiFlag = 'br' | 'us';
+type TwemojiFlag = 'br' | 'us';
 
 const FLAG_ASSETS: Record<TwemojiFlag, string> = {
   br: '/twemoji/1f1e7-1f1f7.svg',

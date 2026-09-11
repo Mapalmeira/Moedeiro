@@ -6,7 +6,7 @@ import { LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models'
 import type { PeriodMode } from '../../../../shared/period-selection';
 
 export type HomeFlowMode = 'instant' | 'cumulative';
-export interface HomeFlowRange { from: number; to: number; }
+interface HomeFlowRange { from: number; to: number; }
 
 type ChartDateLabelDetail = 'day' | 'month' | 'year';
 interface ChartPointView {

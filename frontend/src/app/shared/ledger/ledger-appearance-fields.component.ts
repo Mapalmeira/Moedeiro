@@ -54,10 +54,8 @@ type IconMode = 'lucide' | 'unicode';
     </section>
   `,
   styles: `
-    .ui-choice--selected { background: color-mix(in srgb, var(--ui-accent, var(--green)) 15%, var(--surface)); }
-    .ui-dropdown-search:focus-within, .ui-select-trigger[aria-expanded=true] { border-color: var(--ui-accent-strong, var(--green-strong)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent, var(--green)) 32%, transparent); }
+    :host { --choice-selected-background: color-mix(in srgb, var(--ui-accent) 15%, var(--surface)); display: grid; gap: var(--space-4); }
     .selected-icon { overflow: hidden; }
-    :host { display: grid; gap: var(--space-4); }
     .appearance-field { display: grid; gap: var(--field-gap); min-width: 0; }
     .field-label { font-size: var(--control-font-size); font-weight: 780; }
     .mode-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }

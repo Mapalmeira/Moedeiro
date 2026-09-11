@@ -104,10 +104,10 @@
 }
 
 @if (deleting()) {
-  <app-dialog-shell role="alertdialog" ariaLabelledby="category-delete-title" dialogWidth="var(--dialog-width-confirmation)" (dismiss)="closeDelete()">
+  <app-dialog-shell role="alertdialog" ariaLabelledby="category-delete-title" dialogWidth="var(--dialog-width-compact)" (dismiss)="closeDelete()">
         <header class="ui-dialog-header">
           <div class="ui-dialog-title">
-            <span class="title-icon delete-icon"><app-icon name="LucideTrash2" size="prominent" /></span>
+            <span class="delete-icon ui-icon-badge ui-icon-badge--dialog ui-projected-icon"><app-icon name="LucideTrash2" size="prominent" /></span>
             <h2 id="category-delete-title">{{ i18n.t('categories.delete') }}</h2>
           </div>
           <button type="button" class="icon-button icon-button--control ui-action-press" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')">
@@ -115,7 +115,7 @@
           </button>
         </header>
         <div class="category-delete-body ui-delete-dialog-body">
-          <app-form-message [text]="i18n.t('categories.deleteWarning')" />
+          <app-form-message kind="warning" [text]="i18n.t('categories.deleteWarning')" />
           @if (deleteError()) { <app-form-message [text]="deleteError()!" /> }
           <footer class="ui-surface-actions">
             <button type="button" class="ui-button ui-button--danger" [disabled]="deletingBusy()" (click)="remove()">{{ i18n.t('workspace.delete') }}</button>

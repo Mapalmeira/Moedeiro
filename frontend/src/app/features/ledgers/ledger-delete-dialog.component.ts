@@ -16,12 +16,12 @@ import { IconComponent } from '../../shared/ui/icon.component';
   template: `
     @if (open()) {
       @if (ledger(); as current) {
-        <app-dialog-shell role="alertdialog" [ariaLabel]="i18n.t('ledgers.delete.title')" dialogWidth="var(--dialog-width-confirmation)" (dismiss)="requestClose()">
+        <app-dialog-shell role="alertdialog" [ariaLabel]="i18n.t('ledgers.delete.title')" dialogWidth="var(--dialog-width-compact)" (dismiss)="requestClose()">
 
           <div class="dialog">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
-            <span class="title-icon"><app-icon name="LucideTrash2" size="prominent" /></span>
+            <span class="ledger-delete-icon ui-icon-badge ui-icon-badge--dialog ui-projected-icon"><app-icon name="LucideTrash2" size="prominent" /></span>
             <h2>{{ i18n.t('ledgers.delete.title') }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="deleting()"
@@ -31,7 +31,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
         </header>
 
         <div class="dialog__body ui-delete-dialog-body">
-          <app-form-message [text]="i18n.t('ledgers.delete.warning')" />
+          <app-form-message kind="warning" [text]="i18n.t('ledgers.delete.warning')" />
           <label class="field">
             <span>{{ i18n.t('ledgers.delete.repeatName', { name: current.name }) }}</span>
             <input type="text" [ngModel]="confirmation()" (ngModelChange)="confirmation.set($event)" autocomplete="off" />
@@ -52,7 +52,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
     .dialog {
       --ui-accent: var(--danger-token); --ui-accent-strong: var(--danger);
     }
-    .title-icon { width: var(--compact-title-icon-size); height: var(--compact-title-icon-size); border-color: var(--danger); background: var(--danger-token); color: var(--on-danger-token); }
+    .ledger-delete-icon { border-color: var(--danger); background: var(--danger-token); color: var(--on-danger-token); }
     .dialog__footer .ui-button { min-width: var(--action-button-min-width); }
     @media (max-width: 460px) { .dialog__footer .ui-button { width: 100%; } }
   `,

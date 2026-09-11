@@ -84,7 +84,6 @@ export class LedgerEntityManagerComponent {
         if (uuid) this.load();
       });
     });
-    this.destroyRef.onDestroy(() => this.request?.unsubscribe());
   }
 
   filter(event: Event): void {
@@ -113,7 +112,10 @@ export class LedgerEntityManagerComponent {
       : forkJoin({ currencies: this.entities.listCurrencies(uuid), balanceList: this.entities.listBalances(uuid, timestamp) }).pipe(
           map(({ currencies, balanceList }) => ({ items: currencies, currencies, balances: balanceList.items })),
         );
-    this.request = request.pipe(finalize(() => this.loading.set(false))).subscribe({
+    this.request = request.pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.loading.set(false)),
+    ).subscribe({
       next: ({ items, currencies, balances }) => {
         this.items.set(items);
         this.currencies.set(currencies);

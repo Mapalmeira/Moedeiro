@@ -68,7 +68,7 @@ import { ledgerSectionByKey } from './ledger-sections';
             <div class="spinner ui-spinner" aria-hidden="true"></div>
           </div>
         } @else {
-          <div class="ledger-section-content" aria-live="polite">
+          <div class="ledger-section-content">
             <router-outlet />
           </div>
         }

@@ -33,7 +33,7 @@ import { currencyAmountInput, formatCurrencyNumber, parseCurrencyAmount } from '
     }
     .currency-amount:focus-within {
       border-color: var(--ui-accent-strong);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 32%, transparent);
+      box-shadow: 0 0 0 var(--focus-ring-width) color-mix(in srgb, var(--ui-accent) var(--focus-ring-strength), transparent);
     }
     .currency-amount--disabled { background: var(--surface-muted); color: var(--text-muted); }
     .currency-amount__affix { flex: 0 0 auto; font-size: var(--control-font-size); font-weight: 650; white-space: pre; }

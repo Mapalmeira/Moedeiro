@@ -8,6 +8,7 @@ import { finalize } from 'rxjs';
 import { ApiErrorService } from '../../../../core/api/api-error';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 import { LedgerCategory } from '../../../../core/ledgers/ledger-categories.models';
+import { categoryPath } from '../../../../core/ledgers/ledger-category-tree';
 import { currencyAmountInput, parseCurrencyAmount } from '../../../../core/ledgers/currency-format';
 import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
 import {
@@ -100,22 +101,8 @@ export class FinancialEventEditorComponent {
   })));
   readonly categoryOptions = computed<readonly EntitySearchOption[]>(() => {
     const byUuid = new Map(this.categories().map(category => [category.uuid, category] as const));
-    const pathFor = (category: LedgerCategory): string => {
-      const names = [category.name];
-      let parentUuid = category.parent_uuid;
-      const visited = new Set<string>([category.uuid]);
-      while (parentUuid) {
-        if (visited.has(parentUuid)) break;
-        visited.add(parentUuid);
-        const parent = byUuid.get(parentUuid);
-        if (!parent) break;
-        names.unshift(parent.name);
-        parentUuid = parent.parent_uuid;
-      }
-      return names.join(' › ');
-    };
     return this.categories().map(category => {
-      const path = pathFor(category);
+      const path = categoryPath(category, byUuid);
       return {
         value: category.uuid,
         label: category.name,

@@ -1,4 +1,4 @@
-export type ListboxNavigationKey = 'ArrowDown' | 'ArrowUp' | 'Home' | 'End';
+type ListboxNavigationKey = 'ArrowDown' | 'ArrowUp' | 'Home' | 'End';
 
 export function nextListboxIndex(current: number, length: number, key: ListboxNavigationKey): number {
   if (length <= 0) return -1;
