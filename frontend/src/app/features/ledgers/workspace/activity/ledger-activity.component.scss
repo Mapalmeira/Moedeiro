@@ -69,7 +69,6 @@
 .activity-list__summary-value { color: var(--text); font: inherit; font-weight: 800; font-variant-numeric: tabular-nums; }
 .activity-list__summary-value--negative { color: var(--danger); }
 .activity-list__summary-value--positive { color: var(--green-strong); }
-.activity-list__summary-spinner, .activity-list__balance-spinner { --spinner-size: var(--space-4); }
 
 .activity-table__head, .activity-row {
   min-width: 0;
@@ -99,7 +98,6 @@
 .activity-row__value--positive { color: var(--green-strong); }
 .activity-list__sentinel { grid-column: 1 / -1; min-height: var(--space-1); display: grid; place-items: center; }
 .activity-list__sentinel--loading { min-height: var(--control-height); }
-.activity-list__load-spinner { --spinner-size: var(--space-4); }
 .activity-state { flex: 1 1 auto; min-height: var(--activity-state-min-height); }
 .activity-delete-icon { background: var(--danger-token); color: var(--on-danger-token); }
 

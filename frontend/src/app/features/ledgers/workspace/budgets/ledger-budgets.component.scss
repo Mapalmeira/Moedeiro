@@ -47,7 +47,6 @@
 .budgets-state { flex: 1 1 auto; min-height: 320px; }
 .budget-grid__empty { grid-column: 1 / -1; min-height: 420px; }
 .budget-grid__sentinel { grid-column: 1 / -1; min-height: var(--space-1); display: grid; place-items: center; }
-.budget-grid__sentinel .ui-spinner { --spinner-size: var(--space-5); }
 .budget-delete-icon { background: var(--danger-token); color: var(--on-danger-token); }
 
 @container (max-width: 980px) {

@@ -141,7 +141,6 @@ import { ledgerSectionByKey } from './ledger-sections';
     .placeholder-card { min-height: 320px; display: grid; place-items: center; align-content: center; gap: var(--space-3); margin: var(--space-5); padding: clamp(28px, 6vw, 52px); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface); text-align: center; }
     .placeholder-card__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); margin-top: var(--space-2); }
     .placeholder-card--loading { min-height: 280px; }
-    .spinner { --spinner-size: 24px; }
     .mobile-overlay { display: none; }
 
     @media (prefers-reduced-motion: reduce) {

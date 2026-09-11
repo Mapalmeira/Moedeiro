@@ -227,25 +227,11 @@ a { color: var(--link); }
 
 .ui-spinner {
   box-sizing: border-box;
-  position: relative;
-  display: inline-grid;
-  place-items: center;
+  display: inline-block;
   flex: 0 0 var(--spinner-size);
   width: var(--spinner-size);
   height: var(--spinner-size);
-  margin-inline-end: var(--icon-shadow-offset);
-  margin-block-end: var(--icon-shadow-offset);
-  border: var(--border-width) solid var(--line-strong);
-  border-radius: var(--radius-icon);
-  background: color-mix(in srgb, var(--ui-accent, var(--green)) 18%, var(--surface));
-  box-shadow: var(--icon-shadow);
-}
-.ui-spinner::after {
-  content: '';
-  box-sizing: border-box;
-  width: var(--spinner-mark-size);
-  height: var(--spinner-mark-size);
-  border: var(--border-width) solid color-mix(in srgb, var(--ui-accent, var(--green)) 32%, var(--line));
+  border: calc(var(--border-width) * 2) solid color-mix(in srgb, var(--ui-accent, var(--green)) 28%, var(--line));
   border-top-color: var(--ui-accent-strong, var(--green-strong));
   border-right-color: var(--ui-accent-strong, var(--green-strong));
   border-radius: 50%;
@@ -253,7 +239,7 @@ a { color: var(--link); }
 }
 @keyframes ui-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
-  .ui-spinner::after { animation: none; }
+  .ui-spinner { animation: none; }
 }
 
 .ui-dialog-backdrop {

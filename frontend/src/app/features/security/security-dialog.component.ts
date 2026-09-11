@@ -227,7 +227,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
     .totp-form { margin-top: var(--form-gap); }
     .totp-status-state { min-height: 78px; display: flex; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--form-gap); border: var(--border-width) solid color-mix(in srgb, var(--blue-strong) 56%, var(--line)); border-radius: var(--radius-card); background: var(--surface); color: var(--text-muted); font-size: .86rem; font-weight: 700; box-shadow: var(--selection-shadow); }
     .totp-status-state--error { display: grid; justify-items: end; }
-    .totp-status-spinner { --spinner-size: 20px; --ui-accent: var(--blue); --ui-accent-strong: var(--blue); }
+    .totp-status-spinner { --ui-accent: var(--blue); --ui-accent-strong: var(--blue); }
     .setup-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto auto; column-gap: var(--form-gap); row-gap: var(--field-gap); align-items: stretch; }
     .setup-row .field { display: contents; }
     .setup-row .field > span { grid-column: 1; grid-row: 1; }
