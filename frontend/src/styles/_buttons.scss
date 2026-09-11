@@ -88,9 +88,9 @@ button:disabled { cursor: not-allowed; opacity: .58; }
   transform-origin: 50% 50%;
   transition: transform var(--motion-disclosure) ease;
 }
-.ui-select-trigger[aria-expanded='true'] .ui-select-chevron,
-.search-select--open .ui-select-chevron { transform: rotate(180deg); }
-
+.ui-select-trigger[aria-expanded='true'] .ui-select-chevron {
+  transform: rotate(180deg);
+}
 /* Flag for controls that perform an action and should physically press. */
 .ui-action-press {
   position: relative;
