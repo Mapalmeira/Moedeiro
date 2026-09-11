@@ -16,17 +16,17 @@ import { IconComponent } from '../../shared/ui/icon.component';
   template: `
     @if (open()) {
       @if (ledger(); as current) {
-        <app-dialog-shell role="alertdialog" [ariaLabel]="i18n.t('ledgers.delete.title')" dialogWidth="520px" (dismiss)="requestClose()">
+        <app-dialog-shell role="alertdialog" [ariaLabel]="i18n.t('ledgers.delete.title')" dialogWidth="var(--dialog-width-confirmation)" (dismiss)="requestClose()">
 
           <div class="dialog">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
-            <span class="title-icon"><app-icon name="trash" [size]="21" /></span>
+            <span class="title-icon"><app-icon name="trash" size="dialog-title" /></span>
             <h2>{{ i18n.t('ledgers.delete.title') }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="deleting()"
             [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" [size]="19" />
+            <app-icon name="x" size="close" />
           </button>
         </header>
 

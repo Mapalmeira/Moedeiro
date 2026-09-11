@@ -67,6 +67,13 @@
   --control-detail-font-size: .76rem;
   --chart-x-label-font-size: 20px;
   --control-icon-size: 30px;
+  /* Semantic glyph sizes used by app-icon. */
+  --icon-glyph-indicator: 14px;
+  --icon-glyph-compact: 16px;
+  --icon-glyph-control: 18px;
+  --icon-glyph-prominent: 20px;
+  --icon-glyph-badge: 24px;
+  --icon-glyph-display: 28px;
   --inline-icon-size: 24px;
   --chevron-track-size: 16px;
   --control-icon-footprint: calc(var(--control-icon-size) + var(--icon-shadow-offset));
@@ -106,7 +113,6 @@
   --category-tree-indent: var(--space-8);
   --tree-guide-width: 1px;
   --tree-guide-color: var(--line);
-  --entity-preview-size: 108px;
   --heading-line-height: 1.1;
 
   /* Layered hard shadows preserve the original silhouette while overlapping
@@ -118,6 +124,7 @@
   --dialog-shadow-offset: 7px;
   --dialog-viewport-gap: var(--space-4);
   --dialog-width-standard: 760px;
+  --dialog-width-confirmation: 520px;
   --icon-shadow: 1px 1px 0 var(--shadow-color), 2px 2px 0 var(--shadow-color);
   --compact-shadow: 1px 1px 0 var(--shadow-color), 2px 2px 0 var(--shadow-color), 3px 3px 0 var(--shadow-color);
   --compact-shadow-pressed: 1px 1px 0 var(--shadow-color);
@@ -139,7 +146,6 @@
   --layer-drawer-backdrop: 30;
   --layer-drawer: 40;
   --drawer-overlay-color: rgb(0 0 0 / .26);
-  --drawer-shadow: 6px 0 20px color-mix(in srgb, var(--shadow-color) 24%, transparent);
 
   --space-page: clamp(18px, 4vw, 56px);
 

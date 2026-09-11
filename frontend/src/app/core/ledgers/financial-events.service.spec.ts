@@ -25,7 +25,7 @@ describe('FinancialEventsService', () => {
       description_search: '  dinner  ',
     }).subscribe();
 
-    const request = http.expectOne(candidate => candidate.url === API_ROUTES.ledgerEvents('ledger/id'));
+    const request = http.expectOne(candidate => candidate.url === API_ROUTES.ledgers.events.root('ledger/id'));
     expect(request.request.params.get('description_search')).toBe('dinner');
     request.flush({ events: [], next_cursor: null, total_count: 0 });
   });

@@ -69,6 +69,29 @@ describe('LedgerSelectorComponent', () => {
     expect(component.selectedUuid()).toBeNull();
   });
 
+
+  it('moves selection through the listbox with arrow keys', () => {
+    const secondLedger: Ledger = { ...ledger, uuid: '22222222-2222-2222-2222-222222222222', name: 'Company' };
+    ledgerState.set([ledger, secondLedger]);
+    const component = createComponent();
+    const list = document.createElement('div');
+    list.className = 'ledger-list';
+    const first = document.createElement('div');
+    first.className = 'ledger-row';
+    first.dataset['ledgerUuid'] = ledger.uuid;
+    const second = document.createElement('div');
+    second.className = 'ledger-row';
+    second.dataset['ledgerUuid'] = secondLedger.uuid;
+    list.append(first, second);
+    document.body.append(list);
+    list.addEventListener('keydown', event => component.navigateList(event));
+
+    first.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
+
+    expect(component.selectedUuid()).toBe(secondLedger.uuid);
+    list.remove();
+  });
+
   it('does not enter a ledger when nothing is selected', () => {
     const component = createComponent();
 

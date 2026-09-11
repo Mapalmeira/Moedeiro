@@ -24,19 +24,19 @@ export class LedgerService {
   }
 
   access(ledgerUuid: string): Observable<Ledger> {
-    return this.http.get<Ledger>(API_ROUTES.ledgers.one(ledgerUuid)).pipe(
+    return this.http.get<Ledger>(API_ROUTES.ledgers.byUuid(ledgerUuid)).pipe(
       tap((ledger) => this.replace(ledger)),
     );
   }
 
   update(ledgerUuid: string, payload: LedgerPayload): Observable<Ledger> {
-    return this.http.put<Ledger>(API_ROUTES.ledgers.one(ledgerUuid), payload).pipe(
+    return this.http.put<Ledger>(API_ROUTES.ledgers.byUuid(ledgerUuid), payload).pipe(
       tap((ledger) => this.replace(ledger)),
     );
   }
 
   delete(ledgerUuid: string): Observable<void> {
-    return this.http.delete<void>(API_ROUTES.ledgers.one(ledgerUuid)).pipe(
+    return this.http.delete<void>(API_ROUTES.ledgers.byUuid(ledgerUuid)).pipe(
       tap(() => this.ledgerState.update((current) => current.filter((ledger) => ledger.uuid !== ledgerUuid))),
     );
   }

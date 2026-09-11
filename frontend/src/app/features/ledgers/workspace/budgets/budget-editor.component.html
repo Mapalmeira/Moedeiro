@@ -1,11 +1,11 @@
 <app-dialog-shell [ariaLabel]="title()" (dismiss)="requestClose()">
         <header class="ui-dialog-header">
           <div class="ui-dialog-title">
-            <span class="title-icon title-icon--yellow"><app-icon [name]="budget() ? 'pencil' : 'plus'" [size]="20" /></span>
+            <span class="title-icon title-icon--yellow"><app-icon [name]="budget() ? 'pencil' : 'plus'" size="dialog-title" /></span>
             <h2>{{ title() }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" [size]="19" />
+            <app-icon name="x" size="close" />
           </button>
         </header>
   
@@ -66,7 +66,7 @@
           <footer class="budget-editor-actions ui-surface-actions">
             @if (budget(); as current) {
               <button type="button" class="ui-button ui-button--danger" [disabled]="saving()" (click)="deleteRequested.emit(current)">
-                <app-icon name="trash" [size]="18" />{{ i18n.t('workspace.delete') }}
+                <app-icon name="trash" size="action" />{{ i18n.t('workspace.delete') }}
               </button>
             }
             <button type="submit" class="ui-button ui-button--yellow" [disabled]="saving() || form.invalid">

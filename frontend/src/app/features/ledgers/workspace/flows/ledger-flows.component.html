@@ -32,9 +32,9 @@
   } @else if (resourcesLoading()) {
     <div class="ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
   } @else if (!accounts().length) {
-    <div class="flows-state"><app-icon name="wallet" [size]="28" />{{ i18n.t('flows.noAccounts') }}</div>
+    <div class="flows-state"><app-icon name="wallet" size="empty-state" />{{ i18n.t('flows.noAccounts') }}</div>
   } @else {
-    <section class="flows-card ui-workspace-card-space ui-card ui-projected-surface ui-projection--surface">
+    <section class="flows-card ui-workspace-card-space ui-card ui-projected-surface">
       <header class="flows-card__header">
         <div class="flows-card__heading">
           <h2>{{ i18n.t('flows.diagramTitle') }}</h2>
@@ -47,7 +47,7 @@
 
       <div class="flows-card__body" [attr.aria-busy]="loading()">
         @if (invalidRange()) {
-          <div class="flows-state" role="status"><app-icon name="calendar" [size]="28" />{{ i18n.t('common.invalidPeriod') }}</div>
+          <div class="flows-state" role="status"><app-icon name="calendar" size="empty-state" />{{ i18n.t('common.invalidPeriod') }}</div>
         } @else if (loading() && !graph()) {
           <div class="ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
         } @else if (graph(); as sankey) {
@@ -57,7 +57,7 @@
                 [ariaLabel]="i18n.t('flows.diagramAria', { account: selectedAccount()?.name ?? '' })" />
             }
           } @else {
-            <div class="flows-state"><app-icon name="chart" [size]="28" />{{ i18n.t('flows.empty') }}</div>
+            <div class="flows-state"><app-icon name="chart" size="empty-state" />{{ i18n.t('flows.empty') }}</div>
           }
         }
       </div>

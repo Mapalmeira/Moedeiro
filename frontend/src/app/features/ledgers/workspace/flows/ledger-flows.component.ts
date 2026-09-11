@@ -1,4 +1,3 @@
-import { formatDate } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subscription, finalize, forkJoin } from 'rxjs';
@@ -14,13 +13,10 @@ import { I18nService } from '../../../../core/i18n/i18n.service';
 import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
 import { IconComponent } from '../../../../shared/ui/icon.component';
-import { PeriodMode, PeriodSelectorComponent } from '../../../../shared/ui/period-selector.component';
+import { PeriodSelectorComponent } from '../../../../shared/ui/period-selector.component';
+import { currentMonthValue, dateInputTimestampRange, monthDateRange, monthTimestampRange, type PeriodMode, type TimestampRange } from '../../../../shared/period-selection';
 import { CashFlowSankeyComponent } from './cash-flow-sankey.component';
 
-interface TimestampRange {
-  from: number;
-  to: number;
-}
 
 const MAX_CATEGORY_DETAIL_LEVEL = 5;
 const DEFAULT_CATEGORY_DETAIL_LEVEL = 3;
@@ -49,7 +45,7 @@ export class LedgerFlowsComponent {
   readonly accounts = signal<LedgerAccount[]>([]);
   readonly currencies = signal<LedgerCurrency[]>([]);
   readonly selectedAccountUuid = signal('');
-  readonly selectedMonth = signal(this.currentMonth());
+  readonly selectedMonth = signal(currentMonthValue());
   readonly periodMode = signal<PeriodMode>('month');
   readonly rangeFromDate = signal('');
   readonly rangeToDate = signal('');
@@ -76,7 +72,7 @@ export class LedgerFlowsComponent {
     const account = this.selectedAccount();
     return account ? this.currencyByUuid().get(account.currency_uuid) ?? null : null;
   });
-  readonly selectedRange = computed<TimestampRange | null>(() => this.periodMode() === 'month' ? this.monthRange(this.selectedMonth()) : this.customRange());
+  readonly selectedRange = computed<TimestampRange | null>(() => this.periodMode() === 'month' ? monthTimestampRange(this.selectedMonth()) : dateInputTimestampRange(this.rangeFromDate(), this.rangeToDate()));
   readonly invalidRange = computed(() => this.periodMode() === 'range' && !!this.rangeFromDate() && !!this.rangeToDate() && !this.selectedRange());
   readonly incomeLabel = computed(() => this.formatAmount(this.graph()?.income ?? 0));
   readonly expenseLabel = computed(() => this.formatAmount(this.graph()?.expense ?? 0));
@@ -207,40 +203,11 @@ export class LedgerFlowsComponent {
     return currency ? formatCurrencyAmount(value, currency) : '—';
   }
 
-  private monthRange(month: string): TimestampRange | null {
-    const match = /^(\d{4})-(\d{2})$/.exec(month);
-    if (!match) return null;
-    const year = Number(match[1]);
-    const monthNumber = Number(match[2]);
-    if (monthNumber < 1 || monthNumber > 12) return null;
-    const from = Math.floor(new Date(year, monthNumber - 1, 1).getTime() / 1000);
-    const to = Math.floor(new Date(year, monthNumber, 1).getTime() / 1000);
-    return { from, to };
-  }
-
-  private customRange(): TimestampRange | null {
-    const fromInput = this.rangeFromDate();
-    const toInput = this.rangeToDate();
-    const fromDate = new Date(`${fromInput}T00:00:00`);
-    const toDate = new Date(`${toInput}T00:00:00`);
-    if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())
-        || formatDate(fromDate, 'yyyy-MM-dd', 'en-US') !== fromInput
-        || formatDate(toDate, 'yyyy-MM-dd', 'en-US') !== toInput) return null;
-    toDate.setDate(toDate.getDate() + 1);
-    const from = Math.floor(fromDate.getTime() / 1000);
-    const to = Math.floor(toDate.getTime() / 1000);
-    return from >= to ? null : { from, to };
-  }
-
   private seedRangeFromMonth(): void {
-    const range = this.monthRange(this.selectedMonth());
+    const range = monthDateRange(this.selectedMonth());
     if (!range) return;
-    this.rangeFromDate.set(formatDate(range.from * 1000, 'yyyy-MM-dd', 'en-US'));
-    this.rangeToDate.set(formatDate((range.to - 1) * 1000, 'yyyy-MM-dd', 'en-US'));
-  }
-
-  private currentMonth(): string {
-    return formatDate(Date.now(), 'yyyy-MM', 'en-US');
+    this.rangeFromDate.set(range.from);
+    this.rangeToDate.set(range.to);
   }
 
   private reset(ledgerUuid: string | null): void {
@@ -250,7 +217,7 @@ export class LedgerFlowsComponent {
     this.currencies.set([]);
     const saved = ledgerUuid ? this.workspaceState.getFlows(ledgerUuid) : null;
     this.selectedAccountUuid.set(saved?.account_uuid ?? '');
-    this.selectedMonth.set(saved?.month ?? this.currentMonth());
+    this.selectedMonth.set(saved?.month ?? currentMonthValue());
     this.periodMode.set(saved?.period_mode ?? 'month');
     this.rangeFromDate.set(saved?.range_from_date ?? '');
     this.rangeToDate.set(saved?.range_to_date ?? '');

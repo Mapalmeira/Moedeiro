@@ -26,6 +26,7 @@ import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../sha
 import { FieldErrorComponent } from '../../../../shared/ui/field-error.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
 import { IconComponent, IconName } from '../../../../shared/ui/icon.component';
+import { financialEventPresentation } from '../../../../shared/ledger/financial-event-presentation';
 
 @Component({
   selector: 'app-financial-event-editor',
@@ -80,7 +81,8 @@ export class FinancialEventEditorComponent {
 
   readonly movements = this.form.controls.movements;
   readonly title = computed(() => this.i18n.t(this.event() ? 'activity.editor.edit' : this.titleKey(this.type())));
-  readonly titleIcon = computed<IconName>(() => this.type() === 'ACCOUNT_TRANSFER' ? 'arrow-left-right' : this.type() === 'SHOPPING_LIST' ? 'shopping-cart' : 'wallet');
+  readonly titlePresentation = computed(() => financialEventPresentation(this.type()));
+  readonly titleIcon = computed<IconName>(() => this.titlePresentation().icon);
   readonly sameTransferCurrency = computed(() => {
     const values = this.values();
     const source = this.accountCurrency(values.source_account_uuid);

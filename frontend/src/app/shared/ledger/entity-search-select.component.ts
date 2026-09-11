@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, Injector, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
 import { DismissiblePopoverDirective } from '../ui/dismissible-popover.directive';
 import { normalizeSearchText } from '../search-normalization';
-import { ENTITY_BADGE_DEFAULT_SYMBOL_SIZE, EntityBadgeComponent } from './entity-badge.component';
+import { EntityBadgeComponent } from './entity-badge.component';
 import { DropdownSearchAutofocusDirective } from '../ui/dropdown-search-autofocus.directive';
 import { IconComponent, IconName } from '../ui/icon.component';
+import { isListboxNavigationKey, nextListboxIndex } from '../ui/listbox-navigation';
 
 export type EntitySearchOptionTone = 'green' | 'yellow' | 'blue' | 'neutral';
 
@@ -24,7 +25,8 @@ export interface EntitySearchOption {
   template: `
     <div class="entity-search-select" [class.entity-search-select--up]="opensUp()" [appDismissiblePopover]="open()" (dismiss)="closeList()">
       <button type="button" class="entity-search-select__trigger ui-select-trigger ui-trigger-with-icon" (click)="toggleList()"
-        [disabled]="disabled()" [attr.aria-label]="ariaLabel()" aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listId">
+        [disabled]="disabled()" [attr.aria-label]="ariaLabel()" aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listId"
+        [attr.aria-activedescendant]="!searchable() && open() ? activeOptionId() : null" (keydown)="handleTriggerKeydown($event)">
         @if (selectedOption(); as option) {
           @if (option.icon && option.color) {
             <app-entity-badge [icon]="option.icon" [color]="option.color" />
@@ -34,7 +36,7 @@ export interface EntitySearchOption {
               [class.ui-icon-badge--yellow]="option.tone === 'yellow'"
               [class.ui-icon-badge--blue]="option.tone === 'blue'"
               [class.ui-icon-badge--neutral]="!option.tone || option.tone === 'neutral'">
-              <app-icon [name]="option.uiIcon" [size]="optionIconSize" />
+              <app-icon [name]="option.uiIcon" size="badge-symbol" />
             </span>
           }
           <span class="entity-search-select__copy">
@@ -44,24 +46,26 @@ export interface EntitySearchOption {
         } @else {
           <span class="entity-search-select__empty-value">{{ emptyValueText() }}</span>
         }
-        <app-icon class="ui-select-chevron" name="chevron-down" [size]="17" />
+        <app-icon class="ui-select-chevron" name="chevron-down" size="chevron" />
       </button>
 
       @if (open()) {
-        <div class="entity-search-select__panel ui-dropdown-panel" [class.entity-search-select__panel--searchable]="searchable()" [id]="listId"
+        <div class="entity-search-select__panel ui-dropdown-panel" [class.entity-search-select__panel--searchable]="searchable()"
           [style.--entity-search-available-height]="availableHeight() + 'px'">
           @if (searchable()) {
             <label class="ui-dropdown-search">
-              <app-icon name="search" [size]="17" />
-              <input type="search" autocomplete="off" [attr.aria-label]="searchPlaceholder() || ariaLabel()"
+              <app-icon name="search" size="compact-control" />
+              <input type="search" role="combobox" autocomplete="off" [attr.aria-label]="searchPlaceholder() || ariaLabel()"
+                aria-autocomplete="list" [attr.aria-expanded]="open()" [attr.aria-controls]="listId" [attr.aria-activedescendant]="activeOptionId()"
                 [placeholder]="searchPlaceholder()" [value]="query()" (input)="updateQuery($event)"
-                (keydown.escape)="closeList()" (keydown.enter)="selectFirst($event)" appDropdownSearchAutofocus />
+                (keydown)="handleSearchKeydown($event)" appDropdownSearchAutofocus />
             </label>
           }
 
-          <div class="entity-search-select__list" role="listbox">
-            @for (option of filteredOptions(); track option.value) {
-              <button type="button" class="ui-menu-option-with-icon" role="option" [attr.aria-selected]="value() === option.value" (click)="choose(option.value)">
+          <div class="entity-search-select__list" role="listbox" [id]="listId">
+            @for (option of filteredOptions(); track option.value; let optionIndex = $index) {
+              <button type="button" class="ui-menu-option-with-icon" role="option" [id]="optionId(optionIndex)" tabindex="-1"
+                [attr.aria-selected]="value() === option.value" (click)="choose(option.value)">
                 @if (option.icon && option.color) {
                   <app-entity-badge [icon]="option.icon" [color]="option.color" />
                 } @else if (option.uiIcon) {
@@ -70,14 +74,14 @@ export interface EntitySearchOption {
                     [class.ui-icon-badge--yellow]="option.tone === 'yellow'"
                     [class.ui-icon-badge--blue]="option.tone === 'blue'"
                     [class.ui-icon-badge--neutral]="!option.tone || option.tone === 'neutral'">
-                    <app-icon [name]="option.uiIcon" [size]="optionIconSize" />
+                    <app-icon [name]="option.uiIcon" size="badge-symbol" />
                   </span>
                 }
                 <span class="entity-search-select__copy">
                   <strong>{{ option.label }}</strong>
                   @if (option.detail) { <small>{{ option.detail }}</small> }
                 </span>
-                @if (value() === option.value) { <app-icon name="check" [size]="16" /> }
+                @if (value() === option.value) { <app-icon name="check" size="selection" /> }
               </button>
             } @empty {
               <div class="entity-search-select__empty">{{ emptyText() }}</div>
@@ -138,7 +142,6 @@ export interface EntitySearchOption {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EntitySearchSelectComponent {
-  readonly optionIconSize = ENTITY_BADGE_DEFAULT_SYMBOL_SIZE;
   private static nextId = 0;
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly destroyRef = inject(DestroyRef);
@@ -158,6 +161,7 @@ export class EntitySearchSelectComponent {
 
   readonly open = signal(false);
   readonly query = signal('');
+  readonly activeIndex = signal(-1);
   readonly opensUp = signal(false);
   readonly availableHeight = signal(0);
   readonly listId = `entity-search-select-${EntitySearchSelectComponent.nextId++}`;
@@ -172,6 +176,7 @@ export class EntitySearchSelectComponent {
     if (!needle || !this.searchable()) return this.options();
     return this.searchableOptions().filter(entry => entry.searchText.includes(needle)).map(entry => entry.option);
   });
+  readonly activeOptionId = computed(() => this.activeIndex() >= 0 ? this.optionId(this.activeIndex()) : null);
 
   constructor() {
     const visualViewport = typeof window === 'undefined' ? null : window.visualViewport;
@@ -205,6 +210,7 @@ export class EntitySearchSelectComponent {
     this.query.set('');
     this.resolvePanelGeometry();
     this.open.set(true);
+    this.syncActiveIndex();
     afterNextRender(() => {
       if (!this.open()) return;
       this.resolvePanelGeometry();
@@ -222,22 +228,73 @@ export class EntitySearchSelectComponent {
     this.geometryObserver?.disconnect();
     this.open.set(false);
     this.query.set('');
+    this.activeIndex.set(-1);
   }
 
   updateQuery(event: Event): void {
     this.query.set((event.target as HTMLInputElement).value);
+    this.syncActiveIndex();
   }
 
-  selectFirst(event: Event): void {
-    const first = this.filteredOptions()[0];
-    if (!first) return;
-    event.preventDefault();
-    this.choose(first.value);
+  handleTriggerKeydown(event: KeyboardEvent): void {
+    if (isListboxNavigationKey(event.key)) {
+      event.preventDefault();
+      if (!this.open()) this.openList();
+      else this.moveActive(event.key);
+      return;
+    }
+    if (!this.searchable() && this.open() && (event.key === 'Enter' || event.key === ' ')) {
+      const option = this.filteredOptions()[this.activeIndex()];
+      if (!option) return;
+      event.preventDefault();
+      this.choose(option.value);
+    }
+  }
+
+  handleSearchKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.closeList();
+      return;
+    }
+    if (isListboxNavigationKey(event.key)) {
+      event.preventDefault();
+      this.moveActive(event.key);
+      return;
+    }
+    if (event.key === 'Enter') {
+      const option = this.filteredOptions()[this.activeIndex()];
+      if (!option) return;
+      event.preventDefault();
+      this.choose(option.value);
+    }
+  }
+
+  optionId(index: number): string {
+    return `${this.listId}-option-${index}`;
   }
 
   choose(value: string): void {
     this.closeList();
     this.valueChange.emit(value);
+  }
+
+  private syncActiveIndex(): void {
+    const options = this.filteredOptions();
+    const selectedIndex = options.findIndex(option => option.value === this.value());
+    this.activeIndex.set(selectedIndex >= 0 ? selectedIndex : options.length ? 0 : -1);
+    this.scrollActiveOption();
+  }
+
+  private moveActive(key: 'ArrowDown' | 'ArrowUp' | 'Home' | 'End'): void {
+    this.activeIndex.set(nextListboxIndex(this.activeIndex(), this.filteredOptions().length, key));
+    this.scrollActiveOption();
+  }
+
+  private scrollActiveOption(): void {
+    const id = this.activeOptionId();
+    if (!id) return;
+    afterNextRender(() => this.host.nativeElement.ownerDocument.getElementById(id)?.scrollIntoView?.({ block: 'nearest' }), { injector: this.injector });
   }
 
   private resolvePanelGeometry(): void {

@@ -8,7 +8,7 @@ import { IconComponent, IconName } from './icon.component';
   host: { '[class]': '"auth-card auth-card--" + accent() + " ui-projected-surface ui-projection--hard"' },
   template: `
     <header class="auth-card__header ui-heading-with-icon">
-      <span class="auth-card__icon ui-icon-badge ui-icon-badge--title ui-projected-icon"><app-icon [name]="icon()" [size]="25" /></span>
+      <span class="auth-card__icon ui-icon-badge ui-icon-badge--title ui-projected-icon"><app-icon [name]="icon()" size="card-title" /></span>
       <h2>{{ title() }}</h2>
     </header>
     <div class="auth-card__body"><ng-content /></div>

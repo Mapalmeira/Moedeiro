@@ -25,28 +25,28 @@ export class LedgerBudgetsService {
     if (options.accountUuid) params = params.set('account_uuid', options.accountUuid);
     if (options.categoryUuid) params = params.set('category_uuid', options.categoryUuid);
     if (options.cursor) params = params.set('cursor', options.cursor);
-    return this.http.get<LedgerBudgetOverviewPage>(`${API_ROUTES.ledgerBudgets(ledgerUuid)}/overview`, { params });
+    return this.http.get<LedgerBudgetOverviewPage>(API_ROUTES.ledgers.budgets.overview(ledgerUuid), { params });
   }
 
   currencyOverview(ledgerUuid: string, currencyUuid: string, timestamp: number, limit = 3): Observable<LedgerBudgetOverview[]> {
-    return this.http.get<LedgerBudgetOverview[]>(`${API_ROUTES.ledgerBudgets(ledgerUuid)}/currency-overview`, {
+    return this.http.get<LedgerBudgetOverview[]>(API_ROUTES.ledgers.budgets.currencyOverview(ledgerUuid), {
       params: { currency_uuid: currencyUuid, timestamp, limit },
           });
   }
 
   get(ledgerUuid: string, budgetUuid: string): Observable<LedgerBudget> {
-    return this.http.get<LedgerBudget>(`${API_ROUTES.ledgerBudgets(ledgerUuid)}/${encodeURIComponent(budgetUuid)}`);
+    return this.http.get<LedgerBudget>(API_ROUTES.ledgers.budgets.byUuid(ledgerUuid, budgetUuid));
   }
 
   create(ledgerUuid: string, payload: CreateLedgerBudgetPayload): Observable<LedgerBudget> {
-    return this.http.post<LedgerBudget>(API_ROUTES.ledgerBudgets(ledgerUuid), payload);
+    return this.http.post<LedgerBudget>(API_ROUTES.ledgers.budgets.root(ledgerUuid), payload);
   }
 
   update(ledgerUuid: string, budgetUuid: string, payload: UpdateLedgerBudgetPayload): Observable<LedgerBudget> {
-    return this.http.put<LedgerBudget>(`${API_ROUTES.ledgerBudgets(ledgerUuid)}/${encodeURIComponent(budgetUuid)}`, payload);
+    return this.http.put<LedgerBudget>(API_ROUTES.ledgers.budgets.byUuid(ledgerUuid, budgetUuid), payload);
   }
 
   delete(ledgerUuid: string, budgetUuid: string): Observable<void> {
-    return this.http.delete<void>(`${API_ROUTES.ledgerBudgets(ledgerUuid)}/${encodeURIComponent(budgetUuid)}`);
+    return this.http.delete<void>(API_ROUTES.ledgers.budgets.byUuid(ledgerUuid, budgetUuid));
   }
 }

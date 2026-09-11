@@ -1,4 +1,3 @@
-import { formatDate } from '@angular/common';
 import { DialogShellComponent } from '../../../../shared/ui/dialog-shell.component';
 import { ChangeDetectionStrategy, Component, DestroyRef, HostListener, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -23,13 +22,14 @@ import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.com
 import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
 import { IconComponent, IconName } from '../../../../shared/ui/icon.component';
+import { financialEventPresentation, type FinancialEventTone } from '../../../../shared/ledger/financial-event-presentation';
 import { InfiniteScrollTriggerDirective } from '../../../../shared/ui/infinite-scroll-trigger.directive';
-import { PeriodMode, PeriodSelectorComponent } from '../../../../shared/ui/period-selector.component';
+import { PeriodSelectorComponent } from '../../../../shared/ui/period-selector.component';
+import { currentMonthValue, dateInputTimestampRange, monthDateRange, monthForDateRange, type PeriodMode } from '../../../../shared/period-selection';
 import { FinancialEventEditorComponent } from './financial-event-editor.component';
 
 const EVENT_BATCH_SIZE = 40;
 
-type ActivityEventTone = 'green' | 'yellow' | 'blue';
 type ActivityValueTone = 'negative' | 'positive' | 'neutral';
 
 interface ActivityEventRow {
@@ -39,7 +39,7 @@ interface ActivityEventRow {
   detail: string | null;
   typeLabel: string;
   typeIcon: IconName;
-  tone: ActivityEventTone;
+  tone: FinancialEventTone;
   accounts: LedgerAccount[];
   accountLabel: string;
   categoryPreview: LedgerCategory[];
@@ -77,7 +77,7 @@ export class LedgerActivityComponent {
   private readonly timeFormatter = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   readonly categoryIconPreviewLimit = 2;
   readonly periodMode = signal<PeriodMode>('month');
-  readonly selectedMonth = signal(this.currentMonth());
+  readonly selectedMonth = signal(currentMonthValue());
 
   readonly accounts = signal<LedgerAccount[]>([]);
   readonly currencies = signal<LedgerCurrency[]>([]);
@@ -221,8 +221,8 @@ export class LedgerActivityComponent {
         time: this.timeFormatter.format(new Date(event.occurred_at * 1000)),
         detail,
         typeLabel: this.eventTypeLabel(event.type),
-        typeIcon: this.eventIcon(event.type),
-        tone: this.eventTone(event.type),
+        typeIcon: financialEventPresentation(event.type).icon,
+        tone: financialEventPresentation(event.type).tone,
         accounts,
         accountLabel,
         categoryPreview: categories.slice(0, this.categoryIconPreviewLimit),
@@ -390,17 +390,6 @@ export class LedgerActivityComponent {
     return this.i18n.t('activity.typeSimple');
   }
 
-  private eventIcon(type: FinancialEventType): IconName {
-    if (type === 'SHOPPING_LIST') return 'shopping-cart';
-    if (type === 'ACCOUNT_TRANSFER') return 'arrow-left-right';
-    return 'wallet';
-  }
-
-  private eventTone(type: FinancialEventType): ActivityEventTone {
-    if (type === 'SHOPPING_LIST') return 'yellow';
-    if (type === 'ACCOUNT_TRANSFER') return 'blue';
-    return 'green';
-  }
 
   private loadWorkspace(): void {
     const ledgerUuid = this.context.ledgerUuid();
@@ -498,22 +487,15 @@ export class LedgerActivityComponent {
 
   private filterQuery(): Omit<FinancialEventFilters, 'cursor'> | null {
     const value = this.filters.getRawValue();
-    const fromDate = new Date(`${value.from_date}T00:00:00`);
-    const toDate = new Date(`${value.to_date}T00:00:00`);
-    const validDates = !Number.isNaN(fromDate.getTime()) && !Number.isNaN(toDate.getTime())
-      && formatDate(fromDate, 'yyyy-MM-dd', 'en-US') === value.from_date
-      && formatDate(toDate, 'yyyy-MM-dd', 'en-US') === value.to_date;
-    toDate.setDate(toDate.getDate() + 1);
-    const from = Math.floor(fromDate.getTime() / 1000);
-    const to = Math.floor(toDate.getTime() / 1000);
-    if (!validDates || from >= to) {
+    const range = dateInputTimestampRange(value.from_date, value.to_date);
+    if (!range) {
       this.filterError.set(this.i18n.t('activity.validation.period'));
       return null;
     }
     this.filterError.set(null);
     return {
-      from_timestamp: from,
-      to_timestamp: to,
+      from_timestamp: range.from,
+      to_timestamp: range.to,
       page_size: EVENT_BATCH_SIZE,
       account_uuid: value.account_uuid || null,
       category_uuid: value.category_uuid || null,
@@ -524,8 +506,8 @@ export class LedgerActivityComponent {
 
   private resetFilters(emitEvent = true): void {
     this.periodMode.set('month');
-    this.selectedMonth.set(this.currentMonth());
-    const dates = this.monthDates(this.selectedMonth());
+    this.selectedMonth.set(currentMonthValue());
+    const dates = monthDateRange(this.selectedMonth());
     this.filters.reset({
       from_date: dates?.from ?? '',
       to_date: dates?.to ?? '',
@@ -540,9 +522,9 @@ export class LedgerActivityComponent {
     const saved = ledgerUuid ? this.workspaceState.getActivity(ledgerUuid) : null;
     if (saved) {
       this.filters.reset({ ...saved, description_search: saved.description_search ?? '' }, { emitEvent: false });
-      const month = this.monthForRange(saved.from_date, saved.to_date);
+      const month = monthForDateRange(saved.from_date, saved.to_date);
       this.periodMode.set(month ? 'month' : 'range');
-      this.selectedMonth.set(month ?? (saved.from_date.slice(0, 7) || this.currentMonth()));
+      this.selectedMonth.set(month ?? (saved.from_date.slice(0, 7) || currentMonthValue()));
       this.filterError.set(null);
       return;
     }
@@ -583,30 +565,10 @@ export class LedgerActivityComponent {
   }
 
   private syncMonthToFilters(): void {
-    const dates = this.monthDates(this.selectedMonth());
+    const dates = monthDateRange(this.selectedMonth());
     if (!dates) return;
     this.filters.patchValue({ from_date: dates.from, to_date: dates.to });
   }
 
-  private monthForRange(from: string, to: string): string | null {
-    const month = from.slice(0, 7);
-    const dates = this.monthDates(month);
-    return dates?.from === from && dates.to === to ? month : null;
-  }
-
-  private monthDates(month: string): { from: string; to: string } | null {
-    const match = /^(\d{4})-(\d{2})$/.exec(month);
-    if (!match) return null;
-    const year = Number(match[1]);
-    const monthNumber = Number(match[2]);
-    if (monthNumber < 1 || monthNumber > 12) return null;
-    const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
-    const prefix = `${String(year).padStart(4, '0')}-${String(monthNumber).padStart(2, '0')}`;
-    return { from: `${prefix}-01`, to: `${prefix}-${String(lastDay).padStart(2, '0')}` };
-  }
-
-  private currentMonth(): string {
-    return formatDate(Date.now(), 'yyyy-MM', 'en-US');
-  }
 
 }

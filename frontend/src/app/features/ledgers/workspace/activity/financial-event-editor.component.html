@@ -2,11 +2,11 @@
   <div class="event-editor">
         <header class="ui-dialog-header">
           <div class="ui-dialog-title">
-            <span class="title-icon title-icon--green"><app-icon [name]="titleIcon()" [size]="20" /></span>
+            <span class="title-icon" [class.title-icon--green]="titlePresentation().tone === 'green'" [class.title-icon--yellow]="titlePresentation().tone === 'yellow'" [class.title-icon--blue]="titlePresentation().tone === 'blue'"><app-icon [name]="titleIcon()" size="dialog-title" /></span>
             <h2>{{ title() }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" [size]="19" />
+            <app-icon name="x" size="close" />
           </button>
         </header>
   
@@ -118,13 +118,13 @@
                       </label>
                       <button class="icon-button icon-button--danger ui-action-press shopping-movement__remove" type="button" (click)="removeMovement(index)"
                         [disabled]="movements.length <= 1" [attr.aria-label]="i18n.t('activity.removeMovement')">
-                        <app-icon name="trash" [size]="17" />
+                        <app-icon name="trash" size="compact-control" />
                       </button>
                     </div>
                   }
                 </div>
                 <button class="ui-button shopping-movements__add" type="button" (click)="addMovement()" [disabled]="movements.length >= maxShoppingMovements">
-                  <app-icon name="plus" [size]="17" />{{ i18n.t('activity.addMovement') }}
+                  <app-icon name="plus" size="compact-control" />{{ i18n.t('activity.addMovement') }}
                 </button>
               </section>
             }
@@ -176,7 +176,7 @@
   
               <button class="ui-button transfer-fee-toggle" [class.ui-button--green]="form.controls.fee_enabled.value"
                 type="button" [attr.aria-pressed]="form.controls.fee_enabled.value" (click)="toggleFee()">
-                <app-icon [name]="form.controls.fee_enabled.value ? 'check' : 'plus'" [size]="17" />
+                <app-icon [name]="form.controls.fee_enabled.value ? 'check' : 'plus'" size="compact-control" />
                 <span>{{ i18n.t('activity.addFee') }}</span>
               </button>
               @if (form.controls.fee_enabled.value) {
@@ -203,7 +203,7 @@
           <footer class="event-editor__actions ui-surface-actions">
             @if (event(); as currentEvent) {
               <button class="ui-button ui-button--danger event-editor__delete" type="button" [disabled]="saving()" (click)="deleteRequested.emit(currentEvent)">
-                <app-icon name="trash" [size]="18" />{{ i18n.t('workspace.delete') }}
+                <app-icon name="trash" size="action" />{{ i18n.t('workspace.delete') }}
               </button>
             }
             <span class="event-editor__actions-spacer"></span>

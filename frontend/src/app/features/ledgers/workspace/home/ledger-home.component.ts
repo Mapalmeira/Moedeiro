@@ -1,4 +1,3 @@
-import { formatDate } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -23,7 +22,9 @@ import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.com
 import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
 import { IconComponent, IconName } from '../../../../shared/ui/icon.component';
-import { PeriodMode, PeriodSelectorComponent } from '../../../../shared/ui/period-selector.component';
+import { financialEventPresentation } from '../../../../shared/ledger/financial-event-presentation';
+import { PeriodSelectorComponent } from '../../../../shared/ui/period-selector.component';
+import { currentMonthValue, dateInputTimestampRange, monthDateRange, monthTimestampRange, type PeriodMode } from '../../../../shared/period-selection';
 import { DiscreteListCapacityDirective } from '../../../../shared/ui/discrete-list-capacity.directive';
 import { HomeFlowChartComponent, HomeFlowMode, homeChartPointWidth } from './home-flow-chart.component';
 
@@ -110,7 +111,7 @@ export class LedgerHomeComponent {
   readonly activeBudgets = signal<LedgerBudgetOverview[]>([]);
   readonly selectedCurrencyUuid = signal('');
   readonly selectedFlowAccountUuid = signal('');
-  readonly selectedMonth = signal(this.currentMonth());
+  readonly selectedMonth = signal(currentMonthValue());
   readonly periodMode = signal<PeriodMode>('month');
   readonly rangeFromDate = signal('');
   readonly rangeToDate = signal('');
@@ -146,7 +147,7 @@ export class LedgerHomeComponent {
       })),
   ]);
   readonly selectedCurrency = computed(() => this.currencyByUuid().get(this.selectedCurrencyUuid()) ?? null);
-  readonly dashboardRange = computed(() => this.periodMode() === 'month' ? this.monthRange(this.selectedMonth()) : this.customRange());
+  readonly dashboardRange = computed(() => this.periodMode() === 'month' ? monthTimestampRange(this.selectedMonth()) : dateInputTimestampRange(this.rangeFromDate(), this.rangeToDate()));
   readonly invalidRange = computed(() => this.periodMode() === 'range' && !!this.rangeFromDate() && !!this.rangeToDate() && !this.dashboardRange());
   readonly totalIncome = computed(() => this.cashFlowSummary()?.income ?? 0);
   readonly totalExpense = computed(() => this.cashFlowSummary()?.expense ?? 0);
@@ -209,7 +210,7 @@ export class LedgerHomeComponent {
       const value = movements.reduce((sum, movement) => sum + movement.value * movement.quantity, 0);
       const accountNames = [...new Set(movements.map(movement => accountByUuid.get(movement.account_uuid)?.name).filter((name): name is string => !!name))];
       const categoryNames = [...new Set(movements.map(movement => categoryByUuid.get(movement.category_uuid)?.name).filter((name): name is string => !!name))];
-      const presentation = this.eventPresentation(event.type);
+      const presentation = financialEventPresentation(event.type);
       return {
         event,
         ...presentation,
@@ -434,43 +435,12 @@ export class LedgerHomeComponent {
   }
 
 
-  private monthRange(month: string): { from: number; to: number } | null {
-    const match = /^(\d{4})-(\d{2})$/.exec(month);
-    if (!match) return null;
-    const year = Number(match[1]);
-    const monthNumber = Number(match[2]);
-    if (monthNumber < 1 || monthNumber > 12) return null;
-    const from = Math.floor(new Date(year, monthNumber - 1, 1).getTime() / 1000);
-    const to = Math.floor(new Date(year, monthNumber, 1).getTime() / 1000);
-    return { from, to };
-  }
-
-
-  private customRange(): { from: number; to: number } | null {
-    const fromInput = this.rangeFromDate();
-    const toInput = this.rangeToDate();
-    const fromDate = new Date(`${fromInput}T00:00:00`);
-    const toDate = new Date(`${toInput}T00:00:00`);
-    if (Number.isNaN(fromDate.getTime()) || Number.isNaN(toDate.getTime())
-        || formatDate(fromDate, 'yyyy-MM-dd', 'en-US') !== fromInput
-        || formatDate(toDate, 'yyyy-MM-dd', 'en-US') !== toInput) return null;
-    toDate.setDate(toDate.getDate() + 1);
-    const from = Math.floor(fromDate.getTime() / 1000);
-    const to = Math.floor(toDate.getTime() / 1000);
-    return from >= to ? null : { from, to };
-  }
-
   private seedRangeFromMonth(): void {
-    const range = this.monthRange(this.selectedMonth());
+    const range = monthDateRange(this.selectedMonth());
     if (!range) return;
-    this.rangeFromDate.set(formatDate(range.from * 1000, 'yyyy-MM-dd', 'en-US'));
-    this.rangeToDate.set(formatDate((range.to - 1) * 1000, 'yyyy-MM-dd', 'en-US'));
+    this.rangeFromDate.set(range.from);
+    this.rangeToDate.set(range.to);
   }
-
-  private currentMonth(): string {
-    return formatDate(Date.now(), 'yyyy-MM', 'en-US');
-  }
-
 
   private clearDashboard(): void {
     this.balances.set([]);
@@ -491,11 +461,6 @@ export class LedgerHomeComponent {
     }
   }
 
-  private eventPresentation(type: FinancialEvent['type']): { icon: IconName; tone: Tone } {
-    if (type === 'ACCOUNT_TRANSFER') return { icon: 'arrow-left-right', tone: 'blue' };
-    if (type === 'SHOPPING_LIST') return { icon: 'coins', tone: 'yellow' };
-    return { icon: 'wallet', tone: 'green' };
-  }
 
   private reset(ledgerUuid: string | null): void {
     this.resourcesRequest?.unsubscribe();
@@ -510,7 +475,7 @@ export class LedgerHomeComponent {
     const saved = ledgerUuid ? this.workspaceState.getHome(ledgerUuid) : null;
     this.selectedCurrencyUuid.set(saved?.currency_uuid ?? '');
     this.selectedFlowAccountUuid.set(saved?.flow_account_uuid ?? '');
-    this.selectedMonth.set(saved?.month ?? this.currentMonth());
+    this.selectedMonth.set(saved?.month ?? currentMonthValue());
     this.periodMode.set(saved?.period_mode ?? 'month');
     this.rangeFromDate.set(saved?.range_from_date ?? '');
     this.rangeToDate.set(saved?.range_to_date ?? '');

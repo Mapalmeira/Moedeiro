@@ -1,7 +1,7 @@
 <section class="budgets" aria-labelledby="budgets-list-title">
   <header class="budgets-commandbar">
     <label class="budgets-search ui-dropdown-search">
-      <app-icon name="search" [size]="18" />
+      <app-icon name="search" size="action" />
       <input type="search" [value]="search()" (input)="updateSearch($event)"
         [attr.aria-label]="i18n.t('budgets.search')" [placeholder]="i18n.t('budgets.search')" />
     </label>
@@ -11,7 +11,7 @@
     <app-budget-state-filter class="budgets-state-filter" [selected]="states()" (selectedChange)="updateStates($event)" />
     <button type="button" class="budgets-create icon-button icon-button--control icon-button--add icon-button--yellow ui-action-press"
       [disabled]="!canCreate()" (click)="openCreate()" [attr.aria-label]="i18n.t('budgets.create')" [attr.title]="i18n.t('budgets.create')">
-      <app-icon name="plus" [size]="17" />
+      <app-icon name="plus" size="compact-control" />
     </button>
   </header>
 
@@ -29,13 +29,13 @@
   } @else {
     <div class="budget-grid ui-workspace-card-space" id="budgets-list-title">
       @for (card of cards(); track card.budget.uuid) {
-        <button type="button" class="budget-card ui-card ui-projected-surface ui-projection--surface" (click)="openEdit(card.budget)">
+        <button type="button" class="budget-card ui-card ui-projected-surface" (click)="openEdit(card.budget)">
           <header class="budget-card__header">
             <span class="budget-card__title">
               <strong>{{ card.budget.name }}</strong>
               <small>{{ card.period }}</small>
             </span>
-            <span class="budget-card__state"><app-icon [name]="card.stateIcon" [size]="14" aria-hidden="true" />{{ card.stateLabel }}</span>
+            <span class="budget-card__state"><app-icon [name]="card.stateIcon" size="indicator" aria-hidden="true" />{{ card.stateLabel }}</span>
           </header>
 
           <div class="budget-card__scope">
@@ -72,7 +72,7 @@
         </button>
       } @empty {
         <div class="budgets-state budget-grid__empty">
-          <app-icon name="wallet" [size]="28" />
+          <app-icon name="wallet" size="empty-state" />
           {{ i18n.t(search().trim() ? 'budgets.noResults' : 'budgets.empty') }}
         </div>
       }
@@ -93,13 +93,13 @@
 }
 
 @if (deleting()) {
-  <app-dialog-shell role="alertdialog" ariaLabelledby="budget-delete-title" dialogWidth="520px" (dismiss)="closeDelete()">
+  <app-dialog-shell role="alertdialog" ariaLabelledby="budget-delete-title" dialogWidth="var(--dialog-width-confirmation)" (dismiss)="closeDelete()">
         <header class="ui-dialog-header">
           <div class="ui-dialog-title">
-            <span class="title-icon budget-delete-icon"><app-icon name="trash" [size]="20" /></span>
+            <span class="title-icon budget-delete-icon"><app-icon name="trash" size="dialog-title" /></span>
             <h2 id="budget-delete-title">{{ i18n.t('budgets.delete') }}</h2>
           </div>
-          <button type="button" class="icon-button icon-button--control ui-action-press" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="x" [size]="18" /></button>
+          <button type="button" class="icon-button icon-button--control ui-action-press" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="x" size="close" /></button>
         </header>
         <div class="ui-delete-dialog-body">
           <app-form-message [text]="i18n.t('budgets.deleteWarning')" />

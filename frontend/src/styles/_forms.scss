@@ -6,7 +6,7 @@
   align-self: start;
   gap: var(--field-gap);
   font-weight: 650;
-  font-size: .9rem;
+  font-size: var(--control-font-size);
 }
 
 /* Filter groups wrap as complete controls, using the space in their tab. */
@@ -69,7 +69,7 @@
 .icon-action {
   position: absolute;
   top: 50%;
-  right: 4px;
+  right: var(--space-1);
   display: grid;
   place-items: center;
   width: var(--icon-button-size);
@@ -105,7 +105,7 @@
 .field-error {
   margin: 0;
   color: var(--danger);
-  font-size: .76rem;
+  font-size: var(--control-detail-font-size);
   font-weight: 650;
   line-height: 1.3;
 }
@@ -117,7 +117,7 @@
 }
 
 
-/* Shared searchable dropdown anatomy used by time zone and Lucide selectors. */
+/* Shared searchable dropdown anatomy. */
 .ui-dropdown-panel {
   position: relative;
   display: grid;

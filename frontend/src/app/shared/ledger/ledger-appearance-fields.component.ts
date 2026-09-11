@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Injector, afterNextRender, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { DismissiblePopoverDirective } from '../ui/dismissible-popover.directive';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { I18nService } from '../../core/i18n/i18n.service';
@@ -6,12 +6,13 @@ import { normalizeSearchText } from '../search-normalization';
 import { DropdownSearchAutofocusDirective } from '../ui/dropdown-search-autofocus.directive';
 import { InfiniteScrollTriggerDirective } from '../ui/infinite-scroll-trigger.directive';
 import { IconComponent } from '../ui/icon.component';
+import { isListboxNavigationKey, nextListboxIndex } from '../ui/listbox-navigation';
 import { LedgerColorFieldComponent } from './ledger-color-field.component';
+import { DEFAULT_LEDGER_APPEARANCE } from './ledger-appearance';
 import { LedgerIconComponent } from './ledger-icon.component';
 import { decodeLucideLedgerIcon, decodeUnicodeLedgerIcon, encodeLucideLedgerIcon, encodeUnicodeLedgerIcon, isEncodedLucideLedgerIcon } from './ledger-icon-value';
 import { LUCIDE_ICON_CATALOG, resolveLucideIcon, resolveLucideIconLabel } from './lucide-icon-catalog';
 
-const DEFAULT_ICON = 'lucide:WalletCards';
 const ICON_BATCH_SIZE = 48;
 
 type IconMode = 'lucide' | 'unicode';
@@ -30,15 +31,15 @@ type IconMode = 'lucide' | 'unicode';
       </div>
       <div class="icon-control-slot">
         @if (iconMode() === 'lucide') {
-          <div class="lucide-picker" [appDismissiblePopover]="pickerOpen()" (dismiss)="pickerOpen.set(false)">
-            <button type="button" class="lucide-picker__trigger ui-select-trigger" (click)="togglePicker()" [attr.aria-label]="i18n.t('ledgers.editor.icon')" [attr.aria-expanded]="pickerOpen()">
-              <span class="selected-icon"><app-ledger-icon [icon]="iconControl().value" [size]="22" /></span><span>{{ selectedLabel() }}</span><app-icon class="ui-select-chevron" name="chevron-down" [size]="17" />
+          <div class="lucide-picker" [appDismissiblePopover]="pickerOpen()" (dismiss)="dismissPicker()">
+            <button type="button" class="lucide-picker__trigger ui-select-trigger" (click)="togglePicker()" [attr.aria-label]="i18n.t('ledgers.editor.icon')" aria-haspopup="listbox" [attr.aria-expanded]="pickerOpen()" [attr.aria-controls]="listId">
+              <span class="selected-icon"><app-ledger-icon [icon]="iconControl().value" [size]="22" /></span><span>{{ selectedLabel() }}</span><app-icon class="ui-select-chevron" name="chevron-down" size="chevron" />
             </button>
             @if (pickerOpen()) {
               <div class="picker-panel ui-dropdown-panel" (keydown.escape)="closePicker($event)">
-                <label class="icon-search ui-dropdown-search"><app-icon name="search" [size]="18" /><input type="search" [attr.aria-label]="i18n.t('ledgers.editor.icon')" [value]="search()" (input)="updateSearch($event)" appDropdownSearchAutofocus /></label>
-                <div class="icon-grid" role="group" [attr.aria-label]="i18n.t('ledgers.editor.icon')">
-                  @for (entry of visibleIcons(); track entry.id) { <button type="button" class="ui-choice icon-choice" (click)="selectLucide(entry.id)" [title]="entry.label"><app-ledger-icon [icon]="'lucide:' + entry.id" [size]="22" /><span>{{ entry.label }}</span></button> }
+                <label class="icon-search ui-dropdown-search"><app-icon name="search" size="action" /><input type="search" role="combobox" aria-autocomplete="list" [attr.aria-expanded]="pickerOpen()" [attr.aria-controls]="listId" [attr.aria-activedescendant]="activeOptionId()" [attr.aria-label]="i18n.t('ledgers.editor.icon')" [value]="search()" (input)="updateSearch($event)" (keydown)="handleSearchKeydown($event)" appDropdownSearchAutofocus /></label>
+                <div class="icon-grid" role="listbox" [id]="listId" [attr.aria-label]="i18n.t('ledgers.editor.icon')">
+                  @for (entry of visibleIcons(); track entry.id; let iconIndex = $index) { <button type="button" class="ui-choice icon-choice" role="option" [id]="optionId(iconIndex)" tabindex="-1" [attr.aria-selected]="currentLucideId() === entry.id" (click)="selectLucide(entry.id)" [title]="entry.label"><app-ledger-icon [icon]="'lucide:' + entry.id" [size]="22" /><span>{{ entry.label }}</span></button> }
                   @if (hasMoreIcons()) {
                     <span class="icon-grid__sentinel" appInfiniteScrollTrigger rootMargin="96px 0px" (triggered)="loadMoreIcons()" aria-hidden="true"></span>
                   }
@@ -58,7 +59,7 @@ type IconMode = 'lucide' | 'unicode';
     .selected-icon { overflow: hidden; }
     :host { display: grid; gap: var(--space-4); }
     .appearance-field { display: grid; gap: var(--field-gap); min-width: 0; }
-    .field-label { font-size: .9rem; font-weight: 780; }
+    .field-label { font-size: var(--control-font-size); font-weight: 780; }
     .mode-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
     .mode-switch__button { min-height: var(--control-height); font-weight: 760; }
     .icon-control-slot { position: relative; min-height: var(--control-height); margin-top: var(--space-2); }
@@ -76,12 +77,17 @@ type IconMode = 'lucide' | 'unicode';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LedgerAppearanceFieldsComponent {
+  private static nextId = 0;
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   readonly i18n = inject(I18nService);
   readonly iconControl = input.required<FormControl<string>>();
   readonly colorControl = input.required<FormControl<string>>();
   readonly iconMode = signal<IconMode>('lucide');
   readonly pickerOpen = signal(false);
   readonly search = signal('');
+  readonly activeIndex = signal(-1);
+  readonly listId = `ledger-icon-picker-${LedgerAppearanceFieldsComponent.nextId++}`;
   readonly visibleIconCount = signal(ICON_BATCH_SIZE);
   readonly filteredIcons = computed(() => {
     const query = normalizeSearchText(this.search().trim());
@@ -89,7 +95,9 @@ export class LedgerAppearanceFieldsComponent {
   });
   readonly visibleIcons = computed(() => this.filteredIcons().slice(0, this.visibleIconCount()));
   readonly hasMoreIcons = computed(() => this.visibleIcons().length < this.filteredIcons().length);
-  readonly currentIcon = signal(DEFAULT_ICON);
+  readonly currentIcon = signal(DEFAULT_LEDGER_APPEARANCE.icon);
+  readonly currentLucideId = computed(() => decodeLucideLedgerIcon(this.currentIcon()));
+  readonly activeOptionId = computed(() => this.activeIndex() >= 0 ? this.optionId(this.activeIndex()) : null);
   readonly selectedLabel = computed(() => resolveLucideIconLabel(decodeLucideLedgerIcon(this.currentIcon())));
   readonly unicodeValue = computed(() => decodeUnicodeLedgerIcon(this.currentIcon()));
 
@@ -103,11 +111,42 @@ export class LedgerAppearanceFieldsComponent {
     });
   }
 
-  closePicker(event: Event): void { event.preventDefault(); event.stopPropagation(); this.pickerOpen.set(false); }
-  togglePicker(): void { this.pickerOpen.update(value => !value); if (this.pickerOpen()) { this.search.set(''); this.visibleIconCount.set(ICON_BATCH_SIZE); } }
-  updateSearch(event: Event): void { this.search.set((event.target as HTMLInputElement).value); this.visibleIconCount.set(ICON_BATCH_SIZE); }
+  closePicker(event: Event): void { event.preventDefault(); event.stopPropagation(); this.dismissPicker(); }
+  dismissPicker(): void { this.pickerOpen.set(false); this.activeIndex.set(-1); }
+  togglePicker(): void {
+    this.pickerOpen.update(value => !value);
+    if (this.pickerOpen()) { this.search.set(''); this.visibleIconCount.set(ICON_BATCH_SIZE); this.syncActiveIndex(); }
+    else this.activeIndex.set(-1);
+  }
+  updateSearch(event: Event): void { this.search.set((event.target as HTMLInputElement).value); this.visibleIconCount.set(ICON_BATCH_SIZE); this.syncActiveIndex(); }
+  handleSearchKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') { this.closePicker(event); return; }
+    if (isListboxNavigationKey(event.key)) { event.preventDefault(); this.moveActive(event.key); return; }
+    if (event.key === 'Enter') {
+      const entry = this.visibleIcons()[this.activeIndex()];
+      if (!entry) return;
+      event.preventDefault();
+      this.selectLucide(entry.id);
+    }
+  }
+  optionId(index: number): string { return `${this.listId}-option-${index}`; }
   loadMoreIcons(): void { if (this.hasMoreIcons()) this.visibleIconCount.update(count => Math.min(count + ICON_BATCH_SIZE, this.filteredIcons().length)); }
-  setMode(mode: IconMode): void { this.pickerOpen.set(false); this.iconMode.set(mode); if (mode === 'lucide' && !resolveLucideIcon(decodeLucideLedgerIcon(this.iconControl().value))) this.iconControl().setValue(DEFAULT_ICON); if (mode === 'unicode' && isEncodedLucideLedgerIcon(this.iconControl().value)) this.iconControl().setValue(encodeUnicodeLedgerIcon('💰')); this.iconControl().markAsDirty(); }
-  selectLucide(icon: string): void { this.iconControl().setValue(encodeLucideLedgerIcon(icon)); this.iconControl().markAsDirty(); this.pickerOpen.set(false); }
+  setMode(mode: IconMode): void { this.dismissPicker(); this.iconMode.set(mode); if (mode === 'lucide' && !resolveLucideIcon(decodeLucideLedgerIcon(this.iconControl().value))) this.iconControl().setValue(DEFAULT_LEDGER_APPEARANCE.icon); if (mode === 'unicode' && isEncodedLucideLedgerIcon(this.iconControl().value)) this.iconControl().setValue(encodeUnicodeLedgerIcon('💰')); this.iconControl().markAsDirty(); }
+  selectLucide(icon: string): void { this.iconControl().setValue(encodeLucideLedgerIcon(icon)); this.iconControl().markAsDirty(); this.dismissPicker(); }
+  private syncActiveIndex(): void {
+    const icons = this.visibleIcons();
+    const selected = icons.findIndex(entry => entry.id === this.currentLucideId());
+    this.activeIndex.set(selected >= 0 ? selected : icons.length ? 0 : -1);
+    this.scrollActiveOption();
+  }
+  private moveActive(key: 'ArrowDown' | 'ArrowUp' | 'Home' | 'End'): void {
+    this.activeIndex.set(nextListboxIndex(this.activeIndex(), this.visibleIcons().length, key));
+    this.scrollActiveOption();
+  }
+  private scrollActiveOption(): void {
+    const id = this.activeOptionId();
+    if (!id) return;
+    afterNextRender(() => this.host.nativeElement.ownerDocument.getElementById(id)?.scrollIntoView?.({ block: 'nearest' }), { injector: this.injector });
+  }
   setUnicode(event: Event): void { const input = event.target as HTMLInputElement; const value = Array.from(input.value).slice(0, 3).join(''); input.value = value; this.iconControl().setValue(encodeUnicodeLedgerIcon(value)); this.iconControl().markAsDirty(); }
 }

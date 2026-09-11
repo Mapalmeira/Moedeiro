@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import {
   LucideArrowLeftRight,
   LucideArrowRight,
@@ -48,6 +48,38 @@ export type IconName =
   | 'trash' | 'book' | 'database' | 'house' | 'wallet' | 'chart' | 'building'
   | 'layers' | 'coins' | 'panel-open' | 'folder' | 'grip' | 'shopping-cart';
 
+
+export type IconSize =
+  | 'indicator'
+  | 'chevron'
+  | 'selection'
+  | 'menu'
+  | 'compact-control'
+  | 'action'
+  | 'close'
+  | 'navigation'
+  | 'dialog-title'
+  | 'metric'
+  | 'badge-symbol'
+  | 'card-title'
+  | 'empty-state';
+
+const ICON_SIZE_VARIABLES: Record<IconSize, string> = {
+  indicator: '--icon-glyph-indicator',
+  chevron: '--icon-glyph-compact',
+  selection: '--icon-glyph-compact',
+  menu: '--icon-glyph-control',
+  'compact-control': '--icon-glyph-control',
+  action: '--icon-glyph-control',
+  close: '--icon-glyph-control',
+  navigation: '--icon-glyph-prominent',
+  'dialog-title': '--icon-glyph-prominent',
+  metric: '--icon-glyph-prominent',
+  'badge-symbol': '--icon-glyph-badge',
+  'card-title': '--icon-glyph-badge',
+  'empty-state': '--icon-glyph-display',
+};
+
 @Component({
   selector: 'app-icon',
   standalone: true,
@@ -93,8 +125,8 @@ export type IconName =
     LucideX,
   ],
   host: {
-    '[style.width.px]': 'size()',
-    '[style.height.px]': 'size()',
+    '[style.width]': 'resolvedSize()',
+    '[style.height]': 'resolvedSize()',
   },
   template: `
     @switch (name()) {
@@ -147,5 +179,9 @@ export type IconName =
 })
 export class IconComponent {
   readonly name = input.required<IconName>();
-  readonly size = input(20);
+  readonly size = input<IconSize | number>('action');
+  readonly resolvedSize = computed(() => {
+    const size = this.size();
+    return typeof size === 'number' ? `${size}px` : `var(${ICON_SIZE_VARIABLES[size]})`;
+  });
 }

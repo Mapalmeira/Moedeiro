@@ -59,7 +59,11 @@ describe('AccountMenuComponent', () => {
 
   it('closes on Escape', () => {
     component.open.set(true);
-    component.closeOnEscape();
+    fixture.detectChanges();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+
     expect(component.open()).toBe(false);
   });
 });

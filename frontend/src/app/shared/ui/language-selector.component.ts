@@ -3,6 +3,7 @@ import { DismissiblePopoverDirective } from './dismissible-popover.directive';
 import { AppLanguage, I18nService } from '../../core/i18n/i18n.service';
 import { IconComponent } from './icon.component';
 import { TwemojiFlagComponent } from './twemoji-flag.component';
+import { isListboxNavigationKey, nextListboxIndex } from './listbox-navigation';
 
 @Component({
   selector: 'app-language-selector',
@@ -10,38 +11,39 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
   imports: [DismissiblePopoverDirective, IconComponent, TwemojiFlagComponent],
   host: { '[class.language-selector--field]': 'appearance() === "field"' },
   template: `
-    <div class="language-selector" [appDismissiblePopover]="open()" (dismiss)="open.set(false)">
-      <button class="language-selector__trigger ui-select-trigger ui-trigger-with-icon" type="button" (click)="open.set(!open())"
+    <div class="language-selector" [appDismissiblePopover]="open()" (dismiss)="closeList()">
+      <button class="language-selector__trigger ui-select-trigger ui-trigger-with-icon" type="button" (click)="toggleList()"
         [class.ui-action-press]="appearance() === 'compact'"
-        [attr.aria-label]="i18n.t('common.language')" [attr.aria-expanded]="open()">
+        [attr.aria-label]="i18n.t('common.language')" aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listId"
+        [attr.aria-activedescendant]="open() ? activeOptionId() : null" (keydown)="handleKeydown($event)">
         <span class="language-selector__language-icon ui-icon-badge" [class.ui-projected-icon]="appearance() === 'compact'" aria-hidden="true">
           @if (appearance() === 'field') {
             <app-twemoji-flag [country]="languageCountry(selectedLanguage())" />
           } @else {
-            <app-icon name="languages" [size]="18" />
+            <app-icon name="languages" size="action" />
           }
         </span>
         <span class="language-selector__name">{{ languageName(selectedLanguage()) }}</span>
-        <app-icon class="language-selector__chevron ui-select-chevron" name="chevron-down" [size]="16" />
+        <app-icon class="language-selector__chevron ui-select-chevron" name="chevron-down" size="chevron" />
       </button>
 
       @if (open()) {
-        <div class="language-selector__menu ui-dropdown-menu ui-projected-surface ui-projection--surface" role="menu">
-          <button type="button" role="menuitem" [class.language-selector__option--selected]="selectedLanguage() === 'pt-BR'"
+        <div class="language-selector__menu ui-dropdown-menu ui-projected-surface" role="listbox" [id]="listId">
+          <button type="button" role="option" [id]="optionId(0)" tabindex="-1" [attr.aria-selected]="selectedLanguage() === 'pt-BR'" [class.language-selector__option--selected]="selectedLanguage() === 'pt-BR'"
             (click)="select('pt-BR')">
             <span class="language-selector__option-main">
               <app-twemoji-flag country="br" />
               <span class="language-selector__option-text">{{ i18n.t('language.pt') }}</span>
             </span>
-            @if (selectedLanguage() === 'pt-BR') { <app-icon name="check" [size]="16" /> }
+            @if (selectedLanguage() === 'pt-BR') { <app-icon name="check" size="selection" /> }
           </button>
-          <button type="button" role="menuitem" [class.language-selector__option--selected]="selectedLanguage() === 'en'"
+          <button type="button" role="option" [id]="optionId(1)" tabindex="-1" [attr.aria-selected]="selectedLanguage() === 'en'" [class.language-selector__option--selected]="selectedLanguage() === 'en'"
             (click)="select('en')">
             <span class="language-selector__option-main">
               <app-twemoji-flag country="us" />
               <span class="language-selector__option-text">{{ i18n.t('language.en') }}</span>
             </span>
-            @if (selectedLanguage() === 'en') { <app-icon name="check" [size]="16" /> }
+            @if (selectedLanguage() === 'en') { <app-icon name="check" size="selection" /> }
           </button>
         </div>
       }
@@ -133,11 +135,45 @@ import { TwemojiFlagComponent } from './twemoji-flag.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LanguageSelectorComponent {
+  private static nextId = 0;
   readonly i18n = inject(I18nService);
   readonly appearance = input<'compact' | 'field'>('compact');
   readonly value = input<AppLanguage | undefined>(undefined);
   readonly valueChange = output<AppLanguage>();
   readonly open = signal(false);
+  readonly activeIndex = signal(-1);
+  readonly listId = `language-selector-${LanguageSelectorComponent.nextId++}`;
+  readonly activeOptionId = () => this.activeIndex() >= 0 ? this.optionId(this.activeIndex()) : null;
+
+
+  toggleList(): void {
+    if (this.open()) {
+      this.closeList();
+      return;
+    }
+    this.open.set(true);
+    this.activeIndex.set(this.selectedLanguage() === 'pt-BR' ? 0 : 1);
+  }
+
+  closeList(): void {
+    this.open.set(false);
+    this.activeIndex.set(-1);
+  }
+
+  handleKeydown(event: KeyboardEvent): void {
+    if (isListboxNavigationKey(event.key)) {
+      event.preventDefault();
+      if (!this.open()) this.toggleList();
+      else this.activeIndex.set(nextListboxIndex(this.activeIndex(), 2, event.key));
+      return;
+    }
+    if (this.open() && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      this.select(this.activeIndex() === 1 ? 'en' : 'pt-BR');
+    }
+  }
+
+  optionId(index: number): string { return `${this.listId}-option-${index}`; }
 
   selectedLanguage(): AppLanguage {
     return this.value() ?? this.i18n.language();
@@ -146,7 +182,7 @@ export class LanguageSelectorComponent {
   select(language: AppLanguage): void {
     if (this.value() === undefined) this.i18n.setLanguage(language);
     this.valueChange.emit(language);
-    this.open.set(false);
+    this.closeList();
   }
 
   languageName(language: AppLanguage): string {

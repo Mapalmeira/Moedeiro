@@ -9,16 +9,13 @@ import { ApiErrorService } from '../../core/api/api-error';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { Ledger, LedgerPayload } from '../../core/ledgers/ledger.models';
 import { LedgerService } from '../../core/ledgers/ledger.service';
-import { bestContrastingForeground } from '../../shared/ledger/ledger-appearance';
+import { bestContrastingForeground, DEFAULT_LEDGER_APPEARANCE, HEX_COLOR_PATTERN, isHexColor } from '../../shared/ledger/ledger-appearance';
 import { LedgerIconComponent } from '../../shared/ledger/ledger-icon.component';
 import { FieldErrorComponent } from '../../shared/ui/field-error.component';
 import { FormMessageComponent } from '../../shared/ui/form-message.component';
 import { IconComponent } from '../../shared/ui/icon.component';
 
 const LEDGER_NAME_MAX_LENGTH = 50;
-const COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
-const DEFAULT_ICON = 'lucide:WalletCards';
-const DEFAULT_COLOR = '#21E683';
 
 
 @Component({
@@ -32,12 +29,12 @@ const DEFAULT_COLOR = '#21E683';
         <div class="dialog">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
-            <span class="title-icon title-icon--green"><app-icon [name]="ledger() ? 'pencil' : 'plus'" [size]="21" /></span>
+            <span class="title-icon title-icon--green"><app-icon [name]="ledger() ? 'pencil' : 'plus'" size="dialog-title" /></span>
             <h2>{{ title() }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="saving()"
             [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" [size]="19" />
+            <app-icon name="x" size="close" />
           </button>
         </header>
 
@@ -55,10 +52,10 @@ const DEFAULT_COLOR = '#21E683';
               <app-field-error [text]="iconError()" />
             </div>
 
-            <aside class="preview-panel ui-projected-surface ui-projection--surface">
+            <aside class="preview-panel ui-projected-surface">
               <span class="field-label preview-label">{{ i18n.t('ledgers.editor.preview') }}</span>
               <div class="preview-stage">
-                <div class="preview-token-frame ui-projected-surface ui-projection--surface">
+                <div class="preview-token-frame ui-projected-surface">
                 <div class="preview-token" [style.background]="color()" [style.color]="contrast()">
                   <app-ledger-icon [icon]="previewIcon()" [size]="54" />
                 </div>
@@ -87,7 +84,7 @@ const DEFAULT_COLOR = '#21E683';
     form { display: grid; gap: var(--section-gap); padding: var(--space-5); }
     .editor-grid { display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(220px, .78fr); gap: var(--space-6); align-items: stretch; }
     .editor-fields { display: grid; gap: var(--space-4); min-width: 0; align-content: start; }
-    .field-label { font-size: .9rem; font-weight: 780; }
+    .field-label { font-size: var(--control-font-size); font-weight: 780; }
     .preview-panel { position: sticky; top: var(--space-5); align-self: stretch; min-height: 0; margin-top: var(--space-6); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; justify-items: center; gap: var(--space-3); padding: var(--space-4); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-card); background: var(--surface-muted); }
     .preview-label { justify-self: start; color: var(--text); }
     .preview-stage { width: 100%; min-height: 0; display: grid; place-items: center; align-self: stretch; }
@@ -120,13 +117,13 @@ export class LedgerEditorDialogComponent {
   readonly nameMaxLength = LEDGER_NAME_MAX_LENGTH;
   readonly saving = signal(false);
   readonly errorMessage = signal<string | null>(null);
-  readonly color = signal(DEFAULT_COLOR);
-  readonly previewIcon = signal(DEFAULT_ICON);
+  readonly color = signal(DEFAULT_LEDGER_APPEARANCE.color);
+  readonly previewIcon = signal(DEFAULT_LEDGER_APPEARANCE.icon);
   readonly previewNameValue = signal('');
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(LEDGER_NAME_MAX_LENGTH)]],
-    icon: [DEFAULT_ICON, [entityIconValidator]],
-    color_code: [DEFAULT_COLOR, [Validators.required, Validators.pattern(COLOR_PATTERN)]],
+    icon: [DEFAULT_LEDGER_APPEARANCE.icon, [entityIconValidator]],
+    color_code: [DEFAULT_LEDGER_APPEARANCE.color, [Validators.required, Validators.pattern(HEX_COLOR_PATTERN)]],
   });
   readonly title = computed(() => this.i18n.t(this.ledger() ? 'ledgers.editor.editTitle' : 'ledgers.editor.createTitle'));
   readonly contrast = computed(() => bestContrastingForeground(this.color()));
@@ -137,12 +134,12 @@ export class LedgerEditorDialogComponent {
       const raw = this.form.getRawValue();
       this.previewIcon.set(raw.icon);
       this.previewNameValue.set(raw.name);
-      if (COLOR_PATTERN.test(raw.color_code)) this.color.set(raw.color_code);
+      if (isHexColor(raw.color_code)) this.color.set(raw.color_code);
     });
     effect(() => {
       const open = this.open(), ledger = this.ledger();
       if (open) untracked(() => {
-        this.form.reset({ name: ledger?.name ?? '', icon: ledger?.icon ?? DEFAULT_ICON, color_code: ledger?.color_code ?? DEFAULT_COLOR });
+        this.form.reset({ name: ledger?.name ?? '', icon: ledger?.icon ?? DEFAULT_LEDGER_APPEARANCE.icon, color_code: ledger?.color_code ?? DEFAULT_LEDGER_APPEARANCE.color });
         this.errorMessage.set(null);
       });
     });

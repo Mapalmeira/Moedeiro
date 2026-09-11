@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { LedgerBudgetState } from './ledger-budgets.models';
-
-type PeriodMode = 'month' | 'range';
+import type { PeriodMode } from '../../shared/period-selection';
 type FlowMode = 'instant' | 'cumulative';
 type EntitySection = 'account' | 'currency';
 

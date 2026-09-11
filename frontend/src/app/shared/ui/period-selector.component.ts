@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { MonthSelectComponent } from './month-select.component';
+import type { PeriodMode } from '../period-selection';
 
-export type PeriodMode = 'month' | 'range';
+export type { PeriodMode } from '../period-selection';
 
 @Component({
   selector: 'app-period-selector',

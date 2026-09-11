@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { DismissiblePopoverDirective } from './dismissible-popover.directive';
-import { ENTITY_BADGE_DEFAULT_SYMBOL_SIZE } from '../ledger/entity-badge.component';
 import { IconComponent } from './icon.component';
+import { isListboxNavigationKey, nextListboxIndex } from './listbox-navigation';
 
 interface MonthOption {
   value: number;
@@ -13,29 +13,30 @@ interface MonthOption {
   standalone: true,
   imports: [DismissiblePopoverDirective, IconComponent],
   template: `
-    <div class="month-select" [appDismissiblePopover]="open()" (dismiss)="open.set(false)">
+    <div class="month-select" [appDismissiblePopover]="open()" (dismiss)="close()">
       <button type="button" class="month-select__trigger ui-select-trigger ui-trigger-with-icon" (click)="toggle()"
-        [attr.aria-label]="ariaLabel()" [attr.aria-expanded]="open()">
-        <span class="month-select__icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon" aria-hidden="true"><app-icon name="calendar" [size]="triggerIconSize" /></span>
+        [attr.aria-label]="ariaLabel()" aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listId"
+        [attr.aria-activedescendant]="open() ? activeOptionId() : null" (keydown)="handleTriggerKeydown($event)">
+        <span class="month-select__icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon" aria-hidden="true"><app-icon name="calendar" size="badge-symbol" /></span>
         <span class="ui-trigger-content"><strong class="ui-trigger-value">{{ displayValue() }}</strong></span>
-        <app-icon class="ui-select-chevron" name="chevron-down" [size]="16" />
+        <app-icon class="ui-select-chevron" name="chevron-down" size="chevron" />
       </button>
 
       @if (open()) {
         <div class="month-select__panel ui-dropdown-panel">
           <div class="month-select__year">
             <button type="button" class="icon-button month-select__year-nav" (click)="changeYear(-1)" [attr.aria-label]="previousYearLabel()">
-              <app-icon name="chevron-left" [size]="17" />
+              <app-icon name="chevron-left" size="chevron" />
             </button>
             <input class="month-select__year-input" type="text" inputmode="numeric" maxlength="4" autocomplete="off"
               [attr.aria-label]="yearLabel()" [value]="displayYear()" (input)="updateYear($event)" />
             <button type="button" class="icon-button month-select__year-nav" (click)="changeYear(1)" [attr.aria-label]="nextYearLabel()">
-              <app-icon name="chevron-right" [size]="17" />
+              <app-icon name="chevron-right" size="chevron" />
             </button>
           </div>
-          <div class="month-select__months" role="listbox" [attr.aria-label]="ariaLabel()">
+          <div class="month-select__months" role="listbox" [id]="listId" [attr.aria-label]="ariaLabel()">
             @for (month of months(); track month.value) {
-              <button type="button" class="ui-choice month-select__month" role="option"
+              <button type="button" class="ui-choice month-select__month" role="option" [id]="optionId(month.value)" tabindex="-1"
                 [class.ui-choice--selected]="isSelected(month.value)"
                 [attr.aria-selected]="isSelected(month.value)"
                 (click)="chooseMonth(month.value)">{{ month.label }}</button>
@@ -63,8 +64,7 @@ interface MonthOption {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MonthSelectComponent {
-  readonly triggerIconSize = ENTITY_BADGE_DEFAULT_SYMBOL_SIZE;
-
+  private static nextId = 0;
   readonly value = input.required<string>();
   readonly ariaLabel = input('');
   readonly previousYearLabel = input('Previous year');
@@ -73,6 +73,9 @@ export class MonthSelectComponent {
   readonly valueChange = output<string>();
 
   readonly open = signal(false);
+  readonly activeMonth = signal(1);
+  readonly listId = `month-select-${MonthSelectComponent.nextId++}`;
+  readonly activeOptionId = () => this.optionId(this.activeMonth());
   readonly displayYear = signal(new Date().getFullYear());
   readonly months = computed<MonthOption[]>(() => {
     const formatter = new Intl.DateTimeFormat(undefined, { month: 'short' });
@@ -94,13 +97,30 @@ export class MonthSelectComponent {
       this.close();
       return;
     }
-    this.displayYear.set(this.parse(this.value())?.year ?? new Date().getFullYear());
+    const parsed = this.parse(this.value());
+    this.displayYear.set(parsed?.year ?? new Date().getFullYear());
+    this.activeMonth.set(parsed?.month ?? new Date().getMonth() + 1);
     this.open.set(true);
   }
 
   close(): void {
     this.open.set(false);
   }
+
+  handleTriggerKeydown(event: KeyboardEvent): void {
+    if (isListboxNavigationKey(event.key)) {
+      event.preventDefault();
+      if (!this.open()) this.toggle();
+      else this.activeMonth.set(nextListboxIndex(this.activeMonth() - 1, 12, event.key) + 1);
+      return;
+    }
+    if (this.open() && (event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      this.chooseMonth(this.activeMonth());
+    }
+  }
+
+  optionId(month: number): string { return `${this.listId}-option-${month}`; }
 
   changeYear(delta: number): void {
     this.displayYear.update(year => Math.max(1, Math.min(9999, year + delta)));
@@ -117,6 +137,7 @@ export class MonthSelectComponent {
   }
 
   chooseMonth(month: number): void {
+    this.activeMonth.set(month);
     this.valueChange.emit(`${String(this.displayYear()).padStart(4, '0')}-${String(month).padStart(2, '0')}`);
     this.close();
   }

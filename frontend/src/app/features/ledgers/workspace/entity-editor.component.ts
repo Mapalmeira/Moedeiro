@@ -14,6 +14,7 @@ import { FieldErrorComponent } from '../../../shared/ui/field-error.component';
 import { FormMessageComponent } from '../../../shared/ui/form-message.component';
 import { IconComponent } from '../../../shared/ui/icon.component';
 import { entityIconValidator } from '../../../shared/ledger/entity-icon-validator';
+import { DEFAULT_ACCOUNT_APPEARANCE, DEFAULT_CURRENCY_APPEARANCE, HEX_COLOR_PATTERN, isHexColor } from '../../../shared/ledger/ledger-appearance';
 
 type Entity = LedgerAccount | LedgerCurrency;
 
@@ -49,8 +50,8 @@ export class EntityEditorComponent {
     prefix: ['', [Validators.maxLength(10)]],
     suffix: ['', [Validators.maxLength(10)]],
     decimal_places: [2, [Validators.required, Validators.min(0), Validators.max(20), Validators.pattern(/^\d+$/)]],
-    icon: ['lucide:WalletCards', [entityIconValidator]],
-    color_code: ['#21E683', [Validators.required, Validators.pattern(/^#[0-9A-Fa-f]{6}$/)]],
+    icon: [DEFAULT_ACCOUNT_APPEARANCE.icon, [entityIconValidator]],
+    color_code: [DEFAULT_ACCOUNT_APPEARANCE.color, [Validators.required, Validators.pattern(HEX_COLOR_PATTERN)]],
   });
   readonly values = signal(this.form.getRawValue());
   readonly maxName = computed(() => this.kind() === 'account' ? 50 : 30);
@@ -61,7 +62,7 @@ export class EntityEditorComponent {
     const entity = this.entity();
     return entity && 'currency_uuid' in entity ? this.currencies().find(c => c.uuid === entity.currency_uuid)?.name ?? entity.currency_uuid : '';
   });
-  readonly previewColor = computed(() => /^#[0-9A-Fa-f]{6}$/.test(this.values().color_code) ? this.values().color_code : 'var(--ui-accent)');
+  readonly previewColor = computed(() => isHexColor(this.values().color_code) ? this.values().color_code : 'var(--ui-accent)');
   readonly currencyPreview = computed(() => formatCurrencyPreview(this.values()));
 
   constructor() {
@@ -76,8 +77,8 @@ export class EntityEditorComponent {
         this.form.reset({
           name: entity?.name ?? '', note: account?.note ?? '', currency_uuid: account?.currency_uuid ?? '',
           prefix: currency?.prefix ?? '', suffix: currency?.suffix ?? '', decimal_places: currency?.decimal_places ?? 2,
-          icon: entity?.icon ?? (kind === 'account' ? 'lucide:WalletCards' : 'lucide:Coins'),
-          color_code: entity?.color_code ?? (kind === 'account' ? '#21E683' : '#FFD51A'),
+          icon: entity?.icon ?? (kind === 'account' ? DEFAULT_ACCOUNT_APPEARANCE.icon : DEFAULT_CURRENCY_APPEARANCE.icon),
+          color_code: entity?.color_code ?? (kind === 'account' ? DEFAULT_ACCOUNT_APPEARANCE.color : DEFAULT_CURRENCY_APPEARANCE.color),
         });
         this.error.set(null);
       });

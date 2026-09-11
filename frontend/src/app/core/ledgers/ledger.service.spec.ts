@@ -45,7 +45,7 @@ describe('LedgerService', () => {
 
   it('adds an accessed ledger to an empty state when opened directly by URL', () => {
     service.access(firstLedger.uuid).subscribe();
-    http.expectOne(API_ROUTES.ledgers.one(firstLedger.uuid)).flush(firstLedger);
+    http.expectOne(API_ROUTES.ledgers.byUuid(firstLedger.uuid)).flush(firstLedger);
 
     expect(service.ledgers()).toEqual([firstLedger]);
   });
@@ -56,7 +56,7 @@ describe('LedgerService', () => {
 
     const updated = { ...firstLedger, name: 'Updated' };
     service.update(firstLedger.uuid, { name: updated.name, icon: updated.icon, color_code: updated.color_code }).subscribe();
-    http.expectOne(API_ROUTES.ledgers.one(firstLedger.uuid)).flush(updated);
+    http.expectOne(API_ROUTES.ledgers.byUuid(firstLedger.uuid)).flush(updated);
 
     expect(service.ledgers()).toEqual([updated]);
   });
@@ -76,7 +76,7 @@ describe('LedgerService', () => {
     http.expectOne(API_ROUTES.ledgers.root).flush([firstLedger, secondLedger]);
 
     service.delete(firstLedger.uuid).subscribe();
-    http.expectOne(API_ROUTES.ledgers.one(firstLedger.uuid)).flush(null);
+    http.expectOne(API_ROUTES.ledgers.byUuid(firstLedger.uuid)).flush(null);
 
     expect(service.ledgers()).toEqual([secondLedger]);
   });

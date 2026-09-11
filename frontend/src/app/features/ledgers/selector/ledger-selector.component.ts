@@ -10,6 +10,7 @@ import { LedgerIconComponent } from '../../../shared/ledger/ledger-icon.componen
 import { normalizeSearchText } from '../../../shared/search-normalization';
 import { FormMessageComponent } from '../../../shared/ui/form-message.component';
 import { IconComponent } from '../../../shared/ui/icon.component';
+import { isListboxNavigationKey, nextListboxIndex } from '../../../shared/ui/listbox-navigation';
 import { LedgerDeleteDialogComponent } from '../ledger-delete-dialog.component';
 import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
 
@@ -21,18 +22,18 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
     <section class="ledger-card ui-projected-surface ui-projection--hard" aria-labelledby="ledgers-title">
       <header class="ledger-card__header">
         <div class="ledger-card__title ui-heading-with-icon">
-          <span class="ledger-card__title-icon ui-icon-badge ui-icon-badge--title ui-projected-icon" aria-hidden="true"><app-icon name="database" [size]="25" /></span>
+          <span class="ledger-card__title-icon ui-icon-badge ui-icon-badge--title ui-projected-icon" aria-hidden="true"><app-icon name="database" size="card-title" /></span>
           <h1 id="ledgers-title">{{ i18n.t('ledgers.title') }}</h1>
         </div>
         <button class="ui-button ui-button--green create-button" type="button" (click)="openCreate()">
-          <app-icon name="plus" [size]="18" />
+          <app-icon name="plus" size="action" />
           <span>{{ i18n.t('ledgers.create') }}</span>
         </button>
       </header>
 
       <div class="ledger-card__body">
         <label class="search-box ui-dropdown-search">
-          <app-icon name="search" [size]="19" />
+          <app-icon name="search" size="action" />
           <input type="search" [value]="search()" (input)="setSearchFromEvent($event)" [placeholder]="i18n.t('ledgers.search')" />
         </label>
 
@@ -42,13 +43,14 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
           <div class="state-row"><span class="ui-spinner" aria-hidden="true"></span><span>{{ i18n.t('ledgers.loading') }}</span></div>
         } @else if (filteredLedgers().length === 0) {
           <div class="empty-state">
-            <span class="empty-state__icon"><app-icon name="book" [size]="25" /></span>
+            <span class="empty-state__icon"><app-icon name="book" size="empty-state" /></span>
             <strong>{{ search().trim() ? i18n.t('ledgers.noSearchResults') : i18n.t('ledgers.empty') }}</strong>
           </div>
         } @else {
-          <div class="ledger-list" role="listbox" [attr.aria-label]="i18n.t('ledgers.title')">
-            @for (ledger of filteredLedgers(); track ledger.uuid) {
-              <div class="ledger-row" role="option" tabindex="0" [attr.aria-selected]="selectedUuid() === ledger.uuid"
+          <div class="ledger-list" role="listbox" [attr.aria-label]="i18n.t('ledgers.title')" (keydown)="navigateList($event)">
+            @for (ledger of filteredLedgers(); track ledger.uuid; let first = $first) {
+              <div class="ledger-row" role="option" [attr.tabindex]="selectedUuid() === ledger.uuid || (!selectedUuid() && first) ? 0 : -1"
+                [attr.data-ledger-uuid]="ledger.uuid" [attr.aria-selected]="selectedUuid() === ledger.uuid"
                 [class.ledger-row--selected]="selectedUuid() === ledger.uuid"
                 (click)="selectLedger(ledger.uuid)" (keydown.enter)="selectLedger(ledger.uuid)" (keydown.space)="selectLedgerFromSpace($event, ledger.uuid)">
                 <span class="ledger-row__token ui-icon-badge ui-icon-badge--title ui-projected-icon" [style.background]="ledger.color_code" [style.color]="foreground(ledger.color_code)">
@@ -59,16 +61,16 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
                 <div class="ledger-row__actions">
                   <button class="more-button" type="button" (click)="toggleMenu($event, ledger.uuid)"
                     [attr.aria-label]="i18n.t('ledgers.actions')" [attr.aria-expanded]="menuLedgerUuid() === ledger.uuid">
-                    <app-icon name="ellipsis" [size]="20" />
+                    <app-icon name="ellipsis" size="navigation" />
                   </button>
                   @if (menuLedgerUuid() === ledger.uuid) {
-                    <div class="row-menu ui-dropdown-menu ui-projected-surface ui-projection--surface" role="menu" (click)="$event.stopPropagation()">
+                    <div class="row-menu ui-dropdown-menu ui-projected-surface" role="menu" (click)="$event.stopPropagation()">
                       <button type="button" role="menuitem" (click)="openEdit(ledger)">
-                        <span class="row-menu__icon row-menu__icon--blue ui-icon-badge ui-projected-icon"><app-icon name="pencil" [size]="16" /></span>
+                        <span class="row-menu__icon row-menu__icon--blue ui-icon-badge ui-projected-icon"><app-icon name="pencil" size="menu" /></span>
                         <span>{{ i18n.t('ledgers.edit') }}</span>
                       </button>
                       <button class="row-menu__delete" type="button" role="menuitem" (click)="openDelete(ledger)">
-                        <span class="row-menu__icon row-menu__icon--danger ui-icon-badge ui-projected-icon"><app-icon name="trash" [size]="16" /></span>
+                        <span class="row-menu__icon row-menu__icon--danger ui-icon-badge ui-projected-icon"><app-icon name="trash" size="menu" /></span>
                         <span>{{ i18n.t('ledgers.delete') }}</span>
                       </button>
                     </div>
@@ -83,7 +85,7 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
       <footer class="ledger-card__footer ui-surface-actions">
         <button class="ui-button ui-button--green enter-button" type="button" [disabled]="!selectedLedger() || entering()" (click)="enterSelected()">
           <span>{{ i18n.t('ledgers.enter') }}</span>
-          <app-icon name="arrow-right" [size]="19" />
+          <app-icon name="arrow-right" size="navigation" />
         </button>
       </footer>
     </section>
@@ -200,6 +202,26 @@ export class LedgerSelectorComponent {
     if (selected && !normalizeSearchText(selected.name).includes(normalizeSearchText(value.trim()))) {
       this.selectedUuid.set(null);
     }
+  }
+
+
+  navigateList(event: KeyboardEvent): void {
+    if (!isListboxNavigationKey(event.key)) return;
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || !target.classList.contains('ledger-row')) return;
+
+    const list = target.closest<HTMLElement>('.ledger-list');
+    const rows = list ? [...list.querySelectorAll<HTMLElement>('.ledger-row[data-ledger-uuid]')] : [];
+    if (!rows.length) return;
+    const currentIndex = Math.max(0, rows.indexOf(target));
+    const nextIndex = nextListboxIndex(currentIndex, rows.length, event.key);
+    const nextRow = rows[nextIndex];
+    const uuid = nextRow?.dataset['ledgerUuid'];
+    if (!nextRow || !uuid) return;
+
+    event.preventDefault();
+    this.selectLedger(uuid);
+    nextRow.focus();
   }
 
   selectLedger(uuid: string): void {

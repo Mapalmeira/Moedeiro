@@ -1,3 +1,7 @@
+const ledgerRoot = (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}`;
+const resourceRoot = (ledgerUuid: string, resource: string) => `${ledgerRoot(ledgerUuid)}/${resource}`;
+const resourceByUuid = (ledgerUuid: string, resource: string, resourceUuid: string) => `${resourceRoot(ledgerUuid, resource)}/${encodeURIComponent(resourceUuid)}`;
+
 export const API_ROUTES = {
   authentication: {
     login: '/api/authentication/login',
@@ -18,14 +22,36 @@ export const API_ROUTES = {
   userPreferences: '/api/user/preferences',
   ledgers: {
     root: '/api/ledgers',
-    one: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}`,
+    byUuid: ledgerRoot,
+    accounts: {
+      root: (ledgerUuid: string) => resourceRoot(ledgerUuid, 'accounts'),
+      byUuid: (ledgerUuid: string, accountUuid: string) => resourceByUuid(ledgerUuid, 'accounts', accountUuid),
+      balance: (ledgerUuid: string, accountUuid: string) => `${resourceByUuid(ledgerUuid, 'accounts', accountUuid)}/balance`,
+    },
+    balances: (ledgerUuid: string) => resourceRoot(ledgerUuid, 'balances'),
+    currencies: {
+      root: (ledgerUuid: string) => resourceRoot(ledgerUuid, 'currencies'),
+      byUuid: (ledgerUuid: string, currencyUuid: string) => resourceByUuid(ledgerUuid, 'currencies', currencyUuid),
+    },
+    categories: {
+      root: (ledgerUuid: string) => resourceRoot(ledgerUuid, 'categories'),
+      byUuid: (ledgerUuid: string, categoryUuid: string) => resourceByUuid(ledgerUuid, 'categories', categoryUuid),
+      tree: (ledgerUuid: string) => `${resourceRoot(ledgerUuid, 'categories')}/tree`,
+    },
+    events: {
+      root: (ledgerUuid: string) => resourceRoot(ledgerUuid, 'events'),
+      byUuid: (ledgerUuid: string, eventUuid: string) => resourceByUuid(ledgerUuid, 'events', eventUuid),
+    },
+    budgets: {
+      root: (ledgerUuid: string) => resourceRoot(ledgerUuid, 'budgets'),
+      byUuid: (ledgerUuid: string, budgetUuid: string) => resourceByUuid(ledgerUuid, 'budgets', budgetUuid),
+      overview: (ledgerUuid: string) => `${resourceRoot(ledgerUuid, 'budgets')}/overview`,
+      currencyOverview: (ledgerUuid: string) => `${resourceRoot(ledgerUuid, 'budgets')}/currency-overview`,
+    },
+    cashFlow: {
+      root: (ledgerUuid: string) => resourceRoot(ledgerUuid, 'cash-flow'),
+      points: (ledgerUuid: string) => `${resourceRoot(ledgerUuid, 'cash-flow')}/points`,
+      sankey: (ledgerUuid: string) => `${resourceRoot(ledgerUuid, 'cash-flow')}/sankey`,
+    },
   },
-  ledgerAccounts: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/accounts`,
-  ledgerAccountBalance: (ledgerUuid: string, accountUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/accounts/${encodeURIComponent(accountUuid)}/balance`,
-  ledgerBalances: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/balances`,
-  ledgerCurrencies: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/currencies`,
-  ledgerCategories: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/categories`,
-  ledgerEvents: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/events`,
-  ledgerBudgets: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/budgets`,
-  ledgerCashFlow: (ledgerUuid: string) => `/api/ledgers/${encodeURIComponent(ledgerUuid)}/cash-flow`,
 } as const;

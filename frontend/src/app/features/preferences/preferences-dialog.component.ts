@@ -19,12 +19,12 @@ import { LanguageSelectorComponent } from '../../shared/ui/language-selector.com
       <app-dialog-shell [ariaLabel]="i18n.t('preferences.title')" (dismiss)="requestClose()">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
-            <span class="title-icon title-icon--green"><app-icon name="sliders" [size]="21" /></span>
+            <span class="title-icon title-icon--green"><app-icon name="sliders" size="dialog-title" /></span>
             <h2>{{ i18n.t('preferences.title') }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="closing() || saving()"
             [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" [size]="19" />
+            <app-icon name="x" size="close" />
           </button>
         </header>
 
@@ -41,12 +41,12 @@ import { LanguageSelectorComponent } from '../../shared/ui/language-selector.com
                 <button type="button" class="ui-choice choice-card choice-card--with-icon"
                   [class.ui-choice--selected]="form.controls.theme.value === 'LIGHT'"
                   (click)="setTheme('LIGHT')">
-                  <app-icon name="sun" [size]="18" /><span>{{ i18n.t('theme.light') }}</span>
+                  <app-icon name="sun" size="action" /><span>{{ i18n.t('theme.light') }}</span>
                 </button>
                 <button type="button" class="ui-choice choice-card choice-card--with-icon"
                   [class.ui-choice--selected]="form.controls.theme.value === 'DARK'"
                   (click)="setTheme('DARK')">
-                  <app-icon name="moon" [size]="18" /><span>{{ i18n.t('theme.dark') }}</span>
+                  <app-icon name="moon" size="action" /><span>{{ i18n.t('theme.dark') }}</span>
                 </button>
               </div>
             </section>
@@ -75,7 +75,7 @@ import { LanguageSelectorComponent } from '../../shared/ui/language-selector.com
     }
     .preference-field { min-width: 0; display: grid; gap: var(--field-gap); padding: var(--section-gap) 0; }
     .preference-grid .preference-field { padding: 0; border: 0; }
-    .preference-label { font-size: .9rem; font-weight: 780; letter-spacing: -.005em; }
+    .preference-label { font-size: var(--control-font-size); font-weight: 780; letter-spacing: -.005em; }
     .choice-grid { display: grid; gap: var(--space-2); }
     .choice-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .choice-card--with-icon { justify-content: flex-start; padding-left: var(--form-gap); }

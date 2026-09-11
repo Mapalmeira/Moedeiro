@@ -29,12 +29,12 @@ import { IconComponent } from '../../shared/ui/icon.component';
         <div class="dialog security-dialog">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
-            <span class="title-icon title-icon--blue"><app-icon name="shield" [size]="21" /></span>
+            <span class="title-icon title-icon--blue"><app-icon name="shield" size="dialog-title" /></span>
             <h2>{{ i18n.t('security.title') }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="busy()"
             [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" [size]="19" />
+            <app-icon name="x" size="close" />
           </button>
         </header>
 
@@ -150,7 +150,7 @@ import { IconComponent } from '../../shared/ui/icon.component';
                 </form>
               } @else {
                 <div class="totp-setup">
-                  <div class="qr-wrap ui-projected-surface ui-projection--surface">
+                  <div class="qr-wrap ui-projected-surface">
                     @if (qrDataUrl()) {
                       <img [src]="qrDataUrl()!" [alt]="i18n.t('security.totp.qrAlt')" width="220" height="220" />
                     } @else {
@@ -166,11 +166,11 @@ import { IconComponent } from '../../shared/ui/icon.component';
                           <code>{{ secretVisible() ? totpSecret() : maskedTotpSecret() }}</code>
                           <button class="secret-visibility-button" type="button" (click)="toggleSecretVisibility()"
                             [attr.aria-label]="secretVisible() ? i18n.t('security.totp.hideSecret') : i18n.t('security.totp.showSecret')">
-                            <app-icon [name]="secretVisible() ? 'eye-off' : 'eye'" [size]="17" />
+                            <app-icon [name]="secretVisible() ? 'eye-off' : 'eye'" size="compact-control" />
                           </button>
                           <button class="copy-button" type="button" (click)="copySecret()"
                             [attr.aria-label]="secretCopied() ? i18n.t('security.totp.copied') : i18n.t('security.totp.copySecret')">
-                            <app-icon [name]="secretCopied() ? 'check' : 'copy'" [size]="17" />
+                            <app-icon [name]="secretCopied() ? 'check' : 'copy'" size="compact-control" />
                           </button>
                         </div>
                       </div>

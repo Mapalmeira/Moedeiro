@@ -20,7 +20,7 @@ describe('LedgerBudgetsService', () => {
   it('requests the currency overview at the selected reference timestamp', () => {
     service.currencyOverview('ledger', 'currency', 1_775_001_599, 3).subscribe();
 
-    const request = http.expectOne(candidate => candidate.url === `${API_ROUTES.ledgerBudgets('ledger')}/currency-overview`);
+    const request = http.expectOne(candidate => candidate.url === API_ROUTES.ledgers.budgets.currencyOverview('ledger'));
     expect(request.request.method).toBe('GET');
     expect(request.request.params.get('currency_uuid')).toBe('currency');
     expect(request.request.params.get('timestamp')).toBe('1775001599');

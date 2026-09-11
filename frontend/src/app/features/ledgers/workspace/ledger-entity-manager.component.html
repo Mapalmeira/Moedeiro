@@ -1,7 +1,7 @@
 <section class="manager" [attr.aria-label]="title()">
   <header class="manager-header">
     <label class="search ui-dropdown-search">
-      <app-icon name="search" [size]="18" />
+      <app-icon name="search" size="action" />
       <input type="search" [value]="search()" (input)="filter($event)"
         [attr.aria-label]="i18n.t('workspace.search')" [placeholder]="i18n.t('workspace.search')" />
     </label>
@@ -10,7 +10,7 @@
       [disabled]="loading() || !!error() || items().length >= 300"
       [attr.aria-label]="i18n.t(kind() === 'account' ? 'accounts.create' : 'currencies.create')"
       [attr.title]="i18n.t(kind() === 'account' ? 'accounts.create' : 'currencies.create')">
-      <app-icon name="plus" [size]="17" />
+      <app-icon name="plus" size="compact-control" />
     </button>
   </header>
 
@@ -25,7 +25,7 @@
     <div class="ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
   } @else {
     <div class="manager-body ui-workspace-card-space">
-      <div class="entity-list ui-card ui-projected-surface ui-projection--surface" [attr.aria-label]="title()">
+      <div class="entity-list ui-card ui-projected-surface" [attr.aria-label]="title()">
         @if (rows().length) {
           <div class="entity-list__header" aria-hidden="true"><span class="entity-list__header-name">{{ title() }}</span><span class="entity-list__header-balance">{{ i18n.t('workspace.balance') }}</span></div>
         }
@@ -39,7 +39,7 @@
           </button>
         } @empty {
           <div class="state entity-list__empty">
-            <app-icon [name]="kind() === 'account' ? 'building' : 'coins'" [size]="26" />
+            <app-icon [name]="kind() === 'account' ? 'building' : 'coins'" size="empty-state" />
             {{ i18n.t(search().trim() ? 'workspace.noResults' : kind() === 'account' ? 'accounts.empty' : 'currencies.empty') }}
           </div>
         }
@@ -54,12 +54,12 @@
 }
 
 @if (deleting()) {
-  <app-dialog-shell role="alertdialog" ariaLabelledby="entity-delete-title" dialogWidth="520px" (dismiss)="closeDelete()">
+  <app-dialog-shell role="alertdialog" ariaLabelledby="entity-delete-title" dialogWidth="var(--dialog-width-confirmation)" (dismiss)="closeDelete()">
         <header class="ui-dialog-header">
-          <div class="ui-dialog-title"><span class="title-icon delete-icon"><app-icon name="trash" [size]="20" /></span>
+          <div class="ui-dialog-title"><span class="title-icon delete-icon"><app-icon name="trash" size="dialog-title" /></span>
             <h2 id="entity-delete-title">{{ i18n.t(kind() === 'account' ? 'accounts.delete' : 'currencies.delete') }}</h2>
           </div>
-          <button type="button" class="icon-button icon-button--control ui-action-press" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="x" [size]="18" /></button>
+          <button type="button" class="icon-button icon-button--control ui-action-press" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="x" size="close" /></button>
         </header>
         <div class="delete-body ui-delete-dialog-body">
           <app-form-message [text]="i18n.t(kind() === 'account' ? 'accounts.deleteWarning' : 'currencies.deleteWarning')" />

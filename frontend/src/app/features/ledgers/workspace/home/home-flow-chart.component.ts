@@ -3,7 +3,7 @@ import { I18nService } from '../../../../core/i18n/i18n.service';
 import { CashFlowPoint } from '../../../../core/ledgers/cash-flow.models';
 import { formatCurrencyAmount } from '../../../../core/ledgers/currency-format';
 import { LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models';
-import { PeriodMode } from '../../../../shared/ui/period-selector.component';
+import type { PeriodMode } from '../../../../shared/period-selection';
 
 export type HomeFlowMode = 'instant' | 'cumulative';
 export interface HomeFlowRange { from: number; to: number; }

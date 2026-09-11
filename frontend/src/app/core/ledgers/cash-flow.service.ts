@@ -22,7 +22,7 @@ export class CashFlowService {
     if (filters.category_uuid) params = params.set('category_uuid', filters.category_uuid);
     if (filters.event_type) params = params.set('event_type', filters.event_type);
     if (filters.description_search?.trim()) params = params.set('description_search', filters.description_search.trim());
-    return this.http.get<CashFlowPoint>(API_ROUTES.ledgerCashFlow(ledgerUuid), { params });
+    return this.http.get<CashFlowPoint>(API_ROUTES.ledgers.cashFlow.root(ledgerUuid), { params });
   }
 
   points(
@@ -42,7 +42,7 @@ export class CashFlowService {
     if (filters.category_uuid) params = params.set('category_uuid', filters.category_uuid);
     if (filters.event_type) params = params.set('event_type', filters.event_type);
     if (filters.description_search?.trim()) params = params.set('description_search', filters.description_search.trim());
-    return this.http.get<CashFlowPoint[]>(`${API_ROUTES.ledgerCashFlow(ledgerUuid)}/points`, { params });
+    return this.http.get<CashFlowPoint[]>(API_ROUTES.ledgers.cashFlow.points(ledgerUuid), { params });
   }
 
   sankey(ledgerUuid: string, accountUuid: string, fromTimestamp: number, toTimestamp: number, detailLevel: number): Observable<CashFlowSankey> {
@@ -51,7 +51,7 @@ export class CashFlowService {
       .set('from_timestamp', fromTimestamp)
       .set('to_timestamp', toTimestamp)
       .set('detail_level', detailLevel);
-    return this.http.get<CashFlowSankey>(`${API_ROUTES.ledgerCashFlow(ledgerUuid)}/sankey`, { params });
+    return this.http.get<CashFlowSankey>(API_ROUTES.ledgers.cashFlow.sankey(ledgerUuid), { params });
   }
 
 }

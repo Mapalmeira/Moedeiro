@@ -10,13 +10,12 @@ import { LedgerCategoriesService } from '../../../../core/ledgers/ledger-categor
 import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.component';
 import { entityIconValidator } from '../../../../shared/ledger/entity-icon-validator';
 import { LedgerAppearanceFieldsComponent } from '../../../../shared/ledger/ledger-appearance-fields.component';
+import { DEFAULT_CATEGORY_APPEARANCE, HEX_COLOR_PATTERN, isHexColor } from '../../../../shared/ledger/ledger-appearance';
 import { FieldErrorComponent } from '../../../../shared/ui/field-error.component';
 import { FormMessageComponent } from '../../../../shared/ui/form-message.component';
 import { IconComponent } from '../../../../shared/ui/icon.component';
 import { CategoryParentSelectComponent, ROOT_CATEGORY_VALUE } from './category-parent-select.component';
 
-const DEFAULT_CATEGORY_ICON = 'lucide:Folder';
-const DEFAULT_CATEGORY_COLOR = '#488DFC';
 
 @Component({
   selector: 'app-category-editor',
@@ -54,12 +53,12 @@ export class CategoryEditorComponent {
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(30), Validators.pattern(/\S/)]],
     parent: [ROOT_CATEGORY_VALUE, [Validators.required]],
-    icon: [DEFAULT_CATEGORY_ICON, [entityIconValidator]],
-    color_code: [DEFAULT_CATEGORY_COLOR, [Validators.required, Validators.pattern(/^#[0-9A-Fa-f]{6}$/)]],
+    icon: [DEFAULT_CATEGORY_APPEARANCE.icon, [entityIconValidator]],
+    color_code: [DEFAULT_CATEGORY_APPEARANCE.color, [Validators.required, Validators.pattern(HEX_COLOR_PATTERN)]],
   });
   readonly values = signal(this.form.getRawValue());
   readonly title = computed(() => this.i18n.t(this.category() ? 'categories.edit' : 'categories.create'));
-  readonly previewColor = computed(() => /^#[0-9A-Fa-f]{6}$/.test(this.values().color_code) ? this.values().color_code : DEFAULT_CATEGORY_COLOR);
+  readonly previewColor = computed(() => isHexColor(this.values().color_code) ? this.values().color_code : DEFAULT_CATEGORY_APPEARANCE.color);
   readonly excludedParentUuids = computed(() => {
     const current = this.category();
     if (!current) return new Set<string>();
@@ -92,8 +91,8 @@ export class CategoryEditorComponent {
         this.form.reset({
           name: category?.name ?? '',
           parent: (category?.parent_uuid ?? initialParentUuid) || ROOT_CATEGORY_VALUE,
-          icon: category?.icon ?? DEFAULT_CATEGORY_ICON,
-          color_code: category?.color_code ?? DEFAULT_CATEGORY_COLOR,
+          icon: category?.icon ?? DEFAULT_CATEGORY_APPEARANCE.icon,
+          color_code: category?.color_code ?? DEFAULT_CATEGORY_APPEARANCE.color,
         });
         this.error.set(null);
       });

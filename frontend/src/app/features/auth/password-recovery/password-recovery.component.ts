@@ -28,11 +28,11 @@ import { IconComponent } from '../../../shared/ui/icon.component';
       <app-dialog-shell [ariaLabel]="i18n.t('auth.recovery.title')" dialogWidth="550px" (dismiss)="requestClose()">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
-            <span class="title-icon title-icon--green"><app-icon name="key" [size]="21" /></span>
+            <span class="title-icon title-icon--green"><app-icon name="key" size="dialog-title" /></span>
             <h2>{{ i18n.t('auth.recovery.title') }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" [size]="19" />
+            <app-icon name="x" size="close" />
           </button>
         </header>
 
