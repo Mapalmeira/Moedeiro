@@ -8,7 +8,7 @@
 
 * **Ledger grant** links a user to a ledger. The current role is `OWNER`; grants can be revoked while retaining their history. A ledger has at most one active owner.
 
-* **User preferences** hold optional presentation settings: language (`pt-BR` or `en`), date, time, and number formats, theme, and IANA timezone.
+* **User preferences** hold the selected language (`pt-BR` or `en`) and theme (`LIGHT` or `DARK`).
 
 * **Auth session** is the server-side, short-lived authenticated session.
 
