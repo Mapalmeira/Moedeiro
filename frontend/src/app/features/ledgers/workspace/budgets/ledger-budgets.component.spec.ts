@@ -95,7 +95,7 @@ describe('LedgerBudgetsComponent', () => {
 
     expect(budgetsService.overview).toHaveBeenCalledWith('ledger', expect.objectContaining({ states: ['ACTIVE', 'FUTURE', 'FINISHED'] }));
     expect(component.items()).toEqual([budget]);
-    expect(component.cards()[0]?.stateIcon).toBe('clock');
+    expect(component.cards()[0]?.stateIcon).toBe('LucideClock');
     expect(component.resourcesLoading()).toBe(false);
   });
 });

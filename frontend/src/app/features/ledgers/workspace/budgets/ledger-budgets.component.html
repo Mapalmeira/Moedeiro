@@ -1,7 +1,7 @@
 <section class="budgets" aria-labelledby="budgets-list-title">
   <header class="budgets-commandbar">
     <label class="budgets-search ui-dropdown-search">
-      <app-icon name="search" size="action" />
+      <app-icon name="LucideSearch" size="control" />
       <input type="search" [value]="search()" (input)="updateSearch($event)"
         [attr.aria-label]="i18n.t('budgets.search')" [placeholder]="i18n.t('budgets.search')" />
     </label>
@@ -11,7 +11,7 @@
     <app-budget-state-filter class="budgets-state-filter" [selected]="states()" (selectedChange)="updateStates($event)" />
     <button type="button" class="budgets-create icon-button icon-button--control icon-button--add icon-button--yellow ui-action-press"
       [disabled]="!canCreate()" (click)="openCreate()" [attr.aria-label]="i18n.t('budgets.create')" [attr.title]="i18n.t('budgets.create')">
-      <app-icon name="plus" size="compact-control" />
+      <app-icon name="LucidePlus" size="control" />
     </button>
   </header>
 
@@ -72,7 +72,7 @@
         </button>
       } @empty {
         <div class="budgets-state budget-grid__empty ui-empty-state">
-          <app-icon name="wallet" size="empty-state" />
+          <app-icon name="LucideWallet" size="display" />
           {{ i18n.t(search().trim() ? 'budgets.noResults' : 'budgets.empty') }}
         </div>
       }
@@ -96,10 +96,10 @@
   <app-dialog-shell role="alertdialog" ariaLabelledby="budget-delete-title" dialogWidth="var(--dialog-width-confirmation)" (dismiss)="closeDelete()">
         <header class="ui-dialog-header">
           <div class="ui-dialog-title">
-            <span class="title-icon budget-delete-icon"><app-icon name="trash" size="dialog-title" /></span>
+            <span class="title-icon budget-delete-icon"><app-icon name="LucideTrash2" size="prominent" /></span>
             <h2 id="budget-delete-title">{{ i18n.t('budgets.delete') }}</h2>
           </div>
-          <button type="button" class="icon-button icon-button--control ui-action-press" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="x" size="close" /></button>
+          <button type="button" class="icon-button icon-button--control ui-action-press" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="LucideX" size="control" /></button>
         </header>
         <div class="ui-delete-dialog-body">
           <app-form-message [text]="i18n.t('budgets.deleteWarning')" />

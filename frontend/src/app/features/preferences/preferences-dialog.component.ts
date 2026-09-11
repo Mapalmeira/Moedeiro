@@ -19,12 +19,12 @@ import { LanguageSelectorComponent } from '../../shared/ui/language-selector.com
       <app-dialog-shell [ariaLabel]="i18n.t('preferences.title')" (dismiss)="requestClose()">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
-            <span class="title-icon title-icon--green"><app-icon name="sliders" size="dialog-title" /></span>
+            <span class="title-icon title-icon--green"><app-icon name="LucideSlidersHorizontal" size="prominent" /></span>
             <h2>{{ i18n.t('preferences.title') }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="closing() || saving()"
             [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" size="close" />
+            <app-icon name="LucideX" size="control" />
           </button>
         </header>
 
@@ -41,12 +41,12 @@ import { LanguageSelectorComponent } from '../../shared/ui/language-selector.com
                 <button type="button" class="ui-choice choice-card choice-card--with-icon"
                   [class.ui-choice--selected]="form.controls.theme.value === 'LIGHT'"
                   (click)="setTheme('LIGHT')">
-                  <app-icon name="sun" size="action" /><span>{{ i18n.t('theme.light') }}</span>
+                  <app-icon name="LucideSun" size="control" /><span>{{ i18n.t('theme.light') }}</span>
                 </button>
                 <button type="button" class="ui-choice choice-card choice-card--with-icon"
                   [class.ui-choice--selected]="form.controls.theme.value === 'DARK'"
                   (click)="setTheme('DARK')">
-                  <app-icon name="moon" size="action" /><span>{{ i18n.t('theme.dark') }}</span>
+                  <app-icon name="LucideMoon" size="control" /><span>{{ i18n.t('theme.dark') }}</span>
                 </button>
               </div>
             </section>

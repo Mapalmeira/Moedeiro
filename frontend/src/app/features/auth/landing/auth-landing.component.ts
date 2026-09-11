@@ -40,7 +40,7 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
   template: `
     <app-auth-shell>
       <section class="auth-layout">
-        <app-auth-card [title]="i18n.t('auth.login.title')" icon="user" accent="green">
+        <app-auth-card [title]="i18n.t('auth.login.title')" icon="LucideUser" accent="green">
           <form class="login-form" [formGroup]="loginForm" (ngSubmit)="submitLogin()" novalidate>
             <label class="field" [class.ui-field-feedback--rejected]="loginCredentialsRejected()">
               <span>{{ i18n.t('auth.username') }} <span class="required-mark" aria-hidden="true">*</span></span>
@@ -55,7 +55,7 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
                   formControlName="password" required (input)="clearLoginCredentialsRejection()" (animationend)="clearLoginCredentialsRejection()" [attr.aria-invalid]="loginCredentialsRejected()" [attr.aria-describedby]="loginCredentialsRejected() ? 'login-credentials-feedback' : null" />
                 <button type="button" class="icon-action" (click)="showLoginPassword.set(!showLoginPassword())"
                   [attr.aria-label]="showLoginPassword() ? i18n.t('auth.password.hide') : i18n.t('auth.password.show')">
-                  <app-icon [name]="showLoginPassword() ? 'eye-off' : 'eye'" />
+                  <app-icon [name]="showLoginPassword() ? 'LucideEyeOff' : 'LucideEye'" />
                 </button>
               </div>
               <app-field-error [text]="passwordError(loginForm.controls.password)" />
@@ -70,7 +70,7 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
             <div class="login-options">
               <label class="checkbox">
                 <input class="checkbox__input" type="checkbox" formControlName="remember" />
-                <span class="checkbox__control ui-icon-badge" aria-hidden="true"><app-icon name="check" size="indicator" /></span>
+                <span class="checkbox__control ui-icon-badge" aria-hidden="true"><app-icon name="LucideCheck" size="indicator" /></span>
                 <span>{{ i18n.t('auth.remember') }}</span>
               </label>
               <button class="text-button" type="button" (click)="recoveryOpen.set(true)">{{ i18n.t('auth.forgotPassword') }}</button>
@@ -87,12 +87,12 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
 
             <button class="ui-button ui-button--green ui-button--full" type="submit" [disabled]="loginForm.invalid || loadingLogin()">
               <span>{{ i18n.t('auth.signIn') }}</span>
-              <app-icon name="arrow-right" />
+              <app-icon name="LucideArrowRight" />
             </button>
           </form>
         </app-auth-card>
 
-        <app-auth-card [title]="i18n.t('auth.register.title')" icon="mail" accent="yellow">
+        <app-auth-card [title]="i18n.t('auth.register.title')" icon="LucideMail" accent="yellow">
           <form class="registration-form" [formGroup]="registrationForm" (ngSubmit)="submitRegistration()" novalidate>
             <label class="field" [class.ui-field-feedback--rejected]="registrationInvitationRejected()">
               <span>{{ i18n.t('auth.invite.label') }} <span class="required-mark" aria-hidden="true">*</span></span>
@@ -114,7 +114,7 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
                   autocomplete="new-password" required />
                 <button type="button" class="icon-action" (click)="showRegistrationPassword.set(!showRegistrationPassword())"
                   [attr.aria-label]="showRegistrationPassword() ? i18n.t('auth.password.hide') : i18n.t('auth.password.show')">
-                  <app-icon [name]="showRegistrationPassword() ? 'eye-off' : 'eye'" />
+                  <app-icon [name]="showRegistrationPassword() ? 'LucideEyeOff' : 'LucideEye'" />
                 </button>
               </div>
               <app-field-error [text]="passwordError(registrationForm.controls.password)" />
@@ -131,7 +131,7 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
             <button class="ui-button ui-button--yellow ui-button--full" type="submit"
               [disabled]="registrationForm.invalid || passwordMismatch() || loadingRegistration() || registrationCompleted()">
               <span>{{ i18n.t('auth.register.title') }}</span>
-              <app-icon [name]="registrationCompleted() ? 'check' : 'arrow-right'" />
+              <app-icon [name]="registrationCompleted() ? 'LucideCheck' : 'LucideArrowRight'" />
             </button>
           </form>
         </app-auth-card>

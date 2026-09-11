@@ -36,7 +36,7 @@ export interface EntitySearchOption {
               [class.ui-icon-badge--yellow]="option.tone === 'yellow'"
               [class.ui-icon-badge--blue]="option.tone === 'blue'"
               [class.ui-icon-badge--neutral]="!option.tone || option.tone === 'neutral'">
-              <app-icon [name]="option.uiIcon" size="badge-symbol" />
+              <app-icon [name]="option.uiIcon" size="badge" />
             </span>
           }
           <span class="entity-search-select__copy">
@@ -46,7 +46,7 @@ export interface EntitySearchOption {
         } @else {
           <span class="entity-search-select__empty-value">{{ emptyValueText() }}</span>
         }
-        <app-icon class="ui-select-chevron" name="chevron-down" size="chevron" />
+        <app-icon class="ui-select-chevron" name="LucideChevronDown" size="compact" />
       </button>
 
       @if (open()) {
@@ -54,7 +54,7 @@ export interface EntitySearchOption {
           [style.--entity-search-available-height]="availableHeight() + 'px'">
           @if (searchable()) {
             <label class="ui-dropdown-search">
-              <app-icon name="search" size="compact-control" />
+              <app-icon name="LucideSearch" size="control" />
               <input type="search" role="combobox" autocomplete="off" [attr.aria-label]="searchPlaceholder() || ariaLabel()"
                 aria-autocomplete="list" [attr.aria-expanded]="open()" [attr.aria-controls]="listId" [attr.aria-activedescendant]="activeOptionId()"
                 [placeholder]="searchPlaceholder()" [value]="query()" (input)="updateQuery($event)"
@@ -74,14 +74,14 @@ export interface EntitySearchOption {
                     [class.ui-icon-badge--yellow]="option.tone === 'yellow'"
                     [class.ui-icon-badge--blue]="option.tone === 'blue'"
                     [class.ui-icon-badge--neutral]="!option.tone || option.tone === 'neutral'">
-                    <app-icon [name]="option.uiIcon" size="badge-symbol" />
+                    <app-icon [name]="option.uiIcon" size="badge" />
                   </span>
                 }
                 <span class="entity-search-select__copy">
                   <strong>{{ option.label }}</strong>
                   @if (option.detail) { <small>{{ option.detail }}</small> }
                 </span>
-                @if (value() === option.value) { <app-icon name="check" size="selection" /> }
+                @if (value() === option.value) { <app-icon name="LucideCheck" size="compact" /> }
               </button>
             } @empty {
               <div class="entity-search-select__empty">{{ emptyText() }}</div>

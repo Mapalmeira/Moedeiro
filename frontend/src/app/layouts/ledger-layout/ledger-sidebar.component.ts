@@ -38,7 +38,7 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
                 [class.ledger-nav__icon--yellow]="item.tone === 'yellow'"
                 [class.ledger-nav__icon--blue]="item.tone === 'blue'"
                 [class.ledger-nav__icon--neutral]="item.tone === 'neutral'">
-                <app-icon [name]="item.icon" size="action" />
+                <app-icon [name]="item.icon" size="control" />
               </span>
               <span class="ledger-nav__label">{{ i18n.t(item.labelKey) }}</span>
             </a>
@@ -58,17 +58,17 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
                 <span class="ui-trigger-content">
                   <strong class="ledger-switcher__name ui-trigger-value ui-truncate">{{ currentLedger.name }}</strong>
                 </span>
-                <app-icon class="ledger-switcher__chevron ui-select-chevron" name="chevron-down" size="chevron" />
+                <app-icon class="ledger-switcher__chevron ui-select-chevron" name="LucideChevronDown" size="compact" />
               </button>
 
               @if (ledgerMenuOpen()) {
                 <div class="ledger-switcher__dropdown ui-dropdown-menu ui-projected-surface ui-projection--compact" role="menu">
                   <button type="button" role="menuitem" (click)="editCurrentLedger()">
-                    <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--edit ui-icon-badge ui-projected-icon"><app-icon name="pencil" size="menu" /></span>
+                    <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--edit ui-icon-badge ui-projected-icon"><app-icon name="LucidePencil" size="control" /></span>
                     <span>{{ i18n.t('ledgers.edit') }}</span>
                   </button>
                   <button type="button" role="menuitem" (click)="leaveCurrentLedger()">
-                    <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--leave ui-icon-badge ui-projected-icon"><app-icon name="logout" size="menu" /></span>
+                    <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--leave ui-icon-badge ui-projected-icon"><app-icon name="LucideLogOut" size="control" /></span>
                     <span>{{ i18n.t('ledgerShell.leave') }}</span>
                   </button>
                 </div>

@@ -1,7 +1,7 @@
 <section class="manager" [attr.aria-label]="title()">
   <header class="manager-header">
     <label class="search ui-dropdown-search">
-      <app-icon name="search" size="action" />
+      <app-icon name="LucideSearch" size="control" />
       <input type="search" [value]="search()" (input)="filter($event)"
         [attr.aria-label]="i18n.t('workspace.search')" [placeholder]="i18n.t('workspace.search')" />
     </label>
@@ -10,7 +10,7 @@
       [disabled]="loading() || !!error() || items().length >= 300"
       [attr.aria-label]="i18n.t(kind() === 'account' ? 'accounts.create' : 'currencies.create')"
       [attr.title]="i18n.t(kind() === 'account' ? 'accounts.create' : 'currencies.create')">
-      <app-icon name="plus" size="compact-control" />
+      <app-icon name="LucidePlus" size="control" />
     </button>
   </header>
 
@@ -39,7 +39,7 @@
           </button>
         } @empty {
           <div class="state entity-list__empty ui-empty-state">
-            <app-icon [name]="kind() === 'account' ? 'building' : 'coins'" size="empty-state" />
+            <app-icon [name]="kind() === 'account' ? 'LucideBuilding2' : 'LucideCoins'" size="display" />
             {{ i18n.t(search().trim() ? 'workspace.noResults' : kind() === 'account' ? 'accounts.empty' : 'currencies.empty') }}
           </div>
         }
@@ -56,10 +56,10 @@
 @if (deleting()) {
   <app-dialog-shell role="alertdialog" ariaLabelledby="entity-delete-title" dialogWidth="var(--dialog-width-confirmation)" (dismiss)="closeDelete()">
         <header class="ui-dialog-header">
-          <div class="ui-dialog-title"><span class="title-icon delete-icon"><app-icon name="trash" size="dialog-title" /></span>
+          <div class="ui-dialog-title"><span class="title-icon delete-icon"><app-icon name="LucideTrash2" size="prominent" /></span>
             <h2 id="entity-delete-title">{{ i18n.t(kind() === 'account' ? 'accounts.delete' : 'currencies.delete') }}</h2>
           </div>
-          <button type="button" class="icon-button icon-button--control ui-action-press" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="x" size="close" /></button>
+          <button type="button" class="icon-button icon-button--control ui-action-press" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="LucideX" size="control" /></button>
         </header>
         <div class="delete-body ui-delete-dialog-body">
           <app-form-message [text]="i18n.t(kind() === 'account' ? 'accounts.deleteWarning' : 'currencies.deleteWarning')" />

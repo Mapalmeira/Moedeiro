@@ -22,18 +22,18 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
     <section class="ledger-card ui-projected-surface ui-projection--hard" aria-labelledby="ledgers-title">
       <header class="ledger-card__header">
         <div class="ledger-card__title ui-heading-with-icon">
-          <span class="ledger-card__title-icon ui-icon-badge ui-icon-badge--title ui-projected-icon" aria-hidden="true"><app-icon name="database" size="card-title" /></span>
+          <span class="ledger-card__title-icon ui-icon-badge ui-icon-badge--title ui-projected-icon" aria-hidden="true"><app-icon name="LucideDatabase" size="badge" /></span>
           <h1 id="ledgers-title">{{ i18n.t('ledgers.title') }}</h1>
         </div>
         <button class="ui-button ui-button--green create-button" type="button" (click)="openCreate()">
-          <app-icon name="plus" size="action" />
+          <app-icon name="LucidePlus" size="control" />
           <span>{{ i18n.t('ledgers.create') }}</span>
         </button>
       </header>
 
       <div class="ledger-card__body">
         <label class="search-box ui-dropdown-search">
-          <app-icon name="search" size="action" />
+          <app-icon name="LucideSearch" size="control" />
           <input type="search" [value]="search()" (input)="setSearchFromEvent($event)" [placeholder]="i18n.t('ledgers.search')" />
         </label>
 
@@ -43,7 +43,7 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
           <div class="state-row"><span class="ui-spinner" aria-hidden="true"></span><span>{{ i18n.t('ledgers.loading') }}</span></div>
         } @else if (filteredLedgers().length === 0) {
           <div class="empty-state">
-            <span class="empty-state__icon"><app-icon name="book" size="empty-state" /></span>
+            <span class="empty-state__icon"><app-icon name="LucideBookOpen" size="display" /></span>
             <strong>{{ search().trim() ? i18n.t('ledgers.noSearchResults') : i18n.t('ledgers.empty') }}</strong>
           </div>
         } @else {
@@ -61,16 +61,16 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
                 <div class="ledger-row__actions">
                   <button class="more-button" type="button" (click)="toggleMenu($event, ledger.uuid)"
                     [attr.aria-label]="i18n.t('ledgers.actions')" [attr.aria-expanded]="menuLedgerUuid() === ledger.uuid">
-                    <app-icon name="ellipsis" size="navigation" />
+                    <app-icon name="LucideEllipsis" size="prominent" />
                   </button>
                   @if (menuLedgerUuid() === ledger.uuid) {
                     <div class="row-menu ui-dropdown-menu ui-projected-surface" role="menu" (click)="$event.stopPropagation()">
                       <button type="button" role="menuitem" (click)="openEdit(ledger)">
-                        <span class="row-menu__icon row-menu__icon--blue ui-icon-badge ui-projected-icon"><app-icon name="pencil" size="menu" /></span>
+                        <span class="row-menu__icon row-menu__icon--blue ui-icon-badge ui-projected-icon"><app-icon name="LucidePencil" size="control" /></span>
                         <span>{{ i18n.t('ledgers.edit') }}</span>
                       </button>
                       <button class="row-menu__delete" type="button" role="menuitem" (click)="openDelete(ledger)">
-                        <span class="row-menu__icon row-menu__icon--danger ui-icon-badge ui-projected-icon"><app-icon name="trash" size="menu" /></span>
+                        <span class="row-menu__icon row-menu__icon--danger ui-icon-badge ui-projected-icon"><app-icon name="LucideTrash2" size="control" /></span>
                         <span>{{ i18n.t('ledgers.delete') }}</span>
                       </button>
                     </div>
@@ -85,7 +85,7 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
       <footer class="ledger-card__footer ui-surface-actions">
         <button class="ui-button ui-button--green enter-button" type="button" [disabled]="!selectedLedger() || entering()" (click)="enterSelected()">
           <span>{{ i18n.t('ledgers.enter') }}</span>
-          <app-icon name="arrow-right" size="navigation" />
+          <app-icon name="LucideArrowRight" size="prominent" />
         </button>
       </footer>
     </section>

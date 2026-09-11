@@ -20,11 +20,11 @@ import { isListboxNavigationKey, nextListboxIndex } from './listbox-navigation';
           @if (appearance() === 'field') {
             <app-twemoji-flag [country]="languageCountry(selectedLanguage())" />
           } @else {
-            <app-icon name="languages" size="action" />
+            <app-icon name="LucideLanguages" size="control" />
           }
         </span>
         <span class="language-selector__name">{{ languageName(selectedLanguage()) }}</span>
-        <app-icon class="language-selector__chevron ui-select-chevron" name="chevron-down" size="chevron" />
+        <app-icon class="language-selector__chevron ui-select-chevron" name="LucideChevronDown" size="compact" />
       </button>
 
       @if (open()) {
@@ -35,7 +35,7 @@ import { isListboxNavigationKey, nextListboxIndex } from './listbox-navigation';
               <app-twemoji-flag country="br" />
               <span class="language-selector__option-text">{{ i18n.t('language.pt') }}</span>
             </span>
-            @if (selectedLanguage() === 'pt-BR') { <app-icon name="check" size="selection" /> }
+            @if (selectedLanguage() === 'pt-BR') { <app-icon name="LucideCheck" size="compact" /> }
           </button>
           <button type="button" role="option" [id]="optionId(1)" tabindex="-1" [attr.aria-selected]="selectedLanguage() === 'en'" [class.language-selector__option--selected]="selectedLanguage() === 'en'"
             (click)="select('en')">
@@ -43,7 +43,7 @@ import { isListboxNavigationKey, nextListboxIndex } from './listbox-navigation';
               <app-twemoji-flag country="us" />
               <span class="language-selector__option-text">{{ i18n.t('language.en') }}</span>
             </span>
-            @if (selectedLanguage() === 'en') { <app-icon name="check" size="selection" /> }
+            @if (selectedLanguage() === 'en') { <app-icon name="LucideCheck" size="compact" /> }
           </button>
         </div>
       }

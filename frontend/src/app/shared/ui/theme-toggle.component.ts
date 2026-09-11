@@ -11,11 +11,11 @@ import { IconComponent } from './icon.component';
     <button class="theme-toggle ui-select-trigger ui-action-press" type="button" (click)="theme.toggle()"
       [attr.aria-label]="theme.theme() === 'dark' ? i18n.t('theme.useLight') : i18n.t('theme.useDark')"
       [attr.title]="theme.theme() === 'dark' ? i18n.t('theme.useLight') : i18n.t('theme.useDark')">
-      <app-icon name="sun" size="compact-control" />
+      <app-icon name="LucideSun" size="control" />
       <span class="switch-track" [class.switch-track--dark]="theme.theme() === 'dark'" aria-hidden="true">
         <span></span>
       </span>
-      <app-icon name="moon" size="compact-control" />
+      <app-icon name="LucideMoon" size="control" />
     </button>
   `,
   styles: `

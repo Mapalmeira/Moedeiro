@@ -21,9 +21,9 @@
   } @else if (resourcesLoading() || (loading() && !cashFlowSummary())) {
     <div class="home-loading ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
   } @else if (!currencies().length) {
-    <div class="home-state ui-empty-state"><app-icon name="coins" size="empty-state" />{{ i18n.t('home.noCurrencies') }}</div>
+    <div class="home-state ui-empty-state"><app-icon name="LucideCoins" size="display" />{{ i18n.t('home.noCurrencies') }}</div>
   } @else if (invalidRange()) {
-    <div class="home-state ui-empty-state" role="status"><app-icon name="calendar" size="empty-state" />{{ i18n.t('common.invalidPeriod') }}</div>
+    <div class="home-state ui-empty-state" role="status"><app-icon name="LucideCalendarDays" size="display" />{{ i18n.t('common.invalidPeriod') }}</div>
   } @else {
     <div class="home-metrics">
       @for (card of metricCards(); track card.label) {
@@ -31,7 +31,7 @@
           <span class="metric-card__icon ui-icon-badge ui-icon-badge--title ui-projected-icon"
             [class.ui-icon-badge--green]="card.tone === 'green'" [class.ui-icon-badge--yellow]="card.tone === 'yellow'"
             [class.ui-icon-badge--blue]="card.tone === 'blue'" [class.ui-icon-badge--neutral]="card.tone === 'neutral'">
-            <app-icon [name]="card.icon" size="metric" />
+            <app-icon [name]="card.icon" size="prominent" />
           </span>
           <span class="metric-card__copy"><small>{{ card.label }}</small><strong class="ui-truncate">{{ card.value }}</strong></span>
         </article>
@@ -92,7 +92,7 @@
         <div class="home-list" appDiscreteListCapacity [maxCapacity]="10" (capacityChange)="setPreviewLimit('events', $event)">
           @for (row of eventRows(); track row.event.uuid) {
             <a class="home-list-row home-event-row" [routerLink]="['/ledgers', context.ledgerUuid(), 'activity']">
-              <span class="home-list-row__icon home-event-row__icon ui-icon-badge ui-projected-icon" [class.ui-icon-badge--green]="row.tone === 'green'" [class.ui-icon-badge--yellow]="row.tone === 'yellow'" [class.ui-icon-badge--blue]="row.tone === 'blue'"><app-icon [name]="row.icon" size="action" /></span>
+              <span class="home-list-row__icon home-event-row__icon ui-icon-badge ui-projected-icon" [class.ui-icon-badge--green]="row.tone === 'green'" [class.ui-icon-badge--yellow]="row.tone === 'yellow'" [class.ui-icon-badge--blue]="row.tone === 'blue'"><app-icon [name]="row.icon" size="control" /></span>
               <span class="home-list-row__copy"><strong class="ui-truncate">{{ row.event.description }}</strong><small class="ui-truncate">{{ row.category }} · {{ row.account }}</small></span>
               <span class="home-event-row__meta"><strong [class.value-positive]="row.valueTone === 'positive'" [class.value-negative]="row.valueTone === 'negative'">{{ row.value }}</strong><small>{{ row.date }}, {{ row.time }}</small></span>
             </a>

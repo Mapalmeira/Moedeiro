@@ -14,26 +14,26 @@ import { IconComponent } from './icon.component';
     <div class="account-control" [class.account-control--up]="placement() === 'up'" [appDismissiblePopover]="open()" (dismiss)="open.set(false)">
       <button class="account-trigger ui-select-trigger ui-action-press ui-trigger-with-icon" type="button" (click)="toggle($event)"
         [attr.aria-expanded]="open()" [attr.aria-label]="label() ? label() + ': ' + (userName() || '—') : i18n.t('shell.settings')">
-        <span class="account-trigger__icon ui-icon-badge ui-projected-icon"><app-icon name="user" size="compact-control" /></span>
+        <span class="account-trigger__icon ui-icon-badge ui-projected-icon"><app-icon name="LucideUser" size="control" /></span>
         <span class="ui-trigger-content">
           <strong class="account-trigger__name ui-trigger-value ui-truncate">{{ userName() || '—' }}</strong>
           @if (label(); as controlLabel) { <span class="ui-trigger-context">{{ controlLabel }}</span> }
         </span>
-        <app-icon class="account-trigger__chevron ui-select-chevron" name="chevron-down" size="chevron" />
+        <app-icon class="account-trigger__chevron ui-select-chevron" name="LucideChevronDown" size="compact" />
       </button>
 
       @if (open()) {
         <div class="account-dropdown ui-dropdown-menu ui-projected-surface ui-projection--compact" role="menu" (click)="$event.stopPropagation()">
           <button type="button" role="menuitem" (click)="choosePreferences()">
-            <span class="account-dropdown__icon account-dropdown__icon--green ui-icon-badge ui-projected-icon"><app-icon name="sliders" size="menu" /></span>
+            <span class="account-dropdown__icon account-dropdown__icon--green ui-icon-badge ui-projected-icon"><app-icon name="LucideSlidersHorizontal" size="control" /></span>
             <span>{{ i18n.t('shell.preferences') }}</span>
           </button>
           <button type="button" role="menuitem" (click)="chooseSecurity()">
-            <span class="account-dropdown__icon account-dropdown__icon--blue ui-icon-badge ui-projected-icon"><app-icon name="shield" size="menu" /></span>
+            <span class="account-dropdown__icon account-dropdown__icon--blue ui-icon-badge ui-projected-icon"><app-icon name="LucideShieldCheck" size="control" /></span>
             <span>{{ i18n.t('shell.security') }}</span>
           </button>
           <button type="button" role="menuitem" (click)="chooseLogout()" [disabled]="loggingOut()">
-            <span class="account-dropdown__icon account-dropdown__icon--yellow ui-icon-badge ui-projected-icon"><app-icon name="logout" size="menu" /></span>
+            <span class="account-dropdown__icon account-dropdown__icon--yellow ui-icon-badge ui-projected-icon"><app-icon name="LucideLogOut" size="control" /></span>
             <span>{{ i18n.t('shell.logout') }}</span>
           </button>
         </div>

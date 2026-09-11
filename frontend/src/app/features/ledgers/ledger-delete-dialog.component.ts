@@ -21,12 +21,12 @@ import { IconComponent } from '../../shared/ui/icon.component';
           <div class="dialog">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
-            <span class="title-icon"><app-icon name="trash" size="dialog-title" /></span>
+            <span class="title-icon"><app-icon name="LucideTrash2" size="prominent" /></span>
             <h2>{{ i18n.t('ledgers.delete.title') }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="deleting()"
             [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" size="close" />
+            <app-icon name="LucideX" size="control" />
           </button>
         </header>
 

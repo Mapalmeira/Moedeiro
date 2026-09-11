@@ -3,29 +3,29 @@
     <div class="create-menu" (click)="$event.stopPropagation()">
       <button class="ui-button ui-button--green create-menu__trigger" type="button" (click)="toggleCreateMenu($event)"
         [disabled]="!canCreate()" [attr.aria-expanded]="createMenuOpen()" aria-haspopup="menu">
-        <app-icon name="plus" size="action" />
+        <app-icon name="LucidePlus" size="control" />
         <span>{{ i18n.t('activity.newEvent') }}</span>
-        <app-icon class="ui-select-chevron" name="chevron-down" size="chevron" />
+        <app-icon class="ui-select-chevron" name="LucideChevronDown" size="compact" />
       </button>
       @if (createMenuOpen()) {
         <div class="create-menu__dropdown ui-dropdown-menu ui-projected-surface ui-projection--compact" role="menu">
           <button type="button" role="menuitem" (click)="openCreate('TRANSACTION', $event)">
-            <span class="create-menu__icon ui-icon-badge ui-icon-badge--green ui-projected-icon"><app-icon name="wallet" size="menu" /></span>
+            <span class="create-menu__icon ui-icon-badge ui-icon-badge--green ui-projected-icon"><app-icon name="LucideWallet" size="control" /></span>
             <span><strong>{{ i18n.t('activity.typeSimple') }}</strong><small>{{ i18n.t('activity.typeSimpleHint') }}</small></span>
           </button>
           <button type="button" role="menuitem" (click)="openCreate('SHOPPING_LIST', $event)">
-            <span class="create-menu__icon ui-icon-badge ui-icon-badge--yellow ui-projected-icon"><app-icon name="shopping-cart" size="menu" /></span>
+            <span class="create-menu__icon ui-icon-badge ui-icon-badge--yellow ui-projected-icon"><app-icon name="LucideShoppingCart" size="control" /></span>
             <span><strong>{{ i18n.t('activity.typeShopping') }}</strong><small>{{ i18n.t('activity.typeShoppingHint') }}</small></span>
           </button>
           <button type="button" role="menuitem" (click)="openCreate('ACCOUNT_TRANSFER', $event)" [disabled]="accounts().length < 2">
-            <span class="create-menu__icon ui-icon-badge ui-icon-badge--blue ui-projected-icon"><app-icon name="arrow-left-right" size="menu" /></span>
+            <span class="create-menu__icon ui-icon-badge ui-icon-badge--blue ui-projected-icon"><app-icon name="LucideArrowLeftRight" size="control" /></span>
             <span><strong>{{ i18n.t('activity.typeTransfer') }}</strong><small>{{ i18n.t('activity.typeTransferHint') }}</small></span>
           </button>
         </div>
       }
     </div>
     @if (!canCreate() && !loading()) {
-      <app-form-message class="activity-commandbar__notice" kind="success" icon="info" [compact]="true"
+      <app-form-message class="activity-commandbar__notice" kind="success" icon="LucideInfo" [compact]="true"
         [text]="i18n.t(!accounts().length ? 'activity.needsAccount' : 'activity.needsCategory')" />
     }
   </div>
@@ -117,7 +117,7 @@
         <div class="ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
       } @else if (!events().length) {
         <div class="activity-state ui-empty-state">
-          <app-icon name="arrow-left-right" size="empty-state" />
+          <app-icon name="LucideArrowLeftRight" size="display" />
           <strong>{{ i18n.t('activity.empty') }}</strong>
           <span>{{ i18n.t('activity.emptyHint') }}</span>
         </div>
@@ -152,7 +152,7 @@
                     [class.ui-icon-badge--green]="row.tone === 'green'"
                     [class.ui-icon-badge--yellow]="row.tone === 'yellow'"
                     [class.ui-icon-badge--blue]="row.tone === 'blue'">
-                    <app-icon [name]="row.typeIcon" size="compact-control" />
+                    <app-icon [name]="row.typeIcon" size="control" />
                   </span>
                   <span class="ui-truncate">{{ row.typeLabel }}</span>
                 </div>
@@ -207,11 +207,11 @@
   <app-dialog-shell role="alertdialog" ariaLabelledby="event-delete-title" dialogWidth="var(--dialog-width-confirmation)" (dismiss)="closeDelete()">
         <header class="ui-dialog-header">
           <div class="ui-dialog-title">
-            <span class="title-icon activity-delete-icon"><app-icon name="trash" size="dialog-title" /></span>
+            <span class="title-icon activity-delete-icon"><app-icon name="LucideTrash2" size="prominent" /></span>
             <h2 id="event-delete-title">{{ i18n.t('activity.deleteTitle') }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" size="close" />
+            <app-icon name="LucideX" size="control" />
           </button>
         </header>
         <div class="ui-delete-dialog-body">

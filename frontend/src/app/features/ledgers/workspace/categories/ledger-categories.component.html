@@ -1,7 +1,7 @@
 <section class="categories" [attr.aria-label]="i18n.t('ledgerShell.categories')">
   <header class="categories-toolbar">
     <label class="categories-search ui-dropdown-search">
-      <app-icon name="search" size="action" />
+      <app-icon name="LucideSearch" size="control" />
       <input type="search" [value]="search()" (input)="filter($event)"
         [attr.aria-label]="i18n.t('categories.search')" [placeholder]="i18n.t('categories.search')" />
     </label>
@@ -23,13 +23,13 @@
           <button type="button" class="category-disclosure" [disabled]="tree().length === 0" (click)="toggleRoot($event)"
             [attr.aria-label]="rootCollapsed() ? i18n.t('categories.expand') : i18n.t('categories.collapse')"
             [attr.aria-expanded]="search().trim() ? true : !rootCollapsed()">
-            <app-icon name="chevron-down" size="action" [class.category-disclosure__icon--collapsed]="rootCollapsed() && !search().trim()" />
+            <app-icon name="LucideChevronDown" size="control" [class.category-disclosure__icon--collapsed]="rootCollapsed() && !search().trim()" />
           </button>
-          <span class="category-root__icon ui-icon-badge ui-projected-icon"><app-icon name="folder" size="navigation" /></span>
+          <span class="category-root__icon ui-icon-badge ui-projected-icon"><app-icon name="LucideFolder" size="prominent" /></span>
           <strong>{{ i18n.t('categories.root') }}</strong>
           <button type="button" class="category-add icon-button icon-button--compact icon-button--add icon-button--blue ui-action-press" [disabled]="loading() || movingUuid() !== null"
             (click)="openCreate(null, $event)" [attr.aria-label]="i18n.t('categories.addRoot')">
-            <app-icon name="plus" size="compact-control" />
+            <app-icon name="LucidePlus" size="control" />
           </button>
         </div>
 
@@ -62,13 +62,13 @@
                 (pointerdown)="startPointerDrag($event, row.category)" (pointermove)="pointerDrag($event)"
                 (pointerup)="endPointerDrag($event)" (pointercancel)="cancelPointerDrag($event)"
                 [attr.aria-label]="i18n.t('categories.move', { name: row.category.name })">
-                <app-icon name="grip" size="action" />
+                <app-icon name="LucideGripVertical" size="control" />
               </button>
               @if (row.hasChildren) {
                 <button type="button" class="category-disclosure" (click)="toggleCategory($event, row.category.uuid)"
                   [attr.aria-label]="collapsed().has(row.category.uuid) ? i18n.t('categories.expand') : i18n.t('categories.collapse')"
                   [attr.aria-expanded]="search().trim() ? true : !collapsed().has(row.category.uuid)">
-                  <app-icon name="chevron-down" size="action" [class.category-disclosure__icon--collapsed]="collapsed().has(row.category.uuid) && !search().trim()" />
+                  <app-icon name="LucideChevronDown" size="control" [class.category-disclosure__icon--collapsed]="collapsed().has(row.category.uuid) && !search().trim()" />
                 </button>
               } @else {
                 <span class="category-disclosure-spacer" aria-hidden="true"></span>
@@ -81,15 +81,15 @@
 
               <button type="button" class="category-add icon-button icon-button--compact icon-button--add icon-button--blue ui-action-press" [disabled]="movingUuid() !== null"
                 (click)="openCreate(row.category.uuid, $event)" [attr.aria-label]="i18n.t('categories.addChild', { name: row.category.name })">
-                <app-icon name="plus" size="compact-control" />
+                <app-icon name="LucidePlus" size="control" />
               </button>
             </div>
           }
 
           @if (search().trim() && !hasSearchResults()) {
-            <div class="categories-state ui-empty-state"><app-icon name="search" size="empty-state" />{{ i18n.t('categories.noResults') }}</div>
+            <div class="categories-state ui-empty-state"><app-icon name="LucideSearch" size="display" />{{ i18n.t('categories.noResults') }}</div>
           } @else if (!search().trim() && tree().length === 0) {
-            <div class="categories-state ui-empty-state"><app-icon name="folder" size="empty-state" />{{ i18n.t('categories.empty') }}</div>
+            <div class="categories-state ui-empty-state"><app-icon name="LucideFolder" size="display" />{{ i18n.t('categories.empty') }}</div>
           }
         </div>
       }
@@ -107,11 +107,11 @@
   <app-dialog-shell role="alertdialog" ariaLabelledby="category-delete-title" dialogWidth="var(--dialog-width-confirmation)" (dismiss)="closeDelete()">
         <header class="ui-dialog-header">
           <div class="ui-dialog-title">
-            <span class="title-icon delete-icon"><app-icon name="trash" size="dialog-title" /></span>
+            <span class="title-icon delete-icon"><app-icon name="LucideTrash2" size="prominent" /></span>
             <h2 id="category-delete-title">{{ i18n.t('categories.delete') }}</h2>
           </div>
           <button type="button" class="icon-button icon-button--control ui-action-press" [disabled]="deletingBusy()" (click)="closeDelete()" [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" size="close" />
+            <app-icon name="LucideX" size="control" />
           </button>
         </header>
         <div class="category-delete-body ui-delete-dialog-body">

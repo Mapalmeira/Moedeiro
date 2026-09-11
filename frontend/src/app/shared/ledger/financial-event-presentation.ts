@@ -9,7 +9,7 @@ export interface FinancialEventPresentation {
 }
 
 export function financialEventPresentation(type: FinancialEventType): FinancialEventPresentation {
-  if (type === 'SHOPPING_LIST') return { icon: 'shopping-cart', tone: 'yellow' };
-  if (type === 'ACCOUNT_TRANSFER') return { icon: 'arrow-left-right', tone: 'blue' };
-  return { icon: 'wallet', tone: 'green' };
+  if (type === 'SHOPPING_LIST') return { icon: 'LucideShoppingCart', tone: 'yellow' };
+  if (type === 'ACCOUNT_TRANSFER') return { icon: 'LucideArrowLeftRight', tone: 'blue' };
+  return { icon: 'LucideWallet', tone: 'green' };
 }

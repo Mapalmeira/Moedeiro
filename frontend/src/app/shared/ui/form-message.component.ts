@@ -7,7 +7,7 @@ import { IconComponent, IconName } from './icon.component';
   imports: [IconComponent],
   template: `
     <div class="message" [class.message--success]="kind() === 'success'" [class.message--info]="kind() === 'info'" [class.message--warning]="kind() === 'warning'" [class.message--compact]="compact()" role="status">
-      <app-icon [name]="icon() ?? (kind() === 'success' ? 'check' : 'info')" size="action" />
+      <app-icon [name]="icon() ?? (kind() === 'success' ? 'LucideCheck' : 'LucideInfo')" size="control" />
       <span>{{ text() }}</span>
     </div>
   `,

@@ -29,12 +29,12 @@ const LEDGER_NAME_MAX_LENGTH = 50;
         <div class="dialog">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
-            <span class="title-icon title-icon--green"><app-icon [name]="ledger() ? 'pencil' : 'plus'" size="dialog-title" /></span>
+            <span class="title-icon title-icon--green"><app-icon [name]="ledger() ? 'LucidePencil' : 'LucidePlus'" size="prominent" /></span>
             <h2>{{ title() }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="saving()"
             [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" size="close" />
+            <app-icon name="LucideX" size="control" />
           </button>
         </header>
 

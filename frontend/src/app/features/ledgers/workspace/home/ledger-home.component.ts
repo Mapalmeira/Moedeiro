@@ -135,7 +135,7 @@ export class LedgerHomeComponent {
     color: currency.color_code,
   })));
   readonly flowAccountOptions = computed<EntitySearchOption[]>(() => [
-    { value: '', label: this.i18n.t('activity.allAccounts'), uiIcon: 'building', tone: 'neutral' },
+    { value: '', label: this.i18n.t('activity.allAccounts'), uiIcon: 'LucideBuilding2', tone: 'neutral' },
     ...this.accounts()
       .filter(account => account.currency_uuid === this.selectedCurrencyUuid())
       .map(account => ({
@@ -158,10 +158,10 @@ export class LedgerHomeComponent {
     const currency = this.selectedCurrency();
     if (!currency) return [];
     return [
-      { label: this.i18n.t('home.balance'), value: formatCurrencyAmount(this.currencyBalance(), currency), icon: 'wallet' as IconName, tone: 'green' as Tone },
-      { label: this.i18n.t('home.income'), value: formatCurrencyAmount(this.totalIncome(), currency), icon: 'coins' as IconName, tone: 'blue' as Tone },
-      { label: this.i18n.t('home.expense'), value: formatCurrencyAmount(this.totalExpense(), currency), icon: 'arrow-right' as IconName, tone: 'yellow' as Tone },
-      { label: this.i18n.t('home.variation'), value: formatCurrencyAmount(this.netFlow(), currency), icon: 'chart' as IconName, tone: this.netFlow() < 0 ? 'yellow' as Tone : 'green' as Tone },
+      { label: this.i18n.t('home.balance'), value: formatCurrencyAmount(this.currencyBalance(), currency), icon: 'LucideWallet' as IconName, tone: 'green' as Tone },
+      { label: this.i18n.t('home.income'), value: formatCurrencyAmount(this.totalIncome(), currency), icon: 'LucideCoins' as IconName, tone: 'blue' as Tone },
+      { label: this.i18n.t('home.expense'), value: formatCurrencyAmount(this.totalExpense(), currency), icon: 'LucideArrowRight' as IconName, tone: 'yellow' as Tone },
+      { label: this.i18n.t('home.variation'), value: formatCurrencyAmount(this.netFlow(), currency), icon: 'LucideChartColumn' as IconName, tone: this.netFlow() < 0 ? 'yellow' as Tone : 'green' as Tone },
     ];
   });
 

@@ -29,12 +29,12 @@ import { IconComponent } from '../../shared/ui/icon.component';
         <div class="dialog security-dialog">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
-            <span class="title-icon title-icon--blue"><app-icon name="shield" size="dialog-title" /></span>
+            <span class="title-icon title-icon--blue"><app-icon name="LucideShieldCheck" size="prominent" /></span>
             <h2>{{ i18n.t('security.title') }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [disabled]="busy()"
             [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" size="close" />
+            <app-icon name="LucideX" size="control" />
           </button>
         </header>
 
@@ -166,11 +166,11 @@ import { IconComponent } from '../../shared/ui/icon.component';
                           <code>{{ secretVisible() ? totpSecret() : maskedTotpSecret() }}</code>
                           <button class="secret-visibility-button" type="button" (click)="toggleSecretVisibility()"
                             [attr.aria-label]="secretVisible() ? i18n.t('security.totp.hideSecret') : i18n.t('security.totp.showSecret')">
-                            <app-icon [name]="secretVisible() ? 'eye-off' : 'eye'" size="compact-control" />
+                            <app-icon [name]="secretVisible() ? 'LucideEyeOff' : 'LucideEye'" size="control" />
                           </button>
                           <button class="copy-button" type="button" (click)="copySecret()"
                             [attr.aria-label]="secretCopied() ? i18n.t('security.totp.copied') : i18n.t('security.totp.copySecret')">
-                            <app-icon [name]="secretCopied() ? 'check' : 'copy'" size="compact-control" />
+                            <app-icon [name]="secretCopied() ? 'LucideCheck' : 'LucideCopy'" size="control" />
                           </button>
                         </div>
                       </div>

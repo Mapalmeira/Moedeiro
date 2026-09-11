@@ -97,7 +97,7 @@ export class LedgerBudgetsComponent {
   readonly categoryFilterOptions = computed<readonly EntitySearchOption[]>(() => {
     const byUuid = this.categoryByUuid();
     return [
-      { value: '', label: this.i18n.t('categories.root'), uiIcon: 'folder', tone: 'neutral' },
+      { value: '', label: this.i18n.t('categories.root'), uiIcon: 'LucideFolder', tone: 'neutral' },
       ...this.categories().map(category => {
         const path = categoryPath(category, byUuid);
         return {
@@ -138,11 +138,11 @@ export class LedgerBudgetsComponent {
 
       if (budget.state === 'FUTURE') {
         stateLabel = this.i18n.t('budgets.future');
-        stateIcon = 'calendar';
+        stateIcon = 'LucideCalendarDays';
         stateDetail = this.i18n.t('budgets.startsOn', { date: from });
       } else if (budget.state === 'ACTIVE') {
         stateLabel = this.i18n.t('budgets.active');
-        stateIcon = 'clock';
+        stateIcon = 'LucideClock';
         stateDetail = this.i18n.t('budgets.endsOn', { date: to });
         usageLabel = usage === null ? null : this.i18n.t('budgets.usedPercent', { percent: this.formatPercent(usage) });
         progress = Number.isFinite(usage ?? 0) ? Math.min(100, Math.max(0, usage ?? 0)) : 100;
@@ -155,7 +155,7 @@ export class LedgerBudgetsComponent {
         }
       } else {
         stateLabel = budget.fulfilled ? this.i18n.t('budgets.fulfilled') : this.i18n.t('budgets.notFulfilled');
-        stateIcon = budget.fulfilled ? 'check' : 'x';
+        stateIcon = budget.fulfilled ? 'LucideCheck' : 'LucideX';
         stateDetail = this.i18n.t('budgets.finishedOn', { date: to });
         usageLabel = usage === null ? null : this.i18n.t('budgets.usedPercent', { percent: this.formatPercent(usage) });
         progress = Number.isFinite(usage ?? 0) ? Math.min(100, Math.max(0, usage ?? 0)) : 100;

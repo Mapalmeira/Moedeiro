@@ -40,7 +40,7 @@ import { ledgerSectionByKey } from './ledger-sections';
           <div class="ledger-main__headline ui-heading-with-icon">
             <button class="mobile-nav-button ui-icon-badge ui-icon-badge--title ui-projected-icon ui-action-press" type="button"
               (click)="openMobileNavigation()" [attr.aria-label]="i18n.t('ledgerShell.navigation')">
-              <app-icon name="panel-open" size="navigation" />
+              <app-icon name="LucidePanelLeftOpen" size="prominent" />
             </button>
 
             <span class="ledger-main__token ui-icon-badge ui-icon-badge--title ui-projected-icon"
@@ -48,7 +48,7 @@ import { ledgerSectionByKey } from './ledger-sections';
               [class.ledger-main__token--yellow]="activeSection().tone === 'yellow'"
               [class.ledger-main__token--blue]="activeSection().tone === 'blue'"
               [class.ledger-main__token--neutral]="activeSection().tone === 'neutral'">
-              <app-icon [name]="activeSection().icon" size="navigation" />
+              <app-icon [name]="activeSection().icon" size="prominent" />
             </span>
             <div class="ledger-main__title-wrap">
               <h1>{{ i18n.t(activeSection().labelKey) }}</h1>

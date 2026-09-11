@@ -17,21 +17,21 @@ interface MonthOption {
       <button type="button" class="month-select__trigger ui-select-trigger ui-trigger-with-icon" (click)="toggle()"
         [attr.aria-label]="ariaLabel()" aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listId"
         [attr.aria-activedescendant]="open() ? activeOptionId() : null" (keydown)="handleTriggerKeydown($event)">
-        <span class="month-select__icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon" aria-hidden="true"><app-icon name="calendar" size="badge-symbol" /></span>
+        <span class="month-select__icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon" aria-hidden="true"><app-icon name="LucideCalendarDays" size="badge" /></span>
         <span class="ui-trigger-content"><strong class="ui-trigger-value ui-truncate">{{ displayValue() }}</strong></span>
-        <app-icon class="ui-select-chevron" name="chevron-down" size="chevron" />
+        <app-icon class="ui-select-chevron" name="LucideChevronDown" size="compact" />
       </button>
 
       @if (open()) {
         <div class="month-select__panel ui-dropdown-panel">
           <div class="month-select__year">
             <button type="button" class="icon-button month-select__year-nav" (click)="changeYear(-1)" [attr.aria-label]="previousYearLabel()">
-              <app-icon name="chevron-left" size="chevron" />
+              <app-icon name="LucideChevronLeft" size="compact" />
             </button>
             <input class="month-select__year-input" type="text" inputmode="numeric" maxlength="4" autocomplete="off"
               [attr.aria-label]="yearLabel()" [value]="displayYear()" (input)="updateYear($event)" />
             <button type="button" class="icon-button month-select__year-nav" (click)="changeYear(1)" [attr.aria-label]="nextYearLabel()">
-              <app-icon name="chevron-right" size="chevron" />
+              <app-icon name="LucideChevronRight" size="compact" />
             </button>
           </div>
           <div class="month-select__months" role="listbox" [id]="listId" [attr.aria-label]="ariaLabel()">

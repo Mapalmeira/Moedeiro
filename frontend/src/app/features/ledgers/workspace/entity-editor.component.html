@@ -1,10 +1,10 @@
 <app-dialog-shell [ariaLabel]="title()" (dismiss)="requestClose()">
         <header class="ui-dialog-header">
           <div class="ui-dialog-title">
-            <span class="title-icon"><app-icon [name]="entity() ? 'pencil' : 'plus'" size="dialog-title" /></span>
+            <span class="title-icon"><app-icon [name]="entity() ? 'LucidePencil' : 'LucidePlus'" size="prominent" /></span>
             <h2>{{ title() }}</h2>
           </div>
-          <button class="icon-button icon-button--control ui-action-press" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="x" size="close" /></button>
+          <button class="icon-button icon-button--control ui-action-press" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')"><app-icon name="LucideX" size="control" /></button>
         </header>
         <form [formGroup]="form" (ngSubmit)="save()">
           <div class="editor-content">
@@ -58,7 +58,7 @@
           <footer class="editor-actions ui-surface-actions">
             @if (entity(); as currentEntity) {
               <button type="button" class="ui-button ui-button--danger" [disabled]="saving()" (click)="deleteRequested.emit(currentEntity)">
-                <app-icon name="trash" size="action" />{{ i18n.t('workspace.delete') }}
+                <app-icon name="LucideTrash2" size="control" />{{ i18n.t('workspace.delete') }}
               </button>
             }
             <button type="submit" class="ui-button" [class.ui-button--green]="kind() === 'account'" [class.ui-button--yellow]="kind() === 'currency'" [disabled]="saving() || form.invalid">

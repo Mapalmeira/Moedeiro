@@ -117,7 +117,7 @@ export class LedgerActivityComponent {
   readonly categoryByUuid = computed(() => new Map(this.categories().map(category => [category.uuid, category] as const)));
   readonly currencyByUuid = computed(() => new Map(this.currencies().map(currency => [currency.uuid, currency] as const)));
   readonly accountFilterOptions = computed<readonly EntitySearchOption[]>(() => [
-    { value: '', label: this.i18n.t('activity.allAccounts'), uiIcon: 'building', tone: 'neutral' },
+    { value: '', label: this.i18n.t('activity.allAccounts'), uiIcon: 'LucideBuilding2', tone: 'neutral' },
     ...this.accounts().map(account => ({
       value: account.uuid,
       label: account.name,
@@ -127,7 +127,7 @@ export class LedgerActivityComponent {
     })),
   ]);
   readonly categoryFilterOptions = computed<readonly EntitySearchOption[]>(() => [
-    { value: '', label: this.i18n.t('categories.root'), uiIcon: 'folder', tone: 'neutral' },
+    { value: '', label: this.i18n.t('categories.root'), uiIcon: 'LucideFolder', tone: 'neutral' },
     ...this.categories().map(category => {
       const path = this.categoryPaths().get(category.uuid) ?? category.name;
       return {

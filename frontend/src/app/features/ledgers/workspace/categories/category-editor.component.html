@@ -1,11 +1,11 @@
 <app-dialog-shell [ariaLabel]="title()" (dismiss)="requestClose()">
         <header class="ui-dialog-header">
           <div class="ui-dialog-title">
-            <span class="title-icon title-icon--blue"><app-icon [name]="category() ? 'pencil' : 'plus'" size="dialog-title" /></span>
+            <span class="title-icon title-icon--blue"><app-icon [name]="category() ? 'LucidePencil' : 'LucidePlus'" size="prominent" /></span>
             <h2>{{ title() }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" [disabled]="saving()" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" size="close" />
+            <app-icon name="LucideX" size="control" />
           </button>
         </header>
   
@@ -51,7 +51,7 @@
           <footer class="category-editor__actions ui-surface-actions">
             @if (category(); as currentCategory) {
               <button type="button" class="ui-button ui-button--danger" [disabled]="saving()" (click)="deleteRequested.emit(currentCategory)">
-                <app-icon name="trash" size="action" />{{ i18n.t('workspace.delete') }}
+                <app-icon name="LucideTrash2" size="control" />{{ i18n.t('workspace.delete') }}
               </button>
             }
             <button type="submit" class="ui-button ui-button--blue" [disabled]="saving() || form.invalid">

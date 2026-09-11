@@ -28,11 +28,11 @@ import { IconComponent } from '../../../shared/ui/icon.component';
       <app-dialog-shell [ariaLabel]="i18n.t('auth.recovery.title')" dialogWidth="550px" (dismiss)="requestClose()">
         <header class="dialog__header ui-dialog-header">
           <div class="dialog__title ui-dialog-title">
-            <span class="title-icon title-icon--green"><app-icon name="key" size="dialog-title" /></span>
+            <span class="title-icon title-icon--green"><app-icon name="LucideKeyRound" size="prominent" /></span>
             <h2>{{ i18n.t('auth.recovery.title') }}</h2>
           </div>
           <button class="icon-button icon-button--control ui-action-press" type="button" (click)="requestClose()" [attr.aria-label]="i18n.t('common.close')">
-            <app-icon name="x" size="close" />
+            <app-icon name="LucideX" size="control" />
           </button>
         </header>
 
@@ -56,7 +56,7 @@ import { IconComponent } from '../../../shared/ui/icon.component';
               <input appNoWhitespace [type]="showPassword() ? 'text' : 'password'" formControlName="new_password" autocomplete="new-password" />
               <button type="button" class="icon-action" (click)="showPassword.set(!showPassword())"
                 [attr.aria-label]="showPassword() ? i18n.t('auth.password.hide') : i18n.t('auth.password.show')">
-                <app-icon [name]="showPassword() ? 'eye-off' : 'eye'" />
+                <app-icon [name]="showPassword() ? 'LucideEyeOff' : 'LucideEye'" />
               </button>
             </div>
             <app-field-error [text]="passwordError(form.controls.new_password)" />
@@ -84,7 +84,7 @@ import { IconComponent } from '../../../shared/ui/icon.component';
             <button class="ui-button ui-button--green ui-button--full" type="submit"
               [disabled]="form.invalid || passwordMismatch() || loading() || completed()">
               <span>{{ i18n.t('auth.recovery.submit') }}</span>
-              <app-icon name="arrow-right" />
+              <app-icon name="LucideArrowRight" />
             </button>
           </footer>
         </form>

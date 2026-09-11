@@ -16,9 +16,9 @@ const ALL_STATES: readonly LedgerBudgetState[] = ['ACTIVE', 'FUTURE', 'FINISHED'
       <button type="button" class="state-filter__trigger ui-select-trigger ui-trigger-with-icon" (click)="toggle()"
         aria-haspopup="listbox" [attr.aria-expanded]="open()" [attr.aria-controls]="listId" [attr.aria-activedescendant]="open() ? activeOptionId() : null"
         [attr.aria-label]="i18n.t('budgets.filterState')" (keydown)="handleKeydown($event)">
-        <span class="state-filter__icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon" aria-hidden="true"><app-icon name="wallet" size="badge-symbol" /></span>
+        <span class="state-filter__icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon" aria-hidden="true"><app-icon name="LucideWallet" size="badge" /></span>
         <span class="ui-trigger-content"><strong class="ui-trigger-value ui-truncate">{{ triggerLabel() }}</strong></span>
-        <app-icon class="ui-select-chevron" name="chevron-down" size="chevron" />
+        <app-icon class="ui-select-chevron" name="LucideChevronDown" size="compact" />
       </button>
       @if (open()) {
         <div class="state-filter__panel ui-dropdown-panel" role="listbox" aria-multiselectable="true" [id]="listId">
@@ -26,7 +26,7 @@ const ALL_STATES: readonly LedgerBudgetState[] = ['ACTIVE', 'FUTURE', 'FINISHED'
             <button type="button" class="state-filter__option" role="option" [id]="optionId(stateIndex)" tabindex="-1"
               [attr.aria-selected]="isSelected(state)" (click)="toggleState(state)">
               <span class="state-filter__check ui-icon-badge" [class.state-filter__check--selected]="isSelected(state)" aria-hidden="true">
-                @if (isSelected(state)) { <app-icon name="check" size="indicator" /> }
+                @if (isSelected(state)) { <app-icon name="LucideCheck" size="indicator" /> }
               </span>
               <span>{{ label(state) }}</span>
             </button>

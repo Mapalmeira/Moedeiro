@@ -22,16 +22,16 @@ export const ROOT_CATEGORY_VALUE = '__root__';
           <app-entity-badge [icon]="category.icon" [color]="category.color_code" [size]="30" />
           <span class="parent-select__value">{{ category.name }}</span>
         } @else {
-          <span class="parent-select__root-icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon"><app-icon name="folder" size="compact-control" /></span>
+          <span class="parent-select__root-icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon"><app-icon name="LucideFolder" size="control" /></span>
           <span class="parent-select__value">{{ rootLabel() }}</span>
         }
-        <app-icon class="ui-select-chevron" name="chevron-down" size="chevron" />
+        <app-icon class="ui-select-chevron" name="LucideChevronDown" size="compact" />
       </button>
 
       @if (open()) {
         <div class="parent-select__panel ui-dropdown-panel">
           <label class="ui-dropdown-search">
-            <app-icon name="search" size="compact-control" />
+            <app-icon name="LucideSearch" size="control" />
             <input type="search" role="combobox" autocomplete="off" [attr.aria-label]="searchPlaceholder() || ariaLabel()"
               aria-autocomplete="list" [attr.aria-expanded]="open()" [attr.aria-controls]="listId" [attr.aria-activedescendant]="activeOptionId()"
               [placeholder]="searchPlaceholder()" [value]="query()" (input)="updateQuery($event)"
@@ -41,9 +41,9 @@ export const ROOT_CATEGORY_VALUE = '__root__';
           <div class="parent-select__list" role="listbox" [id]="listId">
             @if (rootVisible()) {
               <button type="button" class="ui-menu-option-with-icon" role="option" [id]="optionId(0)" tabindex="-1" [attr.aria-selected]="value() === rootValue" (click)="chooseRoot()">
-                <span class="parent-select__root-icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon"><app-icon name="folder" size="compact-control" /></span>
+                <span class="parent-select__root-icon ui-icon-badge ui-icon-badge--neutral ui-projected-icon"><app-icon name="LucideFolder" size="control" /></span>
                 <span class="parent-select__option-name">{{ rootLabel() }}</span>
-                @if (value() === rootValue) { <app-icon name="check" size="selection" /> }
+                @if (value() === rootValue) { <app-icon name="LucideCheck" size="compact" /> }
               </button>
             }
             @for (category of filteredCategories(); track category.uuid; let categoryIndex = $index) {
@@ -51,7 +51,7 @@ export const ROOT_CATEGORY_VALUE = '__root__';
                 [attr.aria-selected]="value() === category.uuid" (click)="choose(category.uuid)">
                 <app-entity-badge [icon]="category.icon" [color]="category.color_code" [size]="30" />
                 <span class="parent-select__option-name">{{ category.name }}</span>
-                @if (value() === category.uuid) { <app-icon name="check" size="selection" /> }
+                @if (value() === category.uuid) { <app-icon name="LucideCheck" size="compact" /> }
               </button>
             }
             @if (!rootVisible() && filteredCategories().length === 0) {
