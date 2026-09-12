@@ -16,6 +16,7 @@ import { LedgerAccount, LedgerCurrency } from '../../../../core/ledgers/ledger-e
 import { LedgerEntitiesService } from '../../../../core/ledgers/ledger-entities.service';
 import { FinancialEvent, FinancialEventFilters, FinancialEventType } from '../../../../core/ledgers/financial-events.models';
 import { FinancialEventsService } from '../../../../core/ledgers/financial-events.service';
+import { financialEventFeeMovement, financialEventMainMovements } from '../../../../core/ledgers/financial-event-movements';
 import { LedgerContextService } from '../../../../core/ledgers/ledger-context.service';
 import { LedgerWorkspaceStateService } from '../../../../core/ledgers/ledger-workspace-state.service';
 import { EntityBadgeComponent } from '../../../../shared/ledger/entity-badge.component';
@@ -188,15 +189,14 @@ export class LedgerActivityComponent {
       let detail: string | null = null;
       if (event.type === 'SHOPPING_LIST') {
         detail = this.i18n.t('activity.movementCount', { count: event.movements.length });
-      } else if (event.type === 'ACCOUNT_TRANSFER') {
-        const destination = event.movements.find(movement => movement.value > 0) ?? null;
-        const fee = destination ? event.movements.find(movement => movement.value < 0 && movement.account_uuid === destination.account_uuid) ?? null : null;
+      } else {
+        const fee = financialEventFeeMovement(event);
         if (fee) {
           const feeCurrencyUuid = accountByUuid.get(fee.account_uuid)?.currency_uuid;
           const feeCurrency = feeCurrencyUuid ? currencyByUuid.get(feeCurrencyUuid) ?? null : null;
           detail = feeCurrency
-            ? this.i18n.t('activity.transferFeeDetail', { value: formatCurrencyAmount(Math.abs(fee.value * fee.quantity), feeCurrency) })
-            : this.i18n.t('activity.transferWithFee');
+            ? this.i18n.t('activity.feeDetail', { value: formatCurrencyAmount(Math.abs(fee.value * fee.quantity), feeCurrency) })
+            : this.i18n.t('activity.withFee');
         }
       }
 
@@ -554,9 +554,7 @@ export class LedgerActivityComponent {
     if (event.type !== 'ACCOUNT_TRANSFER') return event.movements;
     const accountUuid = this.appliedFilters()?.account_uuid;
     if (accountUuid) return event.movements.filter(movement => movement.account_uuid === accountUuid);
-    const destination = event.movements.find(movement => movement.value > 0) ?? null;
-    const source = destination ? event.movements.find(movement => movement.value < 0 && movement.account_uuid !== destination.account_uuid) ?? null : null;
-    return source && destination ? [source, destination] : event.movements;
+    return financialEventMainMovements(event);
   }
 
   private syncMonthToFilters(): void {

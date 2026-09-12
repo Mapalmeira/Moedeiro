@@ -59,14 +59,45 @@ describe('FinancialEventEditorComponent', () => {
     component.save();
 
     expect(events.create).toHaveBeenCalledWith('ledger', expect.objectContaining({
-      type: 'TRANSACTION', description: 'Mercado', account_uuid: 'source', category_uuid: 'child', value: -1234, quantity: 1, item_name: null,
+      type: 'TRANSACTION', description: 'Mercado', account_uuid: 'source', category_uuid: 'child', value: -1234, quantity: 1, item_name: null, fee: null,
+    }));
+  });
+
+  it('builds an optional fee for a simple expense', () => {
+    const component = fixture.componentInstance;
+    component.form.patchValue({
+      description: 'Mercado', date: '2026-09-11', time: '12:30:00', account_uuid: 'source', category_uuid: 'child', amount: '12.34', direction: 'EXPENSE',
+      fee_enabled: true, fee_amount: '1.25', fee_category_uuid: 'root',
+    });
+
+    component.save();
+
+    expect(events.create).toHaveBeenCalledWith('ledger', expect.objectContaining({
+      type: 'TRANSACTION', value: -1234, fee: { category_uuid: 'root', value: -125 },
+    }));
+  });
+
+  it('loads a simple expense fee from the special movement marker', () => {
+    const existing: FinancialEvent = {
+      uuid: 'existing-with-fee', occurred_at: 1_700_000_000, description: 'Old', type: 'TRANSACTION',
+      movements: [
+        { uuid: 'main', account_uuid: 'source', category_uuid: 'child', value: -500, quantity: 1, item_name: null, special_type: null },
+        { uuid: 'fee', account_uuid: 'source', category_uuid: 'root', value: -125, quantity: 1, item_name: null, special_type: 'FEE' },
+      ],
+    };
+    fixture.componentRef.setInput('event', existing);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.form.getRawValue()).toEqual(expect.objectContaining({
+      account_uuid: 'source', category_uuid: 'child', amount: '5.00', direction: 'EXPENSE',
+      fee_enabled: true, fee_amount: '1.25', fee_category_uuid: 'root',
     }));
   });
 
   it('uses the update contract when editing an existing transaction', () => {
     const existing: FinancialEvent = {
       uuid: 'existing', occurred_at: 1_700_000_000, description: 'Old', type: 'TRANSACTION',
-      movements: [{ uuid: 'movement', account_uuid: 'source', category_uuid: 'child', value: -500, quantity: 1, item_name: null }],
+      movements: [{ uuid: 'movement', account_uuid: 'source', category_uuid: 'child', value: -500, quantity: 1, item_name: null, special_type: null }],
     };
     fixture.componentRef.setInput('event', existing);
     fixture.detectChanges();

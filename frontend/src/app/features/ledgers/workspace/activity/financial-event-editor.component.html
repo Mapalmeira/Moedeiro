@@ -174,7 +174,10 @@
                 }
               </div>
   
-              <button class="ui-button transfer-fee-toggle" [class.ui-button--green]="form.controls.fee_enabled.value"
+            }
+  
+            @if (type() === 'ACCOUNT_TRANSFER' || (type() === 'TRANSACTION' && form.controls.direction.value === 'EXPENSE')) {
+              <button class="ui-button event-fee-toggle" [class.ui-button--green]="form.controls.fee_enabled.value"
                 type="button" [attr.aria-pressed]="form.controls.fee_enabled.value" (click)="toggleFee()">
                 <app-icon [name]="form.controls.fee_enabled.value ? 'LucideCheck' : 'LucidePlus'" size="control" />
                 <span>{{ i18n.t('activity.addFee') }}</span>
@@ -183,7 +186,8 @@
                 <div class="two-column-fields">
                   <label class="field">
                     <span>{{ i18n.t('activity.feeAmount') }} <span class="required-mark" aria-hidden="true">*</span></span>
-                    <app-currency-amount-input [currency]="accountCurrency(form.controls.destination_account_uuid.value)"
+                    <app-currency-amount-input
+                      [currency]="accountCurrency(type() === 'ACCOUNT_TRANSFER' ? form.controls.destination_account_uuid.value : form.controls.account_uuid.value)"
                       [value]="form.controls.fee_amount.value" [ariaLabel]="i18n.t('activity.feeAmount')" [required]="true"
                       (valueChange)="setAmountControl('fee_amount', $event)" />
                   </label>
@@ -196,7 +200,7 @@
                 </div>
               }
             }
-  
+
             @if (error()) { <app-form-message [text]="error()!" /> }
           </div>
   

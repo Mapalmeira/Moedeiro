@@ -22,6 +22,7 @@ import {
   UpdateFinancialEventPayload,
 } from '../../../../core/ledgers/financial-events.models';
 import { FinancialEventsService } from '../../../../core/ledgers/financial-events.service';
+import { financialEventFeeMovement, financialEventMainMovements } from '../../../../core/ledgers/financial-event-movements';
 import { CurrencyAmountInputComponent } from '../../../../shared/ledger/currency-amount-input.component';
 import { EntitySearchOption, EntitySearchSelectComponent } from '../../../../shared/ledger/entity-search-select.component';
 import { FieldErrorComponent } from '../../../../shared/ui/field-error.component';
@@ -222,10 +223,16 @@ export class FinancialEventEditorComponent {
       const currency = this.accountCurrency(value.account_uuid);
       const amount = currency ? parseCurrencyAmount(value.amount, currency.decimal_places) : null;
       if (!value.account_uuid || !value.category_uuid || !currency || !amount) return this.invalidAmount();
+      let fee: SimpleFinancialEventPayload['fee'] = null;
+      if (value.direction === 'EXPENSE' && value.fee_enabled) {
+        const feeAmount = parseCurrencyAmount(value.fee_amount, currency.decimal_places);
+        if (!value.fee_category_uuid || !feeAmount) return this.invalidAmount();
+        fee = { category_uuid: value.fee_category_uuid, value: -feeAmount };
+      }
       const payload: SimpleFinancialEventPayload = {
         type: 'TRANSACTION', occurred_at: occurredAt, description,
         account_uuid: value.account_uuid, category_uuid: value.category_uuid,
-        value: value.direction === 'EXPENSE' ? -amount : amount, quantity: 1, item_name: null,
+        value: value.direction === 'EXPENSE' ? -amount : amount, quantity: 1, item_name: null, fee,
       };
       return payload;
     }
@@ -340,7 +347,8 @@ export class FinancialEventEditorComponent {
     }
 
     if (type === 'TRANSACTION') {
-      const movement = event.movements[0];
+      const movement = financialEventMainMovements(event)[0];
+      const fee = financialEventFeeMovement(event);
       if (movement) {
         const currency = this.accountCurrency(movement.account_uuid);
         this.form.patchValue({
@@ -348,6 +356,9 @@ export class FinancialEventEditorComponent {
           category_uuid: movement.category_uuid,
           amount: currency ? currencyAmountInput(movement.value, currency.decimal_places) : '',
           direction: movement.value < 0 ? 'EXPENSE' : 'INCOME',
+          fee_enabled: !!fee,
+          fee_amount: fee && currency ? currencyAmountInput(fee.value, currency.decimal_places) : '',
+          fee_category_uuid: fee?.category_uuid ?? firstCategory,
         });
       }
     } else if (type === 'SHOPPING_LIST') {
@@ -365,9 +376,10 @@ export class FinancialEventEditorComponent {
       }
       if (this.movements.length === 0) this.addMovement();
     } else {
-      const destination = event.movements.find(movement => movement.value > 0) ?? null;
-      const source = destination ? event.movements.find(movement => movement.value < 0 && movement.account_uuid !== destination.account_uuid) ?? null : null;
-      const fee = destination ? event.movements.find(movement => movement.value < 0 && movement.account_uuid === destination.account_uuid) ?? null : null;
+      const mainMovements = financialEventMainMovements(event);
+      const destination = mainMovements.find(movement => movement.value > 0) ?? null;
+      const source = destination ? mainMovements.find(movement => movement.value < 0 && movement.account_uuid !== destination.account_uuid) ?? null : null;
+      const fee = financialEventFeeMovement(event);
       if (source && destination) {
         const sourceCurrency = this.accountCurrency(source.account_uuid);
         const destinationCurrency = this.accountCurrency(destination.account_uuid);

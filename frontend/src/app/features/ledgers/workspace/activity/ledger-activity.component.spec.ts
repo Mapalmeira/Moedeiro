@@ -68,8 +68,8 @@ describe('LedgerActivityComponent', () => {
       description: 'Transfer',
       type: 'ACCOUNT_TRANSFER',
       movements: [
-        { uuid: 'outgoing', account_uuid: source.uuid, category_uuid: 'category', value: -10_000, quantity: 1, item_name: null },
-        { uuid: 'incoming', account_uuid: destination.uuid, category_uuid: 'category', value: 10_000, quantity: 1, item_name: null },
+        { uuid: 'outgoing', account_uuid: source.uuid, category_uuid: 'category', value: -10_000, quantity: 1, item_name: null, special_type: null },
+        { uuid: 'incoming', account_uuid: destination.uuid, category_uuid: 'category', value: 10_000, quantity: 1, item_name: null, special_type: null },
       ],
     };
     const filters = { from_timestamp: 0, to_timestamp: 200, page_size: 40, account_uuid: source.uuid };
@@ -84,6 +84,54 @@ describe('LedgerActivityComponent', () => {
     component.appliedFilters.set({ ...filters, account_uuid: destination.uuid });
 
     expect(component.eventRows()[0].value).toBe(formatCurrencyAmount(10_000, currency));
+    expect(component.eventRows()[0].valueTone).toBe('positive');
+  });
+
+
+  it('includes a marked fee in a simple expense total and detail', () => {
+    const component = TestBed.runInInjectionContext(() => new LedgerActivityComponent());
+    const transaction: FinancialEvent = {
+      uuid: 'transaction',
+      occurred_at: 100,
+      description: 'Expense with fee',
+      type: 'TRANSACTION',
+      movements: [
+        { uuid: 'main', account_uuid: source.uuid, category_uuid: 'category', value: -10_000, quantity: 1, item_name: null, special_type: null },
+        { uuid: 'fee', account_uuid: source.uuid, category_uuid: 'fee-category', value: -250, quantity: 1, item_name: null, special_type: 'FEE' },
+      ],
+    };
+    component.accounts.set([source]);
+    component.currencies.set([currency]);
+    component.events.set([transaction]);
+
+    expect(component.eventRows()[0].value).toBe(formatCurrencyAmount(-10_250, currency));
+    expect(component.eventRows()[0].valueTone).toBe('negative');
+    expect(component.eventRows()[0].detail).toBe('activity.feeDetail');
+  });
+
+  it('uses the marked transfer fee only on the filtered destination side', () => {
+    const component = TestBed.runInInjectionContext(() => new LedgerActivityComponent());
+    const transfer: FinancialEvent = {
+      uuid: 'transfer-with-fee',
+      occurred_at: 100,
+      description: 'Transfer with fee',
+      type: 'ACCOUNT_TRANSFER',
+      movements: [
+        { uuid: 'outgoing', account_uuid: source.uuid, category_uuid: 'category', value: -10_000, quantity: 1, item_name: null, special_type: null },
+        { uuid: 'incoming', account_uuid: destination.uuid, category_uuid: 'category', value: 10_000, quantity: 1, item_name: null, special_type: null },
+        { uuid: 'fee', account_uuid: destination.uuid, category_uuid: 'fee-category', value: -250, quantity: 1, item_name: null, special_type: 'FEE' },
+      ],
+    };
+    component.accounts.set([source, destination]);
+    component.currencies.set([currency]);
+    component.events.set([transfer]);
+
+    expect(component.eventRows()[0].value).toBe(formatCurrencyAmount(0, currency));
+    expect(component.eventRows()[0].detail).toBe('activity.feeDetail');
+
+    component.appliedFilters.set({ from_timestamp: 0, to_timestamp: 200, page_size: 40, account_uuid: destination.uuid });
+
+    expect(component.eventRows()[0].value).toBe(formatCurrencyAmount(9_750, currency));
     expect(component.eventRows()[0].valueTone).toBe('positive');
   });
 

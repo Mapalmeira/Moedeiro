@@ -7,6 +7,7 @@
 .date-time-fields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--form-gap); }
 .two-column-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--form-gap); align-items: end; }
 .direction-switch { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.direction-switch .ui-choice { width: 100%; min-width: 0; }
 .direction-switch .ui-choice--selected:first-child { --choice-selected-background: var(--danger-soft); }
 .direction-switch .ui-choice--selected:last-child { --choice-selected-background: var(--green-soft); }
 .shopping-movements {
@@ -33,7 +34,7 @@
 .shopping-movement__mobile-title, .shopping-movement__mobile-label { display: none; }
 .shopping-movement__remove { align-self: end; width: calc(var(--control-height) - var(--button-shadow-offset)); height: calc(var(--control-height) - var(--button-shadow-offset)); margin-inline-end: var(--button-shadow-offset); margin-block-end: var(--button-shadow-offset); }
 .shopping-movements__add { justify-self: start; min-height: var(--menu-item-height); padding-inline: var(--space-4); color: var(--text); }
-.transfer-fee-toggle { min-width: 0; min-height: var(--control-height); justify-self: start; align-self: start; padding-inline: var(--space-4); }
+.event-fee-toggle { min-width: 0; min-height: var(--control-height); justify-self: start; align-self: start; padding-inline: var(--space-4); }
 .transfer-amount-fields { align-items: start; }
 
 @media (max-width: 640px) {
@@ -66,5 +67,5 @@
   .shopping-movement__amount { grid-area: amount; }
   .shopping-movement__remove { grid-area: remove; align-self: start; margin-block-end: 0; }
   .shopping-movement__mobile-label { display: block; margin-bottom: var(--field-gap); }
-  .shopping-movements__add { width: 100%; }
+  .shopping-movements__add, .event-fee-toggle { width: 100%; }
 }

@@ -1,14 +1,16 @@
 export const MAX_SHOPPING_LIST_MOVEMENTS = 300;
 
 export type FinancialEventType = 'TRANSACTION' | 'ACCOUNT_TRANSFER' | 'SHOPPING_LIST';
+export type FinancialMovementSpecialType = 'FEE';
 
-interface FinancialMovement {
+export interface FinancialMovement {
   uuid: string;
   account_uuid: string;
   category_uuid: string;
   value: number;
   quantity: number;
   item_name: string | null;
+  special_type: FinancialMovementSpecialType | null;
 }
 
 export interface FinancialEvent {
@@ -38,6 +40,11 @@ export interface FinancialEventFilters {
   ascending?: boolean;
 }
 
+export interface FinancialEventFeePayload {
+  category_uuid: string;
+  value: number;
+}
+
 export interface SimpleFinancialEventPayload {
   type: 'TRANSACTION';
   occurred_at: number;
@@ -47,6 +54,7 @@ export interface SimpleFinancialEventPayload {
   value: number;
   quantity: number;
   item_name: string | null;
+  fee: FinancialEventFeePayload | null;
 }
 
 interface ShoppingListMovementPayload {
@@ -75,7 +83,7 @@ export interface AccountTransferFinancialEventPayload {
   destination_account_uuid: string;
   destination_category_uuid: string;
   destination_value: number;
-  fee: { category_uuid: string; value: number } | null;
+  fee: FinancialEventFeePayload | null;
 }
 
 export type CreateFinancialEventPayload =
