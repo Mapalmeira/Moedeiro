@@ -67,6 +67,7 @@ export const en: Record<TranslationKey, string> = {
   'home.flowView': 'Activity view',
   'home.instantaneous': 'Instantaneous',
   'home.cumulative': 'Cumulative',
+  'home.cumulativeNetMovement': 'Cumulative net movement',
   'home.viewAll': 'View all',
   'home.recentActivity': 'Recent activity',
   'home.noCurrencies': 'Create a currency to start using the home view.',

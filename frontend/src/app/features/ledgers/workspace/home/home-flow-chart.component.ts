@@ -74,7 +74,7 @@ export function homeChartPointWidth(range: HomeFlowRange): number {
             <span>{{ i18n.t('home.income') }} <b>{{ point.income }}</b></span>
             <span>{{ i18n.t('home.expense') }} <b>{{ point.expense }}</b></span>
             <span>{{ i18n.t('home.netFlow') }} <b>{{ point.net }}</b></span>
-          } @else { <span>{{ i18n.t('home.cumulative') }} <b>{{ point.cumulative }}</b></span> }
+          } @else { <span>{{ i18n.t('home.cumulativeNetMovement') }} <b>{{ point.cumulative }}</b></span> }
         </div>
       }
       @if (totalIncome() === 0 && totalExpense() === 0) { <span class="flow-chart__empty">{{ i18n.t('home.noFlow') }}</span> }
@@ -83,7 +83,7 @@ export function homeChartPointWidth(range: HomeFlowRange): number {
       @if (flowMode() === 'instant') {
         <span><i class="flow-legend__dot flow-legend__dot--income"></i>{{ i18n.t('home.income') }}</span>
         <span><i class="flow-legend__dot flow-legend__dot--expense"></i>{{ i18n.t('home.expense') }}</span>
-      } @else { <span><i class="flow-legend__dot flow-legend__dot--cumulative"></i>{{ i18n.t('home.cumulative') }}</span> }
+      } @else { <span><i class="flow-legend__dot flow-legend__dot--cumulative"></i>{{ i18n.t('home.cumulativeNetMovement') }}</span> }
     </footer>
   `,
   styles: `

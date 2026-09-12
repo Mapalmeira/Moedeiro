@@ -65,6 +65,7 @@ export const ptBR = {
   'home.flowView': 'Visualização da movimentação',
   'home.instantaneous': 'Instantâneo',
   'home.cumulative': 'Acumulado',
+  'home.cumulativeNetMovement': 'Movimentação Líquida Acumulada',
   'home.viewAll': 'Ver todos',
   'home.recentActivity': 'Atividade recente',
   'home.noCurrencies': 'Crie uma moeda para começar a usar a visão inicial.',
