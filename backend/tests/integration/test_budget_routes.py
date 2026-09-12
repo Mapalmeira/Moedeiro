@@ -125,8 +125,8 @@ class BudgetRoutesTest(unittest.TestCase):
 
         self.assertEqual(response, created)
         self.assertEqual(response.account_uuid, self.account.uuid)
-        self.assertNotIn("currency_uuid", response.model_fields)
-        self.assertNotIn("account_uuids", response.model_fields)
+        self.assertNotIn("currency_uuid", type(response).model_fields)
+        self.assertNotIn("account_uuids", type(response).model_fields)
 
     def test_create_maps_limit_relations_and_duplicate_name(self) -> None:
         with self.assertRaises(HTTPException) as account_error:
