@@ -10,8 +10,9 @@ class CashFlow(BaseModel):
     * event_count counts the matching events represented by the result
     * income_movement_count and expense_movement_count count the movements included in each amount.
 
-    Every amount belongs to currency_uuid. ACCOUNT_TRANSFER events and their
-    movements are excluded from every value.
+    Every amount belongs to currency_uuid. ACCOUNT_TRANSFER events are excluded
+    from ledger-wide results, but their movement for a selected account is
+    included when account_uuid is part of the query filter.
     """
 
     currency_uuid: UUID

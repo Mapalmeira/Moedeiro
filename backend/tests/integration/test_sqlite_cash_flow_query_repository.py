@@ -101,6 +101,24 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(summary.expense, 0)
         self.assertEqual(summary.event_count, 1)
 
+    def test_account_filter_includes_its_side_of_transfers_in_summary_and_points(self) -> None:
+        transfer = self.create_event("Transfer", "ACCOUNT_TRANSFER", 100)
+        self.movement_repository.create(transfer.uuid, self.account.uuid, self.category.uuid, -100, None)
+        self.movement_repository.create(transfer.uuid, self.other_account.uuid, self.category.uuid, 100, None)
+
+        source_filters = FinancialEventFilter(from_timestamp=0, to_timestamp=200, account_uuid=self.account.uuid)
+        destination_filters = FinancialEventFilter(from_timestamp=0, to_timestamp=200, account_uuid=self.other_account.uuid)
+
+        source_summary = self.repository.get_summary(self.currency.uuid, source_filters)
+        source_points = self.repository.list_points(self.currency.uuid, source_filters, 100)
+        destination_summary = self.repository.get_summary(self.currency.uuid, destination_filters)
+        destination_points = self.repository.list_points(self.currency.uuid, destination_filters, 100)
+
+        self.assertEqual((source_summary.income, source_summary.expense), (0, 100))
+        self.assertEqual([(point.income, point.expense) for point in source_points], [(0, 0), (0, 100)])
+        self.assertEqual((destination_summary.income, destination_summary.expense), (100, 0))
+        self.assertEqual([(point.income, point.expense) for point in destination_points], [(0, 0), (100, 0)])
+
     def test_event_matching_account_and_category_separately_contributes_zero(self) -> None:
         selected_category = self.create_category("Selected category")
         other_category = self.create_category("Other category")

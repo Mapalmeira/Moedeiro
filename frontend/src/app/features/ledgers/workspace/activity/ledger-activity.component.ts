@@ -552,6 +552,8 @@ export class LedgerActivityComponent {
 
   private aggregateMovements(event: FinancialEvent) {
     if (event.type !== 'ACCOUNT_TRANSFER') return event.movements;
+    const accountUuid = this.appliedFilters()?.account_uuid;
+    if (accountUuid) return event.movements.filter(movement => movement.account_uuid === accountUuid);
     const destination = event.movements.find(movement => movement.value > 0) ?? null;
     const source = destination ? event.movements.find(movement => movement.value < 0 && movement.account_uuid !== destination.account_uuid) ?? null : null;
     return source && destination ? [source, destination] : event.movements;

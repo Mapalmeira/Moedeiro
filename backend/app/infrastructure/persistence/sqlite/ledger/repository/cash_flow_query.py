@@ -116,6 +116,8 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
     def _filtered_events(filters: FinancialEventFilter) -> tuple[str, list[bytes | str | int]]:
         event_filters = filters.model_copy(update={"account_uuid": None, "currency_uuid": None, "category_uuid": None})
         where_clause, parameters = build_financial_event_filter(event_filters)
+        if filters.account_uuid is not None:
+            return where_clause, parameters
         return f"{where_clause} AND event.type <> ?", [*parameters, "ACCOUNT_TRANSFER"]
 
     @staticmethod
