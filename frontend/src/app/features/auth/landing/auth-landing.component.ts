@@ -69,7 +69,7 @@ import { PasswordRecoveryDialogComponent } from '../password-recovery/password-r
 
             <div class="login-options">
               <label class="checkbox">
-                <input class="checkbox__input" type="checkbox" formControlName="remember" />
+                <input class="checkbox__input ui-visually-hidden" type="checkbox" formControlName="remember" />
                 <span class="checkbox__control ui-icon-badge" aria-hidden="true"><app-icon name="LucideCheck" size="indicator" /></span>
                 <span>{{ i18n.t('auth.remember') }}</span>
               </label>
