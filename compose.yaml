@@ -11,9 +11,9 @@ services:
 
     volumes:
       - type: bind
-        source: /srv/moedeiro/registry
+        source: "${HOME}/.local/share/moedeiro/registry"
         target: /data/registry
 
       - type: bind
-        source: /srv/moedeiro/ledgers
+        source: "${HOME}/.local/share/moedeiro/ledgers"
         target: /data/ledgers

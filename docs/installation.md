@@ -22,16 +22,18 @@ Store the generated value in your chosen secret store before closing the shell. 
 
 The key encrypts TOTP seeds stored in the registry. If the key is lost, the stored TOTP seeds can no longer be decrypted. In that case, an administrator must revoke the affected users' TOTP enrollments, after which those users may enroll TOTP again.
 
-## Container installation
+## Rootless container installation
 
 ### Prepare persistent container storage
 
-Choose a host directory for persistent registry and ledger data. The examples in this documentation use `/srv/moedeiro` but you may use a different host path.
+Choose a directory owned by the user that will run the container. The examples in this repository use `~/.local/share/moedeiro`, following the usual location for user data and requiring no root privileges.
 
 ```sh
-mkdir -p /srv/moedeiro/registry
-mkdir -p /srv/moedeiro/ledgers
+mkdir -p "$HOME/.local/share/moedeiro/registry"
+mkdir -p "$HOME/.local/share/moedeiro/ledgers"
 ```
+
+To use a different directory, edit the two host paths in `compose.yaml` or `moedeiro.container` and create those directories instead.
 
 ### Container image
 
@@ -70,14 +72,15 @@ Moedeiro can be installed with either Docker Compose or Podman Quadlet. Choose o
 #### Docker Compose installation
 
 1. Copy `compose.yaml` to the host where Moedeiro will run.
-2. Ensure `TOTP_ENCRYPTION_KEY` is available in the environment.
-3. Start Moedeiro:
+2. If you selected a different data directory, replace both `${HOME}/.local/share/moedeiro` source paths in `compose.yaml` with its absolute path.
+3. Ensure `TOTP_ENCRYPTION_KEY` is available in the environment.
+4. Start Moedeiro:
 
 ```sh
 docker compose up --detach
 ```
 
-4. Check the container status:
+5. Check the container status:
 
 ```sh
 docker compose ps moedeiro
@@ -101,8 +104,8 @@ Description=Moedeiro personal finance service
 [Container]
 ContainerName=moedeiro
 Image=docker.io/mapalmeira/moedeiro:latest
-Volume=/srv/moedeiro/registry:/data/registry:Z
-Volume=/srv/moedeiro/ledgers:/data/ledgers:Z
+Volume=%h/.local/share/moedeiro/registry:/data/registry:Z
+Volume=%h/.local/share/moedeiro/ledgers:/data/ledgers:Z
 PublishPort=8080:8000
 Secret=moedeiro_totp_encryption_key,type=env,target=TOTP_ENCRYPTION_KEY
 
@@ -112,6 +115,9 @@ Restart=on-failure
 [Install]
 WantedBy=default.target
 ```
+
+Here `%h` is expanded by the user systemd instance to that user's home
+directory. To store the data elsewhere, replace both source paths before saving the file.
 
 4. Load the unit and start Moedeiro:
 
