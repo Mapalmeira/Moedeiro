@@ -1,9 +1,10 @@
 import re
-from typing import Annotated, Self
+from typing import Annotated
 from unicodedata import normalize
 from uuid import UUID
 
 from pydantic import AfterValidator, BaseModel, Field, model_validator
+from typing_extensions import Self
 
 
 def normalize_user_name(value: str) -> str:

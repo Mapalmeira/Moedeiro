@@ -1,7 +1,8 @@
-from typing import Annotated, Self
+from typing import Annotated
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self
 
 BudgetName = Annotated[str, Field(min_length=1, max_length=50)]
 BudgetDescription = Annotated[str, Field(max_length=300)]

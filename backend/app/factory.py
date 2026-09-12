@@ -87,7 +87,7 @@ def _add_numeric_error_handlers(application: FastAPI) -> None:
 
 
 @asynccontextmanager
-async def _lifespan(application: FastAPI) -> AsyncGenerator[None]:
+async def _lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
     current_default_thread_limiter().total_tokens = application.state.settings.sync_route_concurrency
     try:
         yield

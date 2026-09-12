@@ -1,7 +1,8 @@
-from typing import Annotated, Self
+from typing import Annotated
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self
 
 
 DEFAULT_EXPIRATION_TIMEOUT_SECONDS = 60 * 60

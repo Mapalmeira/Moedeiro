@@ -1,6 +1,7 @@
 import sqlite3
 from pathlib import Path
-from typing import Self
+
+from typing_extensions import Self
 
 from app.infrastructure.persistence.sqlite.search import normalize_search
 

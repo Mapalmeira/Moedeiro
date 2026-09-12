@@ -2,10 +2,10 @@ import os
 from collections.abc import Mapping
 from ipaddress import IPv4Address, IPv6Address
 from pathlib import Path
-from typing import Self
 
 from limits import parse
 from pydantic import BaseModel, ConfigDict, Field, FilePath, field_validator, model_validator
+from typing_extensions import Self
 
 
 _APP_ROOT = Path(__file__).resolve().parent

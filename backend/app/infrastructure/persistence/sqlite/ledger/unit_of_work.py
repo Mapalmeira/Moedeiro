@@ -1,7 +1,8 @@
 """SQLite transactional wrapper whose ledger repositories share one connection."""
 
 import sqlite3
-from typing import Self
+
+from typing_extensions import Self
 
 from app.application.ledger.unit_of_work import LedgerUnitOfWork
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase

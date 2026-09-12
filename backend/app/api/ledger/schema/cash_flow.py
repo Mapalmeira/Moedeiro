@@ -1,7 +1,8 @@
-from typing import Annotated, Self
+from typing import Annotated
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+from typing_extensions import Self
 
 from app.domain.ledger.model.cash_flow import CashFlow
 from app.domain.ledger.model.cash_flow_sankey import CashFlowSankey, CashFlowSankeyLink, CashFlowSankeyNode, CashFlowSankeyNodeKind, CashFlowSankeySide

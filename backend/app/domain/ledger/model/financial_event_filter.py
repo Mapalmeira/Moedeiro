@@ -1,7 +1,7 @@
-from typing import Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, model_validator
+from typing_extensions import Self
 
 from app.domain.ledger.model.financial_event import FinancialEventDescription, FinancialEventType
 

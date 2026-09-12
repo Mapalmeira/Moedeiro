@@ -1,6 +1,5 @@
-from typing import Self
-
 from pydantic import BaseModel
+from typing_extensions import Self
 
 from app.domain.registry.model.user_preferences import Language, Theme, UserPreferences
 

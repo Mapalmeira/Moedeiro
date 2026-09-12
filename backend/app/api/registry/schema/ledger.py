@@ -1,7 +1,8 @@
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+from typing_extensions import Self
 
 from app.domain.appearance import Icon
 from app.domain.registry.model.ledger import Ledger, LedgerName

@@ -1,6 +1,5 @@
-from typing import Self
-
 from pydantic import BaseModel, Field
+from typing_extensions import Self
 
 from app.domain.ledger.model.category import Category
 

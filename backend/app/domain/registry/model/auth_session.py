@@ -1,7 +1,7 @@
-from typing import Self
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self
 
 
 DEFAULT_INACTIVITY_TIMEOUT_SECONDS = 30 * 60

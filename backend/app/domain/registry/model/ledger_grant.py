@@ -1,7 +1,8 @@
-from typing import Literal, Self
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self
 
 
 LedgerRole = Literal["OWNER"]

@@ -1,7 +1,7 @@
-from typing import Self
 from uuid import UUID
 
 from pydantic import BaseModel, model_validator
+from typing_extensions import Self
 
 from app.domain.ledger.model.budget import Budget, BudgetAmount, BudgetDescription, BudgetName
 from app.domain.ledger.model.budget_overview import BudgetOverviewItem, BudgetOverviewState

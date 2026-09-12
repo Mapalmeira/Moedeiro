@@ -1,6 +1,7 @@
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self
 
 
 TotpCode = Annotated[str, Field(min_length=6, max_length=6, pattern=r"^\d{6}$")]

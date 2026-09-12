@@ -1,7 +1,7 @@
-from typing import Self
 from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
+from typing_extensions import Self
 
 from app.domain.registry.model.crockford_code import CrockfordCode
 

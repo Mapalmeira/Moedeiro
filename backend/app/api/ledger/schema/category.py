@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Annotated, Self
+from typing import Annotated
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+from typing_extensions import Self
 
 from app.domain.appearance import Icon
 from app.domain.ledger.model.category import Category, CategoryName

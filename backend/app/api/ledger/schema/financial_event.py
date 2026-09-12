@@ -1,7 +1,8 @@
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
+from typing_extensions import Self
 
 from app.domain.ledger.model.financial_event import MAX_SHOPPING_LIST_MOVEMENTS, FinancialEvent, FinancialEventDescription, FinancialEventType
 from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName, FinancialMovementQuantity

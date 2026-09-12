@@ -5,7 +5,8 @@ and closes the resources owned by the unit of work.
 """
 
 from abc import ABC, abstractmethod
-from typing import Self
+
+from typing_extensions import Self
 
 
 class UnitOfWork(ABC):
