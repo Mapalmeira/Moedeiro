@@ -188,6 +188,6 @@ See [Environment settings](environment.md) for the available settings, their def
 
 ## Next steps
 
-Use the [Command line interface](cli.md) for operator tasks such as creating invitations, managing users, and cleaning inactive records.
+If Moedeiro will be exposed through an HTTPS reverse proxy, continue with [Reverse proxy](reverse-proxy.md). Otherwise, open it in a web browser using the host and port configured for your installation. The examples in this documentation use `http://localhost:8080` by default.
 
-If Moedeiro will be exposed through an HTTPS reverse proxy, continue with [Reverse proxy](reverse-proxy.md).
+Then use the [Command line interface](cli.md) for operator tasks such as creating invitations, managing users, and cleaning inactive records.
