@@ -24,8 +24,6 @@ The key encrypts TOTP seeds stored in the registry. If the key is lost, the stor
 
 ## Container installation
 
-Moedeiro can be installed with either Docker Compose or Podman Quadlet. Choose one container runtime and follow the corresponding section below.
-
 ### Prepare persistent container storage
 
 Choose a host directory for persistent registry and ledger data. The examples in this documentation use `/srv/moedeiro` but you may use a different host path.
@@ -56,7 +54,7 @@ docker build \
   .
 ```
 
-With Podman:
+Otherwise, with Podman:
 
 ```sh
 podman build \
@@ -65,10 +63,14 @@ podman build \
   .
 ```
 
-### Docker Compose installation
+### Container engine
+
+Moedeiro can be installed with either Docker Compose or Podman Quadlet. Choose one container runtime and follow the corresponding section below.
+
+#### Docker Compose installation
 
 1. Copy `compose.yaml` to the host where Moedeiro will run.
-2. Ensure `TOTP_ENCRYPTION_KEY` is available in the environment
+2. Ensure `TOTP_ENCRYPTION_KEY` is available in the environment.
 3. Start Moedeiro:
 
 ```sh
@@ -81,9 +83,9 @@ docker compose up --detach
 docker compose ps moedeiro
 ```
 
-### Podman Quadlet installation
+#### Podman Quadlet installation
 
-1. Ensure `TOTP_ENCRYPTION_KEY` is available in the environment
+1. Ensure `TOTP_ENCRYPTION_KEY` is available in the environment.
 2. Create a Podman secret directly from the `TOTP_ENCRYPTION_KEY` environment variable:
 
 ```sh
@@ -126,9 +128,11 @@ systemctl --user status moedeiro
 
 ## Native installation
 
-A native installation runs Moedeiro directly on the host. Building the web interface requires a Node.js version supported by Angular 22, while the backend requires Python 3.10 or later.
+It is also possible to install Moedeiro natively. A native installation runs Moedeiro directly on the host. 
 
-1. Create a virtual environment and install the backend package from the repository root:
+This installation method requires a Node.js version supported by Angular 22 and Python 3.10 or later.
+
+1. Create a virtual environment and install the backend python package from the repository root:
 
 ```sh
 python3 -m venv .venv
@@ -138,7 +142,7 @@ python -m pip install --constraint ./backend/requirements.lock --editable ./back
 
 This installs the backend dependencies and the `moedeiro` command.
 
-2. Install the locked frontend dependencies and build the frontend:
+2. Install the frontend dependencies and build the frontend:
 
 ```sh
 (cd frontend && npm ci && npm run build:production)
