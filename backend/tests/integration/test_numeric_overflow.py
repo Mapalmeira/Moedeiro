@@ -16,7 +16,11 @@ class NumericOverflowTest(unittest.TestCase):
 
         @application.get("/input")
         def overflow_input() -> None:
-            sqlite3.connect(":memory:").execute("SELECT ?", ((1 << 63),))
+            connection = sqlite3.connect(":memory:")
+            try:
+                connection.execute("SELECT ?", ((1 << 63),))
+            finally:
+                connection.close()
 
         @application.get("/aggregate")
         def overflow_aggregate() -> None:
@@ -42,7 +46,11 @@ class NumericOverflowTest(unittest.TestCase):
                 self.assertEqual(response.json(), {"detail": detail})
 
     def test_sqlite_real_result_from_an_overflowing_product_is_rejected(self) -> None:
-        value = sqlite3.connect(":memory:").execute("SELECT 9223372036854775807 * 2").fetchone()[0]
+        connection = sqlite3.connect(":memory:")
+        try:
+            value = connection.execute("SELECT 9223372036854775807 * 2").fetchone()[0]
+        finally:
+            connection.close()
 
         self.assertIsInstance(value, float)
         with self.assertRaises(QueryResultOverflowError):
