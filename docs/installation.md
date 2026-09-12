@@ -95,7 +95,13 @@ docker compose ps moedeiro
 printf '%s' "$TOTP_ENCRYPTION_KEY" | podman secret create moedeiro_totp_encryption_key -
 ```
 
-3. Create `~/.config/containers/systemd/moedeiro.container`:
+3. Create a directory for Moedeiro's Quadlet files:
+
+```sh
+mkdir -p "$HOME/.config/containers/systemd/moedeiro"
+```
+
+4. Create `~/.config/containers/systemd/moedeiro/moedeiro.container`:
 
 ```ini
 [Unit]
@@ -119,14 +125,14 @@ WantedBy=default.target
 Here `%h` is expanded by the user systemd instance to that user's home
 directory. To store the data elsewhere, replace both source paths before saving the file.
 
-4. Load the unit and start Moedeiro:
+5. Load the unit and start Moedeiro:
 
 ```sh
 systemctl --user daemon-reload
 systemctl --user start moedeiro
 ```
 
-5. Check the service status:
+6. Check the service status:
 
 ```sh
 systemctl --user status moedeiro
