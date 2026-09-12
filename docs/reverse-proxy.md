@@ -1,6 +1,6 @@
 # Reverse proxy and HTTPS
 
-Moedeiro serves plain HTTP. When exposing Moedeiro outside the host, Uvicorn should listen on localhost or a private container network, while a reverse proxy provides the public HTTPS endpoint.
+Moedeiro serves plain HTTP. When exposing Moedeiro outside the host, a reverse proxy should provide the public HTTPS endpoint.
 
 Because the TCP connection seen by Moedeiro may come from a reverse proxy, IP-based rate limits need the proxy to forward the original client address. Moedeiro accepts forwarded client information only from the address configured through the `TRUSTED_PROXY_IP` environment variable, which must match the source address that Moedeiro actually sees for connections from proxies.
 
@@ -22,10 +22,6 @@ moedeiro.example.com {
 }
 ```
 
-Caddy automatically provisions and renews the TLS certificate for the configured hostname. Its reverse proxy also supplies the forwarded client address and scheme required by Moedeiro.
-
 ## Podman pasta networking
 
-Podman's rootless pasta networking can preserve the original source IP address when forwarding a connection from the host to the Moedeiro container. In such a setup, Moedeiro may already see the original client address directly as the network peer, even when the request passed through a reverse proxy on the host.
-
-When this happens, TRUSTED_PROXY_IP can remain unset. Moedeiro uses the peer address provided by the connection and ignores forwarded headers.
+Podman's rootless pasta networking can preserve the original source IP address when forwarding a connection from the host to the Moedeiro container. In such a setup, Moedeiro may already see the original client address directly as the network peer, even when the request passed through a reverse proxy on the host. When this happens, TRUSTED_PROXY_IP can remain unset. Moedeiro uses the peer address provided by the connection and ignores forwarded headers.
