@@ -9,7 +9,7 @@ from pydantic import TypeAdapter, ValidationError
 
 from app.api.ledger.routes.financial_event import create_ledger_financial_event, delete_ledger_financial_event, get_ledger_financial_event, list_ledger_financial_events, update_ledger_financial_event
 from app.api.registry.routes.ledger import create_owned_ledger
-from app.api.ledger.schema.financial_event import AccountTransferFeeRequest, AccountTransferFinancialEventRequest, CreateFinancialEventRequest, ShoppingListFinancialEventRequest, ShoppingListMovementRequest, SimpleFinancialEventRequest, UpdateAccountTransferFinancialEventRequest, UpdateFinancialEventRequest, UpdateShoppingListFinancialEventRequest, UpdateShoppingListMovementRequest, UpdateSimpleFinancialEventRequest
+from app.api.ledger.schema.financial_event import FinancialEventFeeRequest, AccountTransferFinancialEventRequest, CreateFinancialEventRequest, ShoppingListFinancialEventRequest, ShoppingListMovementRequest, SimpleFinancialEventRequest, UpdateAccountTransferFinancialEventRequest, UpdateFinancialEventRequest, UpdateShoppingListFinancialEventRequest, UpdateShoppingListMovementRequest, UpdateSimpleFinancialEventRequest
 from app.api.registry.schema.ledger import CreateLedgerRequest
 from app.factory import create_app
 from app.settings import Settings
@@ -77,6 +77,33 @@ class FinancialEventRoutesTest(unittest.TestCase):
         self.assertEqual(event.movements[0].value, -100)
         self.assertEqual(event.movements[0].quantity, 2)
 
+    def test_create_simple_expense_returns_optional_fee_as_tax_movement(self) -> None:
+        event = create_ledger_financial_event(
+            self.ledger.uuid,
+            SimpleFinancialEventRequest(
+                type="TRANSACTION", occurred_at=10, description="Lunch", account_uuid=self.source.uuid,
+                category_uuid=self.food.uuid, value=-100, fee=FinancialEventFeeRequest(category_uuid=self.fee.uuid, value=-5),
+            ),
+            self.request,
+            self.user,
+        )
+
+        self.assertEqual(len(event.movements), 2)
+        fee = next(movement for movement in event.movements if movement.special_type == "FEE")
+        self.assertEqual((fee.account_uuid, fee.category_uuid, fee.value), (self.source.uuid, self.fee.uuid, -5))
+
+    def test_create_simple_income_rejects_a_fee(self) -> None:
+        payload = SimpleFinancialEventRequest(
+            type="TRANSACTION", occurred_at=10, description="Refund", account_uuid=self.source.uuid,
+            category_uuid=self.food.uuid, value=100, fee=FinancialEventFeeRequest(category_uuid=self.fee.uuid, value=-5),
+        )
+
+        with self.assertRaises(HTTPException) as raised:
+            create_ledger_financial_event(self.ledger.uuid, payload, self.request, self.user)
+
+        self.assertEqual(raised.exception.status_code, 422)
+        self.assertEqual(raised.exception.detail, "Invalid financial event")
+
     def test_create_maps_the_financial_event_limit(self) -> None:
         self.create_simple()
         with patch("app.application.ledger.use_cases.financial_event.MAXIMUM_FINANCIAL_EVENTS", 1):
@@ -141,7 +168,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
                 destination_account_uuid=self.destination.uuid,
                 destination_category_uuid=self.food.uuid,
                 destination_value=180,
-                fee=AccountTransferFeeRequest(category_uuid=self.fee.uuid, value=-5),
+                fee=FinancialEventFeeRequest(category_uuid=self.fee.uuid, value=-5),
             ),
             self.request,
             self.user,
@@ -153,6 +180,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
             (self.destination.uuid, self.food.uuid, 180),
             (self.destination.uuid, self.fee.uuid, -5),
         })
+        self.assertEqual([movement.special_type for movement in event.movements].count("FEE"), 1)
 
     def test_create_rejects_equal_transfer_accounts_or_unknown_relations(self) -> None:
         equal_accounts = AccountTransferFinancialEventRequest(
@@ -322,7 +350,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
                 destination_account_uuid=self.source.uuid,
                 destination_category_uuid=self.transport.uuid,
                 destination_value=190,
-                fee=AccountTransferFeeRequest(category_uuid=self.fee.uuid, value=-5),
+                fee=FinancialEventFeeRequest(category_uuid=self.fee.uuid, value=-5),
             ),
             self.request,
             self.user,

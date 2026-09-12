@@ -57,6 +57,7 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
                 "value": -150,
                 "quantity": 2,
                 "item_name": None,
+                "special_type": "FEE",
             }
         )
 
@@ -65,6 +66,7 @@ class SqliteFinancialMovementRepositoryTest(LedgerRepositoryTestCase):
         event = SqliteFinancialEventRepository(self.connection).get(self.event.uuid)
         assert event is not None
         self.assertEqual(event.movements, [updated_movement])
+        self.assertEqual(event.movements[0].special_type, "FEE")
 
     def test_delete_removes_only_the_selected_movement(self) -> None:
         selected = self.create_movement(-100, "Lunch")

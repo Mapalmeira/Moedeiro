@@ -7,6 +7,7 @@ from app.application.ledger.exceptions import LedgerNotFoundError
 from app.application.registry.exceptions import LedgerLimitReachedError
 from app.application.ledger.use_cases.ledger import access_owned_ledger, create_ledger, delete_owned_ledger, get_owned_ledger, list_owned_ledgers, update_owned_ledger
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
+from app.infrastructure.persistence.sqlite.ledger.schema_version import CURRENT_LEDGER_SCHEMA_VERSION
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -60,7 +61,7 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
             metadata = unit_of_work.ledger_metadata_repository.get()
         assert metadata is not None
         self.assertEqual(metadata.ledger_uuid, ledger.uuid)
-        self.assertEqual(metadata.schema_version, 1)
+        self.assertEqual(metadata.schema_version, CURRENT_LEDGER_SCHEMA_VERSION)
         self.assertEqual(metadata.created_at, 100)
 
     def test_create_uses_the_owner_language_for_preloaded_entities(self) -> None:

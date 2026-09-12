@@ -1,7 +1,7 @@
 import sqlite3
 from uuid import UUID, uuid4
 
-from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName, FinancialMovementQuantity
+from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName, FinancialMovementQuantity, FinancialMovementSpecialType
 from app.domain.ledger.repository.financial_movement import FinancialMovementRepository
 
 
@@ -9,7 +9,16 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
 
-    def create(self, financial_event_uuid: UUID, account_uuid: UUID, category_uuid: UUID, value: int, item_name: FinancialMovementItemName | None, quantity: FinancialMovementQuantity = 1) -> FinancialMovement:
+    def create(
+        self,
+        financial_event_uuid: UUID,
+        account_uuid: UUID,
+        category_uuid: UUID,
+        value: int,
+        item_name: FinancialMovementItemName | None,
+        quantity: FinancialMovementQuantity = 1,
+        special_type: FinancialMovementSpecialType | None = None,
+    ) -> FinancialMovement:
         movement = FinancialMovement(
             uuid=uuid4(),
             financial_event_uuid=financial_event_uuid,
@@ -18,11 +27,12 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
             value=value,
             quantity=quantity,
             item_name=item_name,
+            special_type=special_type,
         )
         self.connection.execute(
             """
-            INSERT INTO financial_movement(uuid, financial_event_uuid, account_uuid, category_uuid, value, quantity, item_name)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO financial_movement(uuid, financial_event_uuid, account_uuid, category_uuid, value, quantity, item_name, special_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 movement.uuid.bytes,
@@ -32,6 +42,7 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
                 movement.value,
                 movement.quantity,
                 movement.item_name,
+                movement.special_type,
             ),
         )
         return movement
@@ -40,7 +51,7 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
         self.connection.execute(
             """
             UPDATE financial_movement
-            SET account_uuid = ?, category_uuid = ?, value = ?, quantity = ?, item_name = ?
+            SET account_uuid = ?, category_uuid = ?, value = ?, quantity = ?, item_name = ?, special_type = ?
             WHERE uuid = ?
             """,
             (
@@ -49,6 +60,7 @@ class SqliteFinancialMovementRepository(FinancialMovementRepository):
                 movement.value,
                 movement.quantity,
                 movement.item_name,
+                movement.special_type,
                 movement.uuid.bytes,
             ),
         )

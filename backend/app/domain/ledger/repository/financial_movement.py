@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName, FinancialMovementQuantity
+from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName, FinancialMovementQuantity, FinancialMovementSpecialType
 
 
 class FinancialMovementRepository(ABC):
@@ -14,6 +14,7 @@ class FinancialMovementRepository(ABC):
         value: int,
         item_name: FinancialMovementItemName | None,
         quantity: FinancialMovementQuantity = 1,
+        special_type: FinancialMovementSpecialType | None = None,
     ) -> FinancialMovement:
         pass
 

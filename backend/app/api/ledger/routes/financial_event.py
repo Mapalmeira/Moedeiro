@@ -8,7 +8,7 @@ from app.api.dependencies.ledger import ledger_unit_of_work_factory
 from app.api.dependencies.pagination import validate_page_size
 from app.api.ledger.schema.financial_event import AccountTransferFinancialEventRequest, CreateFinancialEventRequest, FinancialEventPageResponse, FinancialEventResponse, ShoppingListFinancialEventRequest, SimpleFinancialEventRequest, UpdateAccountTransferFinancialEventRequest, UpdateFinancialEventRequest, UpdateShoppingListFinancialEventRequest, UpdateSimpleFinancialEventRequest
 from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, CurrencyNotFoundError, FinancialEventLimitReachedError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError, InvalidFinancialEventStructureError
-from app.application.ledger.use_cases.financial_event import count_financial_events, create_account_transfer_financial_event, create_shopping_list_financial_event, create_simple_financial_event, delete_financial_event, get_financial_event, list_financial_events_after, update_account_transfer_financial_event, update_shopping_list_financial_event, update_simple_financial_event
+from app.application.ledger.use_cases.financial_event import FinancialEventFee, ShoppingListMovementInput, count_financial_events, create_account_transfer_financial_event, create_shopping_list_financial_event, create_simple_financial_event, delete_financial_event, get_financial_event, list_financial_events_after, update_account_transfer_financial_event, update_shopping_list_financial_event, update_simple_financial_event
 from app.domain.ledger.model.financial_event import FinancialEventDescription, FinancialEventType
 from app.domain.ledger.model.financial_event_filter import FinancialEventFilter
 
@@ -21,17 +21,26 @@ def create_ledger_financial_event(ledger_uuid: UUID, payload: CreateFinancialEve
     unit_of_work_factory = ledger_unit_of_work_factory(request, user.uuid, ledger_uuid)
     try:
         if isinstance(payload, SimpleFinancialEventRequest):
-            event = create_simple_financial_event(unit_of_work_factory, payload.occurred_at, payload.description, payload.account_uuid, payload.category_uuid, payload.value, payload.quantity, payload.item_name)
+            fee = None if payload.fee is None else FinancialEventFee(category_uuid=payload.fee.category_uuid, value=payload.fee.value)
+            event = create_simple_financial_event(unit_of_work_factory, payload.occurred_at, payload.description, payload.account_uuid, payload.category_uuid, payload.value, payload.quantity, payload.item_name, fee)
         elif isinstance(payload, ShoppingListFinancialEventRequest):
             event = create_shopping_list_financial_event(
                 unit_of_work_factory,
                 payload.occurred_at,
                 payload.description,
                 payload.account_uuid,
-                [(movement.category_uuid, movement.value, movement.quantity, movement.item_name) for movement in payload.movements],
+                [
+                    ShoppingListMovementInput(
+                        category_uuid=movement.category_uuid,
+                        value=movement.value,
+                        quantity=movement.quantity,
+                        item_name=movement.item_name,
+                    )
+                    for movement in payload.movements
+                ],
             )
         elif isinstance(payload, AccountTransferFinancialEventRequest):
-            fee = None if payload.fee is None else (payload.fee.category_uuid, payload.fee.value)
+            fee = None if payload.fee is None else FinancialEventFee(category_uuid=payload.fee.category_uuid, value=payload.fee.value)
             event = create_account_transfer_financial_event(
                 unit_of_work_factory,
                 payload.occurred_at,
@@ -128,7 +137,8 @@ def update_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, payload: 
     unit_of_work_factory = ledger_unit_of_work_factory(request, user.uuid, ledger_uuid)
     try:
         if isinstance(payload, UpdateSimpleFinancialEventRequest):
-            event = update_simple_financial_event(unit_of_work_factory, event_uuid, payload.occurred_at, payload.description, payload.account_uuid, payload.category_uuid, payload.value, payload.quantity, payload.item_name)
+            fee = None if payload.fee is None else FinancialEventFee(category_uuid=payload.fee.category_uuid, value=payload.fee.value)
+            event = update_simple_financial_event(unit_of_work_factory, event_uuid, payload.occurred_at, payload.description, payload.account_uuid, payload.category_uuid, payload.value, payload.quantity, payload.item_name, fee)
         elif isinstance(payload, UpdateShoppingListFinancialEventRequest):
             event = update_shopping_list_financial_event(
                 unit_of_work_factory,
@@ -136,10 +146,19 @@ def update_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, payload: 
                 payload.occurred_at,
                 payload.description,
                 payload.account_uuid,
-                [(movement.uuid, movement.category_uuid, movement.value, movement.quantity, movement.item_name) for movement in payload.movements],
+                [
+                    ShoppingListMovementInput(
+                        uuid=movement.uuid,
+                        category_uuid=movement.category_uuid,
+                        value=movement.value,
+                        quantity=movement.quantity,
+                        item_name=movement.item_name,
+                    )
+                    for movement in payload.movements
+                ],
             )
         elif isinstance(payload, UpdateAccountTransferFinancialEventRequest):
-            fee = None if payload.fee is None else (payload.fee.category_uuid, payload.fee.value)
+            fee = None if payload.fee is None else FinancialEventFee(category_uuid=payload.fee.category_uuid, value=payload.fee.value)
             event = update_account_transfer_financial_event(
                 unit_of_work_factory,
                 event_uuid,

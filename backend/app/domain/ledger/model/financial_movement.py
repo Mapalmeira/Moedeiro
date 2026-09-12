@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 
 FinancialMovementItemName = Annotated[str, Field(max_length=50)]
 FinancialMovementQuantity = Annotated[int, Field(gt=0)]
+FinancialMovementSpecialType = Literal["FEE"]
 
 
 class FinancialMovement(BaseModel):
@@ -16,6 +17,7 @@ class FinancialMovement(BaseModel):
     value: int
     quantity: FinancialMovementQuantity = 1
     item_name: FinancialMovementItemName | None = None
+    special_type: FinancialMovementSpecialType | None = None
 
     @field_validator("value")
     @classmethod

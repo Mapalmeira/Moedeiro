@@ -51,6 +51,7 @@ CREATE TABLE financial_movement (
     value INTEGER NOT NULL CHECK (value <> 0),
     quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
     item_name TEXT CHECK (item_name IS NULL OR length(item_name) <= 50),
+    special_type TEXT CHECK (special_type IS NULL OR special_type IN ('FEE')),
     account_uuid BLOB NOT NULL,
     category_uuid BLOB NOT NULL,
 

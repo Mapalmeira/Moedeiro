@@ -43,6 +43,20 @@ class FinancialMovementTest(unittest.TestCase):
         self.assertIsNone(movement.item_name)
         self.assertEqual(movement.quantity, 1)
 
+    def test_accepts_only_the_supported_special_type(self) -> None:
+        movement = FinancialMovement(
+            uuid=uuid4(),
+            financial_event_uuid=uuid4(),
+            account_uuid=uuid4(),
+            category_uuid=uuid4(),
+            value=-100,
+            special_type="FEE",
+        )
+
+        self.assertEqual(movement.special_type, "FEE")
+        with self.assertRaises(ValidationError):
+            FinancialMovement.model_validate({**movement.model_dump(), "special_type": "OTHER"})
+
     def test_accepts_a_positive_quantity(self) -> None:
         movement = FinancialMovement(
             uuid=uuid4(),

@@ -36,10 +36,10 @@
 
 * **Financial event** is an occurrence at `occurred_at`, with a description and one or more movements. A ledger may contain up to 1,000,000 financial events. It has one of three types:
 
-  * `TRANSACTION` has one non-zero movement and represents a simple income (positive value) or expense (negative value).
+  * `TRANSACTION` has one non-zero main movement and represents a simple income (positive value) or expense (negative value). An expense may contain one additional negative fee movement on the same account, identified by special type `FEE`.
   * `SHOPPING_LIST` has one or more negative movements from a single account, allowing a purchase to be itemized across categories. It supports up to 300 movements.
-  * `ACCOUNT_TRANSFER` has a negative movement from one account and a positive movement into another account; the accounts must differ. It may contain one additional negative fee movement on the destination account.
+  * `ACCOUNT_TRANSFER` has a negative movement from one account and a positive movement into another account; the accounts must differ. It may contain one additional negative fee movement on the destination account, identified by special type `FEE`.
 
-* **Financial movement** is the accounting entry within an event. It links one account and one category, and contains a non-zero signed `value`, a positive `quantity`, and an optional item name. Its economic impact is `value × quantity`.
+* **Financial movement** is the accounting entry within an event. It links one account and one category, and contains a non-zero signed `value`, a positive `quantity`, an optional item name, and an optional `special_type`. Its economic impact is `value × quantity`.
 
 * **Budget** sets a non-negative spending limit for exactly one account, one category, and a time period. The account determines the budget currency and cannot be changed after creation. Spending in descendant categories is included. Budget descriptions are optional. Budgets do not have their own icon or color; account and category appearance identify their scope. Budget names are unique within the ledger. A ledger may contain up to 1,000 budgets.

@@ -5,11 +5,16 @@ from pydantic import BaseModel, Field, field_validator
 from typing_extensions import Self
 
 from app.domain.ledger.model.financial_event import MAX_SHOPPING_LIST_MOVEMENTS, FinancialEvent, FinancialEventDescription, FinancialEventType
-from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName, FinancialMovementQuantity
+from app.domain.ledger.model.financial_movement import FinancialMovement, FinancialMovementItemName, FinancialMovementQuantity, FinancialMovementSpecialType
 
 
 ExpenseValue = Annotated[int, Field(lt=0)]
 IncomeValue = Annotated[int, Field(gt=0)]
+
+
+class FinancialEventFeeRequest(BaseModel):
+    category_uuid: UUID
+    value: ExpenseValue
 
 
 class SimpleFinancialEventRequest(BaseModel):
@@ -21,6 +26,7 @@ class SimpleFinancialEventRequest(BaseModel):
     value: int
     quantity: FinancialMovementQuantity = 1
     item_name: FinancialMovementItemName | None = None
+    fee: FinancialEventFeeRequest | None = None
 
     @field_validator("value")
     @classmethod
@@ -45,11 +51,6 @@ class ShoppingListFinancialEventRequest(BaseModel):
     movements: list[ShoppingListMovementRequest] = Field(min_length=1, max_length=MAX_SHOPPING_LIST_MOVEMENTS)
 
 
-class AccountTransferFeeRequest(BaseModel):
-    category_uuid: UUID
-    value: ExpenseValue
-
-
 class AccountTransferFinancialEventRequest(BaseModel):
     type: Literal["ACCOUNT_TRANSFER"]
     occurred_at: int
@@ -60,12 +61,10 @@ class AccountTransferFinancialEventRequest(BaseModel):
     destination_account_uuid: UUID
     destination_category_uuid: UUID
     destination_value: IncomeValue
-    fee: AccountTransferFeeRequest | None = None
+    fee: FinancialEventFeeRequest | None = None
 
 
 CreateFinancialEventRequest = Annotated[SimpleFinancialEventRequest | ShoppingListFinancialEventRequest | AccountTransferFinancialEventRequest, Field(discriminator="type")]
-
-
 UpdateSimpleFinancialEventRequest = SimpleFinancialEventRequest
 
 
@@ -86,8 +85,6 @@ class UpdateShoppingListFinancialEventRequest(BaseModel):
 
 
 UpdateAccountTransferFinancialEventRequest = AccountTransferFinancialEventRequest
-
-
 UpdateFinancialEventRequest = Annotated[UpdateSimpleFinancialEventRequest | UpdateShoppingListFinancialEventRequest | UpdateAccountTransferFinancialEventRequest, Field(discriminator="type")]
 
 
@@ -98,10 +95,11 @@ class FinancialMovementResponse(BaseModel):
     value: int
     quantity: FinancialMovementQuantity
     item_name: FinancialMovementItemName | None
+    special_type: FinancialMovementSpecialType | None
 
     @classmethod
     def from_movement(cls, movement: FinancialMovement) -> Self:
-        return cls(uuid=movement.uuid, account_uuid=movement.account_uuid, category_uuid=movement.category_uuid, value=movement.value, quantity=movement.quantity, item_name=movement.item_name)
+        return cls(uuid=movement.uuid, account_uuid=movement.account_uuid, category_uuid=movement.category_uuid, value=movement.value, quantity=movement.quantity, item_name=movement.item_name, special_type=movement.special_type)
 
 
 class FinancialEventResponse(BaseModel):
@@ -113,13 +111,7 @@ class FinancialEventResponse(BaseModel):
 
     @classmethod
     def from_event(cls, event: FinancialEvent) -> Self:
-        return cls(
-            uuid=event.uuid,
-            occurred_at=event.occurred_at,
-            description=event.description,
-            type=event.type,
-            movements=[FinancialMovementResponse.from_movement(movement) for movement in event.movements],
-        )
+        return cls(uuid=event.uuid, occurred_at=event.occurred_at, description=event.description, type=event.type, movements=[FinancialMovementResponse.from_movement(movement) for movement in event.movements])
 
 
 class FinancialEventPageResponse(BaseModel):
