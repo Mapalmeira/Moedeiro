@@ -21,7 +21,3 @@ moedeiro.example.com {
     reverse_proxy 127.0.0.1:8080
 }
 ```
-
-## Podman pasta networking
-
-Podman's rootless pasta networking can preserve the original source IP address when forwarding a connection from the host to the Moedeiro container. In such a setup, Moedeiro may already see the original client address directly as the network peer, even when the request passed through a reverse proxy on the host. When this happens, TRUSTED_PROXY_IP can remain unset. Moedeiro uses the peer address provided by the connection and ignores forwarded headers.
