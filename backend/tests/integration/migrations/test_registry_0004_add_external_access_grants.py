@@ -1,6 +1,6 @@
 import unittest
-from pathlib import Path
 import sqlite3
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import uuid4
 
@@ -16,7 +16,7 @@ MIGRATIONS_DIRECTORY = (
 
 
 class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
-    def test_v4_replaces_role_with_type_and_adds_token_grants(self) -> None:
+    def test_v4_introduces_shared_grantees_and_preserves_registry_data(self) -> None:
         with TemporaryDirectory() as directory:
             path = Path(directory) / "registry.sqlite"
             create_database_from_schema_fixture("registry_v3.sql", path)
@@ -24,6 +24,10 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
             user_uuid = uuid4()
             ledger_uuid = uuid4()
             grant_uuid = uuid4()
+            mfa_uuid = uuid4()
+            recovery_uuid = uuid4()
+            auth_session_uuid = uuid4()
+            remember_session_uuid = uuid4()
             connection = sqlite3.connect(path)
             try:
                 connection.execute("PRAGMA foreign_keys = ON")
@@ -40,6 +44,26 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
                     "INSERT INTO ledger_grant VALUES (?, ?, ?, 'OWNER', 20, NULL)",
                     (grant_uuid.bytes, user_uuid.bytes, ledger_uuid.bytes),
                 )
+                connection.execute(
+                    "INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, 630, 31, 1)",
+                    (mfa_uuid.bytes, user_uuid.bytes, b"encrypted"),
+                )
+                connection.execute(
+                    "INSERT INTO recovery_code VALUES (?, ?, ?, 30, 60, 40)",
+                    (recovery_uuid.bytes, user_uuid.bytes, b"c" * 32),
+                )
+                connection.execute(
+                    "INSERT INTO user_preferences VALUES (?, 'pt-BR', 'DARK')",
+                    (user_uuid.bytes,),
+                )
+                connection.execute(
+                    "INSERT INTO auth_session VALUES (?, ?, ?, 30, 90, 10, 35)",
+                    (auth_session_uuid.bytes, user_uuid.bytes, b"s" * 32),
+                )
+                connection.execute(
+                    "INSERT INTO remember_session VALUES (?, ?, ?, 30, 90, 35)",
+                    (remember_session_uuid.bytes, user_uuid.bytes, b"r" * 32),
+                )
                 connection.commit()
             finally:
                 connection.close()
@@ -49,12 +73,25 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
 
             connection = sqlite3.connect(path)
             try:
+                grantee = connection.execute("SELECT uuid FROM ledger_grantee").fetchone()
                 grant = connection.execute(
-                    "SELECT uuid, user_uuid, ledger_uuid, type, created_at, revoked_at FROM ledger_grant"
+                    "SELECT uuid, grantee_uuid, ledger_uuid, role, created_at, revoked_at FROM ledger_grant"
                 ).fetchone()
-                token_table = connection.execute(
-                    "SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'ledger_token_grant'"
+                user = connection.execute(
+                    "SELECT uuid, name, normalized_name, password_hash, created_at, password_changed_at FROM user_account"
                 ).fetchone()
+                preserved_counts = {
+                    table: connection.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
+                    for table in (
+                        "mfa_method",
+                        "recovery_code",
+                        "user_preferences",
+                        "auth_session",
+                        "remember_session",
+                    )
+                }
+                user_foreign_keys = connection.execute("PRAGMA foreign_key_list(user_account)").fetchall()
+                external_foreign_keys = connection.execute("PRAGMA foreign_key_list(external_access)").fetchall()
                 indexes = {
                     row[0]: row[1]
                     for row in connection.execute(
@@ -69,11 +106,18 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
             finally:
                 connection.close()
 
+            self.assertEqual(tuple(grantee), (user_uuid.bytes,))
+            self.assertEqual(
+                tuple(user),
+                (user_uuid.bytes, "Alice", "alice", "$argon2id$test", 10, 10),
+            )
             self.assertEqual(
                 tuple(grant),
                 (grant_uuid.bytes, user_uuid.bytes, ledger_uuid.bytes, "OWNER", 20, None),
             )
-            self.assertIsNotNone(token_table)
+            self.assertEqual(set(preserved_counts.values()), {1})
+            self.assertTrue(any(row[2] == "ledger_grantee" and row[3] == "uuid" and row[4] == "uuid" for row in user_foreign_keys))
+            self.assertTrue(any(row[2] == "ledger_grantee" and row[3] == "uuid" and row[4] == "uuid" for row in external_foreign_keys))
             self.assertNotIn("ledger_grant_active_user_ledger_idx", indexes)
             self.assertIn("ledger_grant_active_ledger_owner_idx", indexes)
             self.assertEqual(version, 4)
