@@ -21,5 +21,6 @@ def remove_inactive_records(unit_of_work_factory: Callable[[], RegistryUnitOfWor
                 unit_of_work.mfa_method_repository.delete_unconfirmed_before(cutoff_timestamp),
             )
         )
+        unit_of_work.external_access_repository.delete_ungranted()
         unit_of_work.commit()
     return deleted_count
