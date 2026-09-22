@@ -33,12 +33,22 @@ CREATE TABLE ledger_grant (
     uuid BLOB PRIMARY KEY,
     user_uuid BLOB NOT NULL,
     ledger_uuid BLOB NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('OWNER')),
+    type TEXT NOT NULL CHECK (type IN ('OWNER', 'EXTERNAL_ACCESS')),
     created_at INTEGER NOT NULL CHECK (created_at >= 0),
     revoked_at INTEGER CHECK (revoked_at IS NULL OR revoked_at >= created_at),
 
+    UNIQUE (uuid, type),
     FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE,
     FOREIGN KEY (ledger_uuid) REFERENCES ledger(uuid) ON DELETE CASCADE
+) STRICT;
+
+CREATE TABLE ledger_token_grant (
+    uuid BLOB PRIMARY KEY,
+    type TEXT NOT NULL CHECK (type = 'EXTERNAL_ACCESS'),
+    name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 50),
+    token_hash BLOB NOT NULL UNIQUE CHECK (length(token_hash) = 32),
+
+    FOREIGN KEY (uuid, type) REFERENCES ledger_grant(uuid, type) ON DELETE CASCADE
 ) STRICT;
 
 CREATE TABLE mfa_method (
@@ -97,8 +107,7 @@ CREATE TABLE remember_session (
     FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE
 ) STRICT;
 
-CREATE UNIQUE INDEX ledger_grant_active_user_ledger_idx ON ledger_grant(user_uuid, ledger_uuid) WHERE revoked_at IS NULL;
-CREATE UNIQUE INDEX ledger_grant_active_ledger_owner_idx ON ledger_grant(ledger_uuid) WHERE revoked_at IS NULL AND role = 'OWNER';
+CREATE UNIQUE INDEX ledger_grant_active_ledger_owner_idx ON ledger_grant(ledger_uuid) WHERE revoked_at IS NULL AND type = 'OWNER';
 CREATE INDEX ledger_grant_user_idx ON ledger_grant(user_uuid);
 CREATE INDEX ledger_grant_ledger_idx ON ledger_grant(ledger_uuid);
 CREATE INDEX ledger_grant_revoked_idx ON ledger_grant(revoked_at) WHERE revoked_at IS NOT NULL;
