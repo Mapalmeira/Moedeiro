@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 
 from app.domain.ledger.model.account import Account
 from app.domain.ledger.model.budget import Budget
