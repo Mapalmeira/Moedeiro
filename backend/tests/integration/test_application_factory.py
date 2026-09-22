@@ -1,7 +1,7 @@
+import unittest
 import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 from app.factory import create_app
@@ -141,6 +141,3 @@ class ApplicationFactoryTest(unittest.TestCase):
 
             self.assertEqual(client_route_response.status_code, 200)
             self.assertEqual(client_route_response.text, "<html>Moedeiro</html>")
-
-if __name__ == "__main__":
-    unittest.main()

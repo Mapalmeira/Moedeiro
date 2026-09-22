@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 
 from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, InvalidTotpSetupError, TotpAlreadyEnabledError, TotpCodeAlreadyUsedError, TotpNotEnabledError, TotpRequiredError
@@ -216,7 +216,3 @@ class TotpUseCasesTest(unittest.TestCase):
             self.assertEqual(unit_of_work.auth_session_repository.list_by_user(self.user.uuid), [])
             self.assertEqual(unit_of_work.remember_session_repository.list_by_user(self.user.uuid), [])
         self.assertEqual(disable_mfa(self.open_registry, self.user.uuid), 0)
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -1,7 +1,7 @@
+import unittest
 from pathlib import Path
 import sqlite3
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
@@ -95,7 +95,3 @@ class LedgerSpecialTypeMigrationTest(unittest.TestCase):
                     connection.execute("UPDATE financial_movement SET special_type = 'OTHER' WHERE uuid = ?", (fee_uuid,))
             finally:
                 connection.close()
-
-
-if __name__ == "__main__":
-    unittest.main()

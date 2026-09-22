@@ -1,7 +1,7 @@
+import unittest
 from pathlib import Path
 import sqlite3
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
@@ -78,7 +78,3 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
             self.assertIn("ledger_grant_active_ledger_owner_idx", indexes)
             self.assertEqual(version, 4)
             self.assertEqual(foreign_key_violations, [])
-
-
-if __name__ == "__main__":
-    unittest.main()

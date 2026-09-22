@@ -1,8 +1,8 @@
+import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 
 from app.application.registry.use_cases.cleanup import SECONDS_PER_DAY
@@ -61,7 +61,3 @@ class CleanupCliTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertEqual(output.getvalue(), "Removed 1 inactive records\n")
-
-
-if __name__ == "__main__":
-    unittest.main()

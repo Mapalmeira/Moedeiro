@@ -1,9 +1,9 @@
 """Integration tests for the registry SQLite ledger repository."""
 
+import unittest
 import sqlite3
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from app.domain.registry.model.auth_session import DEFAULT_ABSOLUTE_TIMEOUT_SECONDS, DEFAULT_INACTIVITY_TIMEOUT_SECONDS
@@ -194,7 +194,3 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
 
         with self.assertRaises(sqlite3.IntegrityError):
             self.create_ledger("ledger.sqlite")
-
-
-if __name__ == "__main__":
-    unittest.main()

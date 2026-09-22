@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -410,7 +410,3 @@ class FinancialEventUseCasesTest(unittest.TestCase):
 
     def list_events(self):
         return list_financial_events_after(self.open_ledger, 200, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100), None, None)
-
-
-if __name__ == "__main__":
-    unittest.main()

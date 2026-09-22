@@ -5,10 +5,10 @@ database. Repository behavior is covered separately; this suite focuses on
 connection ownership, commit and rollback.
 """
 
+import unittest
 import sqlite3
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
@@ -137,7 +137,3 @@ class SqliteRegistryUnitOfWorkTest(unittest.TestCase):
                 "failing.sqlite"
             )
             self.assertIsNone(ledger)
-
-
-if __name__ == "__main__":
-    unittest.main()

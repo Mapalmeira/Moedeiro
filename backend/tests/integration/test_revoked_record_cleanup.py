@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from app.application.registry.use_cases.cleanup import SECONDS_PER_DAY, remove_inactive_records
@@ -102,7 +102,3 @@ class InactiveRecordCleanupTest(unittest.TestCase):
             self.assertIsNone(unit_of_work.remember_session_repository.get(expired_remember_session.uuid))
             self.assertIsNone(unit_of_work.mfa_method_repository.get(pending_method.uuid))
             self.assertIsNotNone(unit_of_work.mfa_method_repository.get(confirmed_method.uuid))
-
-
-if __name__ == "__main__":
-    unittest.main()

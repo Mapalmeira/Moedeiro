@@ -1,8 +1,8 @@
+import unittest
 import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import time
-import unittest
 
 from fastapi import HTTPException, Request, Response
 from fastapi.testclient import TestClient
@@ -160,7 +160,3 @@ class TotpRoutesTest(unittest.TestCase):
                     asyncio.run(remove_totp(DisableTotpRequest(current_password=current_password, code=code), request, user))
                 self.assertEqual(raised.exception.status_code, 401)
                 self.assertEqual(raised.exception.detail, detail)
-
-
-if __name__ == "__main__":
-    unittest.main()

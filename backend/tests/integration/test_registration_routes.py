@@ -1,9 +1,9 @@
+import unittest
 import hashlib
 import time
 import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 
 from fastapi import HTTPException, Request
 from pydantic import ValidationError
@@ -132,7 +132,3 @@ class RegistrationRoutesTest(unittest.TestCase):
     @staticmethod
     def registration(invitation_code: str) -> RegisterUserRequest:
         return RegisterUserRequest(invitation_code=invitation_code, name="Alice", password="correct horse battery")
-
-
-if __name__ == "__main__":
-    unittest.main()

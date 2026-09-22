@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 
 from fastapi import HTTPException, Request, status
 from pydantic import ValidationError
@@ -93,7 +93,3 @@ class UserPreferencesRoutesTest(unittest.TestCase):
 
         self.assertIn("200", operations["get"]["responses"])
         self.assertIn("200", operations["put"]["responses"])
-
-
-if __name__ == "__main__":
-    unittest.main()

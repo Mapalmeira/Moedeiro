@@ -4,10 +4,10 @@ Repository behavior is covered separately. These tests focus on shared connectio
 explicit commit, rollback and connection ownership.
 """
 
+import unittest
 import sqlite3
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
@@ -133,7 +133,3 @@ class SqliteLedgerUnitOfWorkTest(unittest.TestCase):
 
         with self.assertRaises(sqlite3.ProgrammingError):
             connection.execute("SELECT 1")
-
-
-if __name__ == "__main__":
-    unittest.main()

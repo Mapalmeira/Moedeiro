@@ -38,7 +38,3 @@ class UserInvitationTest(unittest.TestCase):
             with self.subTest(value=value):
                 with self.assertRaises(ValidationError):
                     adapter.validate_python(value)
-
-
-if __name__ == "__main__":
-    unittest.main()

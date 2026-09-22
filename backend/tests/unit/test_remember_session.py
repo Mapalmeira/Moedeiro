@@ -29,7 +29,3 @@ class RememberSessionTest(unittest.TestCase):
     def test_last_use_must_precede_expiration(self) -> None:
         with self.assertRaises(ValidationError):
             self.create_session(expires_at=20, last_used_at=20)
-
-
-if __name__ == "__main__":
-    unittest.main()

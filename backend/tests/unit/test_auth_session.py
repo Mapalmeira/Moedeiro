@@ -34,6 +34,3 @@ class AuthSessionTest(unittest.TestCase):
             with self.subTest(changes=changes):
                 with self.assertRaises(ValidationError):
                     self.create_session(**changes)
-
-if __name__ == "__main__":
-    unittest.main()

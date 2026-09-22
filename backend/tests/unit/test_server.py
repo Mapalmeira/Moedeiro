@@ -1,8 +1,8 @@
+import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 
 from app.server import start
@@ -61,7 +61,3 @@ class ServerLifecycleTest(unittest.TestCase):
         self.assertIn("TOTP_ENCRYPTION_KEY must be defined", output.getvalue())
         create_app.assert_not_called()
         uvicorn_run.assert_not_called()
-
-
-if __name__ == "__main__":
-    unittest.main()

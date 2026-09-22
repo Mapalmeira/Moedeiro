@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -166,7 +166,3 @@ class CategoryUseCasesTest(unittest.TestCase):
     def test_delete_rejects_an_unknown_category(self) -> None:
         with self.assertRaises(CategoryNotFoundError):
             delete_category(self.open_ledger, uuid4())
-
-
-if __name__ == "__main__":
-    unittest.main()

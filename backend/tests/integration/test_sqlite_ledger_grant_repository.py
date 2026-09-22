@@ -88,9 +88,3 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
         self.assertIsNone(self.grant_repository.get(old.uuid))
         self.assertIsNotNone(self.grant_repository.get(recent.uuid))
         self.assertIsNotNone(self.grant_repository.get(active.uuid))
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

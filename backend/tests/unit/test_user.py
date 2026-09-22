@@ -53,7 +53,3 @@ class UserTest(unittest.TestCase):
     def test_password_change_cannot_precede_creation(self) -> None:
         with self.assertRaises(ValidationError):
             self.create_user(password_changed_at=9)
-
-
-if __name__ == "__main__":
-    unittest.main()

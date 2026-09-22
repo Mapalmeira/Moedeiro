@@ -43,9 +43,3 @@ class SqliteRegistryMetadataRepositoryTest(RegistryRepositoryTestCase):
         self.connection.rollback()
 
         self.assertIsNone(self.repository.get())
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

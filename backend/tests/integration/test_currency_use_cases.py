@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from pydantic import ValidationError
@@ -184,7 +184,3 @@ class CurrencyUseCasesTest(unittest.TestCase):
     def test_delete_rejects_an_unknown_currency(self) -> None:
         with self.assertRaises(CurrencyNotFoundError):
             delete_currency(self.open_ledger, uuid4())
-
-
-if __name__ == "__main__":
-    unittest.main()

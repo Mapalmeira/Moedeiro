@@ -147,9 +147,3 @@ class SqliteAccountBalanceQueryRepositoryTest(LedgerRepositoryTestCase):
             with self.subTest(point_count=point_count, point_interval=point_interval):
                 with self.assertRaises(ValueError):
                     self.repository.list_points(self.account.uuid, 100, point_count, point_interval)
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

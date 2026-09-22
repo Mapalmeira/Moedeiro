@@ -1,8 +1,8 @@
+import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 
 from app.cli import main
@@ -73,7 +73,3 @@ class InvitationCliTest(unittest.TestCase):
         databases = SqliteDatabases(self.settings.registry_db_path, self.settings.registry_schema_path, self.settings.ledger_dbs_dir, self.settings.ledger_schema_path)
         databases.initialize()
         return databases
-
-
-if __name__ == "__main__":
-    unittest.main()

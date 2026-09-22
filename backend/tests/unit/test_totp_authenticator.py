@@ -25,7 +25,3 @@ class FernetTotpAuthenticatorTest(unittest.TestCase):
         self.assertEqual(len(secret), 32)
         self.assertTrue(secret.isupper())
         self.assertIn(f"secret={secret}", self.authenticator.provisioning_uri(secret, "Alice"))
-
-
-if __name__ == "__main__":
-    unittest.main()

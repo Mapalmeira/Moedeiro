@@ -78,9 +78,3 @@ class SqliteUserInvitationRepositoryTest(RegistryRepositoryTestCase):
         self.connection.rollback()
 
         self.assertIsNone(self.invitation_repository.get(invitation.uuid))
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

@@ -34,7 +34,3 @@ class HealthRouteTest(unittest.TestCase):
             self.assertIsNone(health_check())
             operation = application.openapi()["paths"]["/health"]["get"]
             self.assertNotIn("content", operation["responses"]["204"])
-
-
-if __name__ == "__main__":
-    unittest.main()

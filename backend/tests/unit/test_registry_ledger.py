@@ -27,7 +27,3 @@ class RegistryLedgerTest(unittest.TestCase):
     def test_rejects_negative_last_access_timestamp(self) -> None:
         with self.assertRaises(ValidationError):
             Ledger(uuid=uuid4(), name="Main ledger", path="ledger.sqlite", icon="lucide:BookOpen", color_code=b"\x00\x00\x00", last_accessed_at=-1)
-
-
-if __name__ == "__main__":
-    unittest.main()

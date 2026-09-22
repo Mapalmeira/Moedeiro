@@ -37,9 +37,3 @@ class SqliteLedgerTokenGrantRepositoryTest(RegistryRepositoryTestCase):
         self.grant_repository.delete_inactive_before(40)
 
         self.assertIsNone(self.token_grant_repository.get(grant.uuid))
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

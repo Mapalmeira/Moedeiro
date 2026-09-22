@@ -1,7 +1,7 @@
+import unittest
 import hashlib
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 
 from app.application.registry.exceptions import InvalidCredentialsError, InvalidSessionError, UserNotFoundError
 from app.application.registry.use_cases.authentication import authenticate_session, login, logout, refresh_session
@@ -168,7 +168,3 @@ class AuthenticationUseCasesTest(unittest.TestCase):
 
     def test_logout_ignores_malformed_tokens(self) -> None:
         logout(self.open_registry, "sessão-quebrada", "lembrança-quebrada")
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -1,8 +1,8 @@
 """Integration tests for indexes declared by the ledger SQLite schema."""
 
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 
@@ -110,7 +110,3 @@ class SqliteLedgerIndexesTest(unittest.TestCase):
                 details = " ".join(row["detail"] for row in rows)
 
                 self.assertIn(index_name, details)
-
-
-if __name__ == "__main__":
-    unittest.main()

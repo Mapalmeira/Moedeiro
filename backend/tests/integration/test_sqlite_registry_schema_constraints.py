@@ -1,7 +1,7 @@
+import unittest
 import sqlite3
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
@@ -215,7 +215,3 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         for table in ("ledger_grant", "ledger_token_grant", "mfa_method", "recovery_code", "user_preferences", "auth_session", "remember_session"):
             with self.subTest(table=table):
                 self.assertEqual(self.connection.execute(f"SELECT count(*) AS count FROM {table}").fetchone()["count"], 0)
-
-
-if __name__ == "__main__":
-    unittest.main()

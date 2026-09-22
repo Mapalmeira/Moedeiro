@@ -25,7 +25,3 @@ class CategoryTreeNodeTest(unittest.TestCase):
         first.children.append(CategoryTreeNode(category=root))
 
         self.assertEqual(second.children, [])
-
-
-if __name__ == "__main__":
-    unittest.main()

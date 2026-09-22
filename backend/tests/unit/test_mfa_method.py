@@ -26,6 +26,3 @@ class MfaMethodTest(unittest.TestCase):
     def test_rejects_an_unsupported_type(self) -> None:
         with self.assertRaises(ValidationError):
             self.create_method(type="SMS")
-
-if __name__ == "__main__":
-    unittest.main()

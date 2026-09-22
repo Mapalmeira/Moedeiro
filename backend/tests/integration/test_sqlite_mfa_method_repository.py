@@ -93,9 +93,3 @@ class SqliteMfaMethodRepositoryTest(RegistryRepositoryTestCase):
 
         self.assertIsNone(self.mfa_repository.get(selected.uuid))
         self.assertEqual(self.mfa_repository.get(other.uuid), other)
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

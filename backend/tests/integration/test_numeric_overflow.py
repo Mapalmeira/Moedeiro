@@ -1,5 +1,5 @@
-import sqlite3
 import unittest
+import sqlite3
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -55,7 +55,3 @@ class NumericOverflowTest(unittest.TestCase):
         self.assertIsInstance(value, float)
         with self.assertRaises(QueryResultOverflowError):
             require_sqlite_integer(value)
-
-
-if __name__ == "__main__":
-    unittest.main()

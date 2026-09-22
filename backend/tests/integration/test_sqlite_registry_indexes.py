@@ -1,8 +1,8 @@
 """Integration tests for indexes declared by the registry SQLite schema."""
 
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 
@@ -78,7 +78,3 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
         details = " ".join(row["detail"] for row in rows)
 
         self.assertIn("sqlite_autoindex_mfa_method_", details)
-
-
-if __name__ == "__main__":
-    unittest.main()

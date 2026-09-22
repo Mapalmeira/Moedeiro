@@ -48,7 +48,3 @@ class CategoryTest(unittest.TestCase):
             with self.subTest(icon=icon):
                 with self.assertRaises(ValidationError):
                     Category(uuid=uuid4(), name="Food", icon=icon, color_code=b"\x00\x00\x00")
-
-
-if __name__ == "__main__":
-    unittest.main()

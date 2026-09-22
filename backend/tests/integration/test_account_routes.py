@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
@@ -207,7 +207,3 @@ class AccountRoutesTest(unittest.TestCase):
         self.assertIn("200", member["get"]["responses"])
         self.assertIn("200", member["put"]["responses"])
         self.assertNotIn("content", member["delete"]["responses"]["204"])
-
-
-if __name__ == "__main__":
-    unittest.main()

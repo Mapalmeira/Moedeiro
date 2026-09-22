@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 
 from app.application.ledger.exceptions import LedgerNotFoundError
@@ -191,7 +191,3 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
             self.assertIsNone(unit_of_work.ledger_repository.get(ledger.uuid))
             self.assertEqual(unit_of_work.ledger_grant_repository.list_by_ledger(ledger.uuid), [])
         self.assertFalse((self.databases.ledger_dbs_dir / ledger.path).exists())
-
-
-if __name__ == "__main__":
-    unittest.main()

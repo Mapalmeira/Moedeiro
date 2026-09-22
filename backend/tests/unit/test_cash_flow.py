@@ -40,6 +40,3 @@ class CashFlowTest(unittest.TestCase):
             with self.subTest(field=field):
                 with self.assertRaises(ValidationError):
                     CashFlow.model_validate(values)
-
-if __name__ == "__main__":
-    unittest.main()

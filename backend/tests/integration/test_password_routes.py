@@ -1,9 +1,9 @@
+import unittest
 import asyncio
 import time
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import time
-import unittest
 
 from fastapi import HTTPException, Request, Response
 from pydantic import ValidationError
@@ -248,7 +248,3 @@ class PasswordRoutesTest(unittest.TestCase):
                 self.assertNotIn("content", paths[path]["post"]["responses"]["204"])
         self.assertNotIn("/api/password/recovery-code", paths)
         self.assertNotIn("/api/password/recovery/validate", paths)
-
-
-if __name__ == "__main__":
-    unittest.main()

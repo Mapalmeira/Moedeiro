@@ -1,6 +1,6 @@
+import unittest
 import asyncio
 from concurrent.futures import Future
-import unittest
 from unittest.mock import patch
 
 from app.infrastructure.concurrency.credential_operation_executor import CredentialOperationCapacityExceededError, CredentialOperationExecutor
@@ -23,7 +23,3 @@ class CredentialOperationExecutorTest(unittest.IsolatedAsyncioTestCase):
                 await running
 
         executor.shutdown()
-
-
-if __name__ == "__main__":
-    unittest.main()

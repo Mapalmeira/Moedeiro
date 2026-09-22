@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from app.application.registry.exceptions import UserNotFoundError, UserPreferencesNotFoundError
@@ -43,7 +43,3 @@ class UserPreferencesUseCasesTest(unittest.TestCase):
     def test_save_rejects_an_unknown_user(self) -> None:
         with self.assertRaises(UserNotFoundError):
             save_user_preferences(self.open_registry, uuid4(), "pt-BR", "LIGHT")
-
-
-if __name__ == "__main__":
-    unittest.main()

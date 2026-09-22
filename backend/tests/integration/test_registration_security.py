@@ -1,8 +1,8 @@
+import unittest
 import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import time
-import unittest
 
 from fastapi import HTTPException, Request
 
@@ -101,7 +101,3 @@ class RegistrationSecurityTest(unittest.TestCase):
         with self.application.state.databases.open_registry() as unit_of_work:
             users = unit_of_work.user_repository.list_all("name", True)
         self.assertEqual([user.name for user in users], ["Alice"])
-
-
-if __name__ == "__main__":
-    unittest.main()

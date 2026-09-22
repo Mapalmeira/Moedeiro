@@ -196,9 +196,3 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         page = self.repository.list_after(10, True, FinancialEventFilter(from_timestamp=0, to_timestamp=100), None, None)
 
         self.assertEqual(page, [lower_uuid, higher_uuid])
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

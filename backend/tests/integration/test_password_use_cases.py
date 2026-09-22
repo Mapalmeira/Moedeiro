@@ -1,7 +1,7 @@
+import unittest
 import hashlib
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -218,7 +218,3 @@ class PasswordUseCasesTest(unittest.TestCase):
             recovery_code = unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid, 30)
         self.assertIsNotNone(recovery_code)
         update_password.assert_called_once()
-
-
-if __name__ == "__main__":
-    unittest.main()

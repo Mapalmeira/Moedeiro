@@ -1,7 +1,7 @@
+import unittest
 from pathlib import Path
 import sqlite3
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -318,6 +318,3 @@ class SqliteDatabasesTest(unittest.TestCase):
             self.databases.open_ledger(missing_path)
 
         self.assertFalse(missing_path.exists())
-
-if __name__ == "__main__":
-    unittest.main()

@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
@@ -169,7 +169,3 @@ class CashFlowRoutesTest(unittest.TestCase):
         detail_level = next(parameter for parameter in sankey["parameters"] if parameter["name"] == "detail_level")
         self.assertEqual(detail_level["schema"]["minimum"], 1)
         self.assertEqual(detail_level["schema"]["maximum"], 5)
-
-
-if __name__ == "__main__":
-    unittest.main()

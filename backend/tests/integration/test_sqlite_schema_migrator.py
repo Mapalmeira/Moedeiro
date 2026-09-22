@@ -1,7 +1,7 @@
+import unittest
 from pathlib import Path
 import sqlite3
 from tempfile import TemporaryDirectory
-import unittest
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.migration import SchemaVersionError, SqliteSchemaMigrator
@@ -90,7 +90,3 @@ class SqliteSchemaMigratorTest(unittest.TestCase):
 
         with self.assertRaisesRegex(SchemaVersionError, "only supports up to 2"):
             migrator.validate(self.database)
-
-
-if __name__ == "__main__":
-    unittest.main()

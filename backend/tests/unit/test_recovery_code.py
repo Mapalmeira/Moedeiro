@@ -38,7 +38,3 @@ class RecoveryCodeTest(unittest.TestCase):
             with self.subTest(invalid=invalid):
                 with self.assertRaises(ValidationError):
                     adapter.validate_python(invalid)
-
-
-if __name__ == "__main__":
-    unittest.main()

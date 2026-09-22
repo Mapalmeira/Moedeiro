@@ -1,5 +1,5 @@
-from pathlib import Path
 import unittest
+from pathlib import Path
 
 
 BACKEND_DIRECTORY = Path(__file__).resolve().parents[3]
@@ -18,7 +18,3 @@ class MigrationCoverageTest(unittest.TestCase):
                     missing_tests.append(str(expected_test.relative_to(BACKEND_DIRECTORY)))
 
         self.assertEqual(missing_tests, [])
-
-
-if __name__ == "__main__":
-    unittest.main()

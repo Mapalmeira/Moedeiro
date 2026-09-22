@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from app.application.ledger.exceptions import AccountNotFoundError, CurrencyNotFoundError, QueryPointLimitExceededError
@@ -76,7 +76,3 @@ class AccountBalanceUseCasesTest(unittest.TestCase):
             with self.subTest(point_count=point_count, point_interval=point_interval, max_points=max_points):
                 with self.assertRaises(expected_error):
                     list_account_balance_points(self.open_ledger, self.account.uuid, 100, point_count, point_interval, max_points)
-
-
-if __name__ == "__main__":
-    unittest.main()

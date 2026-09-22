@@ -1,7 +1,7 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import time
-import unittest
 
 from fastapi import HTTPException, Request
 
@@ -60,7 +60,3 @@ class AuthenticatedUserRateLimitTest(unittest.TestCase):
             require_authenticated_user(first_alice_session)
         self.assertEqual(raised.exception.status_code, 429)
         self.assertEqual(require_authenticated_user(bob_session), self.bob)
-
-
-if __name__ == "__main__":
-    unittest.main()

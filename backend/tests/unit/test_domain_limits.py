@@ -11,7 +11,3 @@ class DomainLimitsTest(unittest.TestCase):
         self.assertEqual(MAXIMUM_CURRENCIES, 300)
         self.assertEqual(MAXIMUM_BUDGETS, 1_000)
         self.assertEqual(MAXIMUM_FINANCIAL_EVENTS, 1_000_000)
-
-
-if __name__ == "__main__":
-    unittest.main()

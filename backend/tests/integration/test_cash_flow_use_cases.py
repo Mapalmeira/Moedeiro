@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, CurrencyNotFoundError, InvalidQueryParameterError, QueryPointLimitExceededError
@@ -149,7 +149,3 @@ class CashFlowUseCasesTest(unittest.TestCase):
             list_cash_flow_points(self.open_ledger, self.currency.uuid, filters, 0, 100)
         with self.assertRaises(QueryPointLimitExceededError):
             list_cash_flow_points(self.open_ledger, self.currency.uuid, filters, 100, 2)
-
-
-if __name__ == "__main__":
-    unittest.main()

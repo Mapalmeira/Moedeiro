@@ -14,7 +14,3 @@ class RegistryMetadataTest(unittest.TestCase):
             with self.subTest(schema_version=schema_version):
                 with self.assertRaises(ValidationError):
                     RegistryMetadata(schema_version=schema_version)
-
-
-if __name__ == "__main__":
-    unittest.main()

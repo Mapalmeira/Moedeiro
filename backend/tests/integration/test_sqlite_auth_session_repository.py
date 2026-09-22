@@ -89,9 +89,3 @@ class SqliteAuthSessionRepositoryTest(RegistryRepositoryTestCase):
         self.connection.rollback()
 
         self.assertIsNone(self.session_repository.get(session.uuid))
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

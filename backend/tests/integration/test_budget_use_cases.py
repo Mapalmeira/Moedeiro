@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -125,7 +125,3 @@ class BudgetUseCasesTest(unittest.TestCase):
             get_budget(self.open_ledger, budget.uuid)
         with self.assertRaises(BudgetNotFoundError):
             delete_budget(self.open_ledger, uuid4())
-
-
-if __name__ == "__main__":
-    unittest.main()

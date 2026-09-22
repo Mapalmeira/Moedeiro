@@ -186,9 +186,3 @@ class SqliteCategoryRepositoryTest(LedgerRepositoryTestCase):
     @classmethod
     def _count(cls, nodes: list[CategoryTreeNode]) -> int:
         return sum(1 + cls._count(node.children) for node in nodes)
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

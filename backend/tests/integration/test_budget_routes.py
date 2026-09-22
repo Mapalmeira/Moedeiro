@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -281,7 +281,3 @@ class BudgetRoutesTest(unittest.TestCase):
         self.assertIn("/api/ledgers/{ledger_uuid}/budgets/{budget_uuid}", paths)
         self.assertIn("get", paths["/api/ledgers/{ledger_uuid}/budgets/overview"])
         self.assertIn("get", paths["/api/ledgers/{ledger_uuid}/budgets/currency-overview"])
-
-
-if __name__ == "__main__":
-    unittest.main()

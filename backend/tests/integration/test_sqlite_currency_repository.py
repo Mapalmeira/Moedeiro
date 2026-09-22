@@ -114,9 +114,3 @@ class SqliteCurrencyRepositoryTest(LedgerRepositoryTestCase):
         self.connection.rollback()
 
         self.assertEqual(self.repository.list_all(), [])
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

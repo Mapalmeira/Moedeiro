@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from fastapi import HTTPException, Request
@@ -134,7 +134,3 @@ class AccountBalanceRoutesTest(unittest.TestCase):
         self.assertIn("200", points["responses"])
         point_count = next(parameter for parameter in points["parameters"] if parameter["name"] == "point_count")
         self.assertEqual(point_count["schema"]["minimum"], 1)
-
-
-if __name__ == "__main__":
-    unittest.main()

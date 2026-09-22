@@ -262,9 +262,3 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
             with self.subTest(point_width=point_width):
                 with self.assertRaises(ValueError):
                     self.repository.list_points(self.currency.uuid, filters, point_width)
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

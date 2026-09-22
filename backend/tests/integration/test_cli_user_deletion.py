@@ -1,10 +1,10 @@
+import unittest
 from contextlib import redirect_stdout
 import hashlib
 import time
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -173,7 +173,3 @@ class UserDeletionCliTest(unittest.TestCase):
             self.assertEqual(unit_of_work.auth_session_repository.list_by_user(self.user.uuid), [])
             self.assertEqual(unit_of_work.remember_session_repository.list_by_user(self.user.uuid), [])
             self.assertIsNotNone(unit_of_work.recovery_code_repository.get_active_by_user(self.user.uuid, 20))
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -1,7 +1,7 @@
+import unittest
 import hashlib
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -138,7 +138,3 @@ class RegisterUserUseCaseTest(unittest.TestCase):
         self.assertIsNone(stored_invitation.consumed_at)
         self.assertIsNone(stored_user)
         create.assert_called_once()
-
-
-if __name__ == "__main__":
-    unittest.main()

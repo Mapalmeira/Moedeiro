@@ -42,7 +42,3 @@ class LedgerTokenGrantTest(unittest.TestCase):
             with self.subTest(hash_length=len(token_hash)):
                 with self.assertRaises(ValidationError):
                     self.create_token_grant(token_hash=token_hash)
-
-
-if __name__ == "__main__":
-    unittest.main()

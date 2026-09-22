@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 
 from app.cli import main
@@ -59,7 +59,3 @@ class CliLifecycleTest(unittest.TestCase):
             8000,
             mount_frontend=False,
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

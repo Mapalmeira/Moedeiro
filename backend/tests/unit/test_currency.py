@@ -86,7 +86,3 @@ class CurrencyTest(unittest.TestCase):
                 values[field] = value
                 with self.assertRaises(ValidationError):
                     Currency(**values)
-
-
-if __name__ == "__main__":
-    unittest.main()

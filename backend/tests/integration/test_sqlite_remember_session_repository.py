@@ -69,9 +69,3 @@ class SqliteRememberSessionRepositoryTest(RegistryRepositoryTestCase):
         self.assertEqual(self.remember_session_repository.delete_inactive_before(40), 1)
         self.assertIsNone(self.remember_session_repository.get(expired.uuid))
         self.assertIsNotNone(self.remember_session_repository.get(active.uuid))
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

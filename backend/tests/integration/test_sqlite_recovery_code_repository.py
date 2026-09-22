@@ -75,9 +75,3 @@ class SqliteRecoveryCodeRepositoryTest(RegistryRepositoryTestCase):
         self.assertIsNone(self.recovery_code_repository.get_active_by_user(code.user_uuid, 40))
         self.assertFalse(self.recovery_code_repository.consume(code.uuid, 40))
         self.assertEqual(self.recovery_code_repository.delete_inactive_before(40), 1)
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

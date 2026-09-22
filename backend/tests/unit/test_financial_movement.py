@@ -104,7 +104,3 @@ class FinancialMovementTest(unittest.TestCase):
         )
 
         self.assertEqual(len(movement.item_name or ""), 50)
-
-
-if __name__ == "__main__":
-    unittest.main()

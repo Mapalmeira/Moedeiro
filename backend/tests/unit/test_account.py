@@ -60,7 +60,3 @@ class AccountTest(unittest.TestCase):
                 values[field] = value
                 with self.assertRaises(ValidationError):
                     Account(**values)
-
-
-if __name__ == "__main__":
-    unittest.main()

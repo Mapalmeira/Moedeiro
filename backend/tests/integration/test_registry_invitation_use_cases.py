@@ -1,7 +1,7 @@
+import unittest
 import hashlib
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -107,7 +107,3 @@ class RegistryInvitationUseCasesTest(unittest.TestCase):
         active = by_hash[hashlib.sha256(active_code.encode("ascii")).digest()]
         self.assertIsNone(active.consumed_at)
         self.assertEqual(by_hash[hashlib.sha256(consumed_code.encode("ascii")).digest()].consumed_at, 150)
-
-
-if __name__ == "__main__":
-    unittest.main()

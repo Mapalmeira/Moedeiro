@@ -1,7 +1,7 @@
+import unittest
 import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 
 from fastapi import HTTPException, Request, Response
 
@@ -269,7 +269,3 @@ class AuthenticationRoutesTest(unittest.TestCase):
 
         session_response = paths["/api/authentication/session"]["get"]["responses"]["200"]
         self.assertIn("application/json", session_response["content"])
-
-
-if __name__ == "__main__":
-    unittest.main()

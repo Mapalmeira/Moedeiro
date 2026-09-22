@@ -70,7 +70,3 @@ class FinancialEventFilterTest(unittest.TestCase):
             with self.subTest(description_length=len(description)):
                 with self.assertRaises(ValidationError):
                     FinancialEventFilter(from_timestamp=10, to_timestamp=20, description_search=description)
-
-
-if __name__ == "__main__":
-    unittest.main()

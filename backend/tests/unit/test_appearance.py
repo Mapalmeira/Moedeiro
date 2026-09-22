@@ -30,7 +30,3 @@ class IconTest(unittest.TestCase):
         self.assertEqual(len("lucide:" + "A" + "1" * 92), 100)
         with self.assertRaises(ValidationError):
             self.adapter.validate_python("lucide:" + "A" + "1" * 93)
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -62,10 +62,3 @@ class SqliteUserRepositoryTest(RegistryRepositoryTestCase):
             with self.subTest(sort_key=sort_key):
                 with self.assertRaises(ValueError):
                     self.user_repository.list_all(sort_key, True)
-
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

@@ -28,9 +28,3 @@ class SqliteUserPreferencesRepositoryTest(RegistryRepositoryTestCase):
 
     def test_get_returns_none_without_saved_preferences(self) -> None:
         self.assertIsNone(self.preferences_repository.get(self.create_user().uuid))
-
-
-if __name__ == "__main__":
-    import unittest
-
-    unittest.main()

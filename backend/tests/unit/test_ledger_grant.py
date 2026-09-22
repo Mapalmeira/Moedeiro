@@ -25,7 +25,3 @@ class LedgerGrantTest(unittest.TestCase):
     def test_revocation_cannot_precede_creation(self) -> None:
         with self.assertRaises(ValidationError):
             self.create_grant(revoked_at=9)
-
-
-if __name__ == "__main__":
-    unittest.main()

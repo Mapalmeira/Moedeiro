@@ -41,7 +41,3 @@ class UserPreferencesTest(unittest.TestCase):
             with self.subTest(override=override):
                 with self.assertRaises(ValidationError):
                     UserPreferences(user_uuid=uuid4(), **(VALID_PREFERENCES | override))
-
-
-if __name__ == "__main__":
-    unittest.main()

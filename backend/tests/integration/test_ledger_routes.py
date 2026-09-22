@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -157,7 +157,3 @@ class LedgerRoutesTest(unittest.TestCase):
         self.assertIn("200", paths["/api/ledgers/{ledger_uuid}"]["put"]["responses"])
         delete_response = paths["/api/ledgers/{ledger_uuid}"]["delete"]["responses"]["204"]
         self.assertNotIn("content", delete_response)
-
-
-if __name__ == "__main__":
-    unittest.main()

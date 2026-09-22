@@ -1,9 +1,9 @@
 """Integration tests for constraints enforced by the ledger SQLite schema."""
 
+import unittest
 import sqlite3
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
@@ -173,6 +173,3 @@ class SqliteLedgerSchemaConstraintsTest(unittest.TestCase):
             with self.subTest(quantity=quantity):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.connection.execute("UPDATE financial_movement SET quantity = ?", (quantity,))
-
-if __name__ == "__main__":
-    unittest.main()

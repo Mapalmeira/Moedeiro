@@ -1,6 +1,6 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 
 from pydantic import ValidationError
 
@@ -181,6 +181,3 @@ class SettingsTest(unittest.TestCase):
                 )
 
                 self.assertIsNone(settings.trusted_proxy_ip)
-
-if __name__ == "__main__":
-    unittest.main()

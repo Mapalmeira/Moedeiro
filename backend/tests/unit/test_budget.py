@@ -57,7 +57,3 @@ class BudgetTest(unittest.TestCase):
     def test_rejects_description_above_maximum_length(self) -> None:
         with self.assertRaises(ValidationError):
             Budget(**self.values(description="x" * 301))
-
-
-if __name__ == "__main__":
-    unittest.main()
