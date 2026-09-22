@@ -38,6 +38,7 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
             "user_account": {"uuid"},
             "ledger": {"uuid"},
             "ledger_grant": {"uuid", "user_uuid", "ledger_uuid"},
+            "ledger_token_grant": {"uuid"},
             "mfa_method": {"uuid", "user_uuid"},
             "recovery_code": {"uuid", "user_uuid"},
             "user_preferences": {"user_uuid"},
@@ -101,11 +102,34 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute("UPDATE ledger SET last_accessed_at = -1")
 
-    def test_enforces_owner_grants_and_one_active_relation(self) -> None:
+    def test_enforces_grant_types_and_one_active_owner(self) -> None:
         with self.assertRaises(sqlite3.IntegrityError):
-            self.connection.execute("UPDATE ledger_grant SET role = 'READER'")
+            self.connection.execute("UPDATE ledger_grant SET type = 'READER'")
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'OWNER', 31, NULL)", (uuid4().bytes, self.user_uuid, self.ledger_uuid))
+
+    def test_allows_multiple_active_external_grants_for_one_user_and_ledger(self) -> None:
+        self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'EXTERNAL_ACCESS', 31, NULL)", (uuid4().bytes, self.user_uuid, self.ledger_uuid))
+        self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'EXTERNAL_ACCESS', 32, NULL)", (uuid4().bytes, self.user_uuid, self.ledger_uuid))
+
+    def test_token_grant_requires_matching_external_access_parent(self) -> None:
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute(
+                "INSERT INTO ledger_token_grant VALUES (?, 'EXTERNAL_ACCESS', 'Owner token', ?)",
+                (self.grant_uuid, b"t" * 32),
+            )
+
+        external_uuid = uuid4().bytes
+        self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'EXTERNAL_ACCESS', 31, NULL)", (external_uuid, self.user_uuid, self.ledger_uuid))
+        self.connection.execute("INSERT INTO ledger_token_grant VALUES (?, 'EXTERNAL_ACCESS', 'Plugin', ?)", (external_uuid, b"t" * 32))
+
+    def test_token_grant_enforces_name_and_hash_constraints(self) -> None:
+        external_uuid = uuid4().bytes
+        self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'EXTERNAL_ACCESS', 31, NULL)", (external_uuid, self.user_uuid, self.ledger_uuid))
+        for name, token_hash in (("", b"t" * 32), ("x" * 51, b"t" * 32), ("Plugin", b"t" * 31)):
+            with self.subTest(name_length=len(name), hash_length=len(token_hash)):
+                with self.assertRaises(sqlite3.IntegrityError):
+                    self.connection.execute("INSERT INTO ledger_token_grant VALUES (?, 'EXTERNAL_ACCESS', ?, ?)", (external_uuid, name, token_hash))
 
     def test_enforces_mfa_type(self) -> None:
         method_uuid = uuid4().bytes
@@ -179,13 +203,16 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
     def test_deleting_user_cascades_authentication_records_and_grants(self) -> None:
         mfa_uuid = uuid4().bytes
         recovery_uuid = uuid4().bytes
+        external_uuid = uuid4().bytes
+        self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'EXTERNAL_ACCESS', 30, NULL)", (external_uuid, self.user_uuid, self.ledger_uuid))
+        self.connection.execute("INSERT INTO ledger_token_grant VALUES (?, 'EXTERNAL_ACCESS', 'Plugin', ?)", (external_uuid, b"t" * 32))
         self.connection.execute("INSERT INTO mfa_method VALUES (?, ?, 'TOTP', ?, 30, 630, NULL, NULL)", (mfa_uuid, self.user_uuid, b"encrypted"))
         self.connection.execute("INSERT INTO recovery_code VALUES (?, ?, ?, 30, 40, NULL)", (recovery_uuid, self.user_uuid, b"c" * 32))
         self.connection.execute("INSERT INTO user_preferences(user_uuid, language, theme) VALUES (?, 'pt-BR', 'DARK')", (self.user_uuid,))
 
         self.connection.execute("DELETE FROM user_account WHERE uuid = ?", (self.user_uuid,))
 
-        for table in ("ledger_grant", "mfa_method", "recovery_code", "user_preferences", "auth_session", "remember_session"):
+        for table in ("ledger_grant", "ledger_token_grant", "mfa_method", "recovery_code", "user_preferences", "auth_session", "remember_session"):
             with self.subTest(table=table):
                 self.assertEqual(self.connection.execute(f"SELECT count(*) AS count FROM {table}").fetchone()["count"], 0)
 
