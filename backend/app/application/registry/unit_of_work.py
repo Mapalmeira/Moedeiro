@@ -4,7 +4,7 @@ from app.application.unit_of_work import UnitOfWork
 from app.domain.registry.repository.auth_session import AuthSessionRepository
 from app.domain.registry.repository.ledger import LedgerRepository
 from app.domain.registry.repository.ledger_grant import LedgerGrantRepository
-from app.domain.registry.repository.ledger_token_grant import LedgerTokenGrantRepository
+from app.domain.registry.repository.external_access import ExternalAccessRepository
 from app.domain.registry.repository.mfa_method import MfaMethodRepository
 from app.domain.registry.repository.recovery_code import RecoveryCodeRepository
 from app.domain.registry.repository.registry_metadata import RegistryMetadataRepository
@@ -20,7 +20,7 @@ class RegistryUnitOfWork(UnitOfWork):
     user_repository: UserRepository
     user_invitation_repository: UserInvitationRepository
     ledger_grant_repository: LedgerGrantRepository
-    ledger_token_grant_repository: LedgerTokenGrantRepository
+    external_access_repository: ExternalAccessRepository
     mfa_method_repository: MfaMethodRepository
     recovery_code_repository: RecoveryCodeRepository
     user_preferences_repository: UserPreferencesRepository

@@ -14,8 +14,8 @@ from uuid import uuid4
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.repository.auth_session import SqliteAuthSessionRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger import SqliteLedgerRepository
+from app.infrastructure.persistence.sqlite.registry.repository.external_access import SqliteExternalAccessRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger_grant import SqliteLedgerGrantRepository
-from app.infrastructure.persistence.sqlite.registry.repository.ledger_token_grant import SqliteLedgerTokenGrantRepository
 from app.infrastructure.persistence.sqlite.registry.repository.mfa_method import SqliteMfaMethodRepository
 from app.infrastructure.persistence.sqlite.registry.repository.recovery_code import SqliteRecoveryCodeRepository
 from app.infrastructure.persistence.sqlite.registry.repository.registry_metadata import SqliteRegistryMetadataRepository
@@ -65,7 +65,7 @@ class SqliteRegistryUnitOfWorkTest(unittest.TestCase):
                 (unit_of_work.user_repository, SqliteUserRepository),
                 (unit_of_work.user_invitation_repository, SqliteUserInvitationRepository),
                 (unit_of_work.ledger_grant_repository, SqliteLedgerGrantRepository),
-                (unit_of_work.ledger_token_grant_repository, SqliteLedgerTokenGrantRepository),
+                (unit_of_work.external_access_repository, SqliteExternalAccessRepository),
                 (unit_of_work.mfa_method_repository, SqliteMfaMethodRepository),
                 (unit_of_work.recovery_code_repository, SqliteRecoveryCodeRepository),
                 (unit_of_work.user_preferences_repository, SqliteUserPreferencesRepository),
