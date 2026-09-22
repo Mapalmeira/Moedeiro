@@ -14,10 +14,6 @@ class LedgerGrantRepository(ABC):
         pass
 
     @abstractmethod
-    def get_active_owner(self, user_uuid: UUID, ledger_uuid: UUID) -> LedgerGrant | None:
-        pass
-
-    @abstractmethod
     def get_active_owner_by_ledger(self, ledger_uuid: UUID) -> LedgerGrant | None:
         pass
 

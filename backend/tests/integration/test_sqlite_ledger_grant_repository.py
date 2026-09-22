@@ -12,7 +12,6 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
         grant = self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 30)
 
         self.assertEqual(self.grant_repository.get(grant.uuid), grant)
-        self.assertEqual(self.grant_repository.get_active_owner(user.uuid, ledger.uuid), grant)
         self.assertEqual(self.grant_repository.get_active_owner_by_ledger(ledger.uuid), grant)
         self.assertEqual(grant.grantee_uuid, user.uuid)
 
@@ -51,7 +50,7 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
 
         replacement = self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 50)
 
-        self.assertEqual(self.grant_repository.get_active_owner(user.uuid, ledger.uuid), replacement)
+        self.assertEqual(self.grant_repository.get_active_owner_by_ledger(ledger.uuid), replacement)
 
     def test_revoke_is_idempotent_and_removes_active_relation(self) -> None:
         grant = self.create_grant()
@@ -62,7 +61,7 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
         revoked = self.grant_repository.get(grant.uuid)
         assert revoked is not None
         self.assertEqual(revoked.revoked_at, 40)
-        self.assertIsNone(self.grant_repository.get_active_owner(grant.grantee_uuid, grant.ledger_uuid))
+        self.assertIsNone(self.grant_repository.get_active_owner_by_ledger(grant.ledger_uuid))
 
     def test_list_methods_filter_by_grantee_and_ledger(self) -> None:
         first_user = self.create_user()

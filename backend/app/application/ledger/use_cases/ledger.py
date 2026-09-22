@@ -118,8 +118,8 @@ def _get_owned_ledger(
     user_uuid: UUID,
     ledger_uuid: UUID,
 ) -> Ledger:
-    grant = unit_of_work.ledger_grant_repository.get_active_owner(user_uuid, ledger_uuid)
-    if grant is None:
+    grant = unit_of_work.ledger_grant_repository.get_active_owner_by_ledger(ledger_uuid)
+    if grant is None or grant.grantee_uuid != user_uuid:
         raise LedgerNotFoundError
     ledger = unit_of_work.ledger_repository.get(ledger_uuid)
     if ledger is None:

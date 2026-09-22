@@ -29,20 +29,6 @@ class SqliteLedgerGrantRepository(LedgerGrantRepository):
         row = self.connection.execute(f"SELECT {self._columns} FROM ledger_grant WHERE uuid = ?", (uuid.bytes,)).fetchone()
         return None if row is None else self._to_model(row)
 
-    def get_active_owner(self, user_uuid: UUID, ledger_uuid: UUID) -> LedgerGrant | None:
-        row = self.connection.execute(
-            f"""
-            SELECT {self._columns}
-            FROM ledger_grant
-            WHERE grantee_uuid = ?
-              AND ledger_uuid = ?
-              AND role = 'OWNER'
-              AND revoked_at IS NULL
-            """,
-            (user_uuid.bytes, ledger_uuid.bytes),
-        ).fetchone()
-        return None if row is None else self._to_model(row)
-
     def get_active_owner_by_ledger(self, ledger_uuid: UUID) -> LedgerGrant | None:
         row = self.connection.execute(
             f"""
