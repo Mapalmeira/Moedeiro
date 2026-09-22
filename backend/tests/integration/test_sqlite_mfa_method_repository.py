@@ -93,3 +93,15 @@ class SqliteMfaMethodRepositoryTest(RegistryRepositoryTestCase):
 
         self.assertIsNone(self.mfa_repository.get(selected.uuid))
         self.assertEqual(self.mfa_repository.get(other.uuid), other)
+    def test_delete_by_user_removes_all_methods_for_only_that_user(self) -> None:
+        first_user = self.create_user()
+        second_user = self.create_user()
+        self.mfa_repository.create(first_user.uuid, "TOTP", b"first", 10, 100)
+        other = self.mfa_repository.create(second_user.uuid, "TOTP", b"second", 10, 100)
+
+        self.assertEqual(self.mfa_repository.delete_by_user(first_user.uuid), 1)
+
+        self.assertEqual(self.mfa_repository.list_by_user(first_user.uuid), [])
+        self.assertEqual(self.mfa_repository.list_by_user(second_user.uuid), [other])
+        self.assertEqual(self.mfa_repository.delete_by_user(first_user.uuid), 0)
+

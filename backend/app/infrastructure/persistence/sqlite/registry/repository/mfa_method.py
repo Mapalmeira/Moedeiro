@@ -52,6 +52,10 @@ class SqliteMfaMethodRepository(MfaMethodRepository):
     def delete(self, uuid: UUID) -> None:
         self.connection.execute("DELETE FROM mfa_method WHERE uuid = ?", (uuid.bytes,))
 
+    def delete_by_user(self, user_uuid: UUID) -> int:
+        cursor = self.connection.execute("DELETE FROM mfa_method WHERE user_uuid = ?", (user_uuid.bytes,))
+        return cursor.rowcount
+
     def list_by_user(self, user_uuid: UUID) -> list[MfaMethod]:
         rows = self.connection.execute(f"SELECT {self._columns} FROM mfa_method WHERE user_uuid = ?", (user_uuid.bytes,)).fetchall()
         return [self._to_model(row) for row in rows]

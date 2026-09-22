@@ -38,5 +38,9 @@ class MfaMethodRepository(ABC):
         pass
 
     @abstractmethod
+    def delete_by_user(self, user_uuid: UUID) -> int:
+        pass
+
+    @abstractmethod
     def list_by_user(self, user_uuid: UUID) -> list[MfaMethod]:
         pass

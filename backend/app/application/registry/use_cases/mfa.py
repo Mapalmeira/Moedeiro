@@ -9,12 +9,10 @@ def disable_mfa(unit_of_work_factory: Callable[[], RegistryUnitOfWork], user_uui
     with unit_of_work_factory() as unit_of_work:
         if unit_of_work.user_repository.get(user_uuid) is None:
             raise UserNotFoundError
-        methods = unit_of_work.mfa_method_repository.list_by_user(user_uuid)
-        if not methods:
+        disabled_count = unit_of_work.mfa_method_repository.delete_by_user(user_uuid)
+        if disabled_count == 0:
             return 0
-        for method in methods:
-            unit_of_work.mfa_method_repository.delete(method.uuid)
         unit_of_work.auth_session_repository.delete_by_user(user_uuid)
         unit_of_work.remember_session_repository.delete_by_user(user_uuid)
         unit_of_work.commit()
-    return len(methods)
+    return disabled_count
