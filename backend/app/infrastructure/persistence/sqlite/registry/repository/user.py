@@ -21,10 +21,15 @@ class SqliteUserRepository(UserRepository):
 
     def create(self, name: UserName, password_hash: str, created_at: int) -> User:
         user = User(uuid=uuid4(), name=name, normalized_name=normalize_user_name(name), password_hash=password_hash, created_at=created_at, password_changed_at=created_at)
-        self.connection.execute(
-            "INSERT INTO user_account(uuid, name, normalized_name, password_hash, created_at, password_changed_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (user.uuid.bytes, user.name, user.normalized_name, user.password_hash, user.created_at, user.password_changed_at),
-        )
+        self.connection.execute("INSERT INTO ledger_grantee(uuid) VALUES (?)", (user.uuid.bytes,))
+        try:
+            self.connection.execute(
+                "INSERT INTO user_account(uuid, name, normalized_name, password_hash, created_at, password_changed_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (user.uuid.bytes, user.name, user.normalized_name, user.password_hash, user.created_at, user.password_changed_at),
+            )
+        except sqlite3.Error:
+            self.connection.execute("DELETE FROM ledger_grantee WHERE uuid = ?", (user.uuid.bytes,))
+            raise
         return user
 
     def get(self, uuid: UUID) -> User | None:
@@ -53,7 +58,11 @@ class SqliteUserRepository(UserRepository):
         return cursor.rowcount == 1
 
     def delete(self, uuid: UUID) -> None:
-        self.connection.execute("DELETE FROM user_account WHERE uuid = ?", (uuid.bytes,))
+        self.connection.execute(
+            "DELETE FROM ledger_grantee WHERE uuid IN (SELECT uuid FROM external_access WHERE user_uuid = ?)",
+            (uuid.bytes,),
+        )
+        self.connection.execute("DELETE FROM ledger_grantee WHERE uuid = ?", (uuid.bytes,))
 
     def list_all(self, sort_key: str, ascending: bool) -> list[User]:
         sort_column = self._get_sort_column(sort_key)

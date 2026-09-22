@@ -13,6 +13,11 @@ class SqliteUserRepositoryTest(RegistryRepositoryTestCase):
         self.assertEqual(user.password_changed_at, 20)
         self.assertEqual(self.user_repository.get(user.uuid), user)
         self.assertEqual(self.user_repository.get_by_normalized_name("alice"), user)
+        grantee = self.connection.execute(
+            "SELECT uuid FROM ledger_grantee WHERE uuid = ?",
+            (user.uuid.bytes,),
+        ).fetchone()
+        self.assertEqual(tuple(grantee), (user.uuid.bytes,))
 
     def test_normalized_name_is_unique(self) -> None:
         self.create_user("Alice")
@@ -52,6 +57,26 @@ class SqliteUserRepositoryTest(RegistryRepositoryTestCase):
         self.assertFalse(self.user_repository.update_password(user.uuid, "$argon2id$stale", "$argon2id$new", 30))
 
         self.assertEqual(self.user_repository.get(user.uuid), user)
+
+
+    def test_delete_removes_user_external_access_grantees_and_their_grants(self) -> None:
+        user = self.create_user("Alice")
+        ledger = self.create_ledger()
+        owner = self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 30)
+        access = self.external_access_repository.create(user.uuid, "Plugin", b"t" * 32)
+        guest = self.grant_repository.create(access.uuid, ledger.uuid, "GUEST", 31)
+
+        self.user_repository.delete(user.uuid)
+
+        self.assertIsNone(self.user_repository.get(user.uuid))
+        self.assertIsNone(self.external_access_repository.get(access.uuid))
+        self.assertIsNone(self.grant_repository.get(owner.uuid))
+        self.assertIsNone(self.grant_repository.get(guest.uuid))
+        remaining = self.connection.execute(
+            "SELECT uuid FROM ledger_grantee WHERE uuid IN (?, ?)",
+            (user.uuid.bytes, access.uuid.bytes),
+        ).fetchall()
+        self.assertEqual(remaining, [])
 
     def test_list_all_orders_every_user_and_rejects_uuid_sorting(self) -> None:
         self.create_user("Alice")
