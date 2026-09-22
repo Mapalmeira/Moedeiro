@@ -12,7 +12,7 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
         grant = self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 30)
 
         self.assertEqual(self.grant_repository.get(grant.uuid), grant)
-        self.assertEqual(self.grant_repository.get_active(user.uuid, ledger.uuid), grant)
+        self.assertEqual(self.grant_repository.get_active_owner(user.uuid, ledger.uuid), grant)
 
     def test_create_requires_existing_user_and_ledger(self) -> None:
         user = self.create_user()
@@ -24,13 +24,13 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.grant_repository.create(user_uuid, ledger_uuid, "OWNER", 30)
 
-    def test_only_one_active_grant_exists_for_each_user_and_ledger(self) -> None:
+    def test_multiple_active_external_grants_can_exist_for_one_user_and_ledger(self) -> None:
         user = self.create_user()
         ledger = self.create_ledger()
-        self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 30)
+        first = self.grant_repository.create(user.uuid, ledger.uuid, "EXTERNAL_ACCESS", 30)
+        second = self.grant_repository.create(user.uuid, ledger.uuid, "EXTERNAL_ACCESS", 31)
 
-        with self.assertRaises(sqlite3.IntegrityError):
-            self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 31)
+        self.assertCountEqual(self.grant_repository.list_by_ledger(ledger.uuid), [first, second])
 
     def test_only_one_active_owner_exists_for_each_ledger(self) -> None:
         first_user = self.create_user()
@@ -49,7 +49,7 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
 
         replacement = self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 50)
 
-        self.assertEqual(self.grant_repository.get_active(user.uuid, ledger.uuid), replacement)
+        self.assertEqual(self.grant_repository.get_active_owner(user.uuid, ledger.uuid), replacement)
 
     def test_revoke_is_idempotent_and_removes_active_relation(self) -> None:
         grant = self.create_grant()
@@ -60,7 +60,7 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
         revoked = self.grant_repository.get(grant.uuid)
         assert revoked is not None
         self.assertEqual(revoked.revoked_at, 40)
-        self.assertIsNone(self.grant_repository.get_active(grant.user_uuid, grant.ledger_uuid))
+        self.assertIsNone(self.grant_repository.get_active_owner(grant.user_uuid, grant.ledger_uuid))
 
     def test_list_methods_filter_each_side_of_relation(self) -> None:
         first_user = self.create_user()

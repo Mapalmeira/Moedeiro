@@ -9,6 +9,7 @@ from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.repository.auth_session import SqliteAuthSessionRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger import SqliteLedgerRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger_grant import SqliteLedgerGrantRepository
+from app.infrastructure.persistence.sqlite.registry.repository.ledger_token_grant import SqliteLedgerTokenGrantRepository
 from app.infrastructure.persistence.sqlite.registry.repository.mfa_method import SqliteMfaMethodRepository
 from app.infrastructure.persistence.sqlite.registry.repository.recovery_code import SqliteRecoveryCodeRepository
 from app.infrastructure.persistence.sqlite.registry.repository.registry_metadata import SqliteRegistryMetadataRepository
@@ -29,6 +30,7 @@ class SqliteRegistryUnitOfWork(RegistryUnitOfWork):
         self.user_repository = SqliteUserRepository(self.connection)
         self.user_invitation_repository = SqliteUserInvitationRepository(self.connection)
         self.ledger_grant_repository = SqliteLedgerGrantRepository(self.connection)
+        self.ledger_token_grant_repository = SqliteLedgerTokenGrantRepository(self.connection)
         self.mfa_method_repository = SqliteMfaMethodRepository(self.connection)
         self.recovery_code_repository = SqliteRecoveryCodeRepository(self.connection)
         self.user_preferences_repository = SqliteUserPreferencesRepository(self.connection)
