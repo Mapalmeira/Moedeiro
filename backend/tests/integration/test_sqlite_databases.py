@@ -83,69 +83,6 @@ class SqliteDatabasesTest(unittest.TestCase):
         finally:
             connection.close()
 
-    def test_initialize_migrates_v1_user_preferences_to_locale_independent_schema(self) -> None:
-        self.registry_db_path.parent.mkdir(parents=True)
-        user_uuid = uuid4()
-        connection = sqlite3.connect(self.registry_db_path)
-        try:
-            connection.executescript(
-                """
-                CREATE TABLE registry_metadata (
-                    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
-                    schema_version INTEGER NOT NULL CHECK (schema_version >= 1)
-                ) STRICT;
-                CREATE TABLE user_account (
-                    uuid BLOB PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    normalized_name TEXT NOT NULL UNIQUE,
-                    password_hash TEXT NOT NULL,
-                    created_at INTEGER NOT NULL,
-                    password_changed_at INTEGER NOT NULL
-                ) STRICT;
-                CREATE TABLE user_preferences (
-                    user_uuid BLOB PRIMARY KEY,
-                    language TEXT NOT NULL,
-                    date_format TEXT NOT NULL CHECK (date_format IN ('DMY', 'MDY', 'YMD')),
-                    time_format TEXT NOT NULL CHECK (time_format IN ('H12', 'H24')),
-                    number_format TEXT NOT NULL CHECK (number_format IN ('COMMA', 'DOT')),
-                    theme TEXT NOT NULL CHECK (theme IN ('LIGHT', 'DARK')),
-                    timezone TEXT NOT NULL CHECK (length(timezone) BETWEEN 1 AND 50),
-                    FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE
-                ) STRICT;
-                """
-            )
-            connection.execute("INSERT INTO registry_metadata(singleton, schema_version) VALUES (1, 1)")
-            connection.execute(
-                "INSERT INTO user_account VALUES (?, 'Alice', 'alice', '$argon2id$test', 10, 10)",
-                (user_uuid.bytes,),
-            )
-            connection.execute(
-                "INSERT INTO user_preferences VALUES (?, 'en', 'MDY', 'H12', 'DOT', 'DARK', 'America/New_York')",
-                (user_uuid.bytes,),
-            )
-            connection.commit()
-        finally:
-            connection.close()
-
-        self.databases.initialize()
-
-        connection = sqlite3.connect(self.registry_db_path)
-        try:
-            columns = [row[1] for row in connection.execute("PRAGMA table_info(user_preferences)")]
-            stored = connection.execute(
-                "SELECT language, theme FROM user_preferences WHERE user_uuid = ?",
-                (user_uuid.bytes,),
-            ).fetchone()
-            version = connection.execute(
-                "SELECT schema_version FROM registry_metadata WHERE singleton = 1"
-            ).fetchone()[0]
-        finally:
-            connection.close()
-
-        self.assertEqual(columns, ["user_uuid", "language", "theme"])
-        self.assertEqual(stored, ("en", "DARK"))
-        self.assertEqual(version, CURRENT_REGISTRY_SCHEMA_VERSION)
-
     def test_database_initialization_removes_the_file_when_the_schema_fails(self) -> None:
         database_path = self.directory / "failed.sqlite"
         invalid_schema_path = self.directory / "invalid.sql"

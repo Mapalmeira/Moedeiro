@@ -9,7 +9,7 @@ from app.infrastructure.persistence.sqlite.ledger.schema_version import CURRENT_
 from app.infrastructure.persistence.sqlite.migration import SqliteSchemaMigrator
 
 
-MIGRATIONS_DIRECTORY = Path(__file__).resolve().parents[2] / "app/infrastructure/persistence/sqlite/ledger/schema/migrations"
+MIGRATIONS_DIRECTORY = Path(__file__).resolve().parents[3] / "app/infrastructure/persistence/sqlite/ledger/schema/migrations"
 
 
 class LedgerSpecialTypeMigrationTest(unittest.TestCase):
