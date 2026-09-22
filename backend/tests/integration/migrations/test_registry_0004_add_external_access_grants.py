@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.migration import SqliteSchemaMigrator
+from tests.integration.migrations.fixture import create_database_from_schema_fixture
 
 
 MIGRATIONS_DIRECTORY = (
@@ -18,54 +19,15 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
     def test_v4_replaces_role_with_type_and_adds_token_grants(self) -> None:
         with TemporaryDirectory() as directory:
             path = Path(directory) / "registry.sqlite"
+            create_database_from_schema_fixture("registry_v3.sql", path)
+
             user_uuid = uuid4()
             ledger_uuid = uuid4()
             grant_uuid = uuid4()
             connection = sqlite3.connect(path)
             try:
-                connection.executescript(
-                    """
-                    CREATE TABLE registry_metadata (
-                        singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
-                        schema_version INTEGER NOT NULL CHECK (schema_version >= 1)
-                    ) STRICT;
-                    CREATE TABLE user_account (
-                        uuid BLOB PRIMARY KEY,
-                        name TEXT NOT NULL,
-                        normalized_name TEXT NOT NULL UNIQUE,
-                        password_hash TEXT NOT NULL,
-                        created_at INTEGER NOT NULL,
-                        password_changed_at INTEGER NOT NULL
-                    ) STRICT;
-                    CREATE TABLE ledger (
-                        uuid BLOB PRIMARY KEY,
-                        name TEXT NOT NULL,
-                        path TEXT NOT NULL UNIQUE,
-                        icon TEXT NOT NULL,
-                        color_code BLOB NOT NULL,
-                        last_accessed_at INTEGER NOT NULL
-                    ) STRICT;
-                    CREATE TABLE ledger_grant (
-                        uuid BLOB PRIMARY KEY,
-                        user_uuid BLOB NOT NULL,
-                        ledger_uuid BLOB NOT NULL,
-                        role TEXT NOT NULL CHECK (role IN ('OWNER')),
-                        created_at INTEGER NOT NULL CHECK (created_at >= 0),
-                        revoked_at INTEGER CHECK (revoked_at IS NULL OR revoked_at >= created_at),
-                        FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE,
-                        FOREIGN KEY (ledger_uuid) REFERENCES ledger(uuid) ON DELETE CASCADE
-                    ) STRICT;
-                    CREATE UNIQUE INDEX ledger_grant_active_user_ledger_idx
-                    ON ledger_grant(user_uuid, ledger_uuid) WHERE revoked_at IS NULL;
-                    CREATE UNIQUE INDEX ledger_grant_active_ledger_owner_idx
-                    ON ledger_grant(ledger_uuid) WHERE revoked_at IS NULL AND role = 'OWNER';
-                    CREATE INDEX ledger_grant_user_idx ON ledger_grant(user_uuid);
-                    CREATE INDEX ledger_grant_ledger_idx ON ledger_grant(ledger_uuid);
-                    CREATE INDEX ledger_grant_revoked_idx
-                    ON ledger_grant(revoked_at) WHERE revoked_at IS NOT NULL;
-                    INSERT INTO registry_metadata(singleton, schema_version) VALUES (1, 3);
-                    """
-                )
+                connection.execute("PRAGMA foreign_keys = ON")
+                connection.execute("INSERT INTO registry_metadata VALUES (1, 3)")
                 connection.execute(
                     "INSERT INTO user_account VALUES (?, 'Alice', 'alice', '$argon2id$test', 10, 10)",
                     (user_uuid.bytes,),
@@ -103,7 +65,6 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
                 version = connection.execute(
                     "SELECT schema_version FROM registry_metadata WHERE singleton = 1"
                 ).fetchone()[0]
-                connection.execute("PRAGMA foreign_keys = ON")
                 foreign_key_violations = connection.execute("PRAGMA foreign_key_check").fetchall()
             finally:
                 connection.close()

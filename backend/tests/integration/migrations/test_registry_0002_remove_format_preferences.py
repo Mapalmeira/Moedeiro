@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.migration import SqliteSchemaMigrator
+from tests.integration.migrations.fixture import create_database_from_schema_fixture
 
 
 MIGRATIONS_DIRECTORY = (
@@ -18,36 +19,13 @@ class RegistryRemoveFormatPreferencesMigrationTest(unittest.TestCase):
     def test_v2_removes_format_preferences_and_preserves_locale_independent_values(self) -> None:
         with TemporaryDirectory() as directory:
             path = Path(directory) / "registry.sqlite"
+            create_database_from_schema_fixture("registry_v1.sql", path)
+
             user_uuid = uuid4()
             connection = sqlite3.connect(path)
             try:
-                connection.executescript(
-                    """
-                    CREATE TABLE registry_metadata (
-                        singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
-                        schema_version INTEGER NOT NULL CHECK (schema_version >= 1)
-                    ) STRICT;
-                    CREATE TABLE user_account (
-                        uuid BLOB PRIMARY KEY,
-                        name TEXT NOT NULL,
-                        normalized_name TEXT NOT NULL UNIQUE,
-                        password_hash TEXT NOT NULL,
-                        created_at INTEGER NOT NULL,
-                        password_changed_at INTEGER NOT NULL
-                    ) STRICT;
-                    CREATE TABLE user_preferences (
-                        user_uuid BLOB PRIMARY KEY,
-                        language TEXT NOT NULL,
-                        date_format TEXT NOT NULL CHECK (date_format IN ('DMY', 'MDY', 'YMD')),
-                        time_format TEXT NOT NULL CHECK (time_format IN ('H12', 'H24')),
-                        number_format TEXT NOT NULL CHECK (number_format IN ('COMMA', 'DOT')),
-                        theme TEXT NOT NULL CHECK (theme IN ('LIGHT', 'DARK')),
-                        timezone TEXT NOT NULL CHECK (length(timezone) BETWEEN 1 AND 50),
-                        FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE
-                    ) STRICT;
-                    INSERT INTO registry_metadata(singleton, schema_version) VALUES (1, 1);
-                    """
-                )
+                connection.execute("PRAGMA foreign_keys = ON")
+                connection.execute("INSERT INTO registry_metadata VALUES (1, 1)")
                 connection.execute(
                     "INSERT INTO user_account VALUES (?, 'Alice', 'alice', '$argon2id$test', 10, 10)",
                     (user_uuid.bytes,),
@@ -73,12 +51,14 @@ class RegistryRemoveFormatPreferencesMigrationTest(unittest.TestCase):
                 version = connection.execute(
                     "SELECT schema_version FROM registry_metadata WHERE singleton = 1"
                 ).fetchone()[0]
+                foreign_key_violations = connection.execute("PRAGMA foreign_key_check").fetchall()
             finally:
                 connection.close()
 
             self.assertEqual(columns, ["user_uuid", "language", "theme", "timezone"])
             self.assertEqual(stored, ("en", "DARK", "America/New_York"))
             self.assertEqual(version, 2)
+            self.assertEqual(foreign_key_violations, [])
 
 
 if __name__ == "__main__":
