@@ -91,7 +91,7 @@ moedeiro grant set-owner USER_UUID LEDGER_UUID
 moedeiro grant revoke GRANT_UUID
 ```
 
-`grant list` shows each grant's UUID, user UUID, ledger UUID, role, creation time, and revocation time. Supply a user UUID, and optionally a ledger UUID, to filter the result.
+`grant list` shows each grant's UUID, user UUID, ledger UUID, type, creation time, and revocation time. Supply a user UUID, and optionally a ledger UUID, to filter the result.
 
 `grant set-owner USER_UUID LEDGER_UUID` transfers ownership of an existing ledger to the selected user. The prior owner's grant is revoked, so a ledger never has more than one active owner. The selected user can own at most 10 ledgers.
 
