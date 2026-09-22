@@ -14,6 +14,10 @@ class LedgerGrantNotFoundError(Exception):
     pass
 
 
+class ExternalAccessNotFoundError(Exception):
+    pass
+
+
 class InvitationNotAvailableError(Exception):
     pass
 
