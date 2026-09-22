@@ -5,14 +5,14 @@ from pydantic import BaseModel, Field, model_validator
 from typing_extensions import Self
 
 
-LedgerRole = Literal["OWNER"]
+LedgerGrantType = Literal["OWNER", "EXTERNAL_ACCESS"]
 
 
 class LedgerGrant(BaseModel):
     uuid: UUID
     user_uuid: UUID
     ledger_uuid: UUID
-    role: LedgerRole
+    type: LedgerGrantType
     created_at: int = Field(ge=0)
     revoked_at: int | None = Field(default=None, ge=0)
 

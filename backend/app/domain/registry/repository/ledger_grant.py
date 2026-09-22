@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from app.domain.registry.model.ledger_grant import LedgerGrant, LedgerRole
+from app.domain.registry.model.ledger_grant import LedgerGrant, LedgerGrantType
 
 
 class LedgerGrantRepository(ABC):
     @abstractmethod
-    def create(self, user_uuid: UUID, ledger_uuid: UUID, role: LedgerRole, created_at: int) -> LedgerGrant:
+    def create(self, user_uuid: UUID, ledger_uuid: UUID, type: LedgerGrantType, created_at: int) -> LedgerGrant:
         pass
 
     @abstractmethod
@@ -14,7 +14,7 @@ class LedgerGrantRepository(ABC):
         pass
 
     @abstractmethod
-    def get_active(self, user_uuid: UUID, ledger_uuid: UUID) -> LedgerGrant | None:
+    def get_active_owner(self, user_uuid: UUID, ledger_uuid: UUID) -> LedgerGrant | None:
         pass
 
     @abstractmethod

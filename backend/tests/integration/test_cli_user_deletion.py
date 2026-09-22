@@ -118,7 +118,7 @@ class UserDeletionCliTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(output.getvalue(), f"Set user {second_user.uuid} as owner of ledger {self.owned_ledger.uuid}\n")
         with self.databases.open_registry() as unit_of_work:
-            new_grant = unit_of_work.ledger_grant_repository.get_active(second_user.uuid, self.owned_ledger.uuid)
+            new_grant = unit_of_work.ledger_grant_repository.get_active_owner(second_user.uuid, self.owned_ledger.uuid)
         assert new_grant is not None
         output = StringIO()
         with redirect_stdout(output):
@@ -126,7 +126,7 @@ class UserDeletionCliTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(output.getvalue(), f"{new_grant.uuid}\t{second_user.uuid}\t{self.owned_ledger.uuid}\tOWNER\t100\t\n")
         with self.databases.open_registry() as unit_of_work:
-            grant = unit_of_work.ledger_grant_repository.get_active(self.user.uuid, self.owned_ledger.uuid)
+            grant = unit_of_work.ledger_grant_repository.get_active_owner(self.user.uuid, self.owned_ledger.uuid)
         self.assertIsNone(grant)
         output = StringIO()
         with redirect_stdout(output):

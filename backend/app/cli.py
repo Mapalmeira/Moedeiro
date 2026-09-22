@@ -199,7 +199,7 @@ def _list_users(databases: SqliteDatabases) -> int:
 def _list_grants(databases: SqliteDatabases, user_uuid: UUID | None, ledger_uuid: UUID | None) -> int:
     for grant in list_ledger_grants(databases.open_registry, user_uuid, ledger_uuid):
         revoked_at = "" if grant.revoked_at is None else grant.revoked_at
-        print(f"{grant.uuid}\t{grant.user_uuid}\t{grant.ledger_uuid}\t{grant.role}\t{grant.created_at}\t{revoked_at}")
+        print(f"{grant.uuid}\t{grant.user_uuid}\t{grant.ledger_uuid}\t{grant.type}\t{grant.created_at}\t{revoked_at}")
     return 0
 
 

@@ -53,9 +53,9 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
         self.assertEqual(ledger.last_accessed_at, 100)
         with self.databases.open_registry() as unit_of_work:
             self.assertEqual(unit_of_work.ledger_repository.get(ledger.uuid), ledger)
-            grant = unit_of_work.ledger_grant_repository.get_active(self.user.uuid, ledger.uuid)
+            grant = unit_of_work.ledger_grant_repository.get_active_owner(self.user.uuid, ledger.uuid)
         assert grant is not None
-        self.assertEqual(grant.role, "OWNER")
+        self.assertEqual(grant.type, "OWNER")
         self.assertEqual(grant.created_at, 100)
         with self.databases.open_ledger(ledger.path) as unit_of_work:
             metadata = unit_of_work.ledger_metadata_repository.get()
@@ -113,7 +113,7 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
     def test_revoked_grant_stops_access_and_listing(self) -> None:
         ledger = self.create()
         with self.databases.open_registry() as unit_of_work:
-            grant = unit_of_work.ledger_grant_repository.get_active(self.user.uuid, ledger.uuid)
+            grant = unit_of_work.ledger_grant_repository.get_active_owner(self.user.uuid, ledger.uuid)
             assert grant is not None
             unit_of_work.ledger_grant_repository.revoke(grant.uuid, 110)
             unit_of_work.commit()

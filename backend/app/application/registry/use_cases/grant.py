@@ -33,12 +33,12 @@ def set_ledger_owner(
             raise UserNotFoundError
         if unit_of_work.ledger_repository.get(ledger_uuid) is None:
             raise LedgerNotFoundError
-        if unit_of_work.ledger_grant_repository.get_active(user_uuid, ledger_uuid) is not None:
+        if unit_of_work.ledger_grant_repository.get_active_owner(user_uuid, ledger_uuid) is not None:
             raise LedgerOwnershipAlreadyExistsError
         if unit_of_work.ledger_repository.count_owned_by_user(user_uuid) >= MAXIMUM_LEDGERS_PER_USER:
             raise LedgerLimitReachedError
         for grant in unit_of_work.ledger_grant_repository.list_by_ledger(ledger_uuid):
-            if grant.role == "OWNER" and grant.revoked_at is None:
+            if grant.type == "OWNER" and grant.revoked_at is None:
                 unit_of_work.ledger_grant_repository.revoke(grant.uuid, timestamp)
         grant = unit_of_work.ledger_grant_repository.create(user_uuid, ledger_uuid, "OWNER", timestamp)
         unit_of_work.commit()

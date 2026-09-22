@@ -104,7 +104,7 @@ class SqliteLedgerRepository(LedgerRepository):
             FROM ledger
             JOIN ledger_grant ON ledger_grant.ledger_uuid = ledger.uuid
             WHERE ledger_grant.user_uuid = ?
-              AND ledger_grant.role = 'OWNER'
+              AND ledger_grant.type = 'OWNER'
               AND ledger_grant.revoked_at IS NULL
             ORDER BY {sort_column} {direction}, ledger.uuid ASC
             """,
@@ -120,7 +120,7 @@ class SqliteLedgerRepository(LedgerRepository):
                 FROM ledger
                 JOIN ledger_grant ON ledger_grant.ledger_uuid = ledger.uuid
                 WHERE ledger_grant.user_uuid = ?
-                  AND ledger_grant.role = 'OWNER'
+                  AND ledger_grant.type = 'OWNER'
                   AND ledger_grant.revoked_at IS NULL
                 """,
                 (user_uuid.bytes,),
