@@ -4,8 +4,9 @@ import time
 from collections.abc import Sequence
 from uuid import UUID
 
-from app.application.registry.exceptions import LedgerGrantNotFoundError, LedgerLimitReachedError, LedgerNotFoundError, LedgerOwnershipAlreadyExistsError, UserNameUnavailableError, UserNotFoundError
+from app.application.registry.exceptions import ExternalAccessNotFoundError, LedgerGrantNotFoundError, LedgerLimitReachedError, LedgerNotFoundError, LedgerOwnershipAlreadyExistsError, UserNameUnavailableError, UserNotFoundError
 from app.application.registry.use_cases.cleanup import remove_inactive_records
+from app.application.registry.use_cases.external_access import delete_external_access, list_external_accesses
 from app.application.registry.use_cases.grant import list_ledger_grants, revoke_ledger_grant, set_ledger_owner
 from app.application.registry.use_cases.mfa import disable_mfa
 from app.application.registry.use_cases.password import create_recovery_code
@@ -46,6 +47,8 @@ def main(arguments: Sequence[str] | None = None, settings: Settings | None = Non
         return _handle_user(parsed, databases)
     if parsed.resource == "grant":
         return _handle_grant(parsed, databases, int(time.time()))
+    if parsed.resource == "external-access":
+        return _handle_external_access(parsed, databases)
     parser.error(f"Unsupported resource: {parsed.resource}")
 
 
@@ -68,6 +71,8 @@ def _create_parser() -> argparse.ArgumentParser:
     _add_user_actions(user)
     grant = resources.add_parser("grant", help="Manage ledger grants")
     _add_grant_actions(grant)
+    external_access = resources.add_parser("external-access", help="Manage external accesses")
+    _add_external_access_actions(external_access)
     return parser
 
 
@@ -97,13 +102,21 @@ def _add_user_actions(parser: argparse.ArgumentParser) -> None:
 def _add_grant_actions(parser: argparse.ArgumentParser) -> None:
     actions = parser.add_subparsers(dest="action", required=True)
     list_grants = actions.add_parser("list")
-    list_grants.add_argument("user_uuid", type=UUID, nargs="?")
+    list_grants.add_argument("grantee_uuid", type=UUID, nargs="?")
     list_grants.add_argument("ledger_uuid", type=UUID, nargs="?")
     set_owner = actions.add_parser("set-owner")
     set_owner.add_argument("user_uuid", type=UUID)
     set_owner.add_argument("ledger_uuid", type=UUID)
     revoke = actions.add_parser("revoke")
     revoke.add_argument("grant_uuid", type=UUID)
+
+
+def _add_external_access_actions(parser: argparse.ArgumentParser) -> None:
+    actions = parser.add_subparsers(dest="action", required=True)
+    list_accesses = actions.add_parser("list")
+    list_accesses.add_argument("user_uuid", type=UUID)
+    delete = actions.add_parser("delete")
+    delete.add_argument("uuid", type=UUID)
 
 
 def _handle_invitation(arguments: argparse.Namespace, databases: SqliteDatabases, timestamp: int) -> int:
@@ -168,12 +181,20 @@ def _handle_user(arguments: argparse.Namespace, databases: SqliteDatabases) -> i
 
 def _handle_grant(arguments: argparse.Namespace, databases: SqliteDatabases, timestamp: int) -> int:
     if arguments.action == "list":
-        return _list_grants(databases, arguments.user_uuid, arguments.ledger_uuid)
+        return _list_grants(databases, arguments.grantee_uuid, arguments.ledger_uuid)
     if arguments.action == "set-owner":
         return _set_ledger_owner(databases, arguments.user_uuid, arguments.ledger_uuid, timestamp)
     if arguments.action == "revoke":
         return _revoke_ledger_grant(databases, arguments.grant_uuid, timestamp)
     raise ValueError(f"Unsupported grant action: {arguments.action}")
+
+
+def _handle_external_access(arguments: argparse.Namespace, databases: SqliteDatabases) -> int:
+    if arguments.action == "list":
+        return _list_external_accesses(databases, arguments.user_uuid)
+    if arguments.action == "delete":
+        return _delete_external_access(databases, arguments.uuid)
+    raise ValueError(f"Unsupported external access action: {arguments.action}")
 
 
 def _create_user(databases: SqliteDatabases, name: str, timestamp: int) -> int:
@@ -196,10 +217,31 @@ def _list_users(databases: SqliteDatabases) -> int:
     return 0
 
 
-def _list_grants(databases: SqliteDatabases, user_uuid: UUID | None, ledger_uuid: UUID | None) -> int:
-    for grant in list_ledger_grants(databases.open_registry, user_uuid, ledger_uuid):
+def _list_grants(databases: SqliteDatabases, grantee_uuid: UUID | None, ledger_uuid: UUID | None) -> int:
+    for grant in list_ledger_grants(databases.open_registry, grantee_uuid, ledger_uuid):
         revoked_at = "" if grant.revoked_at is None else grant.revoked_at
-        print(f"{grant.uuid}\t{grant.user_uuid}\t{grant.ledger_uuid}\t{grant.type}\t{grant.created_at}\t{revoked_at}")
+        print(f"{grant.uuid}\t{grant.grantee_uuid}\t{grant.ledger_uuid}\t{grant.role}\t{grant.created_at}\t{revoked_at}")
+    return 0
+
+
+def _list_external_accesses(databases: SqliteDatabases, user_uuid: UUID) -> int:
+    try:
+        accesses = list_external_accesses(databases.open_registry, user_uuid)
+    except UserNotFoundError:
+        print("User not found")
+        return 1
+    for access in accesses:
+        print(f"{access.uuid}\t{access.user_uuid}\t{access.name}")
+    return 0
+
+
+def _delete_external_access(databases: SqliteDatabases, external_access_uuid: UUID) -> int:
+    try:
+        delete_external_access(databases.open_registry, external_access_uuid)
+    except ExternalAccessNotFoundError:
+        print("External access not found")
+        return 1
+    print(f"Deleted external access {external_access_uuid}")
     return 0
 
 
