@@ -102,8 +102,8 @@ def _add_user_actions(parser: argparse.ArgumentParser) -> None:
 def _add_grant_actions(parser: argparse.ArgumentParser) -> None:
     actions = parser.add_subparsers(dest="action", required=True)
     list_grants = actions.add_parser("list")
-    list_grants.add_argument("grantee_uuid", type=UUID, nargs="?")
-    list_grants.add_argument("ledger_uuid", type=UUID, nargs="?")
+    list_grants.add_argument("--grantee", dest="grantee_uuid", type=UUID)
+    list_grants.add_argument("--ledger", dest="ledger_uuid", type=UUID)
     set_owner = actions.add_parser("set-owner")
     set_owner.add_argument("user_uuid", type=UUID)
     set_owner.add_argument("ledger_uuid", type=UUID)

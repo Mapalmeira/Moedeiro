@@ -86,12 +86,12 @@ moedeiro user delete UUID
 Administrative ledger-grant operations are available under `moedeiro grant`:
 
 ```text
-moedeiro grant list [GRANTEE_UUID] [LEDGER_UUID]
+moedeiro grant list [--grantee GRANTEE_UUID] [--ledger LEDGER_UUID]
 moedeiro grant set-owner USER_UUID LEDGER_UUID
 moedeiro grant revoke GRANT_UUID
 ```
 
-`grant list` shows each grant's UUID, grantee UUID, ledger UUID, role, creation time, and revocation time. Supply a grantee UUID, and optionally a ledger UUID, to filter the result.
+`grant list` shows each grant's UUID, grantee UUID, ledger UUID, role, creation time, and revocation time. Use `--grantee` or `--ledger` independently, or combine both filters.
 
 `grant set-owner USER_UUID LEDGER_UUID` transfers ownership of an existing ledger to the selected user. The prior owner's grant is revoked, so a ledger never has more than one active owner. The selected user can own at most 10 ledgers.
 

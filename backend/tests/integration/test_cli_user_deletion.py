@@ -122,7 +122,7 @@ class UserDeletionCliTest(unittest.TestCase):
         assert new_grant is not None
         output = StringIO()
         with redirect_stdout(output):
-            exit_code = main(["grant", "list", str(second_user.uuid), str(self.owned_ledger.uuid)], self.settings)
+            exit_code = main(["grant", "list", "--grantee", str(second_user.uuid), "--ledger", str(self.owned_ledger.uuid)], self.settings)
         self.assertEqual(exit_code, 0)
         self.assertEqual(output.getvalue(), f"{new_grant.uuid}\t{second_user.uuid}\t{self.owned_ledger.uuid}\tOWNER\t100\t\n")
         with self.databases.open_registry() as unit_of_work:
@@ -135,6 +135,27 @@ class UserDeletionCliTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(output.getvalue(), f"Revoked ledger grant {new_grant.uuid}\n")
 
+    def test_grant_list_filters_by_ledger_without_a_grantee_filter(self) -> None:
+        with self.databases.open_registry() as unit_of_work:
+            access = unit_of_work.external_access_repository.create("Sync plugin", b"t" * 32)
+            guest = unit_of_work.ledger_grant_repository.create(access.uuid, self.owned_ledger.uuid, "GUEST", 50)
+            owner = unit_of_work.ledger_grant_repository.get_active_owner_by_ledger(self.owned_ledger.uuid)
+            unit_of_work.commit()
+        assert owner is not None
+        output = StringIO()
+
+        with redirect_stdout(output):
+            self.assertEqual(main(["grant", "list", "--ledger", str(self.owned_ledger.uuid)], self.settings), 0)
+
+        lines = output.getvalue().splitlines()
+        self.assertCountEqual(
+            lines,
+            [
+                f"{owner.uuid}\t{owner.grantee_uuid}\t{self.owned_ledger.uuid}\tOWNER\t{owner.created_at}\t",
+                f"{guest.uuid}\t{guest.grantee_uuid}\t{self.owned_ledger.uuid}\tGUEST\t50\t",
+            ],
+        )
+
     def test_lists_and_deletes_external_accesses_separately_from_grants(self) -> None:
         with self.databases.open_registry() as unit_of_work:
             access = unit_of_work.external_access_repository.create("Sync plugin", b"t" * 32)
@@ -143,7 +164,7 @@ class UserDeletionCliTest(unittest.TestCase):
 
         output = StringIO()
         with redirect_stdout(output):
-            self.assertEqual(main(["grant", "list", str(access.uuid), str(self.owned_ledger.uuid)], self.settings), 0)
+            self.assertEqual(main(["grant", "list", "--grantee", str(access.uuid), "--ledger", str(self.owned_ledger.uuid)], self.settings), 0)
 
         self.assertEqual(
             output.getvalue(),
