@@ -66,7 +66,6 @@ import { LanguageSelectorComponent } from '../../shared/ui/language-selector.com
   styles: `
     form { display: grid; gap: 0; padding: 0 var(--space-5) var(--space-5); }
     .preference-grid {
-      min-height: calc(var(--control-height) + (2 * var(--menu-item-height)) + (4 * var(--section-gap)));
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       align-items: start;
