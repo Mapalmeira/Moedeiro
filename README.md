@@ -52,6 +52,8 @@ Start with the [installation guide](docs/installation.md). The remaining documen
 * [Security and concurrency](docs/security.md)
 * [Domain model](docs/domain.md)
 
+> HTTPS is recommended when credentials cross an untrusted network. HTTP can be acceptable on a trusted local network, but anyone able to observe that network can read the credentials. For remotely reachable installations, terminate HTTPS in front of Moedeiro as described in the [reverse-proxy guide](docs/reverse-proxy.md).
+
 ## Contributing
 
 Bug fixes, tests, documentation, and new translations are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing commands, and pull request guidance.

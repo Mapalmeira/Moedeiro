@@ -82,5 +82,3 @@ When `TRUSTED_PROXY_IP` is set, Moedeiro accepts forwarded client information on
 Leave `TRUSTED_PROXY_IP` unset when clients connect directly to Moedeiro or when the original client address is already visible from within the container, such as with Podman's `pasta` networking.
 
 `ALLOW_INSECURE_HTTP` removes the `Secure` attribute from authentication cookies.
-
-External access tokens are Bearer credentials and must only be sent to Moedeiro over HTTPS. `ALLOW_INSECURE_HTTP` only changes authentication-cookie behavior; it does not make Bearer tokens safe over plain HTTP. If external access is enabled for a remotely reachable installation, terminate HTTPS in front of Moedeiro as described in [Reverse proxy](reverse-proxy.md).
