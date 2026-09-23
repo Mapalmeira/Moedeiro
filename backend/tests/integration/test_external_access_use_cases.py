@@ -1,10 +1,11 @@
 import unittest
+import hashlib
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import uuid4
 
 from app.application.registry.exceptions import ExternalAccessNotFoundError
-from app.application.registry.use_cases.external_access import delete_external_access, list_external_accesses
+from app.application.registry.use_cases.external_access import delete_external_access, list_external_accesses, resolve_external_access
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
 
@@ -45,3 +46,14 @@ class ExternalAccessUseCasesTest(unittest.TestCase):
     def test_delete_rejects_missing_access(self) -> None:
         with self.assertRaises(ExternalAccessNotFoundError):
             delete_external_access(self.open_registry, uuid4())
+    def test_resolve_external_access_looks_up_the_token_hash(self) -> None:
+        with self.open_registry() as unit_of_work:
+            access = unit_of_work.external_access_repository.create("Token access", hashlib.sha256(b"secret-token").digest())
+            unit_of_work.commit()
+
+        self.assertEqual(resolve_external_access(self.open_registry, "secret-token"), access)
+        with self.assertRaises(ExternalAccessNotFoundError):
+            resolve_external_access(self.open_registry, "wrong-token")
+        with self.assertRaises(ExternalAccessNotFoundError):
+            resolve_external_access(self.open_registry, "token-não-ascii")
+
