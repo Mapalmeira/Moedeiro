@@ -2,7 +2,7 @@
 
 ## Credentials and sessions
 
-Passwords are stored as Argon2 hashes. Argon2 is intentionally costly so that a stolen hash is expensive to guess. Successful login creates an opaque random session token. SQLite stores only its hash, while the browser receives the token in a cookie that is `Secure` by default. A normal session expires after 12 hours and also becomes invalid after 30 minutes without activity. A remembered login may last 30 days, and its token is rotated when used to refresh a session.
+Passwords are stored as Argon2 hashes. Argon2 is intentionally costly so that a stolen hash is expensive to guess. Successful login creates an opaque random session token. SQLite stores only its hash, while the browser receives the token in a cookie that is `Secure` by default. Ledger owners may also create external accesses for API clients. Each external access is specific to the ledger where it is created: its Bearer token cannot authorize access to another ledger. The token is returned only at creation and SQLite stores only its SHA-256 hash. A user session expires after 12 hours and also becomes invalid after 30 minutes without activity. A remembered login may last 30 days, and its token is rotated when used to refresh a session.
 
 TOTP is an optional second factor. When enabled for a user, a valid TOTP code is required to log in, change the password, recover the password, and disable TOTP. Its seed must remain available to the server so that submitted codes can be verified, which is why it is encrypted rather than hashed. The encryption key is kept outside SQLite. Verification accepts the adjacent time window for clock tolerance and records the last accepted counter so the same code cannot be replayed.
 
@@ -16,7 +16,7 @@ Authentication responses avoid distinguishing a missing user from an invalid pas
 
 ## Rate limiting
 
-Rate limits slow repeated attempts before password hashing becomes the only line of defense. Registration, login, password recovery, TOTP setup, and session refresh have separate limits keyed by effective client IP. Once authenticated, requests share another limit keyed by the user UUID. Exceeding a limit returns HTTP `429` and a `Retry-After` header.
+Rate limits slow repeated attempts before password hashing becomes the only line of defense. Registration, login, password recovery, TOTP setup, and session refresh have separate limits keyed by effective client IP. Once authenticated through a browser session, requests share another limit keyed by the user UUID. All external access requests share one separate external-access bucket in the running Moedeiro process. Creating additional external accesses therefore does not multiply the available external request budget, while external integrations still cannot exhaust the interactive user budget. Exceeding a limit returns HTTP `429` and a `Retry-After` header.
 
 The limiter lives in process memory. Its counters disappear when the service restarts and are not shared with another worker or replica. This is sufficient for the current single-process self-hosted deployment and preserves simplicity.
 

@@ -54,14 +54,17 @@ These values limit the size of data queries and responses.
 
 These values use the `limits` rate syntax, such as `5/minute` or `5/hour`. Each limit applies independently, so activity against one operation does not consume the budget of another.
 
-| Variable                                   | Default     | Protects                                       |
-| ------------------------------------------ | ----------- | ---------------------------------------------- |
-| `REGISTRATION_IP_ATTEMPTS_RATE_LIMIT`      | `10/hour`   | Registration attempts from one client IP.      |
-| `LOGIN_IP_ATTEMPTS_RATE_LIMIT`             | `5/minute`  | Login attempts from one client IP.             |
-| `PASSWORD_RECOVERY_IP_ATTEMPTS_RATE_LIMIT` | `10/hour`   | Password recovery attempts from one client IP. |
-| `TOTP_SETUP_IP_ATTEMPTS_RATE_LIMIT`        | `5/minute`  | TOTP setup attempts from one client IP.        |
-| `REFRESH_IP_ATTEMPTS_RATE_LIMIT`           | `10/minute` | Session refresh attempts from one client IP.   |
-| `AUTHENTICATED_USER_OPERATIONS_RATE_LIMIT` | `100/minute` | Requests made by one authenticated user.      |
+| Variable                                      | Default      | Protects                                       |
+| --------------------------------------------- | ------------ | ---------------------------------------------- |
+| `REGISTRATION_IP_ATTEMPTS_RATE_LIMIT`         | `10/hour`    | Registration attempts from one client IP.      |
+| `LOGIN_IP_ATTEMPTS_RATE_LIMIT`                | `5/minute`   | Login attempts from one client IP.             |
+| `PASSWORD_RECOVERY_IP_ATTEMPTS_RATE_LIMIT`    | `10/hour`    | Password recovery attempts from one client IP. |
+| `TOTP_SETUP_IP_ATTEMPTS_RATE_LIMIT`           | `5/minute`   | TOTP setup attempts from one client IP.        |
+| `REFRESH_IP_ATTEMPTS_RATE_LIMIT`              | `10/minute`  | Session refresh attempts from one client IP.   |
+| `AUTHENTICATED_USER_OPERATIONS_RATE_LIMIT`    | `100/minute` | Requests made by one authenticated user.      |
+| `EXTERNAL_ACCESS_OPERATIONS_RATE_LIMIT`       | `100/minute` | Requests made through external accesses.      |
+
+The authenticated-user limit is keyed by user UUID. `EXTERNAL_ACCESS_OPERATIONS_RATE_LIMIT` is a single shared bucket for all external accesses handled by the running Moedeiro process. Creating additional external accesses does not increase the external request budget. This bucket is separate from authenticated-user traffic, so external integrations do not consume the interactive user budget.
 
 IP-based limits depend on Moedeiro receiving the real client address. See [Reverse proxy](reverse-proxy.md) for proxied installations.
 
@@ -80,4 +83,4 @@ Leave `TRUSTED_PROXY_IP` unset when clients connect directly to Moedeiro or when
 
 `ALLOW_INSECURE_HTTP` removes the `Secure` attribute from authentication cookies.
 
-See [Reverse proxy](reverse-proxy.md) for proxied installations.
+External access tokens are Bearer credentials and must only be sent to Moedeiro over HTTPS. `ALLOW_INSECURE_HTTP` only changes authentication-cookie behavior; it does not make Bearer tokens safe over plain HTTP. If external access is enabled for a remotely reachable installation, terminate HTTPS in front of Moedeiro as described in [Reverse proxy](reverse-proxy.md).
