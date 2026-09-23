@@ -8,7 +8,7 @@ from app.domain.registry.model.external_access import ExternalAccess
 
 class ExternalAccessTest(unittest.TestCase):
     def create_access(self, **changes) -> ExternalAccess:
-        values = {"uuid": uuid4(), "user_uuid": uuid4(), "name": "Sync plugin", "token_hash": b"t" * 32}
+        values = {"uuid": uuid4(), "name": "Sync plugin", "token_hash": b"t" * 32}
         values.update(changes)
         return ExternalAccess(**values)
 

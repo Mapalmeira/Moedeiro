@@ -86,16 +86,29 @@ moedeiro user delete UUID
 Administrative ledger-grant operations are available under `moedeiro grant`:
 
 ```text
-moedeiro grant list [USER_UUID] [LEDGER_UUID]
+moedeiro grant list [GRANTEE_UUID] [LEDGER_UUID]
 moedeiro grant set-owner USER_UUID LEDGER_UUID
 moedeiro grant revoke GRANT_UUID
 ```
 
-`grant list` shows each grant's UUID, user UUID, ledger UUID, type, creation time, and revocation time. Supply a user UUID, and optionally a ledger UUID, to filter the result.
+`grant list` shows each grant's UUID, grantee UUID, ledger UUID, role, creation time, and revocation time. Supply a grantee UUID, and optionally a ledger UUID, to filter the result.
 
 `grant set-owner USER_UUID LEDGER_UUID` transfers ownership of an existing ledger to the selected user. The prior owner's grant is revoked, so a ledger never has more than one active owner. The selected user can own at most 10 ledgers.
 
 `grant revoke GRANT_UUID` revokes an active grant.
+
+## Managing external accesses
+
+Administrative external-access operations are available under `moedeiro external-access`:
+
+```text
+moedeiro external-access list
+moedeiro external-access delete EXTERNAL_ACCESS_UUID
+```
+
+`external-access list` shows the UUID and name of every external access.
+
+`external-access delete EXTERNAL_ACCESS_UUID` permanently removes the external access. Its ledger grants are removed through the grantee cascade. External accesses cannot be created from the CLI.
 
 ## Removing inactive records
 
@@ -113,6 +126,6 @@ moedeiro cleanup --days 30
 
 removes records that have been inactive for at least 30 days.
 
-Cleanup applies to expired or inactive authentication sessions, remembered sessions, consumed or expired invitations, used or expired recovery codes, revoked ledger grants, and unconfirmed MFA enrollments.
+Cleanup applies to expired or inactive authentication sessions, remembered sessions, consumed or expired invitations, used or expired recovery codes, revoked ledger grants, orphaned external accesses left after grant removal, and unconfirmed MFA enrollments.
 
 A retention period of `0` removes records that are inactive when the command runs.
