@@ -30,17 +30,16 @@ The interactive flow view transforms income and expenses into a visual map. Unde
 
 ## Features
 
-* Multiple accounts and currencies
+* Multiple independent ledgers, accounts, and currencies
 * Hierarchical categories with custom icons and colors
 * Simple transactions, detailed shopping lists and account transfers
 * Custom period budgets
 * Balance history, cash flow analysis and Sankey visualization
 * Multilingual interface in Portuguese and English
-* International date, time, number and timezone preferences
 * Light and dark themes
-* Private access with server side sessions and optional TOTP protection
-* Administrative CLI for invitations, user management and ownership grants
-* Automatic database migrations with backups.
+* Invitation-only registration, server-side sessions, and optional TOTP protection
+* Administrative CLI for invitations, users, ledger grants and cleanup
+* Automatic SQLite schema migrations with backups
 
 ## Get started
 
