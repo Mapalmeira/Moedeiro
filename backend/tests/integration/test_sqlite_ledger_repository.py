@@ -87,6 +87,29 @@ class SqliteLedgerRepositoryTest(unittest.TestCase):
         self.assertEqual(self.repository.count_owned_by_user(user.uuid), 1)
         self.assertEqual(self.repository.count_owned_by_user(other_user.uuid), 1)
 
+    def test_delete_ledgers_owned_by_user_deletes_only_active_owned_ledgers(self) -> None:
+        grant_repository = SqliteLedgerGrantRepository(self.connection)
+        user_repository = SqliteUserRepository(self.connection)
+        user = user_repository.create("Alice", "$argon2id$test", 10)
+        other_user = user_repository.create("Bob", "$argon2id$test", 10)
+        owned = self.create_ledger("owned.sqlite")
+        revoked = self.create_ledger("revoked.sqlite")
+        guest = self.create_ledger("guest.sqlite")
+        owned_grant = grant_repository.create(user.uuid, owned.uuid, "OWNER", 20)
+        revoked_grant = grant_repository.create(user.uuid, revoked.uuid, "OWNER", 20)
+        grant_repository.revoke(revoked_grant.uuid, 30)
+        grant_repository.create(other_user.uuid, guest.uuid, "OWNER", 20)
+        guest_grant = grant_repository.create(user.uuid, guest.uuid, "GUEST", 20)
+
+        deleted = self.repository.delete_ledgers_owned_by_user(user.uuid)
+
+        self.assertEqual(deleted, [owned])
+        self.assertIsNone(self.repository.get(owned.uuid))
+        self.assertEqual(self.repository.get(revoked.uuid), revoked)
+        self.assertEqual(self.repository.get(guest.uuid), guest)
+        self.assertIsNone(grant_repository.get(owned_grant.uuid))
+        self.assertEqual(grant_repository.get(guest_grant.uuid), guest_grant)
+
     def test_get_returns_none_when_ledger_does_not_exist(self) -> None:
         """get and get_by_path represent an absent row with None."""
         self.create_ledger("ledger.sqlite")

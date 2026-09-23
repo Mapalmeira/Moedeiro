@@ -33,15 +33,7 @@ def delete_user(unit_of_work_factory: Callable[[], RegistryUnitOfWork], user_uui
     with unit_of_work_factory() as unit_of_work:
         if unit_of_work.user_repository.get(user_uuid) is None:
             raise UserNotFoundError
-        ledgers: list[Ledger] = []
-        for grant in unit_of_work.ledger_grant_repository.list_by_user(user_uuid):
-            if grant.type != "OWNER" or grant.revoked_at is not None:
-                continue
-            ledger = unit_of_work.ledger_repository.get(grant.ledger_uuid)
-            if ledger is not None:
-                ledgers.append(ledger)
-        for ledger in ledgers:
-            unit_of_work.ledger_repository.delete(ledger.uuid)
+        ledgers = unit_of_work.ledger_repository.delete_ledgers_owned_by_user(user_uuid)
         unit_of_work.user_repository.delete(user_uuid)
         unit_of_work.commit()
     return ledgers

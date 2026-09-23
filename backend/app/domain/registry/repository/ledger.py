@@ -43,6 +43,10 @@ class LedgerRepository(ABC):
         pass
 
     @abstractmethod
+    def delete_ledgers_owned_by_user(self, user_uuid: UUID) -> list[Ledger]:
+        pass
+
+    @abstractmethod
     def list_all(self, sort_key: str, ascending: bool) -> list[Ledger]:
         pass
 

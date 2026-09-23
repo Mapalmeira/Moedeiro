@@ -87,6 +87,23 @@ class SqliteLedgerRepository(LedgerRepository):
             (uuid.bytes,),
         )
 
+    def delete_ledgers_owned_by_user(self, user_uuid: UUID) -> list[Ledger]:
+        rows = self.connection.execute(
+            """
+            DELETE FROM ledger
+            WHERE uuid IN (
+                SELECT ledger_uuid
+                FROM ledger_grant
+                WHERE grantee_uuid = ?
+                  AND role = 'OWNER'
+                  AND revoked_at IS NULL
+            )
+            RETURNING uuid, name, path, icon, color_code, last_accessed_at
+            """,
+            (user_uuid.bytes,),
+        ).fetchall()
+        return [self._to_model(row) for row in rows]
+
     def list_all(self, sort_key: str, ascending: bool) -> list[Ledger]:
         sort_column = self._get_sort_column(sort_key)
         direction = "ASC" if ascending else "DESC"
