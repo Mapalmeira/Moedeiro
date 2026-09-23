@@ -26,10 +26,9 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
                     self.grant_repository.create(grantee_uuid, ledger_uuid, "OWNER", 30)
 
     def test_multiple_active_guest_grants_can_exist_for_one_ledger(self) -> None:
-        user = self.create_user()
         ledger = self.create_ledger()
-        first = self.create_grant(user, ledger, "GUEST", "First", b"a" * 32)
-        second = self.create_grant(user, ledger, "GUEST", "Second", b"b" * 32)
+        first = self.create_external_guest_grant(ledger, "First", b"a" * 32)
+        second = self.create_external_guest_grant(ledger, "Second", b"b" * 32)
 
         self.assertCountEqual(self.grant_repository.list_by_ledger(ledger.uuid), [first, second])
 
@@ -42,6 +41,23 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
         with self.assertRaises(sqlite3.IntegrityError):
             self.grant_repository.create(second_user.uuid, ledger.uuid, "OWNER", 31)
 
+    def test_one_grantee_cannot_have_multiple_active_grants_for_one_ledger(self) -> None:
+        user = self.create_user()
+        ledger = self.create_ledger()
+        self.grant_repository.create(user.uuid, ledger.uuid, "GUEST", 30)
+
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 31)
+
+    def test_get_active_by_grantee_and_ledger_returns_the_single_active_relation(self) -> None:
+        user = self.create_user()
+        ledger = self.create_ledger()
+        old = self.grant_repository.create(user.uuid, ledger.uuid, "GUEST", 30)
+        self.grant_repository.revoke(old.uuid, 40)
+        active = self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 50)
+
+        self.assertEqual(self.grant_repository.get_active_by_grantee_and_ledger(user.uuid, ledger.uuid), active)
+
     def test_revoked_owner_can_be_replaced(self) -> None:
         user = self.create_user()
         ledger = self.create_ledger()
@@ -53,7 +69,7 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
         self.assertEqual(self.grant_repository.get_active_owner_by_ledger(ledger.uuid), replacement)
 
     def test_revoke_is_idempotent_and_removes_active_relation(self) -> None:
-        grant = self.create_grant()
+        grant = self.create_owner_grant()
 
         self.grant_repository.revoke(grant.uuid, 40)
         self.grant_repository.revoke(grant.uuid, 50)
@@ -68,11 +84,11 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
         second_user = self.create_user()
         first_ledger = self.create_ledger()
         second_ledger = self.create_ledger()
-        owner = self.create_grant(first_user, first_ledger)
-        guest = self.create_grant(first_user, first_ledger, "GUEST", "Plugin", b"p" * 32)
-        second = self.create_grant(first_user, second_ledger)
+        owner = self.create_owner_grant(first_user, first_ledger)
+        guest = self.create_external_guest_grant(first_ledger, "Plugin", b"p" * 32)
+        second = self.create_owner_grant(first_user, second_ledger)
         third_ledger = self.create_ledger()
-        third = self.create_grant(second_user, third_ledger)
+        third = self.create_owner_grant(second_user, third_ledger)
 
         self.assertCountEqual(self.grant_repository.list_by_grantee(first_user.uuid), [owner, second])
         self.assertEqual(self.grant_repository.list_by_grantee(guest.grantee_uuid), [guest])
@@ -82,8 +98,8 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
     def test_list_grants_does_not_query_grantee_entities(self) -> None:
         user = self.create_user()
         ledger = self.create_ledger()
-        owner = self.create_grant(user, ledger)
-        guest = self.create_grant(user, ledger, "GUEST", "Sync plugin", b"t" * 32)
+        owner = self.create_owner_grant(user, ledger)
+        guest = self.create_external_guest_grant(ledger, "Sync plugin", b"t" * 32)
         statements: list[str] = []
         self.connection.set_trace_callback(statements.append)
 
@@ -97,9 +113,9 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
 
     def test_delete_inactive_before_removes_only_eligible_grants(self) -> None:
         user = self.create_user()
-        old = self.create_grant(user, self.create_ledger())
-        recent = self.create_grant(user, self.create_ledger())
-        active = self.create_grant(user, self.create_ledger())
+        old = self.create_owner_grant(user, self.create_ledger())
+        recent = self.create_owner_grant(user, self.create_ledger())
+        active = self.create_owner_grant(user, self.create_ledger())
         self.grant_repository.revoke(old.uuid, 40)
         self.grant_repository.revoke(recent.uuid, 41)
 

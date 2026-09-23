@@ -42,6 +42,13 @@ class SqliteLedgerGrantRepository(LedgerGrantRepository):
         ).fetchone()
         return None if row is None else self._to_model(row)
 
+    def get_active_by_grantee_and_ledger(self, grantee_uuid: UUID, ledger_uuid: UUID) -> LedgerGrant | None:
+        row = self.connection.execute(
+            f"SELECT {self._columns} FROM ledger_grant WHERE grantee_uuid = ? AND ledger_uuid = ? AND revoked_at IS NULL",
+            (grantee_uuid.bytes, ledger_uuid.bytes),
+        ).fetchone()
+        return None if row is None else self._to_model(row)
+
     def revoke(self, uuid: UUID, revoked_at: int) -> None:
         self.connection.execute("UPDATE ledger_grant SET revoked_at = ? WHERE uuid = ? AND revoked_at IS NULL", (revoked_at, uuid.bytes))
 

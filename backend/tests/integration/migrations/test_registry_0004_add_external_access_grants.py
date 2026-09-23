@@ -74,6 +74,7 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
             connection = sqlite3.connect(path)
             try:
                 grantee = connection.execute("SELECT uuid FROM ledger_grantee").fetchone()
+                grantee_columns = {row[1] for row in connection.execute("PRAGMA table_info(ledger_grantee)").fetchall()}
                 grant = connection.execute(
                     "SELECT uuid, grantee_uuid, ledger_uuid, role, created_at, revoked_at FROM ledger_grant"
                 ).fetchone()
@@ -104,10 +105,16 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
                     "SELECT schema_version FROM registry_metadata WHERE singleton = 1"
                 ).fetchone()[0]
                 foreign_key_violations = connection.execute("PRAGMA foreign_key_check").fetchall()
+                with self.assertRaises(sqlite3.IntegrityError):
+                    connection.execute(
+                        "INSERT INTO ledger_grant(uuid, grantee_uuid, ledger_uuid, role, created_at, revoked_at) VALUES (?, ?, ?, 'GUEST', 21, NULL)",
+                        (uuid4().bytes, user_uuid.bytes, ledger_uuid.bytes),
+                    )
             finally:
                 connection.close()
 
             self.assertEqual(tuple(grantee), (user_uuid.bytes,))
+            self.assertEqual(grantee_columns, {"uuid"})
             self.assertEqual(
                 tuple(user),
                 (user_uuid.bytes, "Alice", "alice", "$argon2id$test", 10, 10),
@@ -122,6 +129,7 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
             self.assertEqual(len(external_foreign_keys), 1)
             self.assertTrue(any(row[2] == "ledger_grantee" and row[3] == "uuid" and row[4] == "uuid" for row in external_foreign_keys))
             self.assertNotIn("ledger_grant_active_user_ledger_idx", indexes)
+            self.assertIn("ledger_grant_active_grantee_ledger_idx", indexes)
             self.assertIn("ledger_grant_active_ledger_owner_idx", indexes)
             self.assertEqual(version, 4)
             self.assertEqual(foreign_key_violations, [])

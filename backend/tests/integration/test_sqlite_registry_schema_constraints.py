@@ -109,15 +109,37 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
     def test_enforces_grant_roles_and_one_active_owner(self) -> None:
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute("UPDATE ledger_grant SET role = 'READER'")
-        with self.assertRaises(sqlite3.IntegrityError):
-            self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'OWNER', 31, NULL)", (uuid4().bytes, self.user_uuid, self.ledger_uuid))
 
-    def test_allows_multiple_active_guest_grants_for_one_user_and_ledger(self) -> None:
+        other_user_uuid = uuid4().bytes
+        self.connection.execute("INSERT INTO ledger_grantee VALUES (?)", (other_user_uuid,))
+        self.connection.execute(
+            "INSERT INTO user_account VALUES (?, 'Bob', 'bob', '$argon2id$other', 20, 20)",
+            (other_user_uuid,),
+        )
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute(
+                "INSERT INTO ledger_grant VALUES (?, ?, ?, 'OWNER', 31, NULL)",
+                (uuid4().bytes, other_user_uuid, self.ledger_uuid),
+            )
+
+    def test_allows_multiple_active_guest_grants_for_distinct_grantees_on_one_ledger(self) -> None:
         first = self.create_external_access("First")
         second = self.create_external_access("Second")
 
         self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'GUEST', 31, NULL)", (uuid4().bytes, first, self.ledger_uuid))
         self.connection.execute("INSERT INTO ledger_grant VALUES (?, ?, ?, 'GUEST', 32, NULL)", (uuid4().bytes, second, self.ledger_uuid))
+
+    def test_enforces_one_active_grant_per_grantee_and_ledger(self) -> None:
+        with self.assertRaises(sqlite3.IntegrityError):
+            self.connection.execute(
+                "INSERT INTO ledger_grant VALUES (?, ?, ?, 'GUEST', 31, NULL)",
+                (uuid4().bytes, self.user_uuid, self.ledger_uuid),
+            )
+
+    def test_ledger_grantee_contains_only_the_shared_uuid(self) -> None:
+        columns = {row["name"] for row in self.connection.execute("PRAGMA table_info(ledger_grantee)")}
+
+        self.assertEqual(columns, {"uuid"})
 
     def test_user_and_external_access_require_a_ledger_grantee(self) -> None:
         missing_user_grantee = uuid4().bytes

@@ -139,6 +139,7 @@ DROP TABLE user_preferences_v3;
 DROP TABLE auth_session_v3;
 DROP TABLE remember_session_v3;
 
+CREATE UNIQUE INDEX ledger_grant_active_grantee_ledger_idx ON ledger_grant(grantee_uuid, ledger_uuid) WHERE revoked_at IS NULL;
 CREATE UNIQUE INDEX ledger_grant_active_ledger_owner_idx ON ledger_grant(ledger_uuid) WHERE revoked_at IS NULL AND role = 'OWNER';
 CREATE INDEX ledger_grant_grantee_idx ON ledger_grant(grantee_uuid);
 CREATE INDEX ledger_grant_ledger_idx ON ledger_grant(ledger_uuid);

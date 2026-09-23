@@ -18,6 +18,10 @@ class LedgerGrantRepository(ABC):
         pass
 
     @abstractmethod
+    def get_active_by_grantee_and_ledger(self, grantee_uuid: UUID, ledger_uuid: UUID) -> LedgerGrant | None:
+        pass
+
+    @abstractmethod
     def revoke(self, uuid: UUID, revoked_at: int) -> None:
         pass
 

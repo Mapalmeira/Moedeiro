@@ -111,6 +111,7 @@ CREATE TABLE remember_session (
     FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE
 ) STRICT;
 
+CREATE UNIQUE INDEX ledger_grant_active_grantee_ledger_idx ON ledger_grant(grantee_uuid, ledger_uuid) WHERE revoked_at IS NULL;
 CREATE UNIQUE INDEX ledger_grant_active_ledger_owner_idx ON ledger_grant(ledger_uuid) WHERE revoked_at IS NULL AND role = 'OWNER';
 CREATE INDEX ledger_grant_grantee_idx ON ledger_grant(grantee_uuid);
 CREATE INDEX ledger_grant_ledger_idx ON ledger_grant(ledger_uuid);

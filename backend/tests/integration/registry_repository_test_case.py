@@ -57,16 +57,17 @@ class RegistryRepositoryTestCase(unittest.TestCase):
             path = f"{uuid4()}.sqlite"
         return self.ledger_repository.create(uuid4(), name, path, "lucide:BookOpen", b"\x80\x80\x80", 10)
 
-    def create_grant(self, user=None, ledger=None, role="OWNER", name="External access", token_hash=None):
+    def create_owner_grant(self, user=None, ledger=None):
         if user is None:
             user = self.create_user()
         if ledger is None:
             ledger = self.create_ledger()
-        if role == "OWNER":
-            grantee_uuid = user.uuid
-        else:
-            if token_hash is None:
-                token_hash = uuid4().bytes * 2
-            access = self.external_access_repository.create(name, token_hash)
-            grantee_uuid = access.uuid
-        return self.grant_repository.create(grantee_uuid, ledger.uuid, role, 30)
+        return self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 30)
+
+    def create_external_guest_grant(self, ledger=None, name="External access", token_hash=None):
+        if ledger is None:
+            ledger = self.create_ledger()
+        if token_hash is None:
+            token_hash = uuid4().bytes * 2
+        access = self.external_access_repository.create(name, token_hash)
+        return self.grant_repository.create(access.uuid, ledger.uuid, "GUEST", 30)

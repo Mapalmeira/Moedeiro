@@ -276,6 +276,22 @@ class LedgerGrantUseCasesTest(unittest.TestCase):
                 21,
             )
 
+    def test_setting_owner_replaces_an_active_guest_grant_for_the_same_user(self) -> None:
+        with self.open_registry() as unit_of_work:
+            new_owner = unit_of_work.user_repository.create("Bob", "$argon2id$test$other password", 10)
+            guest = unit_of_work.ledger_grant_repository.create(new_owner.uuid, self.ledger.uuid, "GUEST", 20)
+            unit_of_work.commit()
+
+        owner = set_ledger_owner(self.open_registry, new_owner.uuid, self.ledger.uuid, 30)
+
+        with self.open_registry() as unit_of_work:
+            previous_guest = unit_of_work.ledger_grant_repository.get(guest.uuid)
+            active = unit_of_work.ledger_grant_repository.get_active_by_grantee_and_ledger(new_owner.uuid, self.ledger.uuid)
+        assert previous_guest is not None
+        self.assertEqual(previous_guest.revoked_at, 30)
+        self.assertEqual(active, owner)
+        self.assertEqual(owner.role, "OWNER")
+
     def test_setting_a_new_owner_revokes_only_previous_owner(self) -> None:
         first, _ = create_external_ledger_grant(
             self.open_registry,
@@ -297,7 +313,8 @@ class LedgerGrantUseCasesTest(unittest.TestCase):
         )
         with self.open_registry() as unit_of_work:
             new_owner = unit_of_work.user_repository.create("Bob", "$argon2id$test$other password", 10)
-            other_guest = unit_of_work.ledger_grant_repository.create(new_owner.uuid, self.ledger.uuid, "GUEST", 22)
+            guest_user = unit_of_work.user_repository.create("Carol", "$argon2id$test$guest", 10)
+            other_guest = unit_of_work.ledger_grant_repository.create(guest_user.uuid, self.ledger.uuid, "GUEST", 22)
             unit_of_work.commit()
 
         new_owner_grant = set_ledger_owner(self.open_registry, new_owner.uuid, self.ledger.uuid, 30)

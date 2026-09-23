@@ -8,7 +8,7 @@
 
 * **External access** is a named API identity created by a ledger owner to grant external applications access to that ledger. It is authenticated by a random token whose hash is stored in the registry.
 
-* **Ledger grant** records access to a ledger with role `OWNER` or `GUEST`; grants can be revoked while retaining their history. A ledger has at most one active owner. An owner must be an user. External accesses receive guest grants.
+* **Ledger grant** records access to a ledger with role `OWNER` or `GUEST`; grants can be revoked while retaining their history. A grantee can have at most one active grant for a ledger, and a ledger has at most one active owner. An owner must be a user. External accesses are granted ledger access with the `GUEST` role.
 
 * **User preferences** hold the selected language (`pt-BR` or `en`) and theme (`LIGHT` or `DARK`).
 
