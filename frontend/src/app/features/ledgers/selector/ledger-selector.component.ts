@@ -11,13 +11,14 @@ import { normalizeSearchText } from '../../../shared/search-normalization';
 import { FormMessageComponent } from '../../../shared/ui/form-message.component';
 import { IconComponent } from '../../../shared/ui/icon.component';
 import { isListboxNavigationKey, nextListboxIndex } from '../../../shared/ui/listbox-navigation';
+import { ExternalAccessDialogComponent } from '../external-access-dialog.component';
 import { LedgerDeleteDialogComponent } from '../ledger-delete-dialog.component';
 import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
 
 @Component({
   selector: 'app-ledger-selector',
   standalone: true,
-  imports: [FormMessageComponent, IconComponent, LedgerIconComponent, LedgerEditorDialogComponent, LedgerDeleteDialogComponent],
+  imports: [FormMessageComponent, IconComponent, LedgerIconComponent, LedgerEditorDialogComponent, LedgerDeleteDialogComponent, ExternalAccessDialogComponent],
   template: `
     <section class="ledger-card ui-projected-surface ui-projection--hard" aria-labelledby="ledgers-title">
       <header class="ledger-card__header">
@@ -66,8 +67,12 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
                   @if (menuLedgerUuid() === ledger.uuid) {
                     <div class="row-menu ui-dropdown-menu ui-projected-surface" role="menu" (click)="$event.stopPropagation()">
                       <button type="button" role="menuitem" (click)="openEdit(ledger)">
-                        <span class="row-menu__icon row-menu__icon--blue ui-icon-badge ui-projected-icon"><app-icon name="LucidePencil" size="control" /></span>
+                        <span class="row-menu__icon row-menu__icon--green ui-icon-badge ui-projected-icon"><app-icon name="LucidePencil" size="control" /></span>
                         <span>{{ i18n.t('ledgers.edit') }}</span>
+                      </button>
+                      <button type="button" role="menuitem" (click)="openExternalAccess(ledger)">
+                        <span class="row-menu__icon row-menu__icon--blue ui-icon-badge ui-projected-icon"><app-icon name="LucideKeyRound" size="control" /></span>
+                        <span>{{ i18n.t('externalAccess.title') }}</span>
                       </button>
                       <button class="row-menu__delete" type="button" role="menuitem" (click)="openDelete(ledger)">
                         <span class="row-menu__icon row-menu__icon--danger ui-icon-badge ui-projected-icon"><app-icon name="LucideTrash2" size="control" /></span>
@@ -92,6 +97,7 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
 
     <app-ledger-editor-dialog [open]="editorOpen()" [ledger]="editingLedger()" (close)="closeEditor()" (saved)="onSaved($event)" />
     <app-ledger-delete-dialog [open]="deleteOpen()" [ledger]="deletingLedger()" (close)="closeDelete()" (deleted)="onDeleted($event)" />
+    <app-external-access-dialog [open]="externalAccessOpen()" [ledger]="externalAccessLedger()" (close)="closeExternalAccess()" />
   `,
   styles: `
     :host { display: grid; justify-items: center; width: 100%; }
@@ -116,10 +122,11 @@ import { LedgerEditorDialogComponent } from '../ledger-editor-dialog.component';
     .ledger-row__actions { position: relative; }
     .more-button { display: grid; place-items: center; width: var(--icon-button-size); height: var(--icon-button-size); padding: 0; border: var(--border-width) solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--text); }
     .more-button:hover, .more-button[aria-expanded='true'] { border-color: var(--line); background: var(--surface); }
-    .row-menu { position: absolute; z-index: var(--layer-dropdown); top: calc(100% + var(--space-2)); right: 0; width: 172px; }
+    .row-menu { position: absolute; z-index: var(--layer-dropdown); top: calc(100% + var(--space-2)); right: 0; width: max-content; min-width: 172px; }
     .row-menu button { width: 100%; min-height: var(--menu-item-height); display: grid; grid-template-columns: var(--control-icon-footprint) minmax(0, 1fr); align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-2); border: 0; background: transparent; color: var(--text); text-align: left; font-size: var(--control-font-size); font-weight: var(--control-font-weight); }
     .row-menu button:hover { background: var(--surface-muted); }
     .row-menu button + button { margin-top: var(--space-1); }
+    .row-menu__icon--green { background: var(--green); color: var(--on-green); }
     .row-menu__icon--blue { background: var(--blue); color: var(--on-blue); }
     .row-menu__icon--danger { background: var(--danger-token); color: var(--on-danger-token); }
     .state-row, .empty-state { min-height: var(--ledger-list-min-height); display: grid; place-items: center; align-content: center; gap: var(--space-3); color: var(--text-muted); text-align: center; }
@@ -154,6 +161,8 @@ export class LedgerSelectorComponent {
   readonly editingLedger = signal<Ledger | null>(null);
   readonly deleteOpen = signal(false);
   readonly deletingLedger = signal<Ledger | null>(null);
+  readonly externalAccessOpen = signal(false);
+  readonly externalAccessLedger = signal<Ledger | null>(null);
 
   readonly filteredLedgers = computed(() => {
     const query = normalizeSearchText(this.search().trim());
@@ -258,6 +267,17 @@ export class LedgerSelectorComponent {
 
   onSaved(ledger: Ledger): void {
     this.selectedUuid.set(ledger.uuid);
+  }
+
+  openExternalAccess(ledger: Ledger): void {
+    this.menuLedgerUuid.set(null);
+    this.externalAccessLedger.set(ledger);
+    this.externalAccessOpen.set(true);
+  }
+
+  closeExternalAccess(): void {
+    this.externalAccessOpen.set(false);
+    this.externalAccessLedger.set(null);
   }
 
   openDelete(ledger: Ledger): void {

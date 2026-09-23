@@ -67,6 +67,10 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
                     <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--edit ui-icon-badge ui-projected-icon"><app-icon name="LucidePencil" size="control" /></span>
                     <span>{{ i18n.t('ledgers.edit') }}</span>
                   </button>
+                  <button type="button" role="menuitem" (click)="openExternalAccess()">
+                    <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--external ui-icon-badge ui-projected-icon"><app-icon name="LucideKeyRound" size="control" /></span>
+                    <span>{{ i18n.t('externalAccess.title') }}</span>
+                  </button>
                   <button type="button" role="menuitem" (click)="leaveCurrentLedger()">
                     <span class="ledger-switcher__menu-icon ledger-switcher__menu-icon--leave ui-icon-badge ui-projected-icon"><app-icon name="LucideLogOut" size="control" /></span>
                     <span>{{ i18n.t('ledgerShell.leave') }}</span>
@@ -132,7 +136,8 @@ import { LEDGER_SECTION_ITEMS } from './ledger-sections';
     }
     .ledger-switcher__dropdown button:hover { background: var(--surface-muted); }
     .ledger-switcher__dropdown button + button { margin-top: var(--space-1); }
-    .ledger-switcher__menu-icon--edit { background: var(--blue); color: var(--on-blue); }
+    .ledger-switcher__menu-icon--edit { background: var(--green); color: var(--on-green); }
+    .ledger-switcher__menu-icon--external { background: var(--blue); color: var(--on-blue); }
     .ledger-switcher__menu-icon--leave { background: var(--yellow); color: var(--on-yellow); }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -146,6 +151,7 @@ export class LedgerSidebarComponent {
   readonly loggingOut = input(false);
   readonly sectionSelected = output<void>();
   readonly editLedger = output<void>();
+  readonly externalAccess = output<void>();
   readonly leaveLedger = output<void>();
   readonly preferences = output<void>();
   readonly security = output<void>();
@@ -176,6 +182,11 @@ export class LedgerSidebarComponent {
   editCurrentLedger(): void {
     this.ledgerMenuOpen.set(false);
     this.editLedger.emit();
+  }
+
+  openExternalAccess(): void {
+    this.ledgerMenuOpen.set(false);
+    this.externalAccess.emit();
   }
 
   leaveCurrentLedger(): void {

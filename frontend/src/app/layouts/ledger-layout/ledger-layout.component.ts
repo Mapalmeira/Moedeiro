@@ -5,6 +5,7 @@ import { filter } from 'rxjs';
 import { LedgerContextService } from '../../core/ledgers/ledger-context.service';
 import { AuthenticatedShellService } from '../authenticated-layout/authenticated-shell.service';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { ExternalAccessDialogComponent } from '../../features/ledgers/external-access-dialog.component';
 import { LedgerEditorDialogComponent } from '../../features/ledgers/ledger-editor-dialog.component';
 import { FormMessageComponent } from '../../shared/ui/form-message.component';
 import { IconComponent } from '../../shared/ui/icon.component';
@@ -14,7 +15,7 @@ import { ledgerSectionByKey } from './ledger-sections';
 @Component({
   selector: 'app-ledger-layout',
   standalone: true,
-  imports: [RouterOutlet, LedgerSidebarComponent, LedgerEditorDialogComponent, FormMessageComponent, IconComponent],
+  imports: [RouterOutlet, LedgerSidebarComponent, LedgerEditorDialogComponent, ExternalAccessDialogComponent, FormMessageComponent, IconComponent],
   template: `
     <div class="ledger-shell">
       @if (isMobile() && mobileSidebarOpen()) {
@@ -29,6 +30,7 @@ import { ledgerSectionByKey } from './ledger-sections';
           [loggingOut]="shell.loggingOut()"
           (sectionSelected)="onSectionSelected()"
           (editLedger)="ledgerEditorOpen.set(true)"
+          (externalAccess)="openExternalAccess()"
           (leaveLedger)="leaveLedger()"
           (preferences)="shell.openPreferences()"
           (security)="shell.openSecurity()"
@@ -78,6 +80,10 @@ import { ledgerSectionByKey } from './ledger-sections';
         [ledger]="context.ledger()"
         (close)="ledgerEditorOpen.set(false)"
         (saved)="ledgerEditorOpen.set(false)" />
+      <app-external-access-dialog
+        [open]="externalAccessOpen()"
+        [ledger]="context.ledger()"
+        (close)="externalAccessOpen.set(false)" />
     </div>
   `,
   styles: `
@@ -191,6 +197,7 @@ export class LedgerLayoutComponent {
 
   readonly mobileSidebarOpen = signal(false);
   readonly ledgerEditorOpen = signal(false);
+  readonly externalAccessOpen = signal(false);
   readonly isMobile = signal(typeof window !== 'undefined' ? window.innerWidth <= 960 : false);
   readonly activeSection = computed(() => {
     this.navigationEnd();
@@ -227,6 +234,11 @@ export class LedgerLayoutComponent {
 
   onSectionSelected(): void {
     if (this.isMobile()) this.closeMobileNavigation();
+  }
+
+  openExternalAccess(): void {
+    this.mobileSidebarOpen.set(false);
+    this.externalAccessOpen.set(true);
   }
 
   leaveLedger(): void {

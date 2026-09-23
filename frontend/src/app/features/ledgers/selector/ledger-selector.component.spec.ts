@@ -92,6 +92,20 @@ describe('LedgerSelectorComponent', () => {
     list.remove();
   });
 
+  it('opens external access management for the selected ledger row', () => {
+    const component = createComponent();
+
+    component.openExternalAccess(ledger);
+
+    expect(component.externalAccessOpen()).toBe(true);
+    expect(component.externalAccessLedger()).toBe(ledger);
+    expect(component.menuLedgerUuid()).toBeNull();
+
+    component.closeExternalAccess();
+    expect(component.externalAccessOpen()).toBe(false);
+    expect(component.externalAccessLedger()).toBeNull();
+  });
+
   it('does not enter a ledger when nothing is selected', () => {
     const component = createComponent();
 
