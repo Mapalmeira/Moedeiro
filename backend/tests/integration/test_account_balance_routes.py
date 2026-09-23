@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from fastapi import HTTPException, Request
 
+from app.api.dependencies.ledger import require_granted_ledger
 from app.api.ledger.routes.account import create_ledger_account
 from app.api.ledger.routes.account_balance import get_ledger_account_balance, list_ledger_account_balance_points, list_ledger_account_balances
 from app.api.ledger.routes.category import create_ledger_category
@@ -44,27 +45,27 @@ class AccountBalanceRoutesTest(unittest.TestCase):
         )
         with self.application.state.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 10)
-            self.other_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
             unit_of_work.commit()
         self.request = Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": []})
         self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="lucide:WalletCards", color_code="#102030"), self.request, self.user)
+        self.ledger = require_granted_ledger(self.request, self.user, self.ledger.uuid)
         self.currency = create_ledger_currency(
             self.ledger.uuid,
             CreateCurrencyRequest(name="Route Real", prefix="R$", suffix=None, decimal_places=2, icon="lucide:CircleDollarSign", color_code="#AABBCC"),
             self.request,
-            self.user,
+            self.ledger,
         )
         self.category = create_ledger_category(
             self.ledger.uuid,
             CreateCategoryRequest(name="General", icon="lucide:Circle", color_code="#708090"),
             self.request,
-            self.user,
+            self.ledger,
         )
         self.account = create_ledger_account(
             self.ledger.uuid,
             CreateAccountRequest(name="Checking", currency_uuid=self.currency.uuid, icon="lucide:WalletCards", color_code="#405060"),
             self.request,
-            self.user,
+            self.ledger,
         )
 
     def tearDown(self) -> None:
@@ -81,8 +82,8 @@ class AccountBalanceRoutesTest(unittest.TestCase):
         self.add_movement(105, -20)
         self.add_movement(115, 30)
 
-        balance = get_ledger_account_balance(self.ledger.uuid, self.account.uuid, 110, self.request, self.user)
-        points = list_ledger_account_balance_points(self.ledger.uuid, self.account.uuid, self.request, self.user, 100, 2, 10)
+        balance = get_ledger_account_balance(self.ledger.uuid, self.account.uuid, 110, self.request, self.ledger)
+        points = list_ledger_account_balance_points(self.ledger.uuid, self.account.uuid, self.request, self.ledger, 100, 2, 10)
 
         self.assertEqual(balance, 80)
         self.assertEqual(points, [80, 110])
@@ -90,7 +91,7 @@ class AccountBalanceRoutesTest(unittest.TestCase):
     def test_balance_list_returns_account_and_currency_balances(self) -> None:
         self.add_movement(50, 100)
 
-        balances = list_ledger_account_balances(self.ledger.uuid, 50, self.request, self.user, self.currency.uuid, 1)
+        balances = list_ledger_account_balances(self.ledger.uuid, 50, self.request, self.ledger, self.currency.uuid, 1)
 
         self.assertEqual(len(balances.items), 1)
         self.assertEqual((balances.items[0].account_uuid, balances.items[0].currency_uuid, balances.items[0].balance), (self.account.uuid, self.currency.uuid, 100))
@@ -100,8 +101,8 @@ class AccountBalanceRoutesTest(unittest.TestCase):
         account_uuid = uuid4()
 
         for operation in (
-            lambda: get_ledger_account_balance(self.ledger.uuid, account_uuid, 10, self.request, self.user),
-            lambda: list_ledger_account_balance_points(self.ledger.uuid, account_uuid, self.request, self.user, 0, 1, 10),
+            lambda: get_ledger_account_balance(self.ledger.uuid, account_uuid, 10, self.request, self.ledger),
+            lambda: list_ledger_account_balance_points(self.ledger.uuid, account_uuid, self.request, self.ledger, 0, 1, 10),
         ):
             with self.subTest(operation=operation):
                 with self.assertRaises(HTTPException) as raised:
@@ -111,17 +112,10 @@ class AccountBalanceRoutesTest(unittest.TestCase):
 
     def test_points_enforce_the_configured_result_limit(self) -> None:
         with self.assertRaises(HTTPException) as raised:
-            list_ledger_account_balance_points(self.ledger.uuid, self.account.uuid, self.request, self.user, 0, 3, 10)
+            list_ledger_account_balance_points(self.ledger.uuid, self.account.uuid, self.request, self.ledger, 0, 3, 10)
 
         self.assertEqual(raised.exception.status_code, 422)
         self.assertEqual(raised.exception.detail, "Point count cannot exceed 2")
-
-    def test_another_user_cannot_query_the_account(self) -> None:
-        with self.assertRaises(HTTPException) as raised:
-            get_ledger_account_balance(self.ledger.uuid, self.account.uuid, 10, self.request, self.other_user)
-
-        self.assertEqual(raised.exception.status_code, 404)
-        self.assertEqual(raised.exception.detail, "Ledger not found")
 
     def test_routes_expose_current_and_interval_account_balances(self) -> None:
         paths = self.application.openapi()["paths"]

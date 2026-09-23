@@ -2,8 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
 
-from app.api.dependencies.authentication import AuthenticatedUser
-from app.api.dependencies.ledger import ledger_unit_of_work_factory
+from app.api.dependencies.ledger import GrantedLedger, ledger_unit_of_work_factory
 from app.api.ledger.schema.account import AccountResponse, CreateAccountRequest, UpdateAccountRequest
 from app.application.ledger.exceptions import AccountInUseError, AccountLimitReachedError, AccountNameUnavailableError, AccountNotFoundError, CurrencyNotFoundError
 from app.application.ledger.use_cases.account import create_account, delete_account, get_account, list_accounts, update_account
@@ -13,10 +12,10 @@ router = APIRouter(prefix="/api/ledgers/{ledger_uuid}/accounts", tags=["accounts
 
 
 @router.post("", response_model=AccountResponse, status_code=status.HTTP_201_CREATED)
-def create_ledger_account(ledger_uuid: UUID, payload: CreateAccountRequest, request: Request, user: AuthenticatedUser) -> AccountResponse:
+def create_ledger_account(ledger_uuid: UUID, payload: CreateAccountRequest, request: Request, ledger: GrantedLedger) -> AccountResponse:
     try:
         account = create_account(
-            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, ledger),
             payload.name,
             payload.note,
             payload.currency_uuid,
@@ -36,16 +35,16 @@ def create_ledger_account(ledger_uuid: UUID, payload: CreateAccountRequest, requ
 def list_ledger_accounts(
     ledger_uuid: UUID,
     request: Request,
-    user: AuthenticatedUser,
+    ledger: GrantedLedger,
 ) -> list[AccountResponse]:
-    accounts = list_accounts(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid))
+    accounts = list_accounts(ledger_unit_of_work_factory(request, ledger))
     return [AccountResponse.from_account(account) for account in accounts]
 
 
 @router.get("/{account_uuid}", response_model=AccountResponse)
-def get_ledger_account(ledger_uuid: UUID, account_uuid: UUID, request: Request, user: AuthenticatedUser) -> AccountResponse:
+def get_ledger_account(ledger_uuid: UUID, account_uuid: UUID, request: Request, ledger: GrantedLedger) -> AccountResponse:
     try:
-        account = get_account(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), account_uuid)
+        account = get_account(ledger_unit_of_work_factory(request, ledger), account_uuid)
     except AccountNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found") from error
     return AccountResponse.from_account(account)
@@ -57,11 +56,11 @@ def update_ledger_account(
     account_uuid: UUID,
     payload: UpdateAccountRequest,
     request: Request,
-    user: AuthenticatedUser,
+    ledger: GrantedLedger,
 ) -> AccountResponse:
     try:
         account = update_account(
-            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, ledger),
             account_uuid,
             payload.name,
             payload.note,
@@ -76,9 +75,9 @@ def update_ledger_account(
 
 
 @router.delete("/{account_uuid}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_ledger_account(ledger_uuid: UUID, account_uuid: UUID, request: Request, user: AuthenticatedUser) -> None:
+def delete_ledger_account(ledger_uuid: UUID, account_uuid: UUID, request: Request, ledger: GrantedLedger) -> None:
     try:
-        delete_account(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), account_uuid)
+        delete_account(ledger_unit_of_work_factory(request, ledger), account_uuid)
     except AccountNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found") from error
     except AccountInUseError as error:

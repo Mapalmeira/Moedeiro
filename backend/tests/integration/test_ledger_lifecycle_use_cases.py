@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from app.application.ledger.exceptions import LedgerNotFoundError
 from app.application.registry.exceptions import LedgerLimitReachedError
-from app.application.ledger.use_cases.ledger import access_owned_ledger, create_ledger, delete_owned_ledger, get_owned_ledger, list_owned_ledgers, update_owned_ledger
+from app.application.ledger.use_cases.ledger import access_granted_ledger, create_ledger, delete_owned_ledger, get_owned_ledger, list_owned_ledgers, update_owned_ledger
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
 from app.infrastructure.persistence.sqlite.ledger.schema_version import CURRENT_LEDGER_SCHEMA_VERSION
 
@@ -126,7 +126,7 @@ class LedgerLifecycleUseCasesTest(unittest.TestCase):
         accessed = self.create(name="Accessed")
         untouched = self.create(name="Untouched")
 
-        result = access_owned_ledger(self.databases.open_registry, self.user.uuid, accessed.uuid, 120)
+        result = access_granted_ledger(self.databases.open_registry, self.user.uuid, accessed.uuid, 120, required_role="OWNER")
 
         self.assertEqual(result.last_accessed_at, 120)
         self.assertEqual(get_owned_ledger(self.databases.open_registry, self.user.uuid, accessed.uuid).last_accessed_at, 120)

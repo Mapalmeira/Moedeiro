@@ -2,8 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request, status
 
-from app.api.dependencies.authentication import AuthenticatedUser
-from app.api.dependencies.ledger import ledger_unit_of_work_factory
+from app.api.dependencies.ledger import GrantedLedger, ledger_unit_of_work_factory
 from app.api.ledger.schema.currency import CreateCurrencyRequest, CurrencyResponse, UpdateCurrencyRequest
 from app.application.ledger.exceptions import CurrencyInUseError, CurrencyLimitReachedError, CurrencyNameUnavailableError, CurrencyNotFoundError
 from app.application.ledger.use_cases.currency import create_currency, delete_currency, get_currency, list_currencies, update_currency
@@ -17,11 +16,11 @@ def create_ledger_currency(
     ledger_uuid: UUID,
     payload: CreateCurrencyRequest,
     request: Request,
-    user: AuthenticatedUser,
+    ledger: GrantedLedger,
 ) -> CurrencyResponse:
     try:
         currency = create_currency(
-            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, ledger),
             payload.name,
             payload.prefix,
             payload.suffix,
@@ -40,9 +39,9 @@ def create_ledger_currency(
 def list_ledger_currencies(
     ledger_uuid: UUID,
     request: Request,
-    user: AuthenticatedUser,
+    ledger: GrantedLedger,
 ) -> list[CurrencyResponse]:
-    currencies = list_currencies(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid))
+    currencies = list_currencies(ledger_unit_of_work_factory(request, ledger))
     return [CurrencyResponse.from_currency(currency) for currency in currencies]
 
 
@@ -51,11 +50,11 @@ def get_ledger_currency(
     ledger_uuid: UUID,
     currency_uuid: UUID,
     request: Request,
-    user: AuthenticatedUser,
+    ledger: GrantedLedger,
 ) -> CurrencyResponse:
     try:
         currency = get_currency(
-            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, ledger),
             currency_uuid,
         )
     except CurrencyNotFoundError as error:
@@ -69,11 +68,11 @@ def update_ledger_currency(
     currency_uuid: UUID,
     payload: UpdateCurrencyRequest,
     request: Request,
-    user: AuthenticatedUser,
+    ledger: GrantedLedger,
 ) -> CurrencyResponse:
     try:
         currency = update_currency(
-            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, ledger),
             currency_uuid,
             payload.name,
             payload.prefix,
@@ -93,11 +92,11 @@ def delete_ledger_currency(
     ledger_uuid: UUID,
     currency_uuid: UUID,
     request: Request,
-    user: AuthenticatedUser,
+    ledger: GrantedLedger,
 ) -> None:
     try:
         delete_currency(
-            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, ledger),
             currency_uuid,
         )
     except CurrencyNotFoundError as error:

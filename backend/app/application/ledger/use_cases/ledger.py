@@ -8,8 +8,8 @@ from app.application.registry.unit_of_work import RegistryUnitOfWork
 from app.domain.appearance import Icon, RgbColorCode
 from app.domain.registry.limits import MAXIMUM_LEDGERS_PER_USER
 from app.domain.registry.model.ledger import Ledger, LedgerName
+from app.domain.registry.model.ledger_grant import LedgerRole
 from app.domain.registry.model.user_preferences import Language
-
 
 def create_ledger(
     unit_of_work_factory: Callable[[], RegistryUnitOfWork],
@@ -48,7 +48,6 @@ def create_ledger(
         raise
     return ledger
 
-
 def get_owned_ledger(
     unit_of_work_factory: Callable[[], RegistryUnitOfWork],
     user_uuid: UUID,
@@ -57,19 +56,23 @@ def get_owned_ledger(
     with unit_of_work_factory() as unit_of_work:
         return _get_owned_ledger(unit_of_work, user_uuid, ledger_uuid)
 
-
-def access_owned_ledger(
+def access_granted_ledger(
     unit_of_work_factory: Callable[[], RegistryUnitOfWork],
-    user_uuid: UUID,
+    grantee_uuid: UUID,
     ledger_uuid: UUID,
     timestamp: int,
+    required_role: LedgerRole | None = None,
 ) -> Ledger:
     with unit_of_work_factory() as unit_of_work:
-        ledger = _get_owned_ledger(unit_of_work, user_uuid, ledger_uuid)
+        grant = unit_of_work.ledger_grant_repository.get_active_by_grantee_and_ledger(grantee_uuid, ledger_uuid)
+        if grant is None or (required_role is not None and grant.role != required_role):
+            raise LedgerNotFoundError
+        ledger = unit_of_work.ledger_repository.get(ledger_uuid)
+        if ledger is None:
+            raise LedgerNotFoundError
         unit_of_work.ledger_repository.update_last_accessed_at(ledger.uuid, timestamp)
         unit_of_work.commit()
     return ledger.model_copy(update={"last_accessed_at": max(ledger.last_accessed_at, timestamp)})
-
 
 def list_owned_ledgers(
     unit_of_work_factory: Callable[[], RegistryUnitOfWork],
@@ -79,7 +82,6 @@ def list_owned_ledgers(
 ) -> list[Ledger]:
     with unit_of_work_factory() as unit_of_work:
         return unit_of_work.ledger_repository.list_owned_by_user(user_uuid, sort_key, ascending)
-
 
 def update_owned_ledger(
     unit_of_work_factory: Callable[[], RegistryUnitOfWork],
@@ -99,7 +101,6 @@ def update_owned_ledger(
         unit_of_work.commit()
     return ledger.model_copy(update={"name": name, "icon": icon, "color_code": color_code, "last_accessed_at": max(ledger.last_accessed_at, timestamp)})
 
-
 def delete_owned_ledger(
     unit_of_work_factory: Callable[[], RegistryUnitOfWork],
     delete_database: Callable[[str | Path], None],
@@ -111,7 +112,6 @@ def delete_owned_ledger(
         unit_of_work.ledger_repository.delete(ledger.uuid)
         unit_of_work.commit()
     delete_database(ledger.path)
-
 
 def _get_owned_ledger(
     unit_of_work: RegistryUnitOfWork,

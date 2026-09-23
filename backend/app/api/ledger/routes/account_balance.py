@@ -3,8 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from app.api.dependencies.authentication import AuthenticatedUser
-from app.api.dependencies.ledger import ledger_unit_of_work_factory
+from app.api.dependencies.ledger import GrantedLedger, ledger_unit_of_work_factory
 from app.api.dependencies.pagination import validate_page_size
 from app.api.ledger.schema.account import AccountBalanceListResponse, AccountBalanceResponse
 from app.application.ledger.exceptions import AccountNotFoundError, CurrencyNotFoundError, QueryPointLimitExceededError
@@ -20,7 +19,7 @@ def list_ledger_account_balances(
     ledger_uuid: UUID,
     timestamp: int,
     request: Request,
-    user: AuthenticatedUser,
+    ledger: GrantedLedger,
     currency_uuid: UUID | None = None,
     limit: Annotated[int | None, Query(ge=1)] = None,
 ) -> AccountBalanceListResponse:
@@ -28,7 +27,7 @@ def list_ledger_account_balances(
         validate_page_size(request, limit)
     try:
         balances, total_balance = list_account_balances(
-            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, ledger),
             timestamp,
             currency_uuid,
             limit,
@@ -45,9 +44,9 @@ def list_ledger_account_balances(
 
 
 @router.get("", response_model=int)
-def get_ledger_account_balance(ledger_uuid: UUID, account_uuid: UUID, timestamp: int, request: Request, user: AuthenticatedUser) -> int:
+def get_ledger_account_balance(ledger_uuid: UUID, account_uuid: UUID, timestamp: int, request: Request, ledger: GrantedLedger) -> int:
     try:
-        return get_account_balance(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), account_uuid, timestamp)
+        return get_account_balance(ledger_unit_of_work_factory(request, ledger), account_uuid, timestamp)
     except AccountNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found") from error
 
@@ -57,14 +56,14 @@ def list_ledger_account_balance_points(
     ledger_uuid: UUID,
     account_uuid: UUID,
     request: Request,
-    user: AuthenticatedUser,
+    ledger: GrantedLedger,
     from_timestamp: int,
     point_count: Annotated[int, Query(ge=1)],
     point_interval: Annotated[int, Query(ge=1)],
 ) -> list[int]:
     try:
         return list_account_balance_points(
-            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, ledger),
             account_uuid,
             from_timestamp,
             point_count,

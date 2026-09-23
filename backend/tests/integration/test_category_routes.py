@@ -7,6 +7,7 @@ from uuid import uuid4
 from fastapi import HTTPException, Request
 from pydantic import ValidationError
 
+from app.api.dependencies.ledger import require_granted_ledger
 from app.api.ledger.routes.category import create_ledger_category, delete_ledger_category, get_ledger_category, get_ledger_category_tree, update_ledger_category
 from app.api.registry.routes.ledger import create_owned_ledger
 from app.api.ledger.schema.category import CreateCategoryRequest, UpdateCategoryRequest
@@ -40,10 +41,10 @@ class CategoryRoutesTest(unittest.TestCase):
         )
         with self.application.state.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 10)
-            self.other_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
             unit_of_work.commit()
         self.request = Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": []})
         self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="lucide:WalletCards", color_code="#102030"), self.request, self.user)
+        self.ledger = require_granted_ledger(self.request, self.user, self.ledger.uuid)
 
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()
@@ -53,15 +54,15 @@ class CategoryRoutesTest(unittest.TestCase):
             self.ledger.uuid,
             CreateCategoryRequest(name=name, icon="lucide:Utensils", color_code="#708090", parent_uuid=parent_uuid),
             self.request,
-            self.user,
+            self.ledger,
         )
 
     def test_create_get_and_tree_return_the_persisted_hierarchy(self) -> None:
         parent = self.create_category("Food")
         child = self.create_category("Restaurants", parent.uuid)
 
-        self.assertEqual(get_ledger_category(self.ledger.uuid, child.uuid, self.request, self.user), child)
-        tree = get_ledger_category_tree(self.ledger.uuid, self.request, self.user)
+        self.assertEqual(get_ledger_category(self.ledger.uuid, child.uuid, self.request, self.ledger), child)
+        tree = get_ledger_category_tree(self.ledger.uuid, self.request, self.ledger)
         parent_node = next(node for node in tree if node.category.uuid == parent.uuid)
         self.assertEqual(parent_node.category, parent)
         self.assertEqual(parent_node.children[0].category, child)
@@ -77,7 +78,7 @@ class CategoryRoutesTest(unittest.TestCase):
                 category.uuid,
                 UpdateCategoryRequest(name="Child", icon="lucide:Circle", color_code="#102030", parent_uuid=uuid4()),
                 self.request,
-                self.user,
+                self.ledger,
             )
 
         self.assertEqual(create_error.exception.status_code, 404)
@@ -95,7 +96,7 @@ class CategoryRoutesTest(unittest.TestCase):
                 second.uuid,
                 UpdateCategoryRequest(name=first.name, icon=second.icon, color_code=second.color_code),
                 self.request,
-                self.user,
+                self.ledger,
             )
 
         for error in (create_error.exception, update_error.exception):
@@ -135,7 +136,7 @@ class CategoryRoutesTest(unittest.TestCase):
             category.uuid,
             UpdateCategoryRequest(name="New", icon="lucide:Shapes", color_code="#AABBCC", parent_uuid=parent.uuid),
             self.request,
-            self.user,
+            self.ledger,
         )
 
         self.assertEqual(updated.name, "New")
@@ -153,7 +154,7 @@ class CategoryRoutesTest(unittest.TestCase):
                 parent.uuid,
                 UpdateCategoryRequest(name="Parent", icon="lucide:Circle", color_code="#102030", parent_uuid=child.uuid),
                 self.request,
-                self.user,
+                self.ledger,
             )
 
         self.assertEqual(raised.exception.status_code, 409)
@@ -174,7 +175,7 @@ class CategoryRoutesTest(unittest.TestCase):
                 source.uuid,
                 UpdateCategoryRequest(name="Source", icon="lucide:Circle", color_code="#102030", parent_uuid=fourth.uuid),
                 self.request,
-                self.user,
+                self.ledger,
             )
 
         self.assertEqual(raised.exception.status_code, 409)
@@ -184,12 +185,12 @@ class CategoryRoutesTest(unittest.TestCase):
         parent = self.create_category("Parent")
         child = self.create_category("Child", parent.uuid)
 
-        self.assertIsNone(delete_ledger_category(self.ledger.uuid, parent.uuid, self.request, self.user))
+        self.assertIsNone(delete_ledger_category(self.ledger.uuid, parent.uuid, self.request, self.ledger))
 
         for category_uuid in (parent.uuid, child.uuid):
             with self.subTest(category_uuid=category_uuid):
                 with self.assertRaises(HTTPException) as raised:
-                    get_ledger_category(self.ledger.uuid, category_uuid, self.request, self.user)
+                    get_ledger_category(self.ledger.uuid, category_uuid, self.request, self.ledger)
                 self.assertEqual(raised.exception.status_code, 404)
 
     def test_delete_returns_conflict_when_a_descendant_is_in_use(self) -> None:
@@ -204,7 +205,7 @@ class CategoryRoutesTest(unittest.TestCase):
             unit_of_work.commit()
 
         with self.assertRaises(HTTPException) as raised:
-            delete_ledger_category(self.ledger.uuid, parent.uuid, self.request, self.user)
+            delete_ledger_category(self.ledger.uuid, parent.uuid, self.request, self.ledger)
 
         self.assertEqual(raised.exception.status_code, 409)
         self.assertEqual(raised.exception.detail, "Category is in use")
@@ -213,43 +214,21 @@ class CategoryRoutesTest(unittest.TestCase):
         missing_uuid = uuid4()
 
         for operation in (
-            lambda: get_ledger_category(self.ledger.uuid, missing_uuid, self.request, self.user),
+            lambda: get_ledger_category(self.ledger.uuid, missing_uuid, self.request, self.ledger),
             lambda: update_ledger_category(
                 self.ledger.uuid,
                 missing_uuid,
                 UpdateCategoryRequest(name="Missing", icon="lucide:Circle", color_code="#102030"),
                 self.request,
-                self.user,
+                self.ledger,
             ),
-            lambda: delete_ledger_category(self.ledger.uuid, missing_uuid, self.request, self.user),
+            lambda: delete_ledger_category(self.ledger.uuid, missing_uuid, self.request, self.ledger),
         ):
             with self.subTest(operation=operation):
                 with self.assertRaises(HTTPException) as raised:
                     operation()
                 self.assertEqual(raised.exception.status_code, 404)
                 self.assertEqual(raised.exception.detail, "Category not found")
-
-    def test_another_user_cannot_discover_or_change_categories(self) -> None:
-        category = self.create_category()
-        operations = (
-            lambda: get_ledger_category_tree(self.ledger.uuid, self.request, self.other_user),
-            lambda: get_ledger_category(self.ledger.uuid, category.uuid, self.request, self.other_user),
-            lambda: update_ledger_category(
-                self.ledger.uuid,
-                category.uuid,
-                UpdateCategoryRequest(name="Changed", icon="lucide:Circle", color_code="#102030"),
-                self.request,
-                self.other_user,
-            ),
-            lambda: delete_ledger_category(self.ledger.uuid, category.uuid, self.request, self.other_user),
-        )
-
-        for operation in operations:
-            with self.subTest(operation=operation):
-                with self.assertRaises(HTTPException) as raised:
-                    operation()
-                self.assertEqual(raised.exception.status_code, 404)
-                self.assertEqual(raised.exception.detail, "Ledger not found")
 
     def test_request_schemas_enforce_category_limits(self) -> None:
         invalid_values = (

@@ -7,6 +7,7 @@ from uuid import uuid4
 from fastapi import HTTPException, Request
 from pydantic import TypeAdapter, ValidationError
 
+from app.api.dependencies.ledger import require_granted_ledger
 from app.api.ledger.routes.financial_event import create_ledger_financial_event, delete_ledger_financial_event, get_ledger_financial_event, list_ledger_financial_events, update_ledger_financial_event
 from app.api.registry.routes.ledger import create_owned_ledger
 from app.api.ledger.schema.financial_event import FinancialEventFeeRequest, AccountTransferFinancialEventRequest, CreateFinancialEventRequest, ShoppingListFinancialEventRequest, ShoppingListMovementRequest, SimpleFinancialEventRequest, UpdateAccountTransferFinancialEventRequest, UpdateFinancialEventRequest, UpdateShoppingListFinancialEventRequest, UpdateShoppingListMovementRequest, UpdateSimpleFinancialEventRequest
@@ -41,10 +42,10 @@ class FinancialEventRoutesTest(unittest.TestCase):
         )
         with self.application.state.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 10)
-            self.other_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
             unit_of_work.commit()
         self.request = Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": []})
         self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="lucide:WalletCards", color_code="#102030"), self.request, self.user)
+        self.ledger = require_granted_ledger(self.request, self.user, self.ledger.uuid)
         with self.application.state.databases.open_ledger(f"{self.ledger.uuid}.sqlite") as unit_of_work:
             real = unit_of_work.currency_repository.get_by_name("Real")
             dollar = unit_of_work.currency_repository.get_by_name("Dólar americano")
@@ -65,7 +66,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
             self.ledger.uuid,
             SimpleFinancialEventRequest(type="TRANSACTION", occurred_at=occurred_at, description="Lunch", account_uuid=self.source.uuid, category_uuid=self.food.uuid, value=-100, quantity=2),
             self.request,
-            self.user,
+            self.ledger,
         )
 
     def test_create_simple_event_returns_one_movement(self) -> None:
@@ -85,7 +86,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
                 category_uuid=self.food.uuid, value=-100, fee=FinancialEventFeeRequest(category_uuid=self.fee.uuid, value=-5),
             ),
             self.request,
-            self.user,
+            self.ledger,
         )
 
         self.assertEqual(len(event.movements), 2)
@@ -99,7 +100,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
         )
 
         with self.assertRaises(HTTPException) as raised:
-            create_ledger_financial_event(self.ledger.uuid, payload, self.request, self.user)
+            create_ledger_financial_event(self.ledger.uuid, payload, self.request, self.ledger)
 
         self.assertEqual(raised.exception.status_code, 422)
         self.assertEqual(raised.exception.detail, "Invalid financial event")
@@ -127,7 +128,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
                 ],
             ),
             self.request,
-            self.user,
+            self.ledger,
         )
 
         self.assertEqual(event.type, "SHOPPING_LIST")
@@ -171,7 +172,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
                 fee=FinancialEventFeeRequest(category_uuid=self.fee.uuid, value=-5),
             ),
             self.request,
-            self.user,
+            self.ledger,
         )
 
         self.assertEqual(event.type, "ACCOUNT_TRANSFER")
@@ -197,9 +198,9 @@ class FinancialEventRoutesTest(unittest.TestCase):
         unknown_category = SimpleFinancialEventRequest(type="TRANSACTION", occurred_at=10, description="Missing", account_uuid=self.source.uuid, category_uuid=uuid4(), value=-10)
 
         with self.assertRaises(HTTPException) as invalid:
-            create_ledger_financial_event(self.ledger.uuid, equal_accounts, self.request, self.user)
+            create_ledger_financial_event(self.ledger.uuid, equal_accounts, self.request, self.ledger)
         with self.assertRaises(HTTPException) as missing:
-            create_ledger_financial_event(self.ledger.uuid, unknown_category, self.request, self.user)
+            create_ledger_financial_event(self.ledger.uuid, unknown_category, self.request, self.ledger)
 
         self.assertEqual(invalid.exception.status_code, 422)
         self.assertEqual(invalid.exception.detail, "Invalid financial event")
@@ -210,11 +211,11 @@ class FinancialEventRoutesTest(unittest.TestCase):
         first = self.create_simple(10)
         second = self.create_simple(20)
 
-        events = list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 0, 30, 1, self.source.uuid, None, self.food.uuid, "TRANSACTION", True)
+        events = list_ledger_financial_events(self.ledger.uuid, self.request, self.ledger, 0, 30, 1, self.source.uuid, None, self.food.uuid, "TRANSACTION", True)
         with self.assertRaises(HTTPException) as too_large:
-            list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 0, 30, 3, None, None, None, None, False)
+            list_ledger_financial_events(self.ledger.uuid, self.request, self.ledger, 0, 30, 3, None, None, None, None, False)
         with self.assertRaises(HTTPException) as invalid_period:
-            list_ledger_financial_events(self.ledger.uuid, self.request, self.user, 30, 30, 2, None, None, None, None, False)
+            list_ledger_financial_events(self.ledger.uuid, self.request, self.ledger, 30, 30, 2, None, None, None, None, False)
 
         self.assertEqual(events.events, [first])
         self.assertEqual(events.total_count, 2)
@@ -222,7 +223,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
         next_page = list_ledger_financial_events(
             self.ledger.uuid,
             self.request,
-            self.user,
+            self.ledger,
             0,
             30,
             1,
@@ -245,13 +246,13 @@ class FinancialEventRoutesTest(unittest.TestCase):
             self.ledger.uuid,
             SimpleFinancialEventRequest(type="TRANSACTION", occurred_at=20, description="Dinner", account_uuid=self.source.uuid, category_uuid=self.food.uuid, value=-100),
             self.request,
-            self.user,
+            self.ledger,
         )
 
         events = list_ledger_financial_events(
             self.ledger.uuid,
             self.request,
-            self.user,
+            self.ledger,
             0,
             30,
             2,
@@ -269,7 +270,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
             event.uuid,
             UpdateSimpleFinancialEventRequest(type="TRANSACTION", occurred_at=50, description="Dinner", account_uuid=self.destination.uuid, category_uuid=self.transport.uuid, value=200, quantity=4, item_name="Refund"),
             self.request,
-            self.user,
+            self.ledger,
         )
 
         self.assertEqual(updated.occurred_at, 50)
@@ -278,10 +279,10 @@ class FinancialEventRoutesTest(unittest.TestCase):
         self.assertEqual(updated.movements[0].uuid, event.movements[0].uuid)
         self.assertEqual(updated.movements[0].account_uuid, self.destination.uuid)
         self.assertEqual((updated.movements[0].category_uuid, updated.movements[0].value, updated.movements[0].quantity, updated.movements[0].item_name), (self.transport.uuid, 200, 4, "Refund"))
-        self.assertEqual(get_ledger_financial_event(self.ledger.uuid, event.uuid, self.request, self.user), updated)
-        self.assertIsNone(delete_ledger_financial_event(self.ledger.uuid, event.uuid, self.request, self.user))
+        self.assertEqual(get_ledger_financial_event(self.ledger.uuid, event.uuid, self.request, self.ledger), updated)
+        self.assertIsNone(delete_ledger_financial_event(self.ledger.uuid, event.uuid, self.request, self.ledger))
         with self.assertRaises(HTTPException) as missing:
-            get_ledger_financial_event(self.ledger.uuid, event.uuid, self.request, self.user)
+            get_ledger_financial_event(self.ledger.uuid, event.uuid, self.request, self.ledger)
         self.assertEqual(missing.exception.status_code, 404)
 
     def test_update_shopping_list_dispatches_its_own_editable_structure(self) -> None:
@@ -295,7 +296,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
                 movements=[ShoppingListMovementRequest(category_uuid=self.food.uuid, value=-100, item_name="Rice")],
             ),
             self.request,
-            self.user,
+            self.ledger,
         )
 
         updated = update_ledger_financial_event(
@@ -312,7 +313,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
                 ],
             ),
             self.request,
-            self.user,
+            self.ledger,
         )
 
         self.assertEqual(len(updated.movements), 2)
@@ -334,7 +335,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
                 destination_value=180,
             ),
             self.request,
-            self.user,
+            self.ledger,
         )
 
         updated = update_ledger_financial_event(
@@ -353,7 +354,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
                 fee=FinancialEventFeeRequest(category_uuid=self.fee.uuid, value=-5),
             ),
             self.request,
-            self.user,
+            self.ledger,
         )
 
         self.assertEqual({(movement.account_uuid, movement.category_uuid, movement.value) for movement in updated.movements}, {
@@ -378,7 +379,7 @@ class FinancialEventRoutesTest(unittest.TestCase):
                     movements=[UpdateShoppingListMovementRequest(category_uuid=self.food.uuid, value=-10)],
                 ),
                 self.request,
-                self.user,
+                self.ledger,
             )
 
         self.assertEqual(raised.exception.status_code, 409)
@@ -393,39 +394,22 @@ class FinancialEventRoutesTest(unittest.TestCase):
                 event.uuid,
                 UpdateSimpleFinancialEventRequest(type="TRANSACTION", occurred_at=20, description="Changed", account_uuid=uuid4(), category_uuid=self.food.uuid, value=-100),
                 self.request,
-                self.user,
+                self.ledger,
             )
 
         self.assertEqual(raised.exception.status_code, 404)
         self.assertEqual(raised.exception.detail, "Account not found")
 
-    def test_unknown_event_and_ledger_return_not_found(self) -> None:
-        for operation, detail in (
-            (lambda: get_ledger_financial_event(self.ledger.uuid, uuid4(), self.request, self.user), "Financial event not found"),
-            (lambda: delete_ledger_financial_event(self.ledger.uuid, uuid4(), self.request, self.user), "Financial event not found"),
-            (lambda: get_ledger_financial_event(uuid4(), uuid4(), self.request, self.user), "Ledger not found"),
+    def test_unknown_event_returns_not_found(self) -> None:
+        for operation in (
+            lambda: get_ledger_financial_event(self.ledger.uuid, uuid4(), self.request, self.ledger),
+            lambda: delete_ledger_financial_event(self.ledger.uuid, uuid4(), self.request, self.ledger),
         ):
-            with self.subTest(detail=detail):
-                with self.assertRaises(HTTPException) as raised:
-                    operation()
-                self.assertEqual(raised.exception.status_code, 404)
-                self.assertEqual(raised.exception.detail, detail)
-
-    def test_another_user_cannot_discover_or_change_events(self) -> None:
-        event = self.create_simple()
-        operations = (
-            lambda: list_ledger_financial_events(self.ledger.uuid, self.request, self.other_user, 0, 100, 2, None, None, None, None, False),
-            lambda: get_ledger_financial_event(self.ledger.uuid, event.uuid, self.request, self.other_user),
-            lambda: update_ledger_financial_event(self.ledger.uuid, event.uuid, UpdateSimpleFinancialEventRequest(type="TRANSACTION", occurred_at=20, description="Changed", account_uuid=self.source.uuid, category_uuid=self.food.uuid, value=-100), self.request, self.other_user),
-            lambda: delete_ledger_financial_event(self.ledger.uuid, event.uuid, self.request, self.other_user),
-        )
-
-        for operation in operations:
             with self.subTest(operation=operation):
                 with self.assertRaises(HTTPException) as raised:
                     operation()
                 self.assertEqual(raised.exception.status_code, 404)
-                self.assertEqual(raised.exception.detail, "Ledger not found")
+                self.assertEqual(raised.exception.detail, "Financial event not found")
 
     def test_creation_schema_discriminates_types_and_enforces_movement_rules(self) -> None:
         adapter = TypeAdapter(CreateFinancialEventRequest)

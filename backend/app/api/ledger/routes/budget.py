@@ -5,8 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from app.api.dependencies.authentication import AuthenticatedUser
-from app.api.dependencies.ledger import ledger_unit_of_work_factory
+from app.api.dependencies.ledger import GrantedLedger, ledger_unit_of_work_factory
 from app.api.dependencies.pagination import validate_page_size
 from app.api.ledger.schema.budget import BudgetOverviewPageResponse, BudgetOverviewResponse, BudgetResponse, CreateBudgetRequest, UpdateBudgetRequest
 from app.application.ledger.exceptions import AccountNotFoundError, BudgetLimitReachedError, BudgetNameUnavailableError, BudgetNotFoundError, CategoryNotFoundError, CurrencyNotFoundError
@@ -20,10 +19,10 @@ router = APIRouter(prefix="/api/ledgers/{ledger_uuid}/budgets", tags=["budgets"]
 
 
 @router.post("", response_model=BudgetResponse, status_code=status.HTTP_201_CREATED)
-def create_ledger_budget(ledger_uuid: UUID, payload: CreateBudgetRequest, request: Request, user: AuthenticatedUser) -> BudgetResponse:
+def create_ledger_budget(ledger_uuid: UUID, payload: CreateBudgetRequest, request: Request, ledger: GrantedLedger) -> BudgetResponse:
     try:
         budget = create_budget(
-            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, ledger),
             payload.account_uuid,
             payload.category_uuid,
             payload.from_timestamp,
@@ -47,7 +46,7 @@ def create_ledger_budget(ledger_uuid: UUID, payload: CreateBudgetRequest, reques
 def list_ledger_budget_overview(
     ledger_uuid: UUID,
     request: Request,
-    user: AuthenticatedUser,
+    ledger: GrantedLedger,
     page_size: Annotated[int, Query(ge=1)],
     state: Annotated[list[BudgetOverviewState] | None, Query()] = None,
     account_uuid: UUID | None = None,
@@ -62,7 +61,7 @@ def list_ledger_budget_overview(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid cursor") from error
     try:
         items = list_budget_overview(
-            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, ledger),
             int(time.time()),
             state or ("FUTURE", "ACTIVE", "FINISHED"),
             account_uuid,
@@ -88,14 +87,14 @@ def list_ledger_currency_budget_overview(
     ledger_uuid: UUID,
     currency_uuid: UUID,
     request: Request,
-    user: AuthenticatedUser,
+    ledger: GrantedLedger,
     limit: Annotated[int, Query(ge=1)] = 3,
     timestamp: int | None = None,
 ) -> list[BudgetOverviewResponse]:
     validate_page_size(request, limit)
     try:
         items = list_budgets_for_currency(
-            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, ledger),
             int(time.time()) if timestamp is None else timestamp,
             currency_uuid,
             limit,
@@ -106,19 +105,19 @@ def list_ledger_currency_budget_overview(
 
 
 @router.get("/{budget_uuid}", response_model=BudgetResponse)
-def get_ledger_budget(ledger_uuid: UUID, budget_uuid: UUID, request: Request, user: AuthenticatedUser) -> BudgetResponse:
+def get_ledger_budget(ledger_uuid: UUID, budget_uuid: UUID, request: Request, ledger: GrantedLedger) -> BudgetResponse:
     try:
-        budget = get_budget(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), budget_uuid)
+        budget = get_budget(ledger_unit_of_work_factory(request, ledger), budget_uuid)
     except BudgetNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found") from error
     return BudgetResponse.from_budget(budget)
 
 
 @router.put("/{budget_uuid}", response_model=BudgetResponse)
-def update_ledger_budget(ledger_uuid: UUID, budget_uuid: UUID, payload: UpdateBudgetRequest, request: Request, user: AuthenticatedUser) -> BudgetResponse:
+def update_ledger_budget(ledger_uuid: UUID, budget_uuid: UUID, payload: UpdateBudgetRequest, request: Request, ledger: GrantedLedger) -> BudgetResponse:
     try:
         budget = update_budget(
-            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid),
+            ledger_unit_of_work_factory(request, ledger),
             budget_uuid,
             payload.category_uuid,
             payload.from_timestamp,
@@ -137,9 +136,9 @@ def update_ledger_budget(ledger_uuid: UUID, budget_uuid: UUID, payload: UpdateBu
 
 
 @router.delete("/{budget_uuid}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_ledger_budget(ledger_uuid: UUID, budget_uuid: UUID, request: Request, user: AuthenticatedUser) -> None:
+def delete_ledger_budget(ledger_uuid: UUID, budget_uuid: UUID, request: Request, ledger: GrantedLedger) -> None:
     try:
-        delete_budget(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), budget_uuid)
+        delete_budget(ledger_unit_of_work_factory(request, ledger), budget_uuid)
     except BudgetNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found") from error
 

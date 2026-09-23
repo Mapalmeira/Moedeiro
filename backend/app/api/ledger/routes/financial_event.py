@@ -3,8 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from app.api.dependencies.authentication import AuthenticatedUser
-from app.api.dependencies.ledger import ledger_unit_of_work_factory
+from app.api.dependencies.ledger import GrantedLedger, ledger_unit_of_work_factory
 from app.api.dependencies.pagination import validate_page_size
 from app.api.ledger.schema.financial_event import AccountTransferFinancialEventRequest, CreateFinancialEventRequest, FinancialEventPageResponse, FinancialEventResponse, ShoppingListFinancialEventRequest, SimpleFinancialEventRequest, UpdateAccountTransferFinancialEventRequest, UpdateFinancialEventRequest, UpdateShoppingListFinancialEventRequest, UpdateSimpleFinancialEventRequest
 from app.application.ledger.exceptions import AccountNotFoundError, CategoryNotFoundError, CurrencyNotFoundError, FinancialEventLimitReachedError, FinancialEventNotFoundError, FinancialEventTypeMismatchError, FinancialMovementNotFoundError, InvalidFinancialEventError, InvalidFinancialEventStructureError
@@ -17,8 +16,8 @@ router = APIRouter(prefix="/api/ledgers/{ledger_uuid}/events", tags=["financial 
 
 
 @router.post("", response_model=FinancialEventResponse, status_code=status.HTTP_201_CREATED)
-def create_ledger_financial_event(ledger_uuid: UUID, payload: CreateFinancialEventRequest, request: Request, user: AuthenticatedUser) -> FinancialEventResponse:
-    unit_of_work_factory = ledger_unit_of_work_factory(request, user.uuid, ledger_uuid)
+def create_ledger_financial_event(ledger_uuid: UUID, payload: CreateFinancialEventRequest, request: Request, ledger: GrantedLedger) -> FinancialEventResponse:
+    unit_of_work_factory = ledger_unit_of_work_factory(request, ledger)
     try:
         if isinstance(payload, SimpleFinancialEventRequest):
             fee = None if payload.fee is None else FinancialEventFee(category_uuid=payload.fee.category_uuid, value=payload.fee.value)
@@ -70,7 +69,7 @@ def create_ledger_financial_event(ledger_uuid: UUID, payload: CreateFinancialEve
 def list_ledger_financial_events(
     ledger_uuid: UUID,
     request: Request,
-    user: AuthenticatedUser,
+    ledger: GrantedLedger,
     from_timestamp: int,
     to_timestamp: int,
     page_size: Annotated[int, Query(ge=1)],
@@ -100,9 +99,9 @@ def list_ledger_financial_events(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Invalid cursor") from error
     try:
         events = list_financial_events_after(
-            ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), page_size, ascending, filters, cursor_occurred_at, cursor_uuid
+            ledger_unit_of_work_factory(request, ledger), page_size, ascending, filters, cursor_occurred_at, cursor_uuid
         )
-        total_count = count_financial_events(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), filters)
+        total_count = count_financial_events(ledger_unit_of_work_factory(request, ledger), filters)
     except CurrencyNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Currency not found") from error
     next_cursor = None
@@ -124,17 +123,17 @@ def _parse_cursor(cursor: str | None) -> tuple[int | None, UUID | None]:
 
 
 @router.get("/{event_uuid}", response_model=FinancialEventResponse)
-def get_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, request: Request, user: AuthenticatedUser) -> FinancialEventResponse:
+def get_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, request: Request, ledger: GrantedLedger) -> FinancialEventResponse:
     try:
-        event = get_financial_event(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), event_uuid)
+        event = get_financial_event(ledger_unit_of_work_factory(request, ledger), event_uuid)
     except FinancialEventNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Financial event not found") from error
     return FinancialEventResponse.from_event(event)
 
 
 @router.put("/{event_uuid}", response_model=FinancialEventResponse)
-def update_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, payload: UpdateFinancialEventRequest, request: Request, user: AuthenticatedUser) -> FinancialEventResponse:
-    unit_of_work_factory = ledger_unit_of_work_factory(request, user.uuid, ledger_uuid)
+def update_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, payload: UpdateFinancialEventRequest, request: Request, ledger: GrantedLedger) -> FinancialEventResponse:
+    unit_of_work_factory = ledger_unit_of_work_factory(request, ledger)
     try:
         if isinstance(payload, UpdateSimpleFinancialEventRequest):
             fee = None if payload.fee is None else FinancialEventFee(category_uuid=payload.fee.category_uuid, value=payload.fee.value)
@@ -192,8 +191,8 @@ def update_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, payload: 
 
 
 @router.delete("/{event_uuid}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, request: Request, user: AuthenticatedUser) -> None:
+def delete_ledger_financial_event(ledger_uuid: UUID, event_uuid: UUID, request: Request, ledger: GrantedLedger) -> None:
     try:
-        delete_financial_event(ledger_unit_of_work_factory(request, user.uuid, ledger_uuid), event_uuid)
+        delete_financial_event(ledger_unit_of_work_factory(request, ledger), event_uuid)
     except FinancialEventNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Financial event not found") from error

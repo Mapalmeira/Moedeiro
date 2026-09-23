@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from fastapi import HTTPException, Request
 
+from app.api.dependencies.ledger import require_granted_ledger
 from app.api.ledger.routes.account import create_ledger_account
 from app.api.ledger.routes.cash_flow import get_ledger_cash_flow, get_ledger_cash_flow_sankey, list_ledger_cash_flow_points
 from app.api.ledger.routes.category import create_ledger_category
@@ -44,27 +45,27 @@ class CashFlowRoutesTest(unittest.TestCase):
         )
         with self.application.state.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 10)
-            self.other_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
             unit_of_work.commit()
         self.request = Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": []})
         self.ledger = create_owned_ledger(CreateLedgerRequest(name="Household", icon="lucide:WalletCards", color_code="#102030"), self.request, self.user)
+        self.ledger = require_granted_ledger(self.request, self.user, self.ledger.uuid)
         self.currency = create_ledger_currency(
             self.ledger.uuid,
             CreateCurrencyRequest(name="Route Real", prefix="R$", suffix=None, decimal_places=2, icon="lucide:CircleDollarSign", color_code="#AABBCC"),
             self.request,
-            self.user,
+            self.ledger,
         )
         self.category = create_ledger_category(
             self.ledger.uuid,
             CreateCategoryRequest(name="General", icon="lucide:Circle", color_code="#708090"),
             self.request,
-            self.user,
+            self.ledger,
         )
         self.account = create_ledger_account(
             self.ledger.uuid,
             CreateAccountRequest(name="Checking", currency_uuid=self.currency.uuid, icon="lucide:WalletCards", color_code="#405060"),
             self.request,
-            self.user,
+            self.ledger,
         )
 
     def tearDown(self) -> None:
@@ -80,8 +81,8 @@ class CashFlowRoutesTest(unittest.TestCase):
         self.add_movement(100, 50, 2)
         self.add_movement(250, -20, 3)
 
-        summary = get_ledger_cash_flow(self.ledger.uuid, self.currency.uuid, 100, 300, self.request, self.user, self.account.uuid, self.category.uuid, "TRANSACTION")
-        points = list_ledger_cash_flow_points(self.ledger.uuid, self.currency.uuid, 100, 300, 150, self.request, self.user, self.account.uuid, self.category.uuid, "TRANSACTION")
+        summary = get_ledger_cash_flow(self.ledger.uuid, self.currency.uuid, 100, 300, self.request, self.ledger, self.account.uuid, self.category.uuid, "TRANSACTION")
+        points = list_ledger_cash_flow_points(self.ledger.uuid, self.currency.uuid, 100, 300, 150, self.request, self.ledger, self.account.uuid, self.category.uuid, "TRANSACTION")
 
         self.assertEqual((summary.income, summary.expense), (100, 60))
         self.assertEqual([(point.income, point.expense) for point in points], [(100, 0), (0, 60)])
@@ -96,7 +97,7 @@ class CashFlowRoutesTest(unittest.TestCase):
             100,
             300,
             self.request,
-            self.user,
+            self.ledger,
             description_search="DINN",
         )
         points = list_ledger_cash_flow_points(
@@ -106,7 +107,7 @@ class CashFlowRoutesTest(unittest.TestCase):
             300,
             150,
             self.request,
-            self.user,
+            self.ledger,
             description_search="DINN",
         )
 
@@ -117,7 +118,7 @@ class CashFlowRoutesTest(unittest.TestCase):
         self.add_movement(100, 50, 2)
         self.add_movement(120, -20, 3)
 
-        sankey = get_ledger_cash_flow_sankey(self.ledger.uuid, self.account.uuid, 100, 200, 1, self.request, self.user)
+        sankey = get_ledger_cash_flow_sankey(self.ledger.uuid, self.account.uuid, 100, 200, 1, self.request, self.ledger)
 
         self.assertEqual((sankey.income, sankey.expense), (100, 60))
         self.assertEqual(sankey.account_uuid, self.account.uuid)
@@ -127,9 +128,9 @@ class CashFlowRoutesTest(unittest.TestCase):
 
     def test_queries_map_unknown_currency_account_and_category(self) -> None:
         operations = (
-            ("Currency not found", lambda: get_ledger_cash_flow(self.ledger.uuid, uuid4(), 0, 10, self.request, self.user)),
-            ("Account not found", lambda: get_ledger_cash_flow(self.ledger.uuid, self.currency.uuid, 0, 10, self.request, self.user, uuid4())),
-            ("Category not found", lambda: get_ledger_cash_flow(self.ledger.uuid, self.currency.uuid, 0, 10, self.request, self.user, None, uuid4())),
+            ("Currency not found", lambda: get_ledger_cash_flow(self.ledger.uuid, uuid4(), 0, 10, self.request, self.ledger)),
+            ("Account not found", lambda: get_ledger_cash_flow(self.ledger.uuid, self.currency.uuid, 0, 10, self.request, self.ledger, uuid4())),
+            ("Category not found", lambda: get_ledger_cash_flow(self.ledger.uuid, self.currency.uuid, 0, 10, self.request, self.ledger, None, uuid4())),
         )
 
         for expected_detail, operation in operations:
@@ -141,20 +142,13 @@ class CashFlowRoutesTest(unittest.TestCase):
 
     def test_queries_reject_invalid_period_and_too_many_points(self) -> None:
         with self.assertRaises(HTTPException) as invalid_period:
-            get_ledger_cash_flow(self.ledger.uuid, self.currency.uuid, 10, 10, self.request, self.user)
+            get_ledger_cash_flow(self.ledger.uuid, self.currency.uuid, 10, 10, self.request, self.ledger)
         with self.assertRaises(HTTPException) as too_many_points:
-            list_ledger_cash_flow_points(self.ledger.uuid, self.currency.uuid, 0, 301, 100, self.request, self.user)
+            list_ledger_cash_flow_points(self.ledger.uuid, self.currency.uuid, 0, 301, 100, self.request, self.ledger)
 
         self.assertEqual(invalid_period.exception.status_code, 422)
         self.assertEqual(too_many_points.exception.status_code, 422)
         self.assertEqual(too_many_points.exception.detail, "Point count cannot exceed 2")
-
-    def test_another_user_cannot_query_cash_flow(self) -> None:
-        with self.assertRaises(HTTPException) as raised:
-            get_ledger_cash_flow(self.ledger.uuid, self.currency.uuid, 0, 10, self.request, self.other_user)
-
-        self.assertEqual(raised.exception.status_code, 404)
-        self.assertEqual(raised.exception.detail, "Ledger not found")
 
     def test_routes_expose_summary_and_point_queries(self) -> None:
         paths = self.application.openapi()["paths"]

@@ -6,6 +6,7 @@ from uuid import uuid4
 from fastapi import HTTPException, Request
 from pydantic import ValidationError
 
+from app.api.dependencies.ledger import require_granted_ledger
 from app.api.ledger.routes.currency import create_ledger_currency, delete_ledger_currency, get_ledger_currency, list_ledger_currencies, update_ledger_currency
 from app.api.registry.routes.ledger import create_owned_ledger
 from app.api.ledger.schema.currency import CreateCurrencyRequest, UpdateCurrencyRequest
@@ -40,7 +41,6 @@ class CurrencyRoutesTest(unittest.TestCase):
         )
         with self.application.state.databases.open_registry() as unit_of_work:
             self.user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 10)
-            self.other_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
             unit_of_work.commit()
         self.request = Request({"type": "http", "app": self.application, "client": ("192.0.2.1", 50000), "headers": []})
         self.ledger = create_owned_ledger(
@@ -48,6 +48,7 @@ class CurrencyRoutesTest(unittest.TestCase):
             self.request,
             self.user,
         )
+        self.ledger = require_granted_ledger(self.request, self.user, self.ledger.uuid)
 
     def tearDown(self) -> None:
         self.temporary_directory.cleanup()
@@ -64,13 +65,13 @@ class CurrencyRoutesTest(unittest.TestCase):
                 color_code="#AABBCC",
             ),
             self.request,
-            self.user,
+            self.ledger,
         )
 
     def test_create_and_get_return_the_persisted_currency(self) -> None:
         created = self.create_currency()
 
-        response = get_ledger_currency(self.ledger.uuid, created.uuid, self.request, self.user)
+        response = get_ledger_currency(self.ledger.uuid, created.uuid, self.request, self.ledger)
 
         self.assertEqual(response, created)
         self.assertEqual(response.color_code, "#AABBCC")
@@ -85,20 +86,20 @@ class CurrencyRoutesTest(unittest.TestCase):
         self.assertEqual(raised.exception.detail, "Currency name unavailable")
 
     def test_list_returns_the_entire_collection_without_page_limits(self) -> None:
-        initial = list_ledger_currencies(self.ledger.uuid, self.request, self.user)
+        initial = list_ledger_currencies(self.ledger.uuid, self.request, self.ledger)
         created = [self.create_currency(name) for name in ("Charlie", "Alpha", "Bravo", "Delta")]
-        self.assertEqual(list_ledger_currencies(self.ledger.uuid, self.request, self.user), initial + created)
+        self.assertEqual(list_ledger_currencies(self.ledger.uuid, self.request, self.ledger), initial + created)
 
     def test_creation_limit_can_be_reused_after_deletion(self) -> None:
-        initial = list_ledger_currencies(self.ledger.uuid, self.request, self.user)
+        initial = list_ledger_currencies(self.ledger.uuid, self.request, self.ledger)
         created = [self.create_currency(f"Item {index}") for index in range(300 - len(initial))]
         with self.assertRaises(HTTPException) as raised:
             self.create_currency("Overflow")
         self.assertEqual(raised.exception.status_code, 409)
         self.assertEqual(raised.exception.detail, "Currency limit reached")
-        delete_ledger_currency(self.ledger.uuid, created[-1].uuid, self.request, self.user)
+        delete_ledger_currency(self.ledger.uuid, created[-1].uuid, self.request, self.ledger)
         self.create_currency("Replacement")
-        self.assertEqual(len(list_ledger_currencies(self.ledger.uuid, self.request, self.user)), 300)
+        self.assertEqual(len(list_ledger_currencies(self.ledger.uuid, self.request, self.ledger)), 300)
 
     def test_update_preserves_decimal_places(self) -> None:
         created = self.create_currency(decimal_places=3)
@@ -108,7 +109,7 @@ class CurrencyRoutesTest(unittest.TestCase):
             created.uuid,
             UpdateCurrencyRequest(name="Brazilian Real", prefix=None, suffix=" BRL", icon="lucide:Banknote", color_code="#010203"),
             self.request,
-            self.user,
+            self.ledger,
         )
 
         self.assertEqual(updated.name, "Brazilian Real")
@@ -125,7 +126,7 @@ class CurrencyRoutesTest(unittest.TestCase):
                 second.uuid,
                 UpdateCurrencyRequest(name=first.name, prefix=None, suffix=None, icon="lucide:Banknote", color_code="#010203"),
                 self.request,
-                self.user,
+                self.ledger,
             )
 
         self.assertEqual(raised.exception.status_code, 409)
@@ -134,10 +135,10 @@ class CurrencyRoutesTest(unittest.TestCase):
     def test_delete_returns_not_found_after_removing_an_unused_currency(self) -> None:
         created = self.create_currency()
 
-        self.assertIsNone(delete_ledger_currency(self.ledger.uuid, created.uuid, self.request, self.user))
+        self.assertIsNone(delete_ledger_currency(self.ledger.uuid, created.uuid, self.request, self.ledger))
 
         with self.assertRaises(HTTPException) as raised:
-            get_ledger_currency(self.ledger.uuid, created.uuid, self.request, self.user)
+            get_ledger_currency(self.ledger.uuid, created.uuid, self.request, self.ledger)
         self.assertEqual(raised.exception.status_code, 404)
 
     def test_delete_returns_conflict_when_an_account_uses_the_currency(self) -> None:
@@ -147,44 +148,17 @@ class CurrencyRoutesTest(unittest.TestCase):
             unit_of_work.commit()
 
         with self.assertRaises(HTTPException) as raised:
-            delete_ledger_currency(self.ledger.uuid, currency.uuid, self.request, self.user)
+            delete_ledger_currency(self.ledger.uuid, currency.uuid, self.request, self.ledger)
 
         self.assertEqual(raised.exception.status_code, 409)
         self.assertEqual(raised.exception.detail, "Currency is in use")
 
-    def test_another_user_cannot_discover_or_change_ledger_currencies(self) -> None:
-        currency = self.create_currency()
+    def test_missing_currency_returns_not_found(self) -> None:
+        with self.assertRaises(HTTPException) as raised:
+            get_ledger_currency(self.ledger.uuid, uuid4(), self.request, self.ledger)
 
-        operations = (
-            lambda: list_ledger_currencies(self.ledger.uuid, self.request, self.other_user),
-            lambda: get_ledger_currency(self.ledger.uuid, currency.uuid, self.request, self.other_user),
-            lambda: update_ledger_currency(
-                self.ledger.uuid,
-                currency.uuid,
-                UpdateCurrencyRequest(name="Stolen", prefix=None, suffix=None, icon="lucide:Banknote", color_code="#000000"),
-                self.request,
-                self.other_user,
-            ),
-            lambda: delete_ledger_currency(self.ledger.uuid, currency.uuid, self.request, self.other_user),
-        )
-
-        for operation in operations:
-            with self.subTest(operation=operation):
-                with self.assertRaises(HTTPException) as raised:
-                    operation()
-                self.assertEqual(raised.exception.status_code, 404)
-                self.assertEqual(raised.exception.detail, "Ledger not found")
-
-    def test_missing_currency_and_ledger_return_not_found(self) -> None:
-        for ledger_uuid, currency_uuid, detail in (
-            (self.ledger.uuid, uuid4(), "Currency not found"),
-            (uuid4(), uuid4(), "Ledger not found"),
-        ):
-            with self.subTest(detail=detail):
-                with self.assertRaises(HTTPException) as raised:
-                    get_ledger_currency(ledger_uuid, currency_uuid, self.request, self.user)
-                self.assertEqual(raised.exception.status_code, 404)
-                self.assertEqual(raised.exception.detail, detail)
+        self.assertEqual(raised.exception.status_code, 404)
+        self.assertEqual(raised.exception.detail, "Currency not found")
 
     def test_request_schemas_reject_invalid_currency_data(self) -> None:
         invalid_values = (
