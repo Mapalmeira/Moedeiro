@@ -5,6 +5,7 @@ describe('API_ROUTES', () => {
   it('encodes ledger and resource identifiers in nested routes', () => {
     expect(API_ROUTES.ledgers.accounts.byUuid('ledger/1', 'account 1')).toBe('/api/ledgers/ledger%2F1/accounts/account%201');
     expect(API_ROUTES.ledgers.budgets.byUuid('ledger/1', 'budget?1')).toBe('/api/ledgers/ledger%2F1/budgets/budget%3F1');
+    expect(API_ROUTES.ledgers.externalAccesses.byGrantUuid('ledger/1', 'grant?1')).toBe('/api/ledgers/ledger%2F1/external-accesses/grant%3F1');
   });
 
   it('keeps derived endpoints on their resource roots', () => {

@@ -29,6 +29,10 @@ export const API_ROUTES = {
       balance: (ledgerUuid: string, accountUuid: string) => `${resourceByUuid(ledgerUuid, 'accounts', accountUuid)}/balance`,
     },
     balances: (ledgerUuid: string) => resourceRoot(ledgerUuid, 'balances'),
+    externalAccesses: {
+      root: (ledgerUuid: string) => resourceRoot(ledgerUuid, 'external-accesses'),
+      byGrantUuid: (ledgerUuid: string, grantUuid: string) => resourceByUuid(ledgerUuid, 'external-accesses', grantUuid),
+    },
     currencies: {
       root: (ledgerUuid: string) => resourceRoot(ledgerUuid, 'currencies'),
       byUuid: (ledgerUuid: string, currencyUuid: string) => resourceByUuid(ledgerUuid, 'currencies', currencyUuid),
