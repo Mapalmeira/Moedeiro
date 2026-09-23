@@ -77,6 +77,20 @@ class SqliteLedgerGrantRepository(LedgerGrantRepository):
         ).fetchall()
         return [self._to_model(row) for row in rows]
 
+    def count_active_external_accesses_by_ledger(self, ledger_uuid: UUID) -> int:
+        row = self.connection.execute(
+            """
+            SELECT count(*) AS count
+            FROM ledger_grant
+            JOIN external_access ON external_access.uuid = ledger_grant.grantee_uuid
+            WHERE ledger_grant.ledger_uuid = ?
+              AND ledger_grant.role = 'GUEST'
+              AND ledger_grant.revoked_at IS NULL
+            """,
+            (ledger_uuid.bytes,),
+        ).fetchone()
+        return row["count"]
+
     def list_all(self) -> list[LedgerGrant]:
         rows = self.connection.execute(f"SELECT {self._columns} FROM ledger_grant ORDER BY created_at ASC, uuid ASC").fetchall()
         return [self._to_model(row) for row in rows]

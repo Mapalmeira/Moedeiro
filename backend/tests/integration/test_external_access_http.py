@@ -1,6 +1,7 @@
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
@@ -99,6 +100,19 @@ class ExternalAccessHttpTest(unittest.TestCase):
         with self.bearer_client(created["token"]) as bearer_only:
             self.assertEqual(bearer_only.get("/api/ledgers").status_code, 401)
             self.assertEqual(bearer_only.get(f"/api/ledgers/{self.ledger_uuid}/external-accesses").status_code, 401)
+
+    def test_creation_returns_conflict_when_external_access_limit_is_reached(self) -> None:
+        with patch("app.application.registry.use_cases.grant.MAXIMUM_EXTERNAL_ACCESSES_PER_LEDGER", 1):
+            self.create_external_access("First")
+            response = self.client.post(
+                f"/api/ledgers/{self.ledger_uuid}/external-accesses",
+                json={"name": "Second", "current_password": "correct password"},
+            )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json(), {"detail": "External access limit reached"})
+        listed = self.client.get(f"/api/ledgers/{self.ledger_uuid}/external-accesses")
+        self.assertEqual(len(listed.json()), 1)
 
     def test_external_access_cannot_delete_ledger(self) -> None:
         external = self.create_external_access()

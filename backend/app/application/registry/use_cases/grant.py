@@ -1,13 +1,13 @@
 from collections.abc import Callable
 from uuid import UUID
 
-from app.application.registry.exceptions import InvalidCurrentPasswordError, LedgerGrantNotFoundError, LedgerLimitReachedError, LedgerNotFoundError, LedgerOwnershipAlreadyExistsError, UserNotFoundError
+from app.application.registry.exceptions import ExternalAccessLimitReachedError, InvalidCurrentPasswordError, LedgerGrantNotFoundError, LedgerLimitReachedError, LedgerNotFoundError, LedgerOwnershipAlreadyExistsError, UserNotFoundError
 from app.application.registry.password_hasher import PasswordHasher
 from app.application.registry.secret import generate_opaque_token
 from app.application.registry.totp_authenticator import TotpAuthenticator
 from app.application.registry.unit_of_work import RegistryUnitOfWork
 from app.application.registry.use_cases.totp import verify_totp
-from app.domain.registry.limits import MAXIMUM_LEDGERS_PER_USER
+from app.domain.registry.limits import MAXIMUM_EXTERNAL_ACCESSES_PER_LEDGER, MAXIMUM_LEDGERS_PER_USER
 from app.domain.registry.model.external_access import ExternalAccess
 from app.domain.registry.model.ledger_grant import LedgerGrant
 from app.domain.registry.model.totp import TotpCode
@@ -64,6 +64,8 @@ def create_external_ledger_grant(
         if owner is None or owner.grantee_uuid != user.uuid:
             raise LedgerNotFoundError
         verify_totp(unit_of_work, totp_authenticator, user.uuid, totp_code, timestamp)
+        if unit_of_work.ledger_grant_repository.count_active_external_accesses_by_ledger(ledger_uuid) >= MAXIMUM_EXTERNAL_ACCESSES_PER_LEDGER:
+            raise ExternalAccessLimitReachedError
         token, token_hash = generate_opaque_token()
         access = unit_of_work.external_access_repository.create(name, token_hash)
         grant = unit_of_work.ledger_grant_repository.create(access.uuid, ledger_uuid, "GUEST", timestamp)

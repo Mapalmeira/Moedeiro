@@ -42,5 +42,9 @@ class LedgerGrantRepository(ABC):
         pass
 
     @abstractmethod
+    def count_active_external_accesses_by_ledger(self, ledger_uuid: UUID) -> int:
+        pass
+
+    @abstractmethod
     def list_all(self) -> list[LedgerGrant]:
         pass

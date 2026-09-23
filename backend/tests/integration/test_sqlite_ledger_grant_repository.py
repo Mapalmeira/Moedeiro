@@ -32,6 +32,18 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
 
         self.assertCountEqual(self.grant_repository.list_by_ledger(ledger.uuid), [first, second])
 
+    def test_count_active_external_accesses_by_ledger_ignores_revoked_and_non_external_guests(self) -> None:
+        ledger = self.create_ledger()
+        active = self.create_external_guest_grant(ledger, "Active", b"a" * 32)
+        revoked = self.create_external_guest_grant(ledger, "Revoked", b"b" * 32)
+        guest_user = self.create_user()
+        self.grant_repository.create(guest_user.uuid, ledger.uuid, "GUEST", 30)
+        self.grant_repository.revoke(revoked.uuid, 40)
+        self.create_external_guest_grant(self.create_ledger(), "Other ledger", b"c" * 32)
+
+        self.assertIsNotNone(active)
+        self.assertEqual(self.grant_repository.count_active_external_accesses_by_ledger(ledger.uuid), 1)
+
     def test_only_one_active_owner_exists_for_each_ledger(self) -> None:
         first_user = self.create_user()
         second_user = self.create_user()

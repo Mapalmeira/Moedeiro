@@ -5,7 +5,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 from uuid import uuid4
 
-from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, LedgerGrantNotFoundError, LedgerNotFoundError, TotpCodeAlreadyUsedError, TotpRequiredError
+from app.application.registry.exceptions import ExternalAccessLimitReachedError, InvalidCurrentPasswordError, InvalidTotpCodeError, LedgerGrantNotFoundError, LedgerNotFoundError, TotpCodeAlreadyUsedError, TotpRequiredError
 from app.application.registry.use_cases.grant import create_external_ledger_grant, list_ledger_grants, list_external_access_grants_for_owned_ledger, revoke_ledger_grant, revoke_external_access_grant_from_owned_ledger, revoke_owned_ledger_grant, set_ledger_owner
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
@@ -108,6 +108,86 @@ class LedgerGrantUseCasesTest(unittest.TestCase):
         with self.open_registry() as unit_of_work:
             guest_grants = [grant for grant in unit_of_work.ledger_grant_repository.list_by_ledger(self.ledger.uuid) if grant.role == "GUEST"]
         self.assertEqual(guest_grants, [])
+
+    def test_create_external_grant_enforces_per_ledger_limit_and_revocation_frees_capacity(self) -> None:
+        with patch("app.application.registry.use_cases.grant.MAXIMUM_EXTERNAL_ACCESSES_PER_LEDGER", 1):
+            first, _ = create_external_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                self.ledger.uuid,
+                "First",
+                "current password",
+                20,
+            )
+            with self.assertRaises(ExternalAccessLimitReachedError):
+                create_external_ledger_grant(
+                    self.open_registry,
+                    self.password_hasher,
+                    self.user,
+                    self.ledger.uuid,
+                    "Second",
+                    "current password",
+                    21,
+                )
+
+            revoke_external_access_grant_from_owned_ledger(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                self.ledger.uuid,
+                first.uuid,
+                "current password",
+                22,
+            )
+            replacement, _ = create_external_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                self.ledger.uuid,
+                "Replacement",
+                "current password",
+                23,
+            )
+
+        with self.open_registry() as unit_of_work:
+            self.assertEqual(unit_of_work.ledger_grant_repository.count_active_external_accesses_by_ledger(self.ledger.uuid), 1)
+            self.assertIsNotNone(unit_of_work.external_access_repository.get(replacement.grantee_uuid))
+
+    def test_external_access_limit_is_scoped_per_ledger(self) -> None:
+        with self.open_registry() as unit_of_work:
+            other_ledger = unit_of_work.ledger_repository.create(
+                uuid4(),
+                "Other",
+                "other.sqlite",
+                "lucide:BookOpen",
+                b"\x80\x80\x80",
+                10,
+            )
+            unit_of_work.ledger_grant_repository.create(self.user.uuid, other_ledger.uuid, "OWNER", 10)
+            unit_of_work.commit()
+
+        with patch("app.application.registry.use_cases.grant.MAXIMUM_EXTERNAL_ACCESSES_PER_LEDGER", 1):
+            create_external_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                self.ledger.uuid,
+                "First",
+                "current password",
+                20,
+            )
+            other, _ = create_external_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                other_ledger.uuid,
+                "Other ledger",
+                "current password",
+                21,
+            )
+
+        self.assertEqual(other.ledger_uuid, other_ledger.uuid)
 
     def test_create_external_grant_enforces_totp_when_enabled(self) -> None:
         self.enable_totp()

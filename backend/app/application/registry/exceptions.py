@@ -18,6 +18,10 @@ class ExternalAccessNotFoundError(Exception):
     pass
 
 
+class ExternalAccessLimitReachedError(Exception):
+    pass
+
+
 class InvitationNotAvailableError(Exception):
     pass
 

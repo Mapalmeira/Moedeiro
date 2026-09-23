@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Request, Response, status
 from app.api.dependencies.authentication import AuthenticatedUser
 from app.api.dependencies.credential_operation import execute_credential_operation
 from app.api.registry.schema.external_access import CreateExternalAccessRequest, CreatedExternalAccessGrantResponse, ExternalAccessGrantResponse, RevokeExternalAccessRequest
-from app.application.registry.exceptions import InvalidCurrentPasswordError, InvalidTotpCodeError, LedgerGrantNotFoundError, LedgerNotFoundError, TotpCodeAlreadyUsedError, TotpRequiredError
+from app.application.registry.exceptions import ExternalAccessLimitReachedError, InvalidCurrentPasswordError, InvalidTotpCodeError, LedgerGrantNotFoundError, LedgerNotFoundError, TotpCodeAlreadyUsedError, TotpRequiredError
 from app.application.registry.use_cases.grant import create_external_ledger_grant, list_external_access_grants_for_owned_ledger, revoke_external_access_grant_from_owned_ledger
 
 
@@ -57,6 +57,8 @@ async def create_ledger_external_access(
         )
     except LedgerNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ledger not found") from error
+    except ExternalAccessLimitReachedError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="External access limit reached") from error
     except TotpRequiredError as error:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="TOTP required") from error
     except TotpCodeAlreadyUsedError as error:
