@@ -67,6 +67,6 @@ class RegistryRepositoryTestCase(unittest.TestCase):
         else:
             if token_hash is None:
                 token_hash = uuid4().bytes * 2
-            access = self.external_access_repository.create(user.uuid, name, token_hash)
+            access = self.external_access_repository.create(name, token_hash)
             grantee_uuid = access.uuid
         return self.grant_repository.create(grantee_uuid, ledger.uuid, role, 30)

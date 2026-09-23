@@ -23,7 +23,6 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
     def test_defines_only_indexes_used_by_registry_queries(self) -> None:
         expected_indexes = {
             "ledger_grant_active_ledger_owner_idx",
-            "external_access_user_idx",
             "ledger_grant_grantee_idx",
             "ledger_grant_ledger_idx",
             "ledger_grant_revoked_idx",
@@ -51,7 +50,6 @@ class SqliteRegistryIndexesTest(unittest.TestCase):
                 (b"ledger",),
                 "ledger_grant_active_ledger_owner_idx",
             ),
-            ("SELECT uuid FROM external_access WHERE user_uuid = ?", (b"user",), "external_access_user_idx"),
             ("SELECT uuid FROM ledger_grant WHERE grantee_uuid = ?", (b"grantee",), "ledger_grant_grantee_idx"),
             ("SELECT uuid FROM ledger_grant WHERE ledger_uuid = ?", (b"ledger",), "ledger_grant_ledger_idx"),
             ("SELECT uuid FROM recovery_code WHERE user_uuid = ?", (b"user",), "recovery_code_user_idx"),

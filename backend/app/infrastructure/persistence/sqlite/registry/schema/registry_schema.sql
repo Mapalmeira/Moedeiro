@@ -37,12 +37,10 @@ CREATE TABLE ledger (
 
 CREATE TABLE external_access (
     uuid BLOB PRIMARY KEY,
-    user_uuid BLOB NOT NULL,
     name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 50),
     token_hash BLOB NOT NULL UNIQUE CHECK (length(token_hash) = 32),
 
-    FOREIGN KEY (uuid) REFERENCES ledger_grantee(uuid) ON DELETE CASCADE,
-    FOREIGN KEY (user_uuid) REFERENCES user_account(uuid) ON DELETE CASCADE
+    FOREIGN KEY (uuid) REFERENCES ledger_grantee(uuid) ON DELETE CASCADE
 ) STRICT;
 
 CREATE TABLE ledger_grant (
@@ -114,7 +112,6 @@ CREATE TABLE remember_session (
 ) STRICT;
 
 CREATE UNIQUE INDEX ledger_grant_active_ledger_owner_idx ON ledger_grant(ledger_uuid) WHERE revoked_at IS NULL AND role = 'OWNER';
-CREATE INDEX external_access_user_idx ON external_access(user_uuid);
 CREATE INDEX ledger_grant_grantee_idx ON ledger_grant(grantee_uuid);
 CREATE INDEX ledger_grant_ledger_idx ON ledger_grant(ledger_uuid);
 CREATE INDEX ledger_grant_revoked_idx ON ledger_grant(revoked_at) WHERE revoked_at IS NOT NULL;

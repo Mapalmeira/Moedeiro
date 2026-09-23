@@ -49,7 +49,7 @@ def create_external_ledger_grant(
             raise LedgerNotFoundError
         verify_totp(unit_of_work, totp_authenticator, user.uuid, totp_code, timestamp)
         token = secrets.token_urlsafe(32)
-        access = unit_of_work.external_access_repository.create(user.uuid, name, _token_hash(token))
+        access = unit_of_work.external_access_repository.create(name, _token_hash(token))
         grant = unit_of_work.ledger_grant_repository.create(access.uuid, ledger_uuid, "GUEST", timestamp)
         unit_of_work.commit()
     return grant, token
@@ -97,7 +97,7 @@ def set_ledger_owner(
         if unit_of_work.ledger_repository.count_owned_by_user(user_uuid) >= MAXIMUM_LEDGERS_PER_USER:
             raise LedgerLimitReachedError
         if active_owner is not None:
-            _revoke_owner_access(unit_of_work, active_owner, timestamp)
+            unit_of_work.ledger_grant_repository.revoke(active_owner.uuid, timestamp)
         grant = unit_of_work.ledger_grant_repository.create(user_uuid, ledger_uuid, "OWNER", timestamp)
         unit_of_work.commit()
     return grant
@@ -108,16 +108,8 @@ def revoke_ledger_grant(unit_of_work_factory: Callable[[], RegistryUnitOfWork], 
         grant = unit_of_work.ledger_grant_repository.get(grant_uuid)
         if grant is None or grant.revoked_at is not None:
             raise LedgerGrantNotFoundError
-
         unit_of_work.ledger_grant_repository.revoke(grant.uuid, timestamp)
-        if grant.role == "OWNER":
-            unit_of_work.ledger_grant_repository.revoke_active_guests_by_ledger_and_role(grant.ledger_uuid, "GUEST", timestamp)
-
         unit_of_work.commit()
-
-
-def _revoke_owner_access(unit_of_work: RegistryUnitOfWork, owner_grant: LedgerGrant, timestamp: int) -> None:
-    unit_of_work.ledger_grant_repository.revoke(owner_grant.uuid, timestamp)
 
 
 def _token_hash(token: str) -> bytes:

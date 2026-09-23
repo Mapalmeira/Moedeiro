@@ -6,7 +6,9 @@
 
 * **Ledger** is a named financial dataset with its own SQLite database. The registry records its storage path, appearance, and most recent access time; it does not contain its financial records. A user may own up to 10 ledgers.
 
-* **Ledger grant** links a user to a ledger. The grant type can be `OWNER` or `EXTERNAL_ACCESS`; grants can be revoked while retaining their history. A ledger has at most one active owner.
+* **External access** is a named API identity created by a ledger owner to grant external applications access to that ledger. It is authenticated by a random token whose hash is stored in the registry.
+
+* **Ledger grant** records access to a ledger with role `OWNER` or `GUEST`; grants can be revoked while retaining their history. A ledger has at most one active owner. An owner must be an user. External accesses receive guest grants.
 
 * **User preferences** hold the selected language (`pt-BR` or `en`) and theme (`LIGHT` or `DARK`).
 

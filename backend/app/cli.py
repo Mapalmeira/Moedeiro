@@ -113,8 +113,7 @@ def _add_grant_actions(parser: argparse.ArgumentParser) -> None:
 
 def _add_external_access_actions(parser: argparse.ArgumentParser) -> None:
     actions = parser.add_subparsers(dest="action", required=True)
-    list_accesses = actions.add_parser("list")
-    list_accesses.add_argument("user_uuid", type=UUID)
+    actions.add_parser("list")
     delete = actions.add_parser("delete")
     delete.add_argument("uuid", type=UUID)
 
@@ -191,7 +190,7 @@ def _handle_grant(arguments: argparse.Namespace, databases: SqliteDatabases, tim
 
 def _handle_external_access(arguments: argparse.Namespace, databases: SqliteDatabases) -> int:
     if arguments.action == "list":
-        return _list_external_accesses(databases, arguments.user_uuid)
+        return _list_external_accesses(databases)
     if arguments.action == "delete":
         return _delete_external_access(databases, arguments.uuid)
     raise ValueError(f"Unsupported external access action: {arguments.action}")
@@ -224,14 +223,9 @@ def _list_grants(databases: SqliteDatabases, grantee_uuid: UUID | None, ledger_u
     return 0
 
 
-def _list_external_accesses(databases: SqliteDatabases, user_uuid: UUID) -> int:
-    try:
-        accesses = list_external_accesses(databases.open_registry, user_uuid)
-    except UserNotFoundError:
-        print("User not found")
-        return 1
-    for access in accesses:
-        print(f"{access.uuid}\t{access.user_uuid}\t{access.name}")
+def _list_external_accesses(databases: SqliteDatabases) -> int:
+    for access in list_external_accesses(databases.open_registry):
+        print(f"{access.uuid}\t{access.name}")
     return 0
 
 

@@ -38,7 +38,7 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
             "user_invitation": {"uuid"},
             "user_account": {"uuid"},
             "ledger": {"uuid"},
-            "external_access": {"uuid", "user_uuid"},
+            "external_access": {"uuid"},
             "ledger_grantee": {"uuid"},
             "ledger_grant": {"uuid", "grantee_uuid", "ledger_uuid"},
             "mfa_method": {"uuid", "user_uuid"},
@@ -130,9 +130,17 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         missing_access_grantee = uuid4().bytes
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute(
-                "INSERT INTO external_access VALUES (?, ?, 'Plugin', ?)",
-                (missing_access_grantee, self.user_uuid, b"t" * 32),
+                "INSERT INTO external_access VALUES (?, 'Plugin', ?)",
+                (missing_access_grantee, b"t" * 32),
             )
+
+    def test_external_access_is_independent_of_user_accounts(self) -> None:
+        columns = {row["name"] for row in self.connection.execute("PRAGMA table_info(external_access)")}
+        foreign_keys = self.connection.execute("PRAGMA foreign_key_list(external_access)").fetchall()
+
+        self.assertEqual(columns, {"uuid", "name", "token_hash"})
+        self.assertEqual(len(foreign_keys), 1)
+        self.assertEqual(foreign_keys[0]["table"], "ledger_grantee")
 
     def test_external_access_enforces_name_and_hash_constraints(self) -> None:
         for name, token_hash in (("", b"t" * 32), ("x" * 51, b"t" * 32), ("Plugin", b"t" * 31)):
@@ -140,7 +148,7 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
                 access_uuid = uuid4().bytes
                 self.connection.execute("INSERT INTO ledger_grantee VALUES (?)", (access_uuid,))
                 with self.assertRaises(sqlite3.IntegrityError):
-                    self.connection.execute("INSERT INTO external_access VALUES (?, ?, ?, ?)", (access_uuid, self.user_uuid, name, token_hash))
+                    self.connection.execute("INSERT INTO external_access VALUES (?, ?, ?)", (access_uuid, name, token_hash))
 
     def test_enforces_mfa_type(self) -> None:
         method_uuid = uuid4().bytes
@@ -240,5 +248,5 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         if token_hash is None:
             token_hash = uuid4().bytes * 2
         self.connection.execute("INSERT INTO ledger_grantee VALUES (?)", (access_uuid,))
-        self.connection.execute("INSERT INTO external_access VALUES (?, ?, ?, ?)", (access_uuid, self.user_uuid, name, token_hash))
+        self.connection.execute("INSERT INTO external_access VALUES (?, ?, ?)", (access_uuid, name, token_hash))
         return access_uuid

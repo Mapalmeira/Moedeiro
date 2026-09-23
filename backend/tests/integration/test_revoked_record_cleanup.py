@@ -63,7 +63,7 @@ class InactiveRecordCleanupTest(unittest.TestCase):
         with self.open_registry() as unit_of_work:
             user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 1)
             ledger = unit_of_work.ledger_repository.create(uuid4(), "Ledger", "ledger.sqlite", "lucide:BookOpen", b"\x80\x80\x80", 1)
-            access = unit_of_work.external_access_repository.create(user.uuid, "Sync plugin", b"t" * 32)
+            access = unit_of_work.external_access_repository.create("Sync plugin", b"t" * 32)
             grant = unit_of_work.ledger_grant_repository.create(access.uuid, ledger.uuid, "GUEST", 1)
             unit_of_work.ledger_grant_repository.revoke(grant.uuid, cutoff)
             unit_of_work.commit()

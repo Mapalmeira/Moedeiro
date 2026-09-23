@@ -6,7 +6,7 @@ from app.domain.registry.model.external_access import ExternalAccess
 
 class ExternalAccessRepository(ABC):
     @abstractmethod
-    def create(self, user_uuid: UUID, name: str, token_hash: bytes) -> ExternalAccess:
+    def create(self, name: str, token_hash: bytes) -> ExternalAccess:
         pass
 
     @abstractmethod
@@ -18,7 +18,7 @@ class ExternalAccessRepository(ABC):
         pass
 
     @abstractmethod
-    def list_by_user(self, user_uuid: UUID) -> list[ExternalAccess]:
+    def list_all(self) -> list[ExternalAccess]:
         pass
 
     @abstractmethod

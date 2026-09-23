@@ -79,25 +79,21 @@ class SqliteLedgerGrantRepositoryTest(RegistryRepositoryTestCase):
         self.assertCountEqual(self.grant_repository.list_by_ledger(first_ledger.uuid), [owner, guest])
         self.assertEqual(self.grant_repository.list_by_grantee(second_user.uuid), [third])
 
-    def test_revoke_active_guests_by_ledger_and_role_only_revokes_matching_active_grants(self) -> None:
+    def test_list_grants_does_not_query_grantee_entities(self) -> None:
         user = self.create_user()
-        other_user = self.create_user()
         ledger = self.create_ledger()
-        other_ledger = self.create_ledger()
         owner = self.create_grant(user, ledger)
-        first = self.create_grant(user, ledger, "GUEST", "First", b"a" * 32)
-        second = self.create_grant(other_user, ledger, "GUEST", "Second", b"b" * 32)
-        already_revoked = self.create_grant(user, ledger, "GUEST", "Revoked", b"c" * 32)
-        other_ledger_grant = self.create_grant(user, other_ledger, "GUEST", "Other ledger", b"d" * 32)
-        self.grant_repository.revoke(already_revoked.uuid, 35)
+        guest = self.create_grant(user, ledger, "GUEST", "Sync plugin", b"t" * 32)
+        statements: list[str] = []
+        self.connection.set_trace_callback(statements.append)
 
-        self.grant_repository.revoke_active_guests_by_ledger_and_role(ledger.uuid, "GUEST", 40)
+        grants = self.grant_repository.list_by_ledger(ledger.uuid)
 
-        self.assertEqual(self.grant_repository.get(first.uuid).revoked_at, 40)
-        self.assertEqual(self.grant_repository.get(second.uuid).revoked_at, 40)
-        self.assertEqual(self.grant_repository.get(already_revoked.uuid).revoked_at, 35)
-        self.assertIsNone(self.grant_repository.get(owner.uuid).revoked_at)
-        self.assertIsNone(self.grant_repository.get(other_ledger_grant.uuid).revoked_at)
+        self.connection.set_trace_callback(None)
+        self.assertCountEqual(grants, [owner, guest])
+        selects = [statement for statement in statements if statement.lstrip().upper().startswith("SELECT")]
+        self.assertEqual(len(selects), 1)
+        self.assertNotIn("JOIN", selects[0].upper())
 
     def test_delete_inactive_before_removes_only_eligible_grants(self) -> None:
         user = self.create_user()

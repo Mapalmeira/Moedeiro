@@ -66,7 +66,6 @@ class LedgerGrantUseCasesTest(unittest.TestCase):
             access = unit_of_work.external_access_repository.get(grant.grantee_uuid)
         self.assertEqual(stored, grant)
         assert access is not None
-        self.assertEqual(access.user_uuid, self.user.uuid)
         self.assertEqual(access.name, "Sync plugin")
         self.assertEqual(access.token_hash, hashlib.sha256(b"external-token").digest())
         token_urlsafe.assert_called_once_with(32)
@@ -277,7 +276,7 @@ class LedgerGrantUseCasesTest(unittest.TestCase):
                 21,
             )
 
-    def test_setting_a_new_owner_revokes_previous_owner_and_guest_grants(self) -> None:
+    def test_setting_a_new_owner_revokes_only_previous_owner(self) -> None:
         first, _ = create_external_ledger_grant(
             self.open_registry,
             self.password_hasher,
@@ -310,13 +309,13 @@ class LedgerGrantUseCasesTest(unittest.TestCase):
             other_guest_grant = unit_of_work.ledger_grant_repository.get(other_guest.uuid)
         assert old_owner is not None and first_grant is not None and second_grant is not None and other_guest_grant is not None
         self.assertEqual(old_owner.revoked_at, 30)
-        self.assertEqual(first_grant.revoked_at, 30)
-        self.assertEqual(second_grant.revoked_at, 30)
-        self.assertEqual(other_guest_grant.revoked_at, 30)
+        self.assertIsNone(first_grant.revoked_at)
+        self.assertIsNone(second_grant.revoked_at)
+        self.assertIsNone(other_guest_grant.revoked_at)
         self.assertEqual(new_owner_grant.role, "OWNER")
         self.assertEqual(new_owner_grant.grantee_uuid, new_owner.uuid)
 
-    def test_revoking_owner_revokes_its_guest_grants(self) -> None:
+    def test_revoking_owner_preserves_guest_grants(self) -> None:
         guest, _ = create_external_ledger_grant(
             self.open_registry,
             self.password_hasher,
@@ -334,4 +333,4 @@ class LedgerGrantUseCasesTest(unittest.TestCase):
             external = unit_of_work.ledger_grant_repository.get(guest.uuid)
         assert owner is not None and external is not None
         self.assertEqual(owner.revoked_at, 30)
-        self.assertEqual(external.revoked_at, 30)
+        self.assertIsNone(external.revoked_at)

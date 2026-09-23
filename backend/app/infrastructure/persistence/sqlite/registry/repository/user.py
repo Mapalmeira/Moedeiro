@@ -58,10 +58,6 @@ class SqliteUserRepository(UserRepository):
         return cursor.rowcount == 1
 
     def delete(self, uuid: UUID) -> None:
-        self.connection.execute(
-            "DELETE FROM ledger_grantee WHERE uuid IN (SELECT uuid FROM external_access WHERE user_uuid = ?)",
-            (uuid.bytes,),
-        )
         self.connection.execute("DELETE FROM ledger_grantee WHERE uuid = ?", (uuid.bytes,))
 
     def list_all(self, sort_key: str, ascending: bool) -> list[User]:

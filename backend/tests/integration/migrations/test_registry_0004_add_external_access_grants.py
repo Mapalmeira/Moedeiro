@@ -91,6 +91,7 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
                     )
                 }
                 user_foreign_keys = connection.execute("PRAGMA foreign_key_list(user_account)").fetchall()
+                external_columns = {row[1] for row in connection.execute("PRAGMA table_info(external_access)").fetchall()}
                 external_foreign_keys = connection.execute("PRAGMA foreign_key_list(external_access)").fetchall()
                 indexes = {
                     row[0]: row[1]
@@ -117,6 +118,8 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
             )
             self.assertEqual(set(preserved_counts.values()), {1})
             self.assertTrue(any(row[2] == "ledger_grantee" and row[3] == "uuid" and row[4] == "uuid" for row in user_foreign_keys))
+            self.assertEqual(external_columns, {"uuid", "name", "token_hash"})
+            self.assertEqual(len(external_foreign_keys), 1)
             self.assertTrue(any(row[2] == "ledger_grantee" and row[3] == "uuid" and row[4] == "uuid" for row in external_foreign_keys))
             self.assertNotIn("ledger_grant_active_user_ledger_idx", indexes)
             self.assertIn("ledger_grant_active_ledger_owner_idx", indexes)

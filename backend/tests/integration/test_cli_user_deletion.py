@@ -137,7 +137,7 @@ class UserDeletionCliTest(unittest.TestCase):
 
     def test_lists_and_deletes_external_accesses_separately_from_grants(self) -> None:
         with self.databases.open_registry() as unit_of_work:
-            access = unit_of_work.external_access_repository.create(self.user.uuid, "Sync plugin", b"t" * 32)
+            access = unit_of_work.external_access_repository.create("Sync plugin", b"t" * 32)
             guest = unit_of_work.ledger_grant_repository.create(access.uuid, self.owned_ledger.uuid, "GUEST", 50)
             unit_of_work.commit()
 
@@ -152,9 +152,9 @@ class UserDeletionCliTest(unittest.TestCase):
 
         output = StringIO()
         with redirect_stdout(output):
-            self.assertEqual(main(["external-access", "list", str(self.user.uuid)], self.settings), 0)
+            self.assertEqual(main(["external-access", "list"], self.settings), 0)
 
-        self.assertEqual(output.getvalue(), f"{access.uuid}\t{self.user.uuid}\tSync plugin\n")
+        self.assertEqual(output.getvalue(), f"{access.uuid}\tSync plugin\n")
 
         output = StringIO()
         with redirect_stdout(output):
@@ -165,13 +165,8 @@ class UserDeletionCliTest(unittest.TestCase):
             self.assertIsNone(unit_of_work.external_access_repository.get(access.uuid))
             self.assertIsNone(unit_of_work.ledger_grant_repository.get(guest.uuid))
 
-    def test_external_access_cli_reports_missing_user_and_access(self) -> None:
+    def test_external_access_cli_reports_missing_access(self) -> None:
         missing_uuid = uuid4()
-        output = StringIO()
-        with redirect_stdout(output):
-            self.assertEqual(main(["external-access", "list", str(missing_uuid)], self.settings), 1)
-        self.assertEqual(output.getvalue(), "User not found\n")
-
         output = StringIO()
         with redirect_stdout(output):
             self.assertEqual(main(["external-access", "delete", str(missing_uuid)], self.settings), 1)

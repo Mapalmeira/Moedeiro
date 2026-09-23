@@ -22,10 +22,6 @@ class LedgerGrantRepository(ABC):
         pass
 
     @abstractmethod
-    def revoke_active_guests_by_ledger_and_role(self, ledger_uuid: UUID, role: LedgerRole, revoked_at: int) -> None:
-        pass
-
-    @abstractmethod
     def delete_inactive_before(self, timestamp: int) -> int:
         pass
 

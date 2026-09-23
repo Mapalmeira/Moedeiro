@@ -59,24 +59,21 @@ class SqliteUserRepositoryTest(RegistryRepositoryTestCase):
         self.assertEqual(self.user_repository.get(user.uuid), user)
 
 
-    def test_delete_removes_user_external_access_grantees_and_their_grants(self) -> None:
+    def test_delete_removes_user_grantee_without_removing_independent_external_access(self) -> None:
         user = self.create_user("Alice")
         ledger = self.create_ledger()
         owner = self.grant_repository.create(user.uuid, ledger.uuid, "OWNER", 30)
-        access = self.external_access_repository.create(user.uuid, "Plugin", b"t" * 32)
+        access = self.external_access_repository.create("Plugin", b"t" * 32)
         guest = self.grant_repository.create(access.uuid, ledger.uuid, "GUEST", 31)
 
         self.user_repository.delete(user.uuid)
 
         self.assertIsNone(self.user_repository.get(user.uuid))
-        self.assertIsNone(self.external_access_repository.get(access.uuid))
+        self.assertEqual(self.external_access_repository.get(access.uuid), access)
         self.assertIsNone(self.grant_repository.get(owner.uuid))
-        self.assertIsNone(self.grant_repository.get(guest.uuid))
-        remaining = self.connection.execute(
-            "SELECT uuid FROM ledger_grantee WHERE uuid IN (?, ?)",
-            (user.uuid.bytes, access.uuid.bytes),
-        ).fetchall()
-        self.assertEqual(remaining, [])
+        self.assertEqual(self.grant_repository.get(guest.uuid), guest)
+        self.assertIsNone(self.connection.execute("SELECT uuid FROM ledger_grantee WHERE uuid = ?", (user.uuid.bytes,)).fetchone())
+        self.assertIsNotNone(self.connection.execute("SELECT uuid FROM ledger_grantee WHERE uuid = ?", (access.uuid.bytes,)).fetchone())
 
     def test_list_all_orders_every_user_and_rejects_uuid_sorting(self) -> None:
         self.create_user("Alice")

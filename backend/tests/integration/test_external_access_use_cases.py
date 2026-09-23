@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import uuid4
 
-from app.application.registry.exceptions import ExternalAccessNotFoundError, UserNotFoundError
+from app.application.registry.exceptions import ExternalAccessNotFoundError
 from app.application.registry.use_cases.external_access import delete_external_access, list_external_accesses
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
@@ -17,11 +17,8 @@ class ExternalAccessUseCasesTest(unittest.TestCase):
         self.temporary_directory = TemporaryDirectory()
         self.database = SqliteDatabase.initialize(Path(self.temporary_directory.name) / "registry.sqlite", SCHEMA_PATH)
         with self.open_registry() as unit_of_work:
-            self.user = unit_of_work.user_repository.create("Alice", "$argon2id$test", 10)
-            self.other_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
-            self.first = unit_of_work.external_access_repository.create(self.user.uuid, "First", b"a" * 32)
-            self.second = unit_of_work.external_access_repository.create(self.user.uuid, "Second", b"b" * 32)
-            unit_of_work.external_access_repository.create(self.other_user.uuid, "Other", b"o" * 32)
+            self.first = unit_of_work.external_access_repository.create("First", b"a" * 32)
+            self.second = unit_of_work.external_access_repository.create("Second", b"b" * 32)
             unit_of_work.commit()
 
     def tearDown(self) -> None:
@@ -30,12 +27,8 @@ class ExternalAccessUseCasesTest(unittest.TestCase):
     def open_registry(self) -> SqliteRegistryUnitOfWork:
         return SqliteRegistryUnitOfWork(self.database)
 
-    def test_list_returns_only_accesses_owned_by_user(self) -> None:
-        self.assertEqual(list_external_accesses(self.open_registry, self.user.uuid), [self.first, self.second])
-
-    def test_list_rejects_missing_user(self) -> None:
-        with self.assertRaises(UserNotFoundError):
-            list_external_accesses(self.open_registry, uuid4())
+    def test_list_returns_all_external_accesses(self) -> None:
+        self.assertEqual(list_external_accesses(self.open_registry), [self.first, self.second])
 
     def test_delete_removes_external_access_and_its_grants(self) -> None:
         with self.open_registry() as unit_of_work:
