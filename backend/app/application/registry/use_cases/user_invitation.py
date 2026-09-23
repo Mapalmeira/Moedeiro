@@ -1,7 +1,7 @@
-import hashlib
 from collections.abc import Callable
 from uuid import UUID
 
+from app.application.registry.secret import hash_ascii_secret
 from app.application.registry.unit_of_work import RegistryUnitOfWork
 from app.domain.registry.model.crockford_code import generate_crockford_code
 from app.domain.registry.model.user_invitation import DEFAULT_EXPIRATION_TIMEOUT_SECONDS, InvitationCode, UserInvitation
@@ -11,7 +11,7 @@ def create_user_invitation(unit_of_work_factory: Callable[[], RegistryUnitOfWork
     if expiration_seconds <= 0:
         raise ValueError("expiration_seconds must be positive")
     code = generate_crockford_code()
-    secret_hash = hashlib.sha256(code.encode("ascii")).digest()
+    secret_hash = hash_ascii_secret(code)
     with unit_of_work_factory() as unit_of_work:
         unit_of_work.user_invitation_repository.create(secret_hash, created_at, created_at + expiration_seconds)
         unit_of_work.commit()
@@ -19,7 +19,7 @@ def create_user_invitation(unit_of_work_factory: Callable[[], RegistryUnitOfWork
 
 
 def get_available_user_invitation(unit_of_work_factory: Callable[[], RegistryUnitOfWork], code: InvitationCode, timestamp: int) -> UserInvitation | None:
-    secret_hash = hashlib.sha256(code.encode("ascii")).digest()
+    secret_hash = hash_ascii_secret(code)
     with unit_of_work_factory() as unit_of_work:
         invitation = unit_of_work.user_invitation_repository.get_by_secret_hash(secret_hash)
     if invitation is None or invitation.created_at > timestamp or invitation.expires_at <= timestamp or invitation.consumed_at is not None:
