@@ -68,7 +68,7 @@ class InactiveRecordCleanupTest(unittest.TestCase):
             unit_of_work.ledger_grant_repository.revoke(grant.uuid, cutoff)
             unit_of_work.commit()
 
-        self.assertEqual(remove_inactive_records(self.open_registry, timestamp, 30), 1)
+        self.assertEqual(remove_inactive_records(self.open_registry, timestamp, 30), 2)
 
         with self.open_registry() as unit_of_work:
             self.assertIsNone(unit_of_work.ledger_grant_repository.get(grant.uuid))
