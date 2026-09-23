@@ -1,13 +1,13 @@
+import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-import unittest
 from uuid import uuid4
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.repository.auth_session import SqliteAuthSessionRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger import SqliteLedgerRepository
 from app.infrastructure.persistence.sqlite.registry.repository.ledger_grant import SqliteLedgerGrantRepository
-from app.infrastructure.persistence.sqlite.registry.repository.ledger_token_grant import SqliteLedgerTokenGrantRepository
+from app.infrastructure.persistence.sqlite.registry.repository.external_access import SqliteExternalAccessRepository
 from app.infrastructure.persistence.sqlite.registry.repository.mfa_method import SqliteMfaMethodRepository
 from app.infrastructure.persistence.sqlite.registry.repository.recovery_code import SqliteRecoveryCodeRepository
 from app.infrastructure.persistence.sqlite.registry.repository.remember_session import SqliteRememberSessionRepository
@@ -28,7 +28,7 @@ class RegistryRepositoryTestCase(unittest.TestCase):
         self.user_repository = SqliteUserRepository(self.connection)
         self.invitation_repository = SqliteUserInvitationRepository(self.connection)
         self.grant_repository = SqliteLedgerGrantRepository(self.connection)
-        self.token_grant_repository = SqliteLedgerTokenGrantRepository(self.connection)
+        self.external_access_repository = SqliteExternalAccessRepository(self.connection)
         self.mfa_repository = SqliteMfaMethodRepository(self.connection)
         self.recovery_code_repository = SqliteRecoveryCodeRepository(self.connection)
         self.preferences_repository = SqliteUserPreferencesRepository(self.connection)
@@ -57,9 +57,16 @@ class RegistryRepositoryTestCase(unittest.TestCase):
             path = f"{uuid4()}.sqlite"
         return self.ledger_repository.create(uuid4(), name, path, "lucide:BookOpen", b"\x80\x80\x80", 10)
 
-    def create_grant(self, user=None, ledger=None, type="OWNER"):
+    def create_grant(self, user=None, ledger=None, role="OWNER", name="External access", token_hash=None):
         if user is None:
             user = self.create_user()
         if ledger is None:
             ledger = self.create_ledger()
-        return self.grant_repository.create(user.uuid, ledger.uuid, type, 30)
+        if role == "OWNER":
+            grantee_uuid = user.uuid
+        else:
+            if token_hash is None:
+                token_hash = uuid4().bytes * 2
+            access = self.external_access_repository.create(user.uuid, name, token_hash)
+            grantee_uuid = access.uuid
+        return self.grant_repository.create(grantee_uuid, ledger.uuid, role, 30)
