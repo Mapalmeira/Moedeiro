@@ -361,6 +361,7 @@ export const ptBR = {
   'errors.ledgerLimitReached': 'Você atingiu o limite de ledgers.',
   'errors.externalAccessLoadFailed': 'Não foi possível carregar os acessos externos.',
   'errors.externalAccessCreateFailed': 'Não foi possível criar o acesso externo.',
+  'errors.externalAccessLimitReached': 'Este ledger atingiu o limite de 20 acessos externos.',
   'errors.externalAccessRevokeFailed': 'Não foi possível revogar o acesso externo.',
   'errors.budgetLimitReached': 'Este ledger atingiu o limite de orçamentos.',
   'errors.budgetNameUnavailable': 'Já existe um orçamento com esse nome.',

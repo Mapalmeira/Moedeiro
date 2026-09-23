@@ -134,6 +134,30 @@ describe('ExternalAccessDialogComponent', () => {
     expect(component.view()).toBe('list');
   });
 
+  it('blocks creation at 20 active accesses and allows it again after revocation', () => {
+    const fullAccessList = Array.from({ length: 20 }, (_, index): ExternalAccessGrant => ({
+      ...access,
+      grant_uuid: `grant-${index}`,
+      external_access_uuid: `access-${index}`,
+      name: `Plugin ${index + 1}`,
+    }));
+    externalAccessService.list.mockImplementation(() => of(fullAccessList));
+    const fixture = openDialog();
+    const component = fixture.componentInstance;
+
+    expect(component.externalAccessLimitReached()).toBe(true);
+    component.showCreate();
+    expect(component.view()).toBe('list');
+
+    component.showRevoke(fullAccessList[0]);
+    component.revokeForm.setValue({ current_password: 'password123', totp_code: '' });
+    component.revokeAccess();
+
+    expect(component.externalAccessLimitReached()).toBe(false);
+    component.showCreate();
+    expect(component.view()).toBe('create');
+  });
+
   it('requires a TOTP code in credential forms when TOTP is enabled', () => {
     securityService.getTotpStatus.mockImplementation(() => {
       totpStatus.set('ENABLED');

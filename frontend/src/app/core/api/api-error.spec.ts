@@ -38,6 +38,7 @@ describe('ApiErrorService', () => {
     ['Invalid or expired TOTP setup', 'errors.invalidTotpSetup'],
     ['Ledger not found', 'errors.ledgerNotFound'],
     ['Ledger limit reached', 'errors.ledgerLimitReached'],
+    ['External access limit reached', 'errors.externalAccessLimitReached'],
     ['Budget limit reached', 'errors.budgetLimitReached'],
     ['Financial event limit reached', 'errors.financialEventLimitReached'],
     ['Account limit reached', 'workspace.limit'],

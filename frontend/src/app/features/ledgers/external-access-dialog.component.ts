@@ -17,6 +17,7 @@ import { FormMessageComponent } from '../../shared/ui/form-message.component';
 import { IconComponent } from '../../shared/ui/icon.component';
 
 const EXTERNAL_ACCESS_NAME_MAX_LENGTH = 50;
+const MAXIMUM_EXTERNAL_ACCESSES_PER_LEDGER = 20;
 const COPY_FEEDBACK_DURATION_MS = 1_800;
 
 type ExternalAccessView = 'list' | 'create' | 'created' | 'revoke';
@@ -102,8 +103,13 @@ type ExternalAccessView = 'list' | 'create' | 'created' | 'revoke';
                     </div>
                   }
 
+                  @if (!loading() && !loadError() && externalAccessLimitReached()) {
+                    <app-form-message kind="info" [text]="i18n.t('errors.externalAccessLimitReached')" />
+                  }
+
                   <div class="list-toolbar">
-                    <button class="ui-button ui-button--blue" type="button" (click)="showCreate()" [disabled]="loading() || !totpStatusReady()">
+                    <button class="ui-button ui-button--blue" type="button" (click)="showCreate()"
+                      [disabled]="loading() || !totpStatusReady() || externalAccessLimitReached()">
                       <app-icon name="LucidePlus" size="control" />
                       <span>{{ i18n.t('externalAccess.create.action') }}</span>
                     </button>
@@ -295,6 +301,7 @@ export class ExternalAccessDialogComponent {
   readonly totpRequiredOverride = signal(false);
   readonly requiresTotp = computed(() => this.security.totpStatus() === 'ENABLED' || this.totpRequiredOverride());
   readonly totpStatusReady = computed(() => this.security.totpStatus() !== 'unknown');
+  readonly externalAccessLimitReached = computed(() => this.accesses().length >= MAXIMUM_EXTERNAL_ACCESSES_PER_LEDGER);
   private copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly dialogReset = new Subject<void>();
   private readonly dateFormatter = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -379,7 +386,7 @@ export class ExternalAccessDialogComponent {
   }
 
   showCreate(): void {
-    if (!this.totpStatusReady()) return;
+    if (!this.totpStatusReady() || this.externalAccessLimitReached()) return;
     this.clearCreatedToken();
     this.selectedAccess.set(null);
     this.createForm.reset({ name: '', current_password: '', totp_code: '' });
@@ -409,7 +416,7 @@ export class ExternalAccessDialogComponent {
 
   createAccess(): void {
     const ledger = this.ledger();
-    if (!ledger || !this.totpStatusReady() || this.createForm.invalid || this.creating()) return;
+    if (!ledger || !this.totpStatusReady() || this.externalAccessLimitReached() || this.createForm.invalid || this.creating()) return;
 
     const raw = this.createForm.getRawValue();
     const name = raw.name.trim();

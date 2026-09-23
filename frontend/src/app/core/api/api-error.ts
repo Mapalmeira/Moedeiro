@@ -46,6 +46,7 @@ export class ApiErrorService {
       'Invalid or expired TOTP setup': 'errors.invalidTotpSetup',
       'Ledger not found': 'errors.ledgerNotFound',
       'Ledger limit reached': 'errors.ledgerLimitReached',
+      'External access limit reached': 'errors.externalAccessLimitReached',
       'Budget limit reached': 'errors.budgetLimitReached',
       'Budget name unavailable': 'errors.budgetNameUnavailable',
       'Budget not found': 'errors.budgetNotFound',

@@ -363,6 +363,7 @@ export const en: Record<TranslationKey, string> = {
   'errors.ledgerLimitReached': 'You have reached the ledger limit.',
   'errors.externalAccessLoadFailed': 'External accesses could not be loaded.',
   'errors.externalAccessCreateFailed': 'The external access could not be created.',
+  'errors.externalAccessLimitReached': 'This ledger has reached the limit of 20 external accesses.',
   'errors.externalAccessRevokeFailed': 'The external access could not be revoked.',
   'errors.budgetLimitReached': 'This ledger has reached the budget limit.',
   'errors.budgetNameUnavailable': 'A budget with this name already exists.',
