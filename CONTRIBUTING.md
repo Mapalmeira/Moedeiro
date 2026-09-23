@@ -2,6 +2,10 @@
 
 Thank you for helping improve Moedeiro. Bug fixes, tests, documentation, accessibility improvements, performance work, and translations are all welcome.
 
+Another valuable way to contribute is to build an independent application that connects to Moedeiro through the external-access API introduced in `Moedeiro 1.1.0`.
+
+For example, a Sync Pluggy application could use an external access to synchronize financial data from Pluggy with a Moedeiro ledger. Sync Pluggy is a particularly important demand at the moment, and contributions in that direction are especially welcome.
+
 ## Before you start
 
 Every pull request must be associated with an issue. Open the issue before starting the change so its motivation, scope, and proposed approach can be discussed and recorded. Reference the issue in the pull request description when the pull request resolves it.
