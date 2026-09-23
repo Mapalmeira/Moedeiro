@@ -164,6 +164,52 @@ class SqliteRegistrySchemaConstraintsTest(unittest.TestCase):
         self.assertEqual(len(foreign_keys), 1)
         self.assertEqual(foreign_keys[0]["table"], "ledger_grantee")
 
+    def test_external_access_can_only_receive_one_guest_grant_for_its_lifetime(self) -> None:
+        access_uuid = self.create_external_access("Plugin")
+        first_grant_uuid = uuid4().bytes
+        self.connection.execute(
+            "INSERT INTO ledger_grant VALUES (?, ?, ?, 'GUEST', 31, NULL)",
+            (first_grant_uuid, access_uuid, self.ledger_uuid),
+        )
+        self.connection.execute("UPDATE ledger_grant SET revoked_at = 40 WHERE uuid = ?", (first_grant_uuid,))
+
+        with self.assertRaisesRegex(sqlite3.IntegrityError, "external access can only have one ledger grant"):
+            self.connection.execute(
+                "INSERT INTO ledger_grant VALUES (?, ?, ?, 'GUEST', 50, NULL)",
+                (uuid4().bytes, access_uuid, self.ledger_uuid),
+            )
+
+    def test_external_access_grant_must_be_guest_and_cannot_change_ledger(self) -> None:
+        access_uuid = self.create_external_access("Plugin")
+        with self.assertRaisesRegex(sqlite3.IntegrityError, "external access can only have GUEST role"):
+            self.connection.execute(
+                "INSERT INTO ledger_grant VALUES (?, ?, ?, 'OWNER', 31, NULL)",
+                (uuid4().bytes, access_uuid, self.ledger_uuid),
+            )
+
+        grant_uuid = uuid4().bytes
+        self.connection.execute(
+            "INSERT INTO ledger_grant VALUES (?, ?, ?, 'GUEST', 31, NULL)",
+            (grant_uuid, access_uuid, self.ledger_uuid),
+        )
+        with self.assertRaisesRegex(sqlite3.IntegrityError, "external access can only have GUEST role"):
+            self.connection.execute("UPDATE ledger_grant SET role = 'OWNER' WHERE uuid = ?", (grant_uuid,))
+
+        other_ledger_uuid = uuid4().bytes
+        self.connection.execute(
+            "INSERT INTO ledger(uuid, name, path, icon, color_code, last_accessed_at) VALUES (?, 'Other', 'other.sqlite', 'lucide:BookOpen', ?, 20)",
+            (other_ledger_uuid, b"\x80\x80\x80"),
+        )
+        with self.assertRaisesRegex(sqlite3.IntegrityError, "external access ledger cannot be changed"):
+            self.connection.execute("UPDATE ledger_grant SET ledger_uuid = ? WHERE uuid = ?", (other_ledger_uuid, grant_uuid))
+
+    def test_external_access_cannot_be_attached_to_an_existing_non_guest_grantee(self) -> None:
+        with self.assertRaisesRegex(sqlite3.IntegrityError, "external access can only have GUEST role"):
+            self.connection.execute(
+                "INSERT INTO external_access VALUES (?, 'Plugin', ?)",
+                (self.user_uuid, b"t" * 32),
+            )
+
     def test_external_access_enforces_name_and_hash_constraints(self) -> None:
         for name, token_hash in (("", b"t" * 32), ("x" * 51, b"t" * 32), ("Plugin", b"t" * 31)):
             with self.subTest(name_length=len(name), hash_length=len(token_hash)):

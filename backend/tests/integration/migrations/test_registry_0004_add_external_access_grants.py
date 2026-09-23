@@ -101,6 +101,12 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
                     )
                     if row[1] is not None
                 }
+                triggers = {
+                    row[0]
+                    for row in connection.execute(
+                        "SELECT name FROM sqlite_schema WHERE type = 'trigger'"
+                    )
+                }
                 version = connection.execute(
                     "SELECT schema_version FROM registry_metadata WHERE singleton = 1"
                 ).fetchone()[0]
@@ -109,6 +115,23 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
                     connection.execute(
                         "INSERT INTO ledger_grant(uuid, grantee_uuid, ledger_uuid, role, created_at, revoked_at) VALUES (?, ?, ?, 'GUEST', 21, NULL)",
                         (uuid4().bytes, user_uuid.bytes, ledger_uuid.bytes),
+                    )
+                external_uuid = uuid4()
+                external_grant_uuid = uuid4()
+                connection.execute("INSERT INTO ledger_grantee(uuid) VALUES (?)", (external_uuid.bytes,))
+                connection.execute(
+                    "INSERT INTO external_access(uuid, name, token_hash) VALUES (?, 'Plugin', ?)",
+                    (external_uuid.bytes, b"t" * 32),
+                )
+                connection.execute(
+                    "INSERT INTO ledger_grant(uuid, grantee_uuid, ledger_uuid, role, created_at, revoked_at) VALUES (?, ?, ?, 'GUEST', 21, NULL)",
+                    (external_grant_uuid.bytes, external_uuid.bytes, ledger_uuid.bytes),
+                )
+                connection.execute("UPDATE ledger_grant SET revoked_at = 22 WHERE uuid = ?", (external_grant_uuid.bytes,))
+                with self.assertRaisesRegex(sqlite3.IntegrityError, "external access can only have one ledger grant"):
+                    connection.execute(
+                        "INSERT INTO ledger_grant(uuid, grantee_uuid, ledger_uuid, role, created_at, revoked_at) VALUES (?, ?, ?, 'GUEST', 23, NULL)",
+                        (uuid4().bytes, external_uuid.bytes, ledger_uuid.bytes),
                     )
             finally:
                 connection.close()
@@ -131,5 +154,13 @@ class RegistryAddExternalAccessGrantsMigrationTest(unittest.TestCase):
             self.assertNotIn("ledger_grant_active_user_ledger_idx", indexes)
             self.assertIn("ledger_grant_active_grantee_ledger_idx", indexes)
             self.assertIn("ledger_grant_active_ledger_owner_idx", indexes)
+            self.assertEqual(
+                {
+                    "ledger_grant_external_access_insert_guard",
+                    "ledger_grant_external_access_update_guard",
+                    "external_access_existing_grant_guard",
+                },
+                triggers,
+            )
             self.assertEqual(version, 4)
             self.assertEqual(foreign_key_violations, [])

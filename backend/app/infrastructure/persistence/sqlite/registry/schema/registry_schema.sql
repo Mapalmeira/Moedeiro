@@ -128,3 +128,78 @@ CREATE INDEX remember_session_expires_idx ON remember_session(expires_at);
 CREATE INDEX user_invitation_consumed_idx ON user_invitation(consumed_at) WHERE consumed_at IS NOT NULL;
 CREATE INDEX user_invitation_expires_idx ON user_invitation(expires_at);
 CREATE INDEX mfa_method_unconfirmed_idx ON mfa_method(expires_unconfirmed_at) WHERE confirmed_at IS NULL;
+CREATE TRIGGER ledger_grant_external_access_insert_guard
+BEFORE INSERT ON ledger_grant
+WHEN EXISTS (
+    SELECT 1
+    FROM external_access
+    WHERE uuid = NEW.grantee_uuid
+)
+BEGIN
+    SELECT CASE
+        WHEN NEW.role <> 'GUEST'
+        THEN RAISE(ABORT, 'external access can only have GUEST role')
+    END;
+
+    SELECT CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM ledger_grant
+            WHERE grantee_uuid = NEW.grantee_uuid
+        )
+        THEN RAISE(ABORT, 'external access can only have one ledger grant')
+    END;
+END;
+
+CREATE TRIGGER ledger_grant_external_access_update_guard
+BEFORE UPDATE OF grantee_uuid, ledger_uuid, role ON ledger_grant
+WHEN EXISTS (
+    SELECT 1
+    FROM external_access
+    WHERE uuid = NEW.grantee_uuid
+)
+BEGIN
+    SELECT CASE
+        WHEN NEW.role <> 'GUEST'
+        THEN RAISE(ABORT, 'external access can only have GUEST role')
+    END;
+
+    SELECT CASE
+        WHEN NEW.ledger_uuid <> OLD.ledger_uuid
+        THEN RAISE(ABORT, 'external access ledger cannot be changed')
+    END;
+
+    SELECT CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM ledger_grant
+            WHERE grantee_uuid = NEW.grantee_uuid
+              AND uuid <> OLD.uuid
+        )
+        THEN RAISE(ABORT, 'external access can only have one ledger grant')
+    END;
+END;
+
+CREATE TRIGGER external_access_existing_grant_guard
+BEFORE INSERT ON external_access
+BEGIN
+    SELECT CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM ledger_grant
+            WHERE grantee_uuid = NEW.uuid
+              AND role <> 'GUEST'
+        )
+        THEN RAISE(ABORT, 'external access can only have GUEST role')
+    END;
+
+    SELECT CASE
+        WHEN (
+            SELECT count(*)
+            FROM ledger_grant
+            WHERE grantee_uuid = NEW.uuid
+        ) > 1
+        THEN RAISE(ABORT, 'external access can only have one ledger grant')
+    END;
+END;
+
