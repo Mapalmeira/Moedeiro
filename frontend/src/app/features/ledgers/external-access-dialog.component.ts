@@ -146,8 +146,7 @@ type ExternalAccessView = 'list' | 'create' | 'created' | 'revoke';
                       <footer class="dialog__footer ui-surface-actions">
                         <button class="ui-button" type="button" (click)="showList()" [disabled]="creating()">{{ i18n.t('externalAccess.cancel') }}</button>
                         <button class="ui-button ui-button--blue" type="submit" [disabled]="createForm.invalid || creating() || !totpStatusReady()">
-                          @if (creating()) { <span class="ui-spinner" aria-hidden="true"></span> }
-                          <span>{{ i18n.t('externalAccess.create.action') }}</span>
+                          {{ i18n.t('externalAccess.create.action') }}
                         </button>
                       </footer>
                     </form>
@@ -210,8 +209,7 @@ type ExternalAccessView = 'list' | 'create' | 'created' | 'revoke';
                         <footer class="dialog__footer ui-surface-actions">
                           <button class="ui-button" type="button" (click)="showList()" [disabled]="revoking()">{{ i18n.t('externalAccess.cancel') }}</button>
                           <button class="ui-button ui-button--danger" type="submit" [disabled]="revokeForm.invalid || revoking() || !totpStatusReady()">
-                            @if (revoking()) { <span class="ui-spinner" aria-hidden="true"></span> }
-                            <span>{{ i18n.t('externalAccess.revoke.submit') }}</span>
+                            {{ i18n.t('externalAccess.revoke.submit') }}
                           </button>
                         </footer>
                       </form>
