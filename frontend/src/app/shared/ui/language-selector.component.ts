@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, Injector, afterNextRender, inject, input, output, signal } from '@angular/core';
 import { DismissiblePopoverDirective } from './dismissible-popover.directive';
 import { AppLanguage, I18nService } from '../../core/i18n/i18n.service';
 import { IconComponent } from './icon.component';
@@ -28,7 +28,11 @@ import { isListboxNavigationKey, nextListboxIndex } from './listbox-navigation';
       </button>
 
       @if (open()) {
-        <div class="language-selector__menu ui-dropdown-menu ui-projected-surface" role="listbox" [id]="listId">
+        <div class="language-selector__menu ui-dropdown-menu ui-projected-surface" [class.language-selector__menu--viewport-overlay]="appearance() === 'field'"
+          [class.language-selector__menu--positioned]="menuPositioned()" [style.top.px]="appearance() === 'field' ? menuTop() : null"
+          [style.left.px]="appearance() === 'field' ? menuLeft() : null" [style.width.px]="appearance() === 'field' ? menuWidth() : null"
+          [style.max-height.px]="appearance() === 'field' ? menuMaxHeight() : null"
+          role="listbox" [id]="listId">
           <button type="button" role="option" [id]="optionId(0)" tabindex="-1" [attr.aria-selected]="selectedLanguage() === 'pt-BR'" [class.language-selector__option--selected]="selectedLanguage() === 'pt-BR'"
             (click)="select('pt-BR')">
             <span class="language-selector__option-main">
@@ -93,6 +97,15 @@ import { isListboxNavigationKey, nextListboxIndex } from './listbox-navigation';
       top: calc(100% + var(--space-2));
       left: 0;
       width: 100%;
+      max-height: calc(100dvh - (2 * var(--space-4)));
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    .language-selector__menu--viewport-overlay {
+      position: fixed;
+    }
+    .language-selector__menu--viewport-overlay:not(.language-selector__menu--positioned) {
+      visibility: hidden;
     }
     .language-selector__menu button {
       width: 100%;
@@ -136,15 +149,37 @@ import { isListboxNavigationKey, nextListboxIndex } from './listbox-navigation';
 })
 export class LanguageSelectorComponent {
   private static nextId = 0;
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
   readonly i18n = inject(I18nService);
   readonly appearance = input<'compact' | 'field'>('compact');
   readonly value = input<AppLanguage | undefined>(undefined);
   readonly valueChange = output<AppLanguage>();
   readonly open = signal(false);
   readonly activeIndex = signal(-1);
+  readonly menuTop = signal(0);
+  readonly menuLeft = signal(0);
+  readonly menuWidth = signal(0);
+  readonly menuMaxHeight = signal(0);
+  readonly menuPositioned = signal(false);
   readonly listId = `language-selector-${LanguageSelectorComponent.nextId++}`;
   readonly activeOptionId = () => this.activeIndex() >= 0 ? this.optionId(this.activeIndex()) : null;
 
+  constructor() {
+    const document = this.host.nativeElement.ownerDocument;
+    const reposition = () => {
+      if (this.open() && this.appearance() === 'field') this.positionMenu();
+    };
+    document.addEventListener('scroll', reposition, true);
+    document.defaultView?.visualViewport?.addEventListener('resize', reposition);
+    document.defaultView?.visualViewport?.addEventListener('scroll', reposition);
+    this.destroyRef.onDestroy(() => {
+      document.removeEventListener('scroll', reposition, true);
+      document.defaultView?.visualViewport?.removeEventListener('resize', reposition);
+      document.defaultView?.visualViewport?.removeEventListener('scroll', reposition);
+    });
+  }
 
   toggleList(): void {
     if (this.open()) {
@@ -153,11 +188,20 @@ export class LanguageSelectorComponent {
     }
     this.open.set(true);
     this.activeIndex.set(this.selectedLanguage() === 'pt-BR' ? 0 : 1);
+    this.menuPositioned.set(this.appearance() !== 'field');
+    if (this.appearance() === 'field') afterNextRender(() => this.positionMenu(), { injector: this.injector });
   }
 
   closeList(): void {
     this.open.set(false);
     this.activeIndex.set(-1);
+    this.menuMaxHeight.set(0);
+    this.menuPositioned.set(false);
+  }
+
+  @HostListener('window:resize')
+  repositionOnResize(): void {
+    if (this.open() && this.appearance() === 'field') this.positionMenu();
   }
 
   handleKeydown(event: KeyboardEvent): void {
@@ -191,5 +235,31 @@ export class LanguageSelectorComponent {
 
   languageCountry(language: AppLanguage): 'br' | 'us' {
     return language === 'pt-BR' ? 'br' : 'us';
+  }
+
+  private positionMenu(): void {
+    const trigger = this.host.nativeElement.querySelector<HTMLElement>('.language-selector__trigger');
+    const menu = this.host.nativeElement.querySelector<HTMLElement>('.language-selector__menu');
+    const window = this.host.nativeElement.ownerDocument.defaultView;
+    if (!trigger || !menu || !window) return;
+
+    const triggerBounds = trigger.getBoundingClientRect();
+    const styles = getComputedStyle(this.host.nativeElement);
+    const gap = Number.parseFloat(styles.getPropertyValue('--space-2')) || 0;
+    const shadowOffset = Number.parseFloat(styles.getPropertyValue('--button-shadow-offset')) || 0;
+    const visualViewport = window.visualViewport;
+    const viewportTop = visualViewport?.offsetTop ?? 0;
+    const viewportBottom = viewportTop + (visualViewport?.height ?? window.innerHeight);
+    const viewportLeft = visualViewport?.offsetLeft ?? 0;
+    const viewportRight = viewportLeft + (visualViewport?.width ?? window.innerWidth);
+    const menuWidth = triggerBounds.width;
+    const spaceBelow = viewportBottom - triggerBounds.bottom - gap - shadowOffset;
+    const availableHeight = Math.max(0, spaceBelow);
+
+    this.menuTop.set(triggerBounds.bottom + gap);
+    this.menuLeft.set(Math.max(viewportLeft, Math.min(triggerBounds.left, viewportRight - menuWidth)));
+    this.menuWidth.set(menuWidth);
+    this.menuMaxHeight.set(availableHeight);
+    this.menuPositioned.set(true);
   }
 }

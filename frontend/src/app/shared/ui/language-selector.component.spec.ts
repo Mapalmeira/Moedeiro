@@ -37,7 +37,7 @@ describe('LanguageSelectorComponent', () => {
     expect(fixture.nativeElement.querySelector('.language-selector__menu')).not.toBeNull();
   });
 
-  it('keeps field appearance dropdown overlaid like the compact selector', () => {
+  it('positions the field appearance menu over the viewport', () => {
     fixture.componentRef.setInput('appearance', 'field');
     fixture.detectChanges();
 
@@ -48,6 +48,6 @@ describe('LanguageSelectorComponent', () => {
     fixture.detectChanges();
 
     const menu = fixture.nativeElement.querySelector('.language-selector__menu') as HTMLElement;
-    expect(menu.classList.contains('language-selector__menu--inline')).toBe(false);
+    expect(menu.classList.contains('language-selector__menu--viewport-overlay')).toBe(true);
   });
 });
