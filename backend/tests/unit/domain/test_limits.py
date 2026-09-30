@@ -5,7 +5,7 @@ from app.domain.registry.limits import MAXIMUM_EXTERNAL_ACCESSES_PER_LEDGER, MAX
 
 
 class DomainLimitsTest(unittest.TestCase):
-    def test_collection_limits(self) -> None:
+    def test_collection_limits_match_the_operational_contract(self) -> None:
         self.assertEqual(MAXIMUM_LEDGERS_PER_USER, 10)
         self.assertEqual(MAXIMUM_EXTERNAL_ACCESSES_PER_LEDGER, 20)
         self.assertEqual(MAXIMUM_ACCOUNTS, 300)

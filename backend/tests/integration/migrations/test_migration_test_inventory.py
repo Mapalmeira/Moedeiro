@@ -7,7 +7,7 @@ MIGRATIONS_ROOT = BACKEND_DIRECTORY / "app/infrastructure/persistence/sqlite"
 TESTS_DIRECTORY = Path(__file__).resolve().parent
 
 
-class MigrationCoverageTest(unittest.TestCase):
+class MigrationTestInventoryTest(unittest.TestCase):
     def test_every_sql_migration_has_a_dedicated_test_module(self) -> None:
         missing_tests: list[str] = []
         for database in ("registry", "ledger"):

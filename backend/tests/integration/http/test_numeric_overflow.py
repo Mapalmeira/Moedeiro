@@ -8,7 +8,7 @@ from app.application.ledger.exceptions import QueryResultOverflowError
 from app.factory import _add_numeric_error_handlers
 
 
-class NumericOverflowTest(unittest.TestCase):
+class NumericOverflowHttpTest(unittest.TestCase):
     def test_sqlite_integer_input_and_aggregate_overflows_return_422(self) -> None:
         application = FastAPI()
         _add_numeric_error_handlers(application)

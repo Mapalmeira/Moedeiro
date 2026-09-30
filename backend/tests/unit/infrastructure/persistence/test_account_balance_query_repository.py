@@ -7,7 +7,7 @@ from app.application.ledger.exceptions import QueryResultOverflowError
 from app.infrastructure.persistence.sqlite.ledger.repository.account_balance_query import SqliteAccountBalanceQueryRepository
 
 
-class AccountBalanceQueryErrorsTest(unittest.TestCase):
+class AccountBalanceQueryRepositoryTest(unittest.TestCase):
     def setUp(self) -> None:
         self.connection = MagicMock()
         self.repository = SqliteAccountBalanceQueryRepository(self.connection)

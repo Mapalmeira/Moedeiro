@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 
 
-class SqliteDatabaseErrorsTest(unittest.TestCase):
+class SqliteDatabaseTest(unittest.TestCase):
     def test_connection_is_closed_when_configuration_fails(self) -> None:
         connection = MagicMock()
         connection.execute.side_effect = RuntimeError("configuration failed")
