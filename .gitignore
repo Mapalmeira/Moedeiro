@@ -5,7 +5,7 @@ data
 .venv
 *.sqlite
 **/*.egg-info
-.coverage
-coverage
-coverage.xml
-htmlcov
+backend/.coverage
+backend/coverage.xml
+backend/htmlcov
+frontend/coverage
