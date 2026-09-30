@@ -116,6 +116,18 @@ class CashFlowUseCasesTest(unittest.TestCase):
         with self.assertRaises(AccountNotFoundError):
             get_cash_flow_sankey(self.open_ledger, uuid4(), filters, 1)
 
+    def test_empty_sankey_has_no_account_node_or_links(self) -> None:
+        sankey = get_cash_flow_sankey(
+            self.open_ledger,
+            self.account.uuid,
+            FinancialEventFilter(from_timestamp=100, to_timestamp=200),
+            1,
+        )
+
+        self.assertEqual((sankey.income, sankey.expense), (0, 0))
+        self.assertEqual(sankey.nodes, [])
+        self.assertEqual(sankey.links, [])
+
     def test_points_cover_the_filter_and_retain_a_short_final_interval(self) -> None:
         self.add_movement(100, 50)
         self.add_movement(250, -20)

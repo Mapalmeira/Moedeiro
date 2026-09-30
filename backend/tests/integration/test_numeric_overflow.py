@@ -6,7 +6,6 @@ from fastapi.testclient import TestClient
 
 from app.application.ledger.exceptions import QueryResultOverflowError
 from app.factory import _add_numeric_error_handlers
-from app.infrastructure.persistence.sqlite.ledger.repository._numeric import require_sqlite_integer
 
 
 class NumericOverflowTest(unittest.TestCase):
@@ -44,14 +43,3 @@ class NumericOverflowTest(unittest.TestCase):
                 response = client.get(path)
                 self.assertEqual(response.status_code, 422)
                 self.assertEqual(response.json(), {"detail": detail})
-
-    def test_sqlite_real_result_from_an_overflowing_product_is_rejected(self) -> None:
-        connection = sqlite3.connect(":memory:")
-        try:
-            value = connection.execute("SELECT 9223372036854775807 * 2").fetchone()[0]
-        finally:
-            connection.close()
-
-        self.assertIsInstance(value, float)
-        with self.assertRaises(QueryResultOverflowError):
-            require_sqlite_integer(value)

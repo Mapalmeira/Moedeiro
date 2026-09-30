@@ -26,6 +26,7 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(account.icon, "lucide:WalletCards")
         self.assertEqual(account.color_code, b"\x80\x80\x80")
         self.assertEqual(self.repository.get_by_name("Checking"), account)
+        self.assertIsNone(self.repository.get_by_name("Unknown"))
 
     def test_get_many_returns_only_requested_accounts(self) -> None:
         checking = self.create_account("Checking", self.currency)
@@ -77,6 +78,16 @@ class SqliteAccountRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(updated.icon, "unicode:💳")
         self.assertEqual(updated.color_code, b"\xff\x80\x00")
         self.assertEqual(updated.currency_uuid, account.currency_uuid)
+
+    def test_updates_of_an_unknown_account_are_no_ops(self) -> None:
+        unknown = uuid4()
+
+        self.repository.update_name(unknown, "Checking")
+        self.repository.update_note(unknown, "Daily account")
+        self.repository.update_icon(unknown, "lucide:WalletCards")
+        self.repository.update_color_code(unknown, b"\x80\x80\x80")
+
+        self.assertIsNone(self.repository.get(unknown))
 
     def test_list_all_and_count_include_every_item(self) -> None:
         created = [self.create_account(name) for name in ("Charlie", "Alpha", "Bravo")]

@@ -85,6 +85,15 @@ class SqliteFinancialEventRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(ascending, [first, second])
         self.assertEqual(descending, [second, first])
 
+    def test_list_after_requires_a_complete_cursor(self) -> None:
+        filters = FinancialEventFilter(from_timestamp=0, to_timestamp=30)
+
+        for occurred_at, event_uuid in ((10, None), (None, uuid4())):
+            with self.subTest(occurred_at=occurred_at, event_uuid=event_uuid), self.assertRaisesRegex(
+                ValueError, "cursor timestamp and UUID must be provided together"
+            ):
+                self.repository.list_after(10, True, filters, occurred_at, event_uuid)
+
     def test_repository_does_not_commit_its_changes(self) -> None:
         """Transaction ownership remains with the unit of work."""
         self.repository.create(10, "Purchase", "TRANSACTION")

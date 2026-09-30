@@ -5,7 +5,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 from uuid import uuid4
 
-from app.application.registry.exceptions import ExternalAccessLimitReachedError, InvalidCurrentPasswordError, InvalidTotpCodeError, LedgerGrantNotFoundError, LedgerNotFoundError, TotpCodeAlreadyUsedError, TotpRequiredError
+from app.application.registry.exceptions import ExternalAccessLimitReachedError, InvalidCurrentPasswordError, InvalidTotpCodeError, LedgerGrantNotFoundError, LedgerLimitReachedError, LedgerNotFoundError, LedgerOwnershipAlreadyExistsError, TotpCodeAlreadyUsedError, TotpRequiredError, UserNotFoundError
 from app.application.registry.use_cases.grant import create_external_ledger_grant, list_ledger_grants, list_external_access_grants_for_owned_ledger, revoke_ledger_grant, revoke_external_access_grant_from_owned_ledger, revoke_owned_ledger_grant, set_ledger_owner
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
@@ -233,6 +233,11 @@ class LedgerGrantUseCasesTest(unittest.TestCase):
         self.assertEqual(owner_grants, [self.owner_grant])
         self.assertEqual(guest_grants, [guest])
 
+    def test_list_grants_accepts_each_filter_independently(self) -> None:
+        self.assertEqual(list_ledger_grants(self.open_registry, grantee_uuid=self.user.uuid), [self.owner_grant])
+        self.assertEqual(list_ledger_grants(self.open_registry, ledger_uuid=self.ledger.uuid), [self.owner_grant])
+        self.assertEqual(list_ledger_grants(self.open_registry), [self.owner_grant])
+
     def test_list_external_access_grants_for_owned_ledger_returns_only_active_external_accesses(self) -> None:
         guest, _ = create_external_ledger_grant(
             self.open_registry,
@@ -278,6 +283,20 @@ class LedgerGrantUseCasesTest(unittest.TestCase):
                 guest.uuid,
                 "current password",
                 21,
+            )
+
+    def test_revoke_external_access_rejects_invalid_credentials_owner_and_grant(self) -> None:
+        with self.assertRaises(InvalidCurrentPasswordError):
+            revoke_external_access_grant_from_owned_ledger(
+                self.open_registry, self.password_hasher, self.user, self.ledger.uuid, uuid4(), "wrong password", 20
+            )
+        with self.assertRaises(LedgerGrantNotFoundError):
+            revoke_external_access_grant_from_owned_ledger(
+                self.open_registry, self.password_hasher, self.user, uuid4(), uuid4(), "current password", 20
+            )
+        with self.assertRaises(LedgerGrantNotFoundError):
+            revoke_external_access_grant_from_owned_ledger(
+                self.open_registry, self.password_hasher, self.user, self.ledger.uuid, uuid4(), "current password", 20
             )
 
     def test_revoke_owned_external_access_requires_totp_and_revokes_only_requested_grant(self) -> None:
@@ -478,6 +497,33 @@ class LedgerGrantUseCasesTest(unittest.TestCase):
         self.assertEqual(active, owner)
         self.assertEqual(owner.role, "OWNER")
 
+    def test_setting_owner_rejects_invalid_user_ledger_existing_ownership_and_limit(self) -> None:
+        with self.assertRaises(UserNotFoundError):
+            set_ledger_owner(self.open_registry, uuid4(), self.ledger.uuid, 20)
+        with self.assertRaises(LedgerNotFoundError):
+            set_ledger_owner(self.open_registry, self.user.uuid, uuid4(), 20)
+        with self.assertRaises(LedgerOwnershipAlreadyExistsError):
+            set_ledger_owner(self.open_registry, self.user.uuid, self.ledger.uuid, 20)
+
+        with self.open_registry() as unit_of_work:
+            candidate = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
+            already_owned = unit_of_work.ledger_repository.create(uuid4(), "Other", "other.sqlite", "lucide:BookOpen", b"\x80\x80\x80", 10)
+            unit_of_work.ledger_grant_repository.create(candidate.uuid, already_owned.uuid, "OWNER", 10)
+            unit_of_work.commit()
+        with patch("app.application.registry.use_cases.grant.MAXIMUM_LEDGERS_PER_USER", 1), self.assertRaises(LedgerLimitReachedError):
+            set_ledger_owner(self.open_registry, candidate.uuid, self.ledger.uuid, 20)
+
+    def test_setting_first_owner_does_not_require_an_existing_grant(self) -> None:
+        with self.open_registry() as unit_of_work:
+            user = unit_of_work.user_repository.create("Carol", "$argon2id$test", 10)
+            ledger = unit_of_work.ledger_repository.create(uuid4(), "Unowned", "unowned.sqlite", "lucide:BookOpen", b"\x80\x80\x80", 10)
+            unit_of_work.commit()
+
+        grant = set_ledger_owner(self.open_registry, user.uuid, ledger.uuid, 20)
+
+        self.assertEqual(grant.grantee_uuid, user.uuid)
+        self.assertEqual(grant.role, "OWNER")
+
     def test_setting_a_new_owner_revokes_only_previous_owner(self) -> None:
         first, _ = create_external_ledger_grant(
             self.open_registry,
@@ -537,3 +583,7 @@ class LedgerGrantUseCasesTest(unittest.TestCase):
         assert owner is not None and external is not None
         self.assertEqual(owner.revoked_at, 30)
         self.assertIsNone(external.revoked_at)
+
+    def test_revoking_an_unknown_grant_is_rejected(self) -> None:
+        with self.assertRaises(LedgerGrantNotFoundError):
+            revoke_ledger_grant(self.open_registry, uuid4(), 30)

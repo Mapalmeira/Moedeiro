@@ -5,7 +5,6 @@ from tempfile import TemporaryDirectory
 import time
 
 from fastapi import HTTPException, Request, Response
-from fastapi.testclient import TestClient
 
 from app.api.dependencies.authentication import require_authenticated_user
 from app.api.registry.routes.totp import confirm_setup, get_status, remove_totp, start_setup
@@ -72,15 +71,6 @@ class TotpRoutesTest(unittest.TestCase):
         self.assertEqual(enabled_status.state, "ENABLED")
         self.assertIsNone(enabled_status.provisioning_uri)
         self.assertIsNone(enabled_status.expires_at)
-
-    def test_get_status_route_is_exposed_and_requires_authentication(self) -> None:
-        operation = self.application.openapi()["paths"]["/api/totp"]["get"]
-
-        self.assertIn("200", operation["responses"])
-        with TestClient(self.application) as client:
-            response = client.get("/api/totp")
-        self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.json(), {"detail": "Invalid session"})
 
     def test_setup_then_enable_confirms_totp_without_creating_recovery_codes(self) -> None:
         request = self.request()

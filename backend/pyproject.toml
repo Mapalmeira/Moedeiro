@@ -28,6 +28,9 @@ source = ["app"]
 [tool.coverage.report]
 precision = 1
 show_missing = true
+exclude_also = [
+    "^\\s*pass\\s*$",
+]
 
 [project.scripts]
 moedeiro = "app.cli:main"

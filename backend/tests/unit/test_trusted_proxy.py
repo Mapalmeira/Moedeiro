@@ -58,3 +58,14 @@ class TrustedProxyMiddlewareTest(unittest.TestCase):
 
         self.assertEqual(received_scope["client"], ("198.51.100.8", 8000))
         self.assertEqual(received_scope["scheme"], "http")
+
+    def test_passes_non_http_scopes_through_unchanged(self) -> None:
+        received_scope = {}
+
+        async def application(scope, receive, send) -> None:
+            received_scope.update(scope)
+
+        scope = {"type": "lifespan"}
+        asyncio.run(TrustedProxyMiddleware(application, IPv4Address("192.0.2.10"))(scope, None, None))
+
+        self.assertEqual(received_scope, scope)

@@ -110,6 +110,26 @@ class SqliteDatabasesTest(unittest.TestCase):
             connection.close()
         self.assertIsNotNone(table)
 
+    def test_registry_initialization_removes_database_when_metadata_creation_fails(self) -> None:
+        with patch(
+            "app.infrastructure.persistence.sqlite.registry.repository.registry_metadata.SqliteRegistryMetadataRepository.create",
+            side_effect=RuntimeError("metadata failed"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "metadata failed"):
+                self.databases.initialize()
+
+        self.assertFalse(self.registry_db_path.exists())
+
+    def test_registry_initialization_preserves_the_original_failure_before_file_creation(self) -> None:
+        with patch(
+            "app.infrastructure.persistence.sqlite.databases.SqliteDatabase.initialize",
+            side_effect=RuntimeError("database failed"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "database failed"):
+                self.databases.initialize()
+
+        self.assertFalse(self.registry_db_path.exists())
+
     def test_initialize_ledger_applies_the_schema_and_creates_metadata_and_default_currencies(self) -> None:
         self.databases.initialize()
         ledger_uuid = uuid4()
@@ -274,6 +294,34 @@ class SqliteDatabasesTest(unittest.TestCase):
             )
         finally:
             connection.close()
+
+    def test_initialize_backs_up_and_migrates_a_ledger(self) -> None:
+        self.databases.initialize()
+        ledger_path = self.databases.initialize_ledger(uuid4(), 10, "pt-BR")
+        migrations_directory = self.directory / "ledger_migrations"
+        migrations_directory.mkdir()
+        target_version = CURRENT_LEDGER_SCHEMA_VERSION + 1
+        (migrations_directory / f"{target_version:04d}_add_marker.sql").write_text(
+            "ALTER TABLE ledger_metadata ADD COLUMN marker TEXT;\n",
+            encoding="utf-8",
+        )
+        self.databases.ledger_migrator = SqliteSchemaMigrator(
+            "ledger_metadata",
+            target_version,
+            migrations_directory,
+        )
+
+        self.databases.initialize()
+
+        connection = sqlite3.connect(ledger_path)
+        try:
+            version = connection.execute("SELECT schema_version FROM ledger_metadata").fetchone()[0]
+            columns = {row[1] for row in connection.execute("PRAGMA table_info(ledger_metadata)").fetchall()}
+        finally:
+            connection.close()
+        self.assertEqual(version, target_version)
+        self.assertIn("marker", columns)
+        self.assertEqual(len(list((self.ledger_dbs_dir / "backup").iterdir())), 1)
 
     def test_initialize_rejects_a_ledger_from_a_newer_release(self) -> None:
         self.databases.initialize()

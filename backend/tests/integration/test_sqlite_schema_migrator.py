@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 import sqlite3
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from app.infrastructure.persistence.sqlite.database import SqliteDatabase
 from app.infrastructure.persistence.sqlite.migration import SchemaVersionError, SqliteSchemaMigrator
@@ -90,3 +91,64 @@ class SqliteSchemaMigratorTest(unittest.TestCase):
 
         with self.assertRaisesRegex(SchemaVersionError, "only supports up to 2"):
             migrator.validate(self.database)
+
+    def test_validate_rejects_an_older_schema(self) -> None:
+        migrator = SqliteSchemaMigrator("metadata", 2, self.migrations_directory)
+
+        with self.assertRaisesRegex(SchemaVersionError, "uses an older schema version"):
+            migrator.validate(self.database)
+
+    def test_migrate_rejects_a_newer_schema(self) -> None:
+        connection = self.database.get_connection()
+        try:
+            connection.execute("UPDATE metadata SET schema_version = 3")
+            connection.commit()
+        finally:
+            connection.close()
+
+        with self.assertRaisesRegex(SchemaVersionError, "only supports up to 2"):
+            SqliteSchemaMigrator("metadata", 2, self.migrations_directory).migrate(self.database)
+
+    def test_rejects_metadata_table_without_the_singleton_row(self) -> None:
+        connection = self.database.get_connection()
+        try:
+            connection.execute("DELETE FROM metadata")
+            connection.commit()
+        finally:
+            connection.close()
+
+        with self.assertRaisesRegex(SchemaVersionError, "has no valid schema metadata"):
+            SqliteSchemaMigrator("metadata", 1, self.migrations_directory).validate(self.database)
+
+    def test_rejects_a_database_without_the_metadata_table(self) -> None:
+        connection = self.database.get_connection()
+        try:
+            connection.execute("DROP TABLE metadata")
+            connection.commit()
+        finally:
+            connection.close()
+
+        with self.assertRaisesRegex(SchemaVersionError, "has no valid schema metadata"):
+            SqliteSchemaMigrator("metadata", 1, self.migrations_directory).validate(self.database)
+
+    def test_rolls_back_when_schema_version_changes_during_migration(self) -> None:
+        migration = self.migrations_directory / "0002_change.sql"
+        migration.write_text("SELECT 1;\n", encoding="utf-8")
+        migrator = SqliteSchemaMigrator("metadata", 2, self.migrations_directory)
+
+        def change_version(connection, script) -> None:
+            connection.execute("UPDATE metadata SET schema_version = 99")
+
+        with patch.object(migrator, "_execute_script", side_effect=change_version):
+            with self.assertRaisesRegex(SchemaVersionError, "changed while it was being migrated"):
+                migrator.migrate(self.database)
+
+        self.assertTrue(migrator.requires_migration(self.database))
+
+    def test_rejects_an_incomplete_final_sql_statement(self) -> None:
+        connection = self.database.get_connection()
+        try:
+            with self.assertRaisesRegex(SchemaVersionError, "incomplete SQL statement"):
+                SqliteSchemaMigrator._execute_script(connection, "CREATE TABLE unfinished(")
+        finally:
+            connection.close()

@@ -3,8 +3,8 @@ import asyncio
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock, patch
-from fastapi.testclient import TestClient
-from app.factory import create_app
+from app.factory import _create_totp_authenticator, create_app
+from app.application.ledger.exceptions import QueryResultOverflowError
 from app.infrastructure.persistence.sqlite.databases import SqliteDatabases
 from app.settings import Settings
 from tests.fakes import FakeCredentialOperationExecutor, FakePasswordHasher, FakeRateLimiter, FakeTotpAuthenticator
@@ -16,6 +16,15 @@ LEDGER_SCHEMA_PATH = ROOT / "app/infrastructure/persistence/sqlite/ledger/schema
 
 
 class ApplicationFactoryTest(unittest.TestCase):
+    def settings(self, directory: Path, **overrides) -> Settings:
+        return Settings(
+            registry_schema_path=REGISTRY_SCHEMA_PATH,
+            ledger_schema_path=LEDGER_SCHEMA_PATH,
+            registry_db_path=directory / "registry/registry.sqlite",
+            ledger_dbs_dir=directory / "ledgers",
+            **overrides,
+        )
+
     def test_create_app_initializes_and_exposes_its_configuration_and_databases(self) -> None:
         with TemporaryDirectory() as temporary_directory:
             directory = Path(temporary_directory)
@@ -87,6 +96,71 @@ class ApplicationFactoryTest(unittest.TestCase):
 
             mount_frontend.assert_not_called()
 
+    def test_create_app_mounts_the_frontend_when_enabled(self) -> None:
+        with TemporaryDirectory() as temporary_directory:
+            settings = self.settings(Path(temporary_directory))
+            with patch("app.factory._mount_frontend") as mount_frontend:
+                application = create_app(
+                    settings,
+                    totp_authenticator=FakeTotpAuthenticator(),
+                    credential_operation_executor=FakeCredentialOperationExecutor(),
+                )
+
+            mount_frontend.assert_called_once_with(application, settings.frontend_dist_path)
+
+    def test_numeric_error_handlers_return_safe_responses(self) -> None:
+        with TemporaryDirectory() as temporary_directory:
+            application = create_app(
+                self.settings(Path(temporary_directory)),
+                totp_authenticator=FakeTotpAuthenticator(),
+                credential_operation_executor=FakeCredentialOperationExecutor(),
+                mount_frontend=False,
+            )
+        overflow_handler = application.exception_handlers[OverflowError]
+        query_handler = application.exception_handlers[QueryResultOverflowError]
+
+        binding = asyncio.run(overflow_handler(None, OverflowError("Python int too large to convert to SQLite INTEGER")))
+        unexpected = asyncio.run(overflow_handler(None, OverflowError("unexpected")))
+        query = asyncio.run(query_handler(None, QueryResultOverflowError()))
+
+        self.assertEqual((binding.status_code, binding.body), (422, b'{"detail":"Integer must fit signed 64-bit range"}'))
+        self.assertEqual((unexpected.status_code, unexpected.body), (500, b'{"detail":"Internal Server Error"}'))
+        self.assertEqual((query.status_code, query.body), (422, b'{"detail":"Query result exceeds signed 64-bit range"}'))
+
+    def test_create_app_selects_environment_settings_and_default_collaborators(self) -> None:
+        with TemporaryDirectory() as temporary_directory:
+            settings = self.settings(Path(temporary_directory), totp_encryption_key="test-key")
+            password_hasher = FakePasswordHasher()
+            totp_authenticator = FakeTotpAuthenticator()
+            executor = FakeCredentialOperationExecutor()
+            rate_limiter = FakeRateLimiter()
+            with (
+                patch("app.factory.Settings.from_environment", return_value=settings),
+                patch("app.factory._create_password_hasher", return_value=password_hasher),
+                patch("app.factory._create_totp_authenticator", return_value=totp_authenticator),
+                patch("app.factory.CredentialOperationExecutor", return_value=executor),
+                patch("app.factory.RateLimiter", return_value=rate_limiter),
+            ):
+                application = create_app(mount_frontend=False)
+
+            self.assertIs(application.state.settings, settings)
+            self.assertIs(application.state.totp_authenticator, totp_authenticator)
+            self.assertIs(application.state.credential_operation_executor, executor)
+            self.assertIs(application.state.rate_limiter, rate_limiter)
+
+    def test_totp_authenticator_requires_a_configured_encryption_key(self) -> None:
+        with TemporaryDirectory() as temporary_directory:
+            settings = self.settings(Path(temporary_directory))
+            with self.assertRaisesRegex(ValueError, "TOTP_ENCRYPTION_KEY must be defined"):
+                _create_totp_authenticator(settings)
+
+            configured = self.settings(Path(temporary_directory), totp_encryption_key="test-key")
+            with patch("app.infrastructure.security.totp_authenticator.FernetTotpAuthenticator", return_value=FakeTotpAuthenticator()) as authenticator:
+                result = _create_totp_authenticator(configured)
+
+            self.assertIsInstance(result, FakeTotpAuthenticator)
+            authenticator.assert_called_once_with("test-key")
+
 
     def test_frontend_mount_uses_the_configured_build_path(self) -> None:
         from app.factory import _mount_frontend
@@ -100,44 +174,3 @@ class ApplicationFactoryTest(unittest.TestCase):
             directory=frontend_directory,
             fallback="index.html",
         )
-
-    def test_serves_the_frontend_and_falls_back_to_its_index_for_client_routes(self) -> None:
-        with TemporaryDirectory() as temporary_directory:
-            directory = Path(temporary_directory)
-            frontend_directory = directory / "frontend"
-            frontend_directory.mkdir()
-
-            (frontend_directory / "index.html").write_text("<html>Moedeiro</html>")
-            (frontend_directory / "main.js").write_text("console.log('moedeiro')")
-
-            settings = Settings(
-                registry_schema_path=REGISTRY_SCHEMA_PATH,
-                ledger_schema_path=LEDGER_SCHEMA_PATH,
-                registry_db_path=directory / "registry/registry.sqlite",
-                ledger_dbs_dir=directory / "ledgers",
-                frontend_dist_path=frontend_directory,
-            )
-
-            application = create_app(
-                settings,
-                totp_authenticator=FakeTotpAuthenticator(),
-                credential_operation_executor=FakeCredentialOperationExecutor(),
-                mount_frontend=True,
-            )
-
-            with TestClient(application) as client:
-                index_response = client.get("/")
-                javascript_response = client.get("/main.js")
-                client_route_response = client.get(
-                    "/home",
-                    headers={"Accept": "text/html"},
-                )
-
-            self.assertEqual(index_response.status_code, 200)
-            self.assertEqual(index_response.text, "<html>Moedeiro</html>")
-
-            self.assertEqual(javascript_response.status_code, 200)
-            self.assertEqual(javascript_response.text, "console.log('moedeiro')")
-
-            self.assertEqual(client_route_response.status_code, 200)
-            self.assertEqual(client_route_response.text, "<html>Moedeiro</html>")

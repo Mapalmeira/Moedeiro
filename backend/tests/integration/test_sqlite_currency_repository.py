@@ -1,6 +1,7 @@
 """Integration tests for the ledger SQLite currency repository."""
 
 import sqlite3
+from uuid import uuid4
 
 from pydantic import ValidationError
 
@@ -79,6 +80,17 @@ class SqliteCurrencyRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(updated.icon, "unicode:💵")
         self.assertEqual(updated.color_code, b"\xff\x80\x00")
         self.assertEqual(updated.decimal_places, currency.decimal_places)
+
+    def test_updates_of_an_unknown_currency_are_no_ops(self) -> None:
+        unknown = uuid4()
+
+        self.repository.update_name(unknown, "Real")
+        self.repository.update_prefix(unknown, "R$")
+        self.repository.update_suffix(unknown, "BRL")
+        self.repository.update_icon(unknown, "lucide:Banknote")
+        self.repository.update_color_code(unknown, b"\x80\x80\x80")
+
+        self.assertIsNone(self.repository.get(unknown))
 
     def test_list_all_and_count_include_every_item(self) -> None:
         created = [self.create_currency(name) for name in ("Charlie", "Alpha", "Bravo")]
