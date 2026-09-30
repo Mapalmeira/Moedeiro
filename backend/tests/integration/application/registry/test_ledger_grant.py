@@ -1,0 +1,589 @@
+import unittest
+import hashlib
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
+from uuid import uuid4
+
+from app.application.registry.exceptions import ExternalAccessLimitReachedError, InvalidCurrentPasswordError, InvalidTotpCodeError, LedgerGrantNotFoundError, LedgerLimitReachedError, LedgerNotFoundError, LedgerOwnershipAlreadyExistsError, TotpCodeAlreadyUsedError, TotpRequiredError, UserNotFoundError
+from app.application.registry.use_cases.grant import create_external_ledger_grant, list_ledger_grants, list_external_access_grants_for_owned_ledger, revoke_ledger_grant, revoke_external_access_grant_from_owned_ledger, revoke_owned_ledger_grant, set_ledger_owner
+from app.infrastructure.persistence.sqlite.database import SqliteDatabase
+from app.infrastructure.persistence.sqlite.registry.unit_of_work import SqliteRegistryUnitOfWork
+from tests.fakes import FakePasswordHasher, FakeTotpAuthenticator
+
+
+SCHEMA_PATH = Path(__file__).resolve().parents[4] / "app/infrastructure/persistence/sqlite/registry/schema/registry_schema.sql"
+
+
+class LedgerGrantUseCasesTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary_directory = TemporaryDirectory()
+        self.database = SqliteDatabase.initialize(Path(self.temporary_directory.name) / "registry.sqlite", SCHEMA_PATH)
+        self.password_hasher = FakePasswordHasher()
+        self.totp_authenticator = FakeTotpAuthenticator()
+        with self.open_registry() as unit_of_work:
+            self.user = unit_of_work.user_repository.create("Alice", self.password_hasher.hash("current password"), 10)
+            self.ledger = unit_of_work.ledger_repository.create(
+                uuid4(),
+                "Ledger",
+                "ledger.sqlite",
+                "lucide:BookOpen",
+                b"\x80\x80\x80",
+                10,
+            )
+            self.owner_grant = unit_of_work.ledger_grant_repository.create(self.user.uuid, self.ledger.uuid, "OWNER", 10)
+            unit_of_work.commit()
+        self.password_hasher.passwords.clear()
+
+    def tearDown(self) -> None:
+        self.temporary_directory.cleanup()
+
+    def open_registry(self) -> SqliteRegistryUnitOfWork:
+        return SqliteRegistryUnitOfWork(self.database)
+
+    def enable_totp(self) -> None:
+        with self.open_registry() as unit_of_work:
+            unit_of_work.mfa_method_repository.create(self.user.uuid, "TOTP", b"FAKESECRET", 10, 610, 10)
+            unit_of_work.commit()
+
+    @patch("app.application.registry.secret.secrets.token_urlsafe", return_value="external-token")
+    def test_create_external_grant_persists_only_the_token_hash(self, token_urlsafe) -> None:
+        grant, token = create_external_ledger_grant(
+            self.open_registry,
+            self.password_hasher,
+            self.user,
+            self.ledger.uuid,
+            "Sync plugin",
+            "current password",
+            20,
+        )
+
+        self.assertEqual(token, "external-token")
+        self.assertEqual(grant.ledger_uuid, self.ledger.uuid)
+        self.assertEqual(grant.role, "GUEST")
+        with self.open_registry() as unit_of_work:
+            stored = unit_of_work.ledger_grant_repository.get(grant.uuid)
+            access = unit_of_work.external_access_repository.get(grant.grantee_uuid)
+        self.assertEqual(stored, grant)
+        assert access is not None
+        self.assertEqual(access.name, "Sync plugin")
+        self.assertEqual(access.token_hash, hashlib.sha256(b"external-token").digest())
+        token_urlsafe.assert_called_once_with(32)
+
+    def test_create_external_grant_requires_current_ownership(self) -> None:
+        with self.open_registry() as unit_of_work:
+            other_ledger = unit_of_work.ledger_repository.create(
+                uuid4(),
+                "Other",
+                "other.sqlite",
+                "lucide:BookOpen",
+                b"\x80\x80\x80",
+                10,
+            )
+            unit_of_work.commit()
+
+        with self.assertRaises(LedgerNotFoundError):
+            create_external_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                other_ledger.uuid,
+                "Sync plugin",
+                "current password",
+                20,
+            )
+
+    def test_create_external_grant_rejects_invalid_password_before_writing(self) -> None:
+        with self.assertRaises(InvalidCurrentPasswordError):
+            create_external_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                self.ledger.uuid,
+                "Sync plugin",
+                "wrong password",
+                20,
+            )
+
+        with self.open_registry() as unit_of_work:
+            guest_grants = [grant for grant in unit_of_work.ledger_grant_repository.list_by_ledger(self.ledger.uuid) if grant.role == "GUEST"]
+        self.assertEqual(guest_grants, [])
+
+    def test_create_external_grant_enforces_per_ledger_limit_and_revocation_frees_capacity(self) -> None:
+        with patch("app.application.registry.use_cases.grant.MAXIMUM_EXTERNAL_ACCESSES_PER_LEDGER", 1):
+            first, _ = create_external_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                self.ledger.uuid,
+                "First",
+                "current password",
+                20,
+            )
+            with self.assertRaises(ExternalAccessLimitReachedError):
+                create_external_ledger_grant(
+                    self.open_registry,
+                    self.password_hasher,
+                    self.user,
+                    self.ledger.uuid,
+                    "Second",
+                    "current password",
+                    21,
+                )
+
+            revoke_external_access_grant_from_owned_ledger(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                self.ledger.uuid,
+                first.uuid,
+                "current password",
+                22,
+            )
+            replacement, _ = create_external_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                self.ledger.uuid,
+                "Replacement",
+                "current password",
+                23,
+            )
+
+        with self.open_registry() as unit_of_work:
+            self.assertEqual(unit_of_work.ledger_grant_repository.count_active_external_accesses_by_ledger(self.ledger.uuid), 1)
+            self.assertIsNotNone(unit_of_work.external_access_repository.get(replacement.grantee_uuid))
+
+    def test_external_access_limit_is_scoped_per_ledger(self) -> None:
+        with self.open_registry() as unit_of_work:
+            other_ledger = unit_of_work.ledger_repository.create(
+                uuid4(),
+                "Other",
+                "other.sqlite",
+                "lucide:BookOpen",
+                b"\x80\x80\x80",
+                10,
+            )
+            unit_of_work.ledger_grant_repository.create(self.user.uuid, other_ledger.uuid, "OWNER", 10)
+            unit_of_work.commit()
+
+        with patch("app.application.registry.use_cases.grant.MAXIMUM_EXTERNAL_ACCESSES_PER_LEDGER", 1):
+            create_external_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                self.ledger.uuid,
+                "First",
+                "current password",
+                20,
+            )
+            other, _ = create_external_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                other_ledger.uuid,
+                "Other ledger",
+                "current password",
+                21,
+            )
+
+        self.assertEqual(other.ledger_uuid, other_ledger.uuid)
+
+    def test_create_external_grant_enforces_totp_when_enabled(self) -> None:
+        self.enable_totp()
+
+        with self.assertRaises(TotpRequiredError):
+            create_external_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                self.ledger.uuid,
+                "Sync plugin",
+                "current password",
+                20,
+                self.totp_authenticator,
+            )
+        with self.assertRaises(InvalidTotpCodeError):
+            create_external_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                self.ledger.uuid,
+                "Sync plugin",
+                "current password",
+                20,
+                self.totp_authenticator,
+                "000000",
+            )
+
+    def test_list_grants_returns_owner_and_external_access_as_ledger_grants(self) -> None:
+        guest, _ = create_external_ledger_grant(
+            self.open_registry,
+            self.password_hasher,
+            self.user,
+            self.ledger.uuid,
+            "Sync plugin",
+            "current password",
+            20,
+        )
+
+        owner_grants = list_ledger_grants(self.open_registry, self.user.uuid, self.ledger.uuid)
+        guest_grants = list_ledger_grants(self.open_registry, guest.grantee_uuid, self.ledger.uuid)
+
+        self.assertEqual(owner_grants, [self.owner_grant])
+        self.assertEqual(guest_grants, [guest])
+
+    def test_list_grants_accepts_each_filter_independently(self) -> None:
+        self.assertEqual(list_ledger_grants(self.open_registry, grantee_uuid=self.user.uuid), [self.owner_grant])
+        self.assertEqual(list_ledger_grants(self.open_registry, ledger_uuid=self.ledger.uuid), [self.owner_grant])
+        self.assertEqual(list_ledger_grants(self.open_registry), [self.owner_grant])
+
+    def test_list_external_access_grants_for_owned_ledger_returns_only_active_external_accesses(self) -> None:
+        guest, _ = create_external_ledger_grant(
+            self.open_registry,
+            self.password_hasher,
+            self.user,
+            self.ledger.uuid,
+            "Sync plugin",
+            "current password",
+            20,
+        )
+        with self.open_registry() as unit_of_work:
+            guest_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
+            unit_of_work.ledger_grant_repository.create(guest_user.uuid, self.ledger.uuid, "GUEST", 21)
+            unit_of_work.commit()
+
+        result = list_external_access_grants_for_owned_ledger(self.open_registry, self.user.uuid, self.ledger.uuid)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0][0], guest)
+        self.assertEqual(result[0][1].uuid, guest.grantee_uuid)
+        self.assertEqual(result[0][1].name, "Sync plugin")
+
+    def test_list_external_access_grants_for_owned_ledger_requires_current_owner(self) -> None:
+        with self.open_registry() as unit_of_work:
+            other = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
+            unit_of_work.commit()
+
+        with self.assertRaises(LedgerNotFoundError):
+            list_external_access_grants_for_owned_ledger(self.open_registry, other.uuid, self.ledger.uuid)
+
+    def test_revoke_owned_external_access_rejects_non_external_guest(self) -> None:
+        with self.open_registry() as unit_of_work:
+            guest_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
+            guest = unit_of_work.ledger_grant_repository.create(guest_user.uuid, self.ledger.uuid, "GUEST", 20)
+            unit_of_work.commit()
+
+        with self.assertRaises(LedgerGrantNotFoundError):
+            revoke_external_access_grant_from_owned_ledger(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                self.ledger.uuid,
+                guest.uuid,
+                "current password",
+                21,
+            )
+
+    def test_revoke_external_access_rejects_invalid_credentials_owner_and_grant(self) -> None:
+        with self.assertRaises(InvalidCurrentPasswordError):
+            revoke_external_access_grant_from_owned_ledger(
+                self.open_registry, self.password_hasher, self.user, self.ledger.uuid, uuid4(), "wrong password", 20
+            )
+        with self.assertRaises(LedgerGrantNotFoundError):
+            revoke_external_access_grant_from_owned_ledger(
+                self.open_registry, self.password_hasher, self.user, uuid4(), uuid4(), "current password", 20
+            )
+        with self.assertRaises(LedgerGrantNotFoundError):
+            revoke_external_access_grant_from_owned_ledger(
+                self.open_registry, self.password_hasher, self.user, self.ledger.uuid, uuid4(), "current password", 20
+            )
+
+    def test_revoke_owned_external_access_requires_totp_and_revokes_only_requested_grant(self) -> None:
+        self.enable_totp()
+        self.totp_authenticator.fixed_counter = 7
+        first, _ = create_external_ledger_grant(
+            self.open_registry,
+            self.password_hasher,
+            self.user,
+            self.ledger.uuid,
+            "First",
+            "current password",
+            20,
+            self.totp_authenticator,
+            "123456",
+        )
+        self.totp_authenticator.fixed_counter = 8
+        second, _ = create_external_ledger_grant(
+            self.open_registry,
+            self.password_hasher,
+            self.user,
+            self.ledger.uuid,
+            "Second",
+            "current password",
+            21,
+            self.totp_authenticator,
+            "123456",
+        )
+
+        with self.assertRaises(TotpRequiredError):
+            revoke_external_access_grant_from_owned_ledger(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                self.ledger.uuid,
+                first.uuid,
+                "current password",
+                22,
+                self.totp_authenticator,
+            )
+
+        self.totp_authenticator.fixed_counter = 9
+        revoke_external_access_grant_from_owned_ledger(
+            self.open_registry,
+            self.password_hasher,
+            self.user,
+            self.ledger.uuid,
+            first.uuid,
+            "current password",
+            22,
+            self.totp_authenticator,
+            "123456",
+        )
+
+        with self.open_registry() as unit_of_work:
+            revoked = unit_of_work.ledger_grant_repository.get(first.uuid)
+            active = unit_of_work.ledger_grant_repository.get(second.uuid)
+        assert revoked is not None and active is not None
+        self.assertEqual(revoked.revoked_at, 22)
+        self.assertIsNone(active.revoked_at)
+
+    def test_revoke_owned_guest_requires_password_and_totp_and_preserves_owner(self) -> None:
+        self.enable_totp()
+        self.totp_authenticator.fixed_counter = 7
+        guest, _ = create_external_ledger_grant(
+            self.open_registry,
+            self.password_hasher,
+            self.user,
+            self.ledger.uuid,
+            "Sync plugin",
+            "current password",
+            20,
+            self.totp_authenticator,
+            "123456",
+        )
+
+        with self.assertRaises(InvalidCurrentPasswordError):
+            revoke_owned_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                guest.uuid,
+                "wrong password",
+                21,
+                self.totp_authenticator,
+                "123456",
+            )
+        with self.assertRaises(TotpRequiredError):
+            revoke_owned_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                guest.uuid,
+                "current password",
+                21,
+                self.totp_authenticator,
+            )
+        with self.assertRaises(TotpCodeAlreadyUsedError):
+            revoke_owned_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                guest.uuid,
+                "current password",
+                21,
+                self.totp_authenticator,
+                "123456",
+            )
+
+        self.totp_authenticator.fixed_counter = 8
+        revoke_owned_ledger_grant(
+            self.open_registry,
+            self.password_hasher,
+            self.user,
+            guest.uuid,
+            "current password",
+            21,
+            self.totp_authenticator,
+            "123456",
+        )
+
+        with self.open_registry() as unit_of_work:
+            revoked = unit_of_work.ledger_grant_repository.get(guest.uuid)
+            owner = unit_of_work.ledger_grant_repository.get_active_owner_by_ledger(self.ledger.uuid)
+        assert revoked is not None
+        self.assertEqual(revoked.revoked_at, 21)
+        self.assertIsNotNone(owner)
+
+    def test_user_cannot_revoke_another_users_guest_grant(self) -> None:
+        guest, _ = create_external_ledger_grant(
+            self.open_registry,
+            self.password_hasher,
+            self.user,
+            self.ledger.uuid,
+            "Sync plugin",
+            "current password",
+            20,
+        )
+        other_hasher = FakePasswordHasher()
+        with self.open_registry() as unit_of_work:
+            other = unit_of_work.user_repository.create("Bob", other_hasher.hash("other password"), 10)
+            unit_of_work.commit()
+
+        with self.assertRaises(LedgerGrantNotFoundError):
+            revoke_owned_ledger_grant(
+                self.open_registry,
+                other_hasher,
+                other,
+                guest.uuid,
+                "other password",
+                21,
+            )
+
+    def test_owner_can_revoke_a_guest_without_resolving_the_grantee_type(self) -> None:
+        with self.open_registry() as unit_of_work:
+            guest_user = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
+            guest = unit_of_work.ledger_grant_repository.create(guest_user.uuid, self.ledger.uuid, "GUEST", 20)
+            unit_of_work.commit()
+
+        revoke_owned_ledger_grant(
+            self.open_registry,
+            self.password_hasher,
+            self.user,
+            guest.uuid,
+            "current password",
+            21,
+        )
+
+        with self.open_registry() as unit_of_work:
+            revoked = unit_of_work.ledger_grant_repository.get(guest.uuid)
+        assert revoked is not None
+        self.assertEqual(revoked.revoked_at, 21)
+
+    def test_owner_cannot_be_revoked_through_owned_guest_operation(self) -> None:
+        with self.assertRaises(LedgerGrantNotFoundError):
+            revoke_owned_ledger_grant(
+                self.open_registry,
+                self.password_hasher,
+                self.user,
+                self.owner_grant.uuid,
+                "current password",
+                21,
+            )
+
+    def test_setting_owner_replaces_an_active_guest_grant_for_the_same_user(self) -> None:
+        with self.open_registry() as unit_of_work:
+            new_owner = unit_of_work.user_repository.create("Bob", "$argon2id$test$other password", 10)
+            guest = unit_of_work.ledger_grant_repository.create(new_owner.uuid, self.ledger.uuid, "GUEST", 20)
+            unit_of_work.commit()
+
+        owner = set_ledger_owner(self.open_registry, new_owner.uuid, self.ledger.uuid, 30)
+
+        with self.open_registry() as unit_of_work:
+            previous_guest = unit_of_work.ledger_grant_repository.get(guest.uuid)
+            active = unit_of_work.ledger_grant_repository.get_active_by_grantee_and_ledger(new_owner.uuid, self.ledger.uuid)
+        assert previous_guest is not None
+        self.assertEqual(previous_guest.revoked_at, 30)
+        self.assertEqual(active, owner)
+        self.assertEqual(owner.role, "OWNER")
+
+    def test_setting_owner_rejects_invalid_user_ledger_existing_ownership_and_limit(self) -> None:
+        with self.assertRaises(UserNotFoundError):
+            set_ledger_owner(self.open_registry, uuid4(), self.ledger.uuid, 20)
+        with self.assertRaises(LedgerNotFoundError):
+            set_ledger_owner(self.open_registry, self.user.uuid, uuid4(), 20)
+        with self.assertRaises(LedgerOwnershipAlreadyExistsError):
+            set_ledger_owner(self.open_registry, self.user.uuid, self.ledger.uuid, 20)
+
+        with self.open_registry() as unit_of_work:
+            candidate = unit_of_work.user_repository.create("Bob", "$argon2id$test", 10)
+            already_owned = unit_of_work.ledger_repository.create(uuid4(), "Other", "other.sqlite", "lucide:BookOpen", b"\x80\x80\x80", 10)
+            unit_of_work.ledger_grant_repository.create(candidate.uuid, already_owned.uuid, "OWNER", 10)
+            unit_of_work.commit()
+        with patch("app.application.registry.use_cases.grant.MAXIMUM_LEDGERS_PER_USER", 1), self.assertRaises(LedgerLimitReachedError):
+            set_ledger_owner(self.open_registry, candidate.uuid, self.ledger.uuid, 20)
+
+    def test_setting_first_owner_does_not_require_an_existing_grant(self) -> None:
+        with self.open_registry() as unit_of_work:
+            user = unit_of_work.user_repository.create("Carol", "$argon2id$test", 10)
+            ledger = unit_of_work.ledger_repository.create(uuid4(), "Unowned", "unowned.sqlite", "lucide:BookOpen", b"\x80\x80\x80", 10)
+            unit_of_work.commit()
+
+        grant = set_ledger_owner(self.open_registry, user.uuid, ledger.uuid, 20)
+
+        self.assertEqual(grant.grantee_uuid, user.uuid)
+        self.assertEqual(grant.role, "OWNER")
+
+    def test_setting_a_new_owner_revokes_only_previous_owner(self) -> None:
+        first, _ = create_external_ledger_grant(
+            self.open_registry,
+            self.password_hasher,
+            self.user,
+            self.ledger.uuid,
+            "First",
+            "current password",
+            20,
+        )
+        second, _ = create_external_ledger_grant(
+            self.open_registry,
+            self.password_hasher,
+            self.user,
+            self.ledger.uuid,
+            "Second",
+            "current password",
+            21,
+        )
+        with self.open_registry() as unit_of_work:
+            new_owner = unit_of_work.user_repository.create("Bob", "$argon2id$test$other password", 10)
+            guest_user = unit_of_work.user_repository.create("Carol", "$argon2id$test$guest", 10)
+            other_guest = unit_of_work.ledger_grant_repository.create(guest_user.uuid, self.ledger.uuid, "GUEST", 22)
+            unit_of_work.commit()
+
+        new_owner_grant = set_ledger_owner(self.open_registry, new_owner.uuid, self.ledger.uuid, 30)
+
+        with self.open_registry() as unit_of_work:
+            old_owner = unit_of_work.ledger_grant_repository.get(self.owner_grant.uuid)
+            first_grant = unit_of_work.ledger_grant_repository.get(first.uuid)
+            second_grant = unit_of_work.ledger_grant_repository.get(second.uuid)
+            other_guest_grant = unit_of_work.ledger_grant_repository.get(other_guest.uuid)
+        assert old_owner is not None and first_grant is not None and second_grant is not None and other_guest_grant is not None
+        self.assertEqual(old_owner.revoked_at, 30)
+        self.assertIsNone(first_grant.revoked_at)
+        self.assertIsNone(second_grant.revoked_at)
+        self.assertIsNone(other_guest_grant.revoked_at)
+        self.assertEqual(new_owner_grant.role, "OWNER")
+        self.assertEqual(new_owner_grant.grantee_uuid, new_owner.uuid)
+
+    def test_revoking_owner_preserves_guest_grants(self) -> None:
+        guest, _ = create_external_ledger_grant(
+            self.open_registry,
+            self.password_hasher,
+            self.user,
+            self.ledger.uuid,
+            "Sync plugin",
+            "current password",
+            20,
+        )
+
+        revoke_ledger_grant(self.open_registry, self.owner_grant.uuid, 30)
+
+        with self.open_registry() as unit_of_work:
+            owner = unit_of_work.ledger_grant_repository.get(self.owner_grant.uuid)
+            external = unit_of_work.ledger_grant_repository.get(guest.uuid)
+        assert owner is not None and external is not None
+        self.assertEqual(owner.revoked_at, 30)
+        self.assertIsNone(external.revoked_at)
+
+    def test_revoking_an_unknown_grant_is_rejected(self) -> None:
+        with self.assertRaises(LedgerGrantNotFoundError):
+            revoke_ledger_grant(self.open_registry, uuid4(), 30)
