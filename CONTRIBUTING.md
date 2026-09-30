@@ -60,6 +60,13 @@ cd frontend
 npm test
 ```
 
+To see frontend coverage:
+
+```sh
+cd frontend
+npm run test:coverage
+```
+
 ### Backend tests
 
 Backend tests use Python's built-in `unittest` runner and are split into unit and integration tests.
@@ -69,6 +76,14 @@ Run the complete backend suite:
 ```sh
 cd backend
 python -m unittest discover -s tests
+```
+
+To see backend coverage, run the same suite through `coverage`:
+
+```sh
+cd backend
+python -m coverage run -m unittest discover -s tests
+python -m coverage report
 ```
 
 ## Help translate Moedeiro
