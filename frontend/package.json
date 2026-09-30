@@ -8,6 +8,7 @@
     "build:production": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test --watch=false",
+    "test:coverage": "ng test --watch=false --coverage",
     "test:watch": "ng test"
   },
   "dependencies": {
@@ -28,6 +29,7 @@
     "@angular/build": "22.1.6",
     "@angular/cli": "22.1.6",
     "@angular/compiler-cli": "22.1.5",
+    "@vitest/coverage-v8": "4.1.11",
     "typescript": "6.0.3",
     "@types/qrcode": "1.5.6",
     "vitest": "^4.1.11",
