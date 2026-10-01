@@ -99,6 +99,3 @@
   .flows-totals > span { justify-items: start; }
 }
 
-@container flows-workspace (max-width: 320px) {
-  .flows-period-control { --toggle-group-columns: 1; }
-}
