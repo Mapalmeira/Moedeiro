@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, HostListener, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, Injector, afterNextRender, computed, inject, input, signal } from '@angular/core';
 import { I18nService } from '../../../../core/i18n/i18n.service';
 import { CashFlowPoint } from '../../../../core/ledgers/cash-flow.models';
 import { formatCurrencyAmount } from '../../../../core/ledgers/currency-format';
@@ -36,6 +36,13 @@ const CHART_MAX_BAR_WIDTH = 16;
 export function homeChartPointWidth(range: HomeFlowRange): number {
   const days = (range.to - range.from) / DAY_SECONDS;
   return Math.max(1, Math.ceil(days / CHART_MAX_POINTS)) * DAY_SECONDS;
+}
+
+export function homeChartTooltipCenter(pointX: number, tooltipWidth: number, boundaryLeft: number, boundaryRight: number): number {
+  const minCenter = boundaryLeft + tooltipWidth / 2;
+  const maxCenter = boundaryRight - tooltipWidth / 2;
+  if (minCenter > maxCenter) return (boundaryLeft + boundaryRight) / 2;
+  return Math.max(minCenter, Math.min(maxCenter, pointX));
 }
 
 @Component({
@@ -88,7 +95,7 @@ export function homeChartPointWidth(range: HomeFlowRange): number {
   `,
   styles: `
     :host { min-width: 0; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; }
-    .flow-chart { position: relative; min-width: 0; min-height: 0; height: 100%; padding: var(--space-2) var(--space-3) 0; overflow: hidden; }
+    .flow-chart { position: relative; min-width: 0; min-height: 0; height: 100%; padding: var(--space-2) var(--space-3) 0; overflow: visible; }
     .flow-chart svg { display: block; width: 100%; height: 100%; min-height: 200px; cursor: crosshair; }
     .flow-chart__grid { stroke: var(--line); stroke-width: 1; stroke-dasharray: 5 5; }
     .flow-chart__axis, .flow-chart__y-axis { stroke: var(--line-strong); stroke-width: 1.5; }
@@ -100,7 +107,7 @@ export function homeChartPointWidth(range: HomeFlowRange): number {
     .flow-chart__label, .flow-chart__y-label { fill: var(--text-muted); font-weight: 650; pointer-events: none; }
     .flow-chart__label { font-size: var(--chart-x-label-font-size); }
     .flow-chart__y-label { font-size: 22px; font-variant-numeric: tabular-nums; }
-    .flow-chart__tooltip { position: absolute; top: var(--space-3); z-index: 2; min-width: 180px; display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-3); transform: translateX(-50%); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); box-shadow: var(--compact-shadow); font-size: var(--control-detail-font-size); pointer-events: none; }
+    .flow-chart__tooltip { position: absolute; top: var(--space-3); z-index: 2; min-width: min(180px, calc(100% - (2 * var(--space-3)) - var(--compact-shadow-offset))); max-width: calc(100% - (2 * var(--space-3)) - var(--compact-shadow-offset)); display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-3); transform: translateX(-50%); border: var(--border-width) solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); box-shadow: var(--compact-shadow); font-size: var(--control-detail-font-size); pointer-events: none; }
     .flow-chart__tooltip strong { font-weight: 800; }
     .flow-chart__tooltip span { display: flex; justify-content: space-between; gap: var(--space-3); color: var(--text-muted); }
     .flow-chart__tooltip b { color: var(--text); font-weight: 780; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -114,6 +121,10 @@ export function homeChartPointWidth(range: HomeFlowRange): number {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeFlowChartComponent {
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
+  private geometryObserver?: ResizeObserver;
   readonly i18n = inject(I18nService);
   readonly points = input.required<readonly CashFlowPoint[]>();
   readonly currency = input.required<LedgerCurrency | null>();
@@ -140,7 +151,7 @@ export class HomeFlowChartComponent {
     const detail = this.periodMode() === 'range' ? this.labelDetail(range) : 'day'; const target = detail === 'year' ? CHART_X_LABEL_WITH_YEAR_TARGET_COUNT : CHART_X_LABEL_TARGET_COUNT;
     const stride = Math.max(1, Math.ceil(points.length / target)); const offset = Math.floor(stride / 2); const pointWidth = homeChartPointWidth(range);
     return points.map((point, index) => { const x = CHART_LEFT + slot * index + slot / 2; const cumulativeValue = cumulative[index] ?? 0; const timestamp = range.from + index * pointWidth; const incomeHeight = point.income * scale; return {
-      index, x, xPercent: Math.min(86, Math.max(14, x / CHART_WIDTH * 100)), barWidth, incomeX: x - barWidth / 2, expenseX: x - barWidth / 2,
+      index, x, xPercent: x / CHART_WIDTH * 100, barWidth, incomeX: x - barWidth / 2, expenseX: x - barWidth / 2,
       incomeY: CHART_ZERO_Y - incomeHeight, incomeHeight, expenseHeight: point.expense * scale, cumulativeY: CHART_ZERO_Y - cumulativeValue * scale,
       label: this.chartDateFormatters[detail].format(new Date(timestamp * 1000)), showLabel: index % stride === offset, date: this.dateFormatter.format(new Date(timestamp * 1000)),
       income: formatCurrencyAmount(point.income, currency), expense: formatCurrencyAmount(point.expense, currency), net: formatCurrencyAmount(point.income - point.expense, currency), cumulative: formatCurrencyAmount(cumulativeValue, currency),
@@ -148,13 +159,65 @@ export class HomeFlowChartComponent {
   });
   readonly cumulativePolyline = computed(() => this.chartPoints().map(point => `${point.x},${point.cumulativeY}`).join(' '));
   readonly activePoint = computed(() => { const index = this.pinnedIndex() ?? this.hoveredIndex(); return index === null ? null : this.chartPoints()[index] ?? null; });
-  hover(event: PointerEvent): void { if (event.pointerType && event.pointerType !== 'mouse') return; this.pinnedIndex.set(null); this.hoveredIndex.set(this.indexAt(event)); }
+
+  constructor() {
+    afterNextRender(() => this.observeGeometry(), { injector: this.injector });
+    this.destroyRef.onDestroy(() => this.geometryObserver?.disconnect());
+  }
+
+  hover(event: PointerEvent): void {
+    if (event.pointerType && event.pointerType !== 'mouse') return;
+    const index = this.indexAt(event);
+    if (this.pinnedIndex() === null && this.hoveredIndex() === index) return;
+    this.pinnedIndex.set(null);
+    this.hoveredIndex.set(index);
+    this.positionTooltipAfterRender();
+  }
   leave(): void { this.hoveredIndex.set(null); }
-  pin(event: PointerEvent): void { if (event.pointerType === 'mouse') return; const index = this.indexAt(event); if (index !== null) this.pinnedIndex.update(current => current === index ? null : index); }
+  pin(event: PointerEvent): void {
+    if (event.pointerType === 'mouse') return;
+    const index = this.indexAt(event);
+    if (index === null) return;
+    this.pinnedIndex.update(current => current === index ? null : index);
+    this.positionTooltipAfterRender();
+  }
   keepSelection(event: PointerEvent): void { event.stopPropagation(); }
   @HostListener('document:pointerdown') clearSelection(): void { this.hoveredIndex.set(null); this.pinnedIndex.set(null); }
-  moveSelection(delta: number, event: Event): void { const points = this.chartPoints(); if (!points.length) return; event.preventDefault(); const current = this.pinnedIndex() ?? this.hoveredIndex() ?? (delta > 0 ? -1 : points.length); this.pinnedIndex.set(Math.max(0, Math.min(points.length - 1, current + delta))); this.hoveredIndex.set(null); }
+  moveSelection(delta: number, event: Event): void { const points = this.chartPoints(); if (!points.length) return; event.preventDefault(); const current = this.pinnedIndex() ?? this.hoveredIndex() ?? (delta > 0 ? -1 : points.length); this.pinnedIndex.set(Math.max(0, Math.min(points.length - 1, current + delta))); this.hoveredIndex.set(null); this.positionTooltipAfterRender(); }
   private indexAt(event: MouseEvent | PointerEvent): number | null { const target = event.currentTarget; if (!(target instanceof SVGSVGElement)) return null; const points = this.chartPoints(); const bounds = target.getBoundingClientRect(); if (!points.length || bounds.width <= 0) return null; const x = (event.clientX - bounds.left) / bounds.width * CHART_WIDTH; const slot = CHART_PLOT_WIDTH / points.length; return Math.max(0, Math.min(points.length - 1, Math.round((x - CHART_LEFT - slot / 2) / slot))); }
+  private positionTooltipAfterRender(): void {
+    afterNextRender(() => this.resolveTooltipPosition(), { injector: this.injector });
+  }
+  private observeGeometry(): void {
+    if (typeof ResizeObserver === 'undefined') return;
+    const chart = this.host.nativeElement.querySelector<HTMLElement>('.flow-chart');
+    const svg = chart?.querySelector<SVGSVGElement>('svg');
+    if (!chart || !svg) return;
+    this.geometryObserver = new ResizeObserver(() => this.resolveTooltipPosition());
+    this.geometryObserver.observe(chart);
+    this.geometryObserver.observe(svg);
+  }
+  private resolveTooltipPosition(): void {
+    const point = this.activePoint();
+    const chart = this.host.nativeElement.querySelector<HTMLElement>('.flow-chart');
+    const svg = chart?.querySelector<SVGSVGElement>('svg');
+    const tooltip = chart?.querySelector<HTMLElement>('.flow-chart__tooltip');
+    if (!point || !chart || !svg || !tooltip) return;
+
+    const chartBounds = chart.getBoundingClientRect();
+    const svgBounds = svg.getBoundingClientRect();
+    if (svgBounds.width <= 0 || svgBounds.height <= 0) return;
+
+    const scale = Math.min(svgBounds.width / CHART_WIDTH, svgBounds.height / CHART_HEIGHT);
+    const renderedWidth = CHART_WIDTH * scale;
+    const renderedLeft = svgBounds.left + (svgBounds.width - renderedWidth) / 2;
+    const boundaryLeft = renderedLeft - chartBounds.left;
+    const shadowOffset = Number.parseFloat(getComputedStyle(chart).getPropertyValue('--compact-shadow-offset')) || 0;
+    const boundaryRight = boundaryLeft + renderedWidth - shadowOffset;
+    const pointX = boundaryLeft + point.x * scale;
+    const tooltipWidth = tooltip.getBoundingClientRect().width;
+    tooltip.style.left = `${homeChartTooltipCenter(pointX, tooltipWidth, boundaryLeft, boundaryRight)}px`;
+  }
   private labelDetail(range: HomeFlowRange): ChartDateLabelDetail { const from = new Date(range.from * 1000); const to = new Date((range.to - 1) * 1000); if (from.getFullYear() !== to.getFullYear()) return 'year'; if (from.getMonth() !== to.getMonth()) return 'month'; return 'day'; }
   private formatTick(value: number): string { const currency = this.currency(); if (!currency) return String(value); const major = value / 10 ** currency.decimal_places; return Math.abs(major) >= 1000 ? new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(major) : new Intl.NumberFormat(undefined, { maximumSignificantDigits: 4 }).format(major); }
 }
