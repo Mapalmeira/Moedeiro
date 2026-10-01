@@ -45,12 +45,20 @@ export class CashFlowService {
     return this.http.get<CashFlowPoint[]>(API_ROUTES.ledgers.cashFlow.points(ledgerUuid), { params });
   }
 
-  sankey(ledgerUuid: string, accountUuid: string, fromTimestamp: number, toTimestamp: number, detailLevel: number): Observable<CashFlowSankey> {
-    const params = new HttpParams()
-      .set('account_uuid', accountUuid)
+  sankey(
+    ledgerUuid: string,
+    currencyUuid: string,
+    fromTimestamp: number,
+    toTimestamp: number,
+    detailLevel: number,
+    accountUuid?: string,
+  ): Observable<CashFlowSankey> {
+    let params = new HttpParams()
+      .set('currency_uuid', currencyUuid)
       .set('from_timestamp', fromTimestamp)
       .set('to_timestamp', toTimestamp)
       .set('detail_level', detailLevel);
+    if (accountUuid) params = params.set('account_uuid', accountUuid);
     return this.http.get<CashFlowSankey>(API_ROUTES.ledgers.cashFlow.sankey(ledgerUuid), { params });
   }
 

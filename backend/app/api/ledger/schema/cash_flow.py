@@ -61,8 +61,8 @@ class CashFlowSankeyLinkResponse(BaseModel):
 
 
 class CashFlowSankeyResponse(BaseModel):
-    account_uuid: UUID
     currency_uuid: UUID
+    account_uuid: UUID | None
     from_timestamp: int
     to_timestamp: int
     detail_level: int

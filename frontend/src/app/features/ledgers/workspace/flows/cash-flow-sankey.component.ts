@@ -6,7 +6,7 @@ import { LedgerCurrency } from '../../../../core/ledgers/ledger-entities.models'
 
 type SankeySide = CashFlowSankeyNode['side'] | 'surplus';
 type SankeyKind = CashFlowSankeyNode['kind'] | 'surplus';
-type SankeyTone = 'income' | 'expense' | 'account' | 'surplus';
+type SankeyTone = 'income' | 'expense' | 'scope' | 'surplus';
 
 interface SankeySourceNode {
   id: string;
@@ -90,7 +90,7 @@ const SURPLUS_NODE_ID = 'surplus';
                 <rect class="sankey__node"
                   [class.sankey__node--income]="node.tone === 'income'"
                   [class.sankey__node--expense]="node.tone === 'expense'"
-                  [class.sankey__node--account]="node.tone === 'account'"
+                  [class.sankey__node--scope]="node.tone === 'scope'"
                   [class.sankey__node--surplus]="node.tone === 'surplus'"
                   [attr.x]="node.x" [attr.y]="node.y" [attr.width]="node.width" [attr.height]="node.height" rx="4" ry="4" />
                 <text class="sankey__label" [attr.x]="node.labelX" [attr.y]="node.labelY" [attr.text-anchor]="node.labelAnchor">
@@ -153,7 +153,7 @@ const SURPLUS_NODE_ID = 'surplus';
     }
     .sankey__node--income { fill: var(--green-strong); }
     .sankey__node--expense { fill: var(--danger); }
-    .sankey__node--account { fill: var(--orange); }
+    .sankey__node--scope { fill: var(--orange); }
     .sankey__node--surplus { fill: var(--blue-strong); }
     .sankey__label {
       fill: var(--text);
@@ -232,20 +232,20 @@ export class CashFlowSankeyComponent {
       category_uuid: node.category_uuid,
     }));
     const sourceLinks: CashFlowSankeyLink[] = [...graph.links];
-    const accountNode = sourceNodes.find(node => node.side === 'account');
+    const scopeNode = sourceNodes.find(node => node.side === 'scope');
     const surplus = Math.max(0, graph.income - graph.expense);
-    if (accountNode && surplus > 0) {
+    if (scopeNode && surplus > 0) {
       sourceNodes.push({
         id: SURPLUS_NODE_ID,
         kind: 'surplus',
         side: 'surplus',
         label: this.i18n.t('flows.surplus'),
-        column: accountNode.column + 1,
+        column: scopeNode.column + 1,
         order: Number.MAX_SAFE_INTEGER,
         value: surplus,
         category_uuid: null,
       });
-      sourceLinks.push({ source: accountNode.id, target: SURPLUS_NODE_ID, value: surplus });
+      sourceLinks.push({ source: scopeNode.id, target: SURPLUS_NODE_ID, value: surplus });
     }
 
     const maxColumn = Math.max(...sourceNodes.map(node => node.column));
@@ -277,7 +277,7 @@ export class CashFlowSankeyComponent {
       for (const node of nodes) {
         const nodeHeight = Math.max(2, node.value * scale);
         const label = this.truncateLabel(node.label);
-        const account = node.side === 'account';
+        const scope = node.side === 'scope';
         const income = node.side === 'income';
         views.push({
           ...node,
@@ -286,9 +286,9 @@ export class CashFlowSankeyComponent {
           width: NODE_WIDTH,
           height: nodeHeight,
           shortLabel: label,
-          labelX: account ? x + NODE_WIDTH / 2 : income ? x - LABEL_GAP : x + NODE_WIDTH + LABEL_GAP,
-          labelY: account ? y - LABEL_GAP - 2 : y + nodeHeight / 2,
-          labelAnchor: account ? 'middle' : income ? 'end' : 'start',
+          labelX: scope ? x + NODE_WIDTH / 2 : income ? x - LABEL_GAP : x + NODE_WIDTH + LABEL_GAP,
+          labelY: scope ? y - LABEL_GAP - 2 : y + nodeHeight / 2,
+          labelAnchor: scope ? 'middle' : income ? 'end' : 'start',
           tone: this.nodeTone(node.side),
         });
         y += nodeHeight + NODE_GAP;

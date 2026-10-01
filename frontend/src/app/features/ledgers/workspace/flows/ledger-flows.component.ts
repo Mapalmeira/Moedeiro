@@ -44,6 +44,7 @@ export class LedgerFlowsComponent {
 
   readonly accounts = signal<LedgerAccount[]>([]);
   readonly currencies = signal<LedgerCurrency[]>([]);
+  readonly selectedCurrencyUuid = signal('');
   readonly selectedAccountUuid = signal('');
   readonly selectedMonth = signal(currentMonthValue());
   readonly periodMode = signal<PeriodMode>('month');
@@ -60,22 +61,31 @@ export class LedgerFlowsComponent {
   private readonly accountByUuid = computed(() => new Map(this.accounts().map(account => [account.uuid, account] as const)));
   private readonly currencyByUuid = computed(() => new Map(this.currencies().map(currency => [currency.uuid, currency] as const)));
 
-  readonly accountOptions = computed<EntitySearchOption[]>(() => this.accounts().map(account => ({
-    value: account.uuid,
-    label: account.name,
-    detail: account.note,
-    icon: account.icon,
-    color: account.color_code,
+  readonly currencyOptions = computed<EntitySearchOption[]>(() => this.currencies().map(currency => ({
+    value: currency.uuid,
+    label: currency.name,
+    icon: currency.icon,
+    color: currency.color_code,
   })));
+  readonly accountOptions = computed<EntitySearchOption[]>(() => [
+    { value: '', label: this.i18n.t('activity.allAccounts'), uiIcon: 'LucideBuilding2', tone: 'neutral' },
+    ...this.accounts()
+      .filter(account => account.currency_uuid === this.selectedCurrencyUuid())
+      .map(account => ({
+        value: account.uuid,
+        label: account.name,
+        detail: account.note,
+        icon: account.icon,
+        color: account.color_code,
+      })),
+  ]);
+  readonly selectedCurrency = computed(() => this.currencyByUuid().get(this.selectedCurrencyUuid()) ?? null);
   readonly selectedAccount = computed(() => this.accountByUuid().get(this.selectedAccountUuid()) ?? null);
-  readonly selectedCurrency = computed(() => {
-    const account = this.selectedAccount();
-    return account ? this.currencyByUuid().get(account.currency_uuid) ?? null : null;
-  });
   readonly selectedRange = computed<TimestampRange | null>(() => this.periodMode() === 'month' ? monthTimestampRange(this.selectedMonth()) : dateInputTimestampRange(this.rangeFromDate(), this.rangeToDate()));
   readonly invalidRange = computed(() => this.periodMode() === 'range' && !!this.rangeFromDate() && !!this.rangeToDate() && !this.selectedRange());
   readonly incomeLabel = computed(() => this.formatAmount(this.graph()?.income ?? 0));
   readonly expenseLabel = computed(() => this.formatAmount(this.graph()?.expense ?? 0));
+  readonly diagramScopeLabel = computed(() => this.selectedAccount()?.name ?? this.selectedCurrency()?.name ?? '');
 
   constructor() {
     effect(() => {
@@ -87,12 +97,13 @@ export class LedgerFlowsComponent {
     });
     effect(() => {
       const ledgerUuid = this.context.ledgerUuid();
-      const accountUuid = this.selectedAccountUuid();
+      const currencyUuid = this.selectedCurrencyUuid();
+      this.selectedAccountUuid();
       const range = this.selectedRange();
       const detailLevel = this.detailLevel();
       const ready = this.resourcesReady();
       if (!ready) return;
-      if (!ledgerUuid || !accountUuid || !range) {
+      if (!ledgerUuid || !currencyUuid || !range) {
         untracked(() => {
           this.graphRequest?.unsubscribe();
           this.graph.set(null);
@@ -104,7 +115,18 @@ export class LedgerFlowsComponent {
     });
   }
 
+  selectCurrency(value: string): void {
+    if (value === this.selectedCurrencyUuid()) return;
+    this.selectedCurrencyUuid.set(value);
+    const accountUuid = this.selectedAccountUuid();
+    if (accountUuid && !this.accounts().some(account => account.uuid === accountUuid && account.currency_uuid === value)) {
+      this.selectedAccountUuid.set('');
+    }
+    this.saveViewState();
+  }
+
   selectAccount(value: string): void {
+    if (value && !this.accounts().some(account => account.uuid === value && account.currency_uuid === this.selectedCurrencyUuid())) return;
     if (value !== this.selectedAccountUuid()) {
       this.selectedAccountUuid.set(value);
       this.saveViewState();
@@ -167,8 +189,14 @@ export class LedgerFlowsComponent {
       next: ({ accounts, currencies }) => {
         this.accounts.set(accounts);
         this.currencies.set(currencies);
-        const selected = this.selectedAccountUuid();
-        if (!accounts.some(account => account.uuid === selected)) this.selectedAccountUuid.set(accounts[0]?.uuid ?? '');
+        const selectedCurrencyUuid = this.selectedCurrencyUuid();
+        if (!currencies.some(currency => currency.uuid === selectedCurrencyUuid)) {
+          this.selectedCurrencyUuid.set(currencies[0]?.uuid ?? '');
+        }
+        const selectedAccountUuid = this.selectedAccountUuid();
+        if (selectedAccountUuid && !accounts.some(account => account.uuid === selectedAccountUuid && account.currency_uuid === this.selectedCurrencyUuid())) {
+          this.selectedAccountUuid.set('');
+        }
         this.saveViewState();
         this.resourcesReady.set(true);
       },
@@ -178,14 +206,15 @@ export class LedgerFlowsComponent {
 
   private loadGraph(): void {
     const ledgerUuid = this.context.ledgerUuid();
+    const currencyUuid = this.selectedCurrencyUuid();
     const accountUuid = this.selectedAccountUuid();
     const range = this.selectedRange();
-    if (!ledgerUuid || !accountUuid || !range) return;
+    if (!ledgerUuid || !currencyUuid || !range) return;
     this.graphRequest?.unsubscribe();
     this.graph.set(null);
     this.loading.set(true);
     this.error.set(null);
-    this.graphRequest = this.cashFlow.sankey(ledgerUuid, accountUuid, range.from, range.to, this.detailLevel()).pipe(
+    this.graphRequest = this.cashFlow.sankey(ledgerUuid, currencyUuid, range.from, range.to, this.detailLevel(), accountUuid || undefined).pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.loading.set(false)),
     ).subscribe({
@@ -212,6 +241,7 @@ export class LedgerFlowsComponent {
     this.accounts.set([]);
     this.currencies.set([]);
     const saved = ledgerUuid ? this.workspaceState.getFlows(ledgerUuid) : null;
+    this.selectedCurrencyUuid.set(saved?.currency_uuid ?? '');
     this.selectedAccountUuid.set(saved?.account_uuid ?? '');
     this.selectedMonth.set(saved?.month ?? currentMonthValue());
     this.periodMode.set(saved?.period_mode ?? 'month');
@@ -229,6 +259,7 @@ export class LedgerFlowsComponent {
     const ledgerUuid = this.context.ledgerUuid();
     if (!ledgerUuid) return;
     this.workspaceState.setFlows(ledgerUuid, {
+      currency_uuid: this.selectedCurrencyUuid(),
       account_uuid: this.selectedAccountUuid(),
       month: this.selectedMonth(),
       period_mode: this.periodMode(),

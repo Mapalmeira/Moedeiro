@@ -7,8 +7,8 @@ export interface CashFlowPoint {
   expense_movement_count: number;
 }
 
-type CashFlowSankeySide = 'income' | 'account' | 'expense';
-type CashFlowSankeyNodeKind = 'account' | 'category';
+type CashFlowSankeySide = 'income' | 'scope' | 'expense';
+type CashFlowSankeyNodeKind = 'account' | 'currency' | 'category';
 
 export interface CashFlowSankeyNode {
   id: string;
@@ -29,8 +29,8 @@ export interface CashFlowSankeyLink {
 }
 
 export interface CashFlowSankey {
-  account_uuid: string;
   currency_uuid: string;
+  account_uuid: string | null;
   from_timestamp: number;
   to_timestamp: number;
   detail_level: number;

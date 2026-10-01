@@ -118,12 +118,12 @@ class CashFlowRoutesTest(unittest.TestCase):
         self.add_movement(100, 50, 2)
         self.add_movement(120, -20, 3)
 
-        sankey = get_ledger_cash_flow_sankey(self.ledger.uuid, self.account.uuid, 100, 200, 1, self.request, self.ledger)
+        sankey = get_ledger_cash_flow_sankey(self.ledger.uuid, self.currency.uuid, 100, 200, 1, self.request, self.ledger, self.account.uuid)
 
         self.assertEqual((sankey.income, sankey.expense), (100, 60))
         self.assertEqual(sankey.account_uuid, self.account.uuid)
         self.assertEqual(sankey.currency_uuid, self.currency.uuid)
-        self.assertTrue(any(node.kind == "account" for node in sankey.nodes))
+        self.assertTrue(any(node.kind == "account" and node.side == "scope" for node in sankey.nodes))
         self.assertTrue(sankey.links)
 
     def test_queries_map_unknown_currency_account_and_category(self) -> None:
@@ -160,6 +160,10 @@ class CashFlowRoutesTest(unittest.TestCase):
         self.assertEqual(point_width["schema"]["minimum"], 1)
         sankey = paths["/api/ledgers/{ledger_uuid}/cash-flow/sankey"]["get"]
         self.assertIn("200", sankey["responses"])
+        currency_uuid = next(parameter for parameter in sankey["parameters"] if parameter["name"] == "currency_uuid")
+        account_uuid = next(parameter for parameter in sankey["parameters"] if parameter["name"] == "account_uuid")
+        self.assertTrue(currency_uuid["required"])
+        self.assertFalse(account_uuid["required"])
         detail_level = next(parameter for parameter in sankey["parameters"] if parameter["name"] == "detail_level")
         self.assertEqual(detail_level["schema"]["minimum"], 1)
         self.assertEqual(detail_level["schema"]["maximum"], 5)

@@ -83,7 +83,7 @@ export const en: Record<TranslationKey, string> = {
   'flows.level': 'Level {level}',
   'flows.diagramTitle': 'Income and expenses by category',
   'flows.surplus': 'Surplus',
-  'flows.diagramAria': 'Income and expense flows for account {account}',
+  'flows.diagramAria': 'Income and expense flows for {scope}',
   'flows.empty': 'No income or expenses in the selected period.',
   'errors.flowsLoadFailed': 'Could not load flows.',
   'ledgers.title': 'Ledgers',

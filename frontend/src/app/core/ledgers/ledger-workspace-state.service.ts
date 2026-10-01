@@ -29,6 +29,7 @@ interface BudgetViewState {
 }
 
 interface FlowViewState {
+  currency_uuid: string;
   account_uuid: string;
   month: string;
   period_mode: PeriodMode;

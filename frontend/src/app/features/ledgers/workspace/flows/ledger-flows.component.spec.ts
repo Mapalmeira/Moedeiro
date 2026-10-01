@@ -32,8 +32,8 @@ const currency: LedgerCurrency = {
 };
 
 const graph: CashFlowSankey = {
-  account_uuid: account.uuid,
   currency_uuid: currency.uuid,
+  account_uuid: null,
   from_timestamp: 0,
   to_timestamp: 1,
   detail_level: 3,
@@ -78,6 +78,7 @@ describe('LedgerFlowsComponent', () => {
   function prepareGraphRequest(component: LedgerFlowsComponent): void {
     component.accounts.set([account]);
     component.currencies.set([currency]);
+    component.selectedCurrencyUuid.set(currency.uuid);
     component.selectedAccountUuid.set(account.uuid);
     component.selectedMonth.set('2026-09');
     component.resourcesReady.set(true);
@@ -90,11 +91,19 @@ describe('LedgerFlowsComponent', () => {
 
     expect(entities.listAccounts).toHaveBeenCalledWith('ledger');
     expect(entities.listCurrencies).toHaveBeenCalledWith('ledger');
-    expect(component.selectedAccountUuid()).toBe(account.uuid);
+    expect(component.selectedCurrencyUuid()).toBe(currency.uuid);
+    expect(component.selectedAccountUuid()).toBe('');
     expect(component.selectedCurrency()).toEqual(currency);
     expect(component.resourcesReady()).toBe(true);
     expect(component.resourcesLoading()).toBe(false);
-    expect(cashFlow.sankey).toHaveBeenCalledOnce();
+    expect(cashFlow.sankey).toHaveBeenCalledWith(
+      'ledger',
+      currency.uuid,
+      expect.any(Number),
+      expect.any(Number),
+      3,
+      undefined,
+    );
     expect(component.graph()).toEqual(graph);
   });
 
@@ -106,10 +115,11 @@ describe('LedgerFlowsComponent', () => {
 
     expect(cashFlow.sankey).toHaveBeenCalledWith(
       'ledger',
-      account.uuid,
+      currency.uuid,
       new Date(2026, 8, 1).getTime() / 1000,
       new Date(2026, 9, 1).getTime() / 1000,
       3,
+      account.uuid,
     );
     expect(component.graph()).toEqual(graph);
     expect(component.loading()).toBe(false);

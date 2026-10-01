@@ -6,8 +6,8 @@ from pydantic import BaseModel
 from app.domain.appearance import RgbColorCode
 
 
-CashFlowSankeySide = Literal["income", "account", "expense"]
-CashFlowSankeyNodeKind = Literal["account", "category"]
+CashFlowSankeySide = Literal["income", "scope", "expense"]
+CashFlowSankeyNodeKind = Literal["account", "currency", "category"]
 
 
 class CashFlowCategoryTotal(BaseModel):
@@ -35,8 +35,8 @@ class CashFlowSankeyLink(BaseModel):
 
 
 class CashFlowSankey(BaseModel):
-    account_uuid: UUID
     currency_uuid: UUID
+    account_uuid: UUID | None
     from_timestamp: int
     to_timestamp: int
     detail_level: int

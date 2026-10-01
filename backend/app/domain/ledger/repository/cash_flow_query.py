@@ -21,6 +21,11 @@ class CashFlowQueryRepository(ABC):
         pass
 
     @abstractmethod
-    def list_category_totals(self, account_uuid: UUID, filters: FinancialEventFilter) -> list[CashFlowCategoryTotal]:
-        """Aggregate non-transfer movements by category for one account."""
+    def list_category_totals(self, currency_uuid: UUID, filters: FinancialEventFilter) -> list[CashFlowCategoryTotal]:
+        """Aggregate cash-flow movements by category for one currency.
+
+        Transfer events follow the cash-flow summary contract: they are excluded
+        for currency-wide results and the selected account side is included when
+        account_uuid is present in filters.
+        """
         pass

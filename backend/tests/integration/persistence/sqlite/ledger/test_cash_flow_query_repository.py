@@ -205,7 +205,7 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         self.assertEqual(summary.expense, 40)
         self.assertEqual(summary.event_count, 1)
 
-    def test_list_category_totals_groups_account_movements_by_category_and_excludes_transfers(self) -> None:
+    def test_list_category_totals_groups_selected_account_movements_and_includes_transfers(self) -> None:
         groceries = self.create_category("Groceries")
         salary = self.create_category("Salary")
         income = self.create_event("Salary", occurred_at=100)
@@ -218,14 +218,32 @@ class SqliteCashFlowQueryRepositoryTest(LedgerRepositoryTestCase):
         self.movement_repository.create(other_account_event.uuid, self.other_account.uuid, groceries.uuid, -700, None)
 
         totals = self.repository.list_category_totals(
-            self.account.uuid,
+            self.currency.uuid,
             FinancialEventFilter(from_timestamp=100, to_timestamp=200, account_uuid=self.account.uuid),
         )
 
         by_category = {total.category_uuid: (total.income, total.expense) for total in totals}
         self.assertEqual(by_category[salary.uuid], (200, 0))
-        self.assertEqual(by_category[groceries.uuid], (0, 75))
+        self.assertEqual(by_category[groceries.uuid], (0, 575))
         self.assertEqual(len(by_category), 2)
+
+    def test_list_category_totals_uses_currency_scope_and_excludes_transfers_without_account_filter(self) -> None:
+        income = self.create_event("Income", occurred_at=100)
+        expense = self.create_event("Expense", occurred_at=120)
+        transfer = self.create_event("Transfer", type="ACCOUNT_TRANSFER", occurred_at=140)
+        foreign = self.create_event("Foreign", occurred_at=150)
+        self.movement_repository.create(income.uuid, self.account.uuid, self.category.uuid, 100, None)
+        self.movement_repository.create(expense.uuid, self.other_account.uuid, self.category.uuid, -40, None)
+        self.movement_repository.create(transfer.uuid, self.account.uuid, self.category.uuid, -500, None)
+        self.movement_repository.create(transfer.uuid, self.other_account.uuid, self.category.uuid, 500, None)
+        self.movement_repository.create(foreign.uuid, self.foreign_currency_account.uuid, self.category.uuid, 900, None)
+
+        totals = self.repository.list_category_totals(
+            self.currency.uuid,
+            FinancialEventFilter(from_timestamp=100, to_timestamp=200),
+        )
+
+        self.assertEqual([(total.category_uuid, total.income, total.expense) for total in totals], [(self.category.uuid, 100, 40)])
 
     def test_list_points_groups_flow_from_caller_day_boundary_and_orders_it(self) -> None:
         """Daily buckets are anchored to the supplied first local-day timestamp."""

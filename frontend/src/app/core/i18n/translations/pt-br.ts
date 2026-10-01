@@ -81,7 +81,7 @@ export const ptBR = {
   'flows.level': 'Nível {level}',
   'flows.diagramTitle': 'Receitas e despesas por categoria',
   'flows.surplus': 'Excedente',
-  'flows.diagramAria': 'Fluxos de receitas e despesas da conta {account}',
+  'flows.diagramAria': 'Fluxos de receitas e despesas de {scope}',
   'flows.empty': 'Nenhuma receita ou despesa no período selecionado.',
   'errors.flowsLoadFailed': 'Não foi possível carregar os fluxos.',
   'ledgers.title': 'Ledgers',

@@ -10,9 +10,10 @@
 }
 .flows-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--period-selector-width) minmax(0, 1fr);
-  grid-template-areas: "account period detail";
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--period-selector-width) minmax(0, 1fr);
+  grid-template-areas: "currency account period detail";
 }
+.flows-currency-control { grid-area: currency; }
 .flows-account-control { grid-area: account; }
 .flows-period-control { grid-area: period; width: 100%; }
 .flows-detail-control { grid-area: detail; }
@@ -81,7 +82,7 @@
 @container flows-workspace (max-width: 1280px) {
   .flows-controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas: "account period" "detail period";
+    grid-template-areas: "currency account" "period detail";
   }
   .flows-period-control { --period-selector-columns: minmax(0, 1fr); }
 }
@@ -90,7 +91,7 @@
   .flows { grid-template-rows: auto auto; }
   .flows-controls {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "account" "period" "detail";
+    grid-template-areas: "currency" "account" "period" "detail";
   }
   .flows-card { min-height: var(--flows-card-min-height); }
   .flows-card__header { align-items: flex-start; flex-direction: column; }

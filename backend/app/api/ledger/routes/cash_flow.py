@@ -97,22 +97,25 @@ def list_ledger_cash_flow_points(
 @router.get("/sankey", response_model=CashFlowSankeyResponse)
 def get_ledger_cash_flow_sankey(
     ledger_uuid: UUID,
-    account_uuid: UUID,
+    currency_uuid: UUID,
     from_timestamp: int,
     to_timestamp: int,
     detail_level: Annotated[int, Query(ge=1, le=MAX_CATEGORY_DEPTH)],
     request: Request,
     ledger: GrantedLedger,
+    account_uuid: UUID | None = None,
 ) -> CashFlowSankeyResponse:
     if from_timestamp >= to_timestamp:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="from_timestamp must be less than to_timestamp")
     try:
         sankey = get_cash_flow_sankey(
             ledger_unit_of_work_factory(request, ledger),
-            account_uuid,
+            currency_uuid,
             FinancialEventFilter(from_timestamp=from_timestamp, to_timestamp=to_timestamp, account_uuid=account_uuid),
             detail_level,
         )
+    except CurrencyNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Currency not found") from error
     except AccountNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Account not found") from error
     except InvalidQueryParameterError as error:

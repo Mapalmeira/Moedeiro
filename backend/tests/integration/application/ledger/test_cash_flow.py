@@ -65,7 +65,7 @@ class CashFlowUseCasesTest(unittest.TestCase):
 
         sankey = get_cash_flow_sankey(
             self.open_ledger,
-            self.account.uuid,
+            self.currency.uuid,
             FinancialEventFilter(from_timestamp=100, to_timestamp=200, account_uuid=self.account.uuid),
             2,
         )
@@ -97,7 +97,7 @@ class CashFlowUseCasesTest(unittest.TestCase):
 
         sankey = get_cash_flow_sankey(
             self.open_ledger,
-            self.account.uuid,
+            self.currency.uuid,
             FinancialEventFilter(from_timestamp=100, to_timestamp=200, account_uuid=self.account.uuid),
             5,
         )
@@ -109,17 +109,24 @@ class CashFlowUseCasesTest(unittest.TestCase):
         self.assertEqual(columns[f"expense:{root.uuid}"], 3)
         self.assertEqual(columns[f"expense:{child.uuid}"], 4)
 
-    def test_sankey_rejects_invalid_detail_level_and_unknown_account(self) -> None:
+    def test_sankey_rejects_invalid_detail_level_and_unknown_scope_relations(self) -> None:
         filters = FinancialEventFilter(from_timestamp=100, to_timestamp=200)
         with self.assertRaises(InvalidQueryParameterError):
-            get_cash_flow_sankey(self.open_ledger, self.account.uuid, filters, 0)
-        with self.assertRaises(AccountNotFoundError):
+            get_cash_flow_sankey(self.open_ledger, self.currency.uuid, filters, 0)
+        with self.assertRaises(CurrencyNotFoundError):
             get_cash_flow_sankey(self.open_ledger, uuid4(), filters, 1)
+        with self.assertRaises(AccountNotFoundError):
+            get_cash_flow_sankey(
+                self.open_ledger,
+                self.currency.uuid,
+                filters.model_copy(update={"account_uuid": uuid4()}),
+                1,
+            )
 
-    def test_empty_sankey_has_no_account_node_or_links(self) -> None:
+    def test_empty_sankey_has_no_scope_node_or_links(self) -> None:
         sankey = get_cash_flow_sankey(
             self.open_ledger,
-            self.account.uuid,
+            self.currency.uuid,
             FinancialEventFilter(from_timestamp=100, to_timestamp=200),
             1,
         )
@@ -127,6 +134,56 @@ class CashFlowUseCasesTest(unittest.TestCase):
         self.assertEqual((sankey.income, sankey.expense), (0, 0))
         self.assertEqual(sankey.nodes, [])
         self.assertEqual(sankey.links, [])
+
+    def test_sankey_uses_currency_scope_and_excludes_transfers_without_account_filter(self) -> None:
+        with self.open_ledger() as unit_of_work:
+            other_account = unit_of_work.account_repository.create("Savings", None, self.currency.uuid, "lucide:WalletCards", b"\x41\x51\x61")
+            income = unit_of_work.financial_event_repository.create(120, "Income", "TRANSACTION")
+            expense = unit_of_work.financial_event_repository.create(130, "Expense", "TRANSACTION")
+            transfer = unit_of_work.financial_event_repository.create(140, "Transfer", "ACCOUNT_TRANSFER")
+            unit_of_work.financial_movement_repository.create(income.uuid, self.account.uuid, self.category.uuid, 100, None)
+            unit_of_work.financial_movement_repository.create(expense.uuid, other_account.uuid, self.category.uuid, -40, None)
+            unit_of_work.financial_movement_repository.create(transfer.uuid, self.account.uuid, self.category.uuid, -500, None)
+            unit_of_work.financial_movement_repository.create(transfer.uuid, other_account.uuid, self.category.uuid, 500, None)
+            unit_of_work.commit()
+
+        sankey = get_cash_flow_sankey(
+            self.open_ledger,
+            self.currency.uuid,
+            FinancialEventFilter(from_timestamp=100, to_timestamp=200),
+            1,
+        )
+
+        self.assertIsNone(sankey.account_uuid)
+        self.assertEqual((sankey.income, sankey.expense), (100, 40))
+        scope = next(node for node in sankey.nodes if node.side == "scope")
+        self.assertEqual((scope.id, scope.kind, scope.label), (f"currency:{self.currency.uuid}", "currency", self.currency.name))
+
+    def test_sankey_account_filter_includes_its_side_of_transfers(self) -> None:
+        with self.open_ledger() as unit_of_work:
+            other_account = unit_of_work.account_repository.create("Savings", None, self.currency.uuid, "lucide:WalletCards", b"\x41\x51\x61")
+            transfer = unit_of_work.financial_event_repository.create(140, "Transfer", "ACCOUNT_TRANSFER")
+            unit_of_work.financial_movement_repository.create(transfer.uuid, self.account.uuid, self.category.uuid, -100, None)
+            unit_of_work.financial_movement_repository.create(transfer.uuid, other_account.uuid, self.category.uuid, 100, None)
+            unit_of_work.commit()
+
+        source = get_cash_flow_sankey(
+            self.open_ledger,
+            self.currency.uuid,
+            FinancialEventFilter(from_timestamp=100, to_timestamp=200, account_uuid=self.account.uuid),
+            1,
+        )
+        destination = get_cash_flow_sankey(
+            self.open_ledger,
+            self.currency.uuid,
+            FinancialEventFilter(from_timestamp=100, to_timestamp=200, account_uuid=other_account.uuid),
+            1,
+        )
+
+        self.assertEqual((source.income, source.expense), (0, 100))
+        self.assertEqual((destination.income, destination.expense), (100, 0))
+        self.assertEqual(source.account_uuid, self.account.uuid)
+        self.assertEqual(destination.account_uuid, other_account.uuid)
 
     def test_points_cover_the_filter_and_retain_a_short_final_interval(self) -> None:
         self.add_movement(100, 50)

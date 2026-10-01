@@ -17,8 +17,8 @@ const currency: LedgerCurrency = {
 
 function graph(nodes: CashFlowSankey['nodes'] = [], links: CashFlowSankey['links'] = []): CashFlowSankey {
   return {
-    account_uuid: 'account',
     currency_uuid: currency.uuid,
+    account_uuid: 'account',
     from_timestamp: 1,
     to_timestamp: 2,
     detail_level: 3,
@@ -52,7 +52,7 @@ describe('CashFlowSankeyComponent', () => {
     const value = graph(
       [
         { id: 'income', kind: 'category', side: 'income', label: 'Salário', color_code: '#21E683', column: 0, order: 0, value: 100_00, category_uuid: 'income-category' },
-        { id: 'account', kind: 'account', side: 'account', label: 'Principal', color_code: '#FFD51A', column: 1, order: 0, value: 100_00, category_uuid: null },
+        { id: 'account', kind: 'account', side: 'scope', label: 'Principal', color_code: '#FFD51A', column: 1, order: 0, value: 100_00, category_uuid: null },
         { id: 'expense', kind: 'category', side: 'expense', label: 'Moradia', color_code: '#FF6B6B', column: 2, order: 0, value: 60_00, category_uuid: 'expense-category' },
       ],
       [

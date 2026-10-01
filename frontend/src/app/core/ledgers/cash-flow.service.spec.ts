@@ -52,15 +52,25 @@ describe('CashFlowService', () => {
     request.flush([]);
   });
 
-  it('requests a Sankey graph for one account and detail level', () => {
-    service.sankey('ledger/id', 'account', 100, 200, 3).subscribe();
+  it('requests a Sankey graph for a currency with an optional account filter', () => {
+    service.sankey('ledger/id', 'currency', 100, 200, 3, 'account').subscribe();
 
     const request = http.expectOne(candidate => candidate.url === API_ROUTES.ledgers.cashFlow.sankey('ledger/id'));
     expect(request.request.method).toBe('GET');
+    expect(request.request.params.get('currency_uuid')).toBe('currency');
     expect(request.request.params.get('account_uuid')).toBe('account');
     expect(request.request.params.get('from_timestamp')).toBe('100');
     expect(request.request.params.get('to_timestamp')).toBe('200');
     expect(request.request.params.get('detail_level')).toBe('3');
+    request.flush({});
+  });
+
+  it('omits the Sankey account filter when all accounts are selected', () => {
+    service.sankey('ledger/id', 'currency', 100, 200, 3).subscribe();
+
+    const request = http.expectOne(candidate => candidate.url === API_ROUTES.ledgers.cashFlow.sankey('ledger/id'));
+    expect(request.request.params.get('currency_uuid')).toBe('currency');
+    expect(request.request.params.has('account_uuid')).toBe(false);
     request.flush({});
   });
 });

@@ -77,24 +77,29 @@ class SqliteCashFlowQueryRepository(CashFlowQueryRepository):
             for point_start in range(filters.from_timestamp, filters.to_timestamp, point_width)
         ]
 
-    def list_category_totals(self, account_uuid: UUID, filters: FinancialEventFilter) -> list[CashFlowCategoryTotal]:
+    def list_category_totals(self, currency_uuid: UUID, filters: FinancialEventFilter) -> list[CashFlowCategoryTotal]:
+        where_clause, parameters = self._filtered_events(filters)
+        movement_clause, movement_parameters = self._movement_filter(filters)
         try:
             rows = self.connection.execute(
-                """
+                f"""
+                WITH filtered_events AS (
+                    SELECT event.uuid
+                    FROM financial_event AS event
+                    {where_clause}
+                )
                 SELECT
                     movement.category_uuid,
                     COALESCE(SUM(CASE WHEN movement.value > 0 THEN movement.value * movement.quantity ELSE 0 END), 0) AS income,
                     COALESCE(SUM(CASE WHEN movement.value < 0 THEN -movement.value * movement.quantity ELSE 0 END), 0) AS expense
-                FROM financial_event AS event
-                JOIN financial_movement AS movement ON movement.financial_event_uuid = event.uuid
-                WHERE event.occurred_at >= ?
-                  AND event.occurred_at < ?
-                  AND event.type <> ?
-                  AND movement.account_uuid = ?
+                FROM filtered_events
+                JOIN financial_movement AS movement ON movement.financial_event_uuid = filtered_events.uuid
+                JOIN account ON account.uuid = movement.account_uuid
+                WHERE account.currency_uuid = ?{movement_clause}
                 GROUP BY movement.category_uuid
                 ORDER BY movement.category_uuid ASC
                 """,
-                (filters.from_timestamp, filters.to_timestamp, "ACCOUNT_TRANSFER", account_uuid.bytes),
+                [*parameters, currency_uuid.bytes, *movement_parameters],
             ).fetchall()
         except sqlite3.OperationalError as error:
             raise_query_result_overflow(error)

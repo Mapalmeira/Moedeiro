@@ -1,10 +1,18 @@
 <section class="flows">
   <header class="flows-controls ui-filter-toolbar">
+    <label class="flows-control flows-currency-control">
+      <span>{{ i18n.t('home.currency') }}</span>
+      <app-entity-search-select [options]="currencyOptions()" [value]="selectedCurrencyUuid()"
+        [ariaLabel]="i18n.t('home.currency')" [searchPlaceholder]="i18n.t('home.searchCurrency')"
+        [emptyText]="i18n.t('home.noCurrencies')" [disabled]="resourcesLoading() || !currencies().length"
+        (valueChange)="selectCurrency($event)" />
+    </label>
+
     <label class="flows-control flows-account-control">
       <span>{{ i18n.t('flows.account') }}</span>
       <app-entity-search-select [options]="accountOptions()" [value]="selectedAccountUuid()"
         [ariaLabel]="i18n.t('flows.account')" [searchPlaceholder]="i18n.t('flows.searchAccount')"
-        [emptyText]="i18n.t('flows.noAccounts')" [disabled]="resourcesLoading() || !accounts().length"
+        [emptyText]="i18n.t('flows.noAccounts')" [disabled]="resourcesLoading() || !selectedCurrencyUuid()"
         (valueChange)="selectAccount($event)" />
     </label>
 
@@ -31,8 +39,8 @@
     </div>
   } @else if (resourcesLoading()) {
     <div class="ui-loading-state" role="status"><span class="ui-spinner" aria-hidden="true"></span>{{ i18n.t('workspace.loading') }}</div>
-  } @else if (!accounts().length) {
-    <div class="flows-state ui-empty-state"><app-icon name="LucideWallet" size="display" />{{ i18n.t('flows.noAccounts') }}</div>
+  } @else if (!currencies().length) {
+    <div class="flows-state ui-empty-state"><app-icon name="LucideCoins" size="display" />{{ i18n.t('home.noCurrencies') }}</div>
   } @else {
     <section class="flows-card ui-workspace-card-space ui-card ui-projected-surface">
       <header class="flows-card__header">
@@ -54,7 +62,7 @@
           @if (sankey.nodes.length) {
             @if (selectedCurrency(); as currency) {
               <app-cash-flow-sankey [graph]="sankey" [currency]="currency"
-                [ariaLabel]="i18n.t('flows.diagramAria', { account: selectedAccount()?.name ?? '' })" />
+                [ariaLabel]="i18n.t('flows.diagramAria', { scope: diagramScopeLabel() })" />
             }
           } @else {
             <div class="flows-state ui-empty-state"><app-icon name="LucideChartColumn" size="display" />{{ i18n.t('flows.empty') }}</div>

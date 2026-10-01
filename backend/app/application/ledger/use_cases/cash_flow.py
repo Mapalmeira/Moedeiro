@@ -46,7 +46,7 @@ def _require_filter_relations(unit_of_work: LedgerUnitOfWork, currency_uuid: UUI
 
 def get_cash_flow_sankey(
     unit_of_work_factory: Callable[[], LedgerUnitOfWork],
-    account_uuid: UUID,
+    currency_uuid: UUID,
     filters: FinancialEventFilter,
     detail_level: int,
 ) -> CashFlowSankey:
@@ -54,10 +54,11 @@ def get_cash_flow_sankey(
         raise InvalidQueryParameterError
 
     with unit_of_work_factory() as unit_of_work:
-        account = unit_of_work.account_repository.get(account_uuid)
-        if account is None:
-            raise AccountNotFoundError
-        category_totals = unit_of_work.cash_flow_query_repository.list_category_totals(account_uuid, filters)
+        _require_filter_relations(unit_of_work, currency_uuid, filters)
+        currency = unit_of_work.currency_repository.get(currency_uuid)
+        assert currency is not None
+        account = unit_of_work.account_repository.get(filters.account_uuid) if filters.account_uuid is not None else None
+        category_totals = unit_of_work.cash_flow_query_repository.list_category_totals(currency_uuid, filters)
         category_tree = unit_of_work.category_repository.get_tree(MAX_CATEGORY_TREE_SIZE)
 
     paths, order_by_uuid = _category_paths(category_tree)
@@ -70,7 +71,9 @@ def get_cash_flow_sankey(
     link_values: dict[tuple[str, str], int] = {}
     income = 0
     expense = 0
-    account_id = f"account:{account.uuid}"
+    scope = account or currency
+    scope_kind = "account" if account is not None else "currency"
+    scope_id = f"{scope_kind}:{scope.uuid}"
 
     def add_category_path(side: str, path: list[Category], amount: int) -> None:
         if amount <= 0 or not path:
@@ -93,11 +96,9 @@ def get_cash_flow_sankey(
             node_values[node_id] = node_values.get(node_id, 0) + amount
 
         if side == "income":
-            # Income approaches the account from the left. More detail belongs
-            # further from it, mirroring the expense hierarchy on the right.
-            chain = [*reversed(ids), account_id]
+            chain = [*reversed(ids), scope_id]
         else:
-            chain = [account_id, *ids]
+            chain = [scope_id, *ids]
         for source, target in zip(chain, chain[1:], strict=False):
             link_values[(source, target)] = link_values.get((source, target), 0) + amount
 
@@ -113,12 +114,12 @@ def get_cash_flow_sankey(
             add_category_path("expense", path, total.expense)
 
     if income or expense:
-        nodes[account_id] = CashFlowSankeyNode(
-            id=account_id,
-            kind="account",
-            side="account",
-            label=account.name,
-            color_code=account.color_code,
+        nodes[scope_id] = CashFlowSankeyNode(
+            id=scope_id,
+            kind=scope_kind,
+            side="scope",
+            label=scope.name,
+            color_code=scope.color_code,
             column=displayed_depth,
             order=0,
             value=max(income, expense),
@@ -135,8 +136,8 @@ def get_cash_flow_sankey(
         if value > 0
     ]
     return CashFlowSankey(
-        account_uuid=account.uuid,
-        currency_uuid=account.currency_uuid,
+        currency_uuid=currency.uuid,
+        account_uuid=account.uuid if account is not None else None,
         from_timestamp=filters.from_timestamp,
         to_timestamp=filters.to_timestamp,
         detail_level=detail_level,

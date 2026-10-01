@@ -45,22 +45,23 @@ class CashFlowRoutesTest(unittest.TestCase):
             self.assertEqual(raised.exception.status_code, status_code)
             self.assertEqual(raised.exception.detail, detail)
 
-    def test_sankey_translates_unknown_account_and_invalid_dimensions(self) -> None:
+    def test_sankey_translates_unknown_scope_relations_and_invalid_dimensions(self) -> None:
         cases = (
+            (CurrencyNotFoundError, 404, "Currency not found"),
             (AccountNotFoundError, 404, "Account not found"),
             (InvalidQueryParameterError, 422, "Invalid query parameters"),
         )
         for error, status_code, detail in cases:
             with self.subTest(error=error), patch("app.api.ledger.routes.cash_flow.get_cash_flow_sankey", side_effect=error):
                 with self.assertRaises(HTTPException) as raised:
-                    get_ledger_cash_flow_sankey(self.uuid, self.uuid, 10, 20, 1, self.request, object())
+                    get_ledger_cash_flow_sankey(self.uuid, self.uuid, 10, 20, 1, self.request, object(), self.uuid)
             self.assertEqual(raised.exception.status_code, status_code)
             self.assertEqual(raised.exception.detail, detail)
 
     def test_points_and_sankey_reject_an_empty_period(self) -> None:
         for route, arguments in (
             (list_ledger_cash_flow_points, (self.uuid, self.uuid, 20, 20, 1, self.request, object())),
-            (get_ledger_cash_flow_sankey, (self.uuid, self.uuid, 20, 20, 1, self.request, object())),
+            (get_ledger_cash_flow_sankey, (self.uuid, self.uuid, 20, 20, 1, self.request, object(), self.uuid)),
         ):
             with self.subTest(route=route.__name__), self.assertRaises(HTTPException) as raised:
                 route(*arguments)
