@@ -50,6 +50,20 @@ export function homeChartTooltipCenter(pointX: number, tooltipWidth: number, bou
   standalone: true,
   template: `
     <div class="flow-chart" [attr.aria-label]="i18n.t('home.flowInPeriod')" (pointerdown)="keepSelection($event)">
+      <div class="flow-chart__selection-summary">
+        @if (activePoint(); as point) {
+          <strong>{{ point.date }}</strong>
+          <div class="flow-chart__selection-values" [class.flow-chart__selection-values--cumulative]="flowMode() === 'cumulative'">
+            @if (flowMode() === 'instant') {
+              <span><small>{{ i18n.t('home.income') }}</small><b>{{ point.income }}</b></span>
+              <span><small>{{ i18n.t('home.expense') }}</small><b>{{ point.expense }}</b></span>
+              <span><small>{{ i18n.t('home.netFlow') }}</small><b>{{ point.net }}</b></span>
+            } @else {
+              <span><small>{{ i18n.t('home.cumulativeNetMovement') }}</small><b>{{ point.cumulative }}</b></span>
+            }
+          </div>
+        }
+      </div>
       <svg [attr.viewBox]="'0 0 ' + chartWidth + ' ' + chartHeight" preserveAspectRatio="xMidYMid meet" role="img" tabindex="0"
         (pointermove)="hover($event)" (pointerleave)="leave()" (pointerup)="pin($event)"
         (keydown.arrowleft)="moveSelection(-1, $event)" (keydown.arrowright)="moveSelection(1, $event)" (keydown.escape)="clearSelection()">
@@ -111,12 +125,24 @@ export function homeChartTooltipCenter(pointX: number, tooltipWidth: number, bou
     .flow-chart__tooltip strong { font-weight: 800; }
     .flow-chart__tooltip span { display: flex; justify-content: space-between; gap: var(--space-3); color: var(--text-muted); }
     .flow-chart__tooltip b { color: var(--text); font-weight: 780; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .flow-chart__selection-summary { display: none; }
     .flow-chart__empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--text-muted); font-size: var(--control-font-size); pointer-events: none; }
     .flow-legend { min-width: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-4); padding: 0 var(--space-4) var(--space-4); color: var(--text-muted); font-size: var(--control-detail-font-size); font-weight: 650; }
     .flow-legend span { display: inline-flex; align-items: center; gap: var(--space-2); }
     .flow-legend__dot { width: var(--space-3); height: var(--space-3); border: 1px solid var(--line-strong); border-radius: var(--radius-icon); }
     .flow-legend__dot--income { background: var(--green); } .flow-legend__dot--expense { background: var(--yellow); } .flow-legend__dot--cumulative { background: var(--blue); }
-    @container (max-width: 620px) { .flow-chart svg { min-height: 0; } }
+    @container (max-width: 620px) {
+      .flow-chart { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: var(--space-2); }
+      .flow-chart svg { min-height: 0; }
+      .flow-chart__selection-summary { min-width: 0; min-height: calc(var(--control-height) + var(--space-2)); display: grid; align-content: center; gap: var(--space-1); padding-inline: var(--space-2); pointer-events: none; }
+      .flow-chart__selection-summary > strong { min-width: 0; overflow: hidden; color: var(--text); font-size: var(--control-detail-font-size); font-weight: 800; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+      .flow-chart__selection-values { min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
+      .flow-chart__selection-values--cumulative { grid-template-columns: minmax(0, 1fr); }
+      .flow-chart__selection-values span { min-width: 0; display: grid; justify-items: center; gap: var(--space-1); color: var(--text-muted); font-size: var(--control-detail-font-size); line-height: var(--control-line-height); }
+      .flow-chart__selection-values small { min-width: 0; max-width: 100%; overflow: hidden; font: inherit; text-overflow: ellipsis; white-space: nowrap; }
+      .flow-chart__selection-values b { min-width: 0; max-width: 100%; overflow: hidden; color: var(--text); font-weight: 780; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+      .flow-chart__tooltip { display: none; }
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

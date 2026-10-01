@@ -109,13 +109,10 @@
   .home-control, .home-period-control { width: 100%; }
   .home-period-control { --period-selector-columns: minmax(0, 1fr); }
   .flow-account-select { flex-basis: 100%; width: 100%; }
-  .flow-switch { width: 100%; }
+  .flow-switch { width: 100%; --toggle-group-columns: 2; }
   .home-metrics { grid-template-columns: minmax(0, 1fr); gap: var(--form-gap); }
   .metric-card { padding: var(--space-3); }
   .home-card__header { align-items: flex-start; }
   .home-card--flow .home-card__header h2 { justify-self: start; }
 }
 
-@container (max-width: 320px) {
-  .flow-switch { --toggle-group-columns: 1; }
-}
