@@ -8,7 +8,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { AuthLandingComponent } from './auth-landing.component';
 
-describe('AuthLandingComponent registration', () => {
+describe('AuthLandingComponent', () => {
   const auth = {
     register: vi.fn(),
     login: vi.fn(),
@@ -49,6 +49,47 @@ describe('AuthLandingComponent registration', () => {
     });
   }
 
+  function fillValidLogin(component: AuthLandingComponent): void {
+    component.loginForm.setValue({ name: 'alice', password: 'password123', remember: true, totp_code: '' });
+  }
+
+  it('logs in with normalized optional TOTP and navigates only after success', () => {
+    auth.login.mockReturnValue(of(void 0));
+    const component = createComponent();
+    fillValidLogin(component);
+
+    component.submitLogin();
+
+    expect(auth.login).toHaveBeenCalledWith({ name: 'alice', password: 'password123', remember: true, totp_code: null });
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/home');
+    expect(component.loadingLogin()).toBe(false);
+  });
+
+  it('keeps invalid credentials indistinguishable in field feedback', () => {
+    auth.login.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401, error: { detail: 'Invalid credentials' } })));
+    const component = createComponent();
+    fillValidLogin(component);
+
+    component.submitLogin();
+
+    expect(component.loginCredentialsFeedback()).toBe('errors.loginFailed');
+    expect(component.loginError()).toBeNull();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('requires a valid TOTP code when the backend reports it as required', () => {
+    auth.login.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401, error: { detail: 'TOTP required' } })));
+    const component = createComponent();
+    fillValidLogin(component);
+
+    component.submitLogin();
+
+    expect(component.loginCredentialsFeedback()).toBe('errors.totpRequired');
+    expect(component.loginForm.controls.totp_code.hasError('required')).toBe(true);
+    component.loginForm.controls.totp_code.setValue('123456');
+    expect(component.loginForm.controls.totp_code.valid).toBe(true);
+  });
+
   it('creates the account without automatically logging in or navigating', () => {
     auth.register.mockReturnValue(of(void 0));
     const component = createComponent();
@@ -87,4 +128,16 @@ describe('AuthLandingComponent registration', () => {
     expect(component.registrationError()).toBe('registration failed');
     expect(component.loadingRegistration()).toBe(false);
   });
+
+  it('uses invitation feedback when registration races with invitation consumption', () => {
+    auth.register.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404, error: { detail: 'Invitation not available' } })));
+    const component = createComponent();
+    fillValidRegistration(component);
+
+    component.submitRegistration();
+
+    expect(component.registrationInvitationFeedback()).toBe('errors.invitationUnavailable');
+    expect(component.registrationError()).toBeNull();
+  });
 });
+import { HttpErrorResponse } from '@angular/common/http';

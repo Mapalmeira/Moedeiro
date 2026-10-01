@@ -48,6 +48,33 @@ describe('AuthService', () => {
     expect(localStorage.getItem('moedeiro.last-auth-name')).toBe('alice');
   });
 
+  it('registers and recovers a password without mutating the session state', () => {
+    const registration = { invitation_code: 'ABCDEFGHJKMNPQRS', name: 'alice', password: 'password123' };
+    service.register(registration).subscribe();
+    const registerRequest = http.expectOne(API_ROUTES.registration);
+    expect(registerRequest.request.method).toBe('POST');
+    expect(registerRequest.request.body).toEqual(registration);
+    registerRequest.flush(null);
+
+    const recovery = { name: 'alice', recovery_code: 'ABCDEFGHJKMNPQRS', new_password: 'replacement', totp_code: null };
+    service.recoverPassword(recovery).subscribe();
+    const recoveryRequest = http.expectOne(API_ROUTES.password.recovery);
+    expect(recoveryRequest.request.method).toBe('POST');
+    expect(recoveryRequest.request.body).toEqual(recovery);
+    recoveryRequest.flush(null);
+
+    expect(service.authenticated()).toBeNull();
+  });
+
+  it('accepts a valid existing session without rotating refresh credentials', () => {
+    service.ensureSession().subscribe((valid) => expect(valid).toBe(true));
+    http.expectOne(API_ROUTES.authentication.session).flush({ name: 'alice' });
+    http.expectNone(API_ROUTES.authentication.refresh);
+
+    expect(service.authenticated()).toBe(true);
+    expect(service.currentUserName()).toBe('alice');
+  });
+
   it('reuses a session established by login without immediately revalidating it', () => {
     service.login({ name: 'alice', password: 'password123', remember: false, totp_code: null }).subscribe();
     http.expectOne(API_ROUTES.authentication.login).flush(null);
@@ -94,6 +121,17 @@ describe('AuthService', () => {
     expect(service.authenticated()).toBe(false);
     expect(service.currentUserName()).toBeNull();
     expect(localStorage.getItem('moedeiro.last-auth-name')).toBeNull();
+  });
+
+  it('clears local authentication when refresh cannot establish a session', () => {
+    localStorage.setItem('moedeiro.last-auth-name', 'stale');
+    service.currentUserName.set('stale');
+
+    service.refreshSession().subscribe((valid) => expect(valid).toBe(false));
+    http.expectOne(API_ROUTES.authentication.refresh).flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    expect(service.authenticated()).toBe(false);
+    expect(service.currentUserName()).toBeNull();
   });
 
   it('clears the cached username when logging out, including an already-expired session', () => {
